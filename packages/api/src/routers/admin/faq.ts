@@ -10,8 +10,8 @@ import {
   faqReorderedSchema,
   faqReorderInputSchema,
   faqUpdateInputSchema,
-} from "../contracts/faq";
-import { adminProcedure } from "../index";
+} from "../../contracts/faq";
+import { adminProcedure } from "../../index";
 import {
   createFaqEntry,
   deleteFaqEntry,
@@ -19,8 +19,8 @@ import {
   listFaq,
   reorderFaq,
   updateFaqEntry,
-} from "../services/faq-admin";
-import { withJsonBodyExample } from "./openapi-examples";
+} from "../../services/faq-admin";
+import { withJsonBodyExample } from "../openapi-examples";
 
 /*
  * The authoring side of the FAQ. The read side is the listing detail page, which matches the

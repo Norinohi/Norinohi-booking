@@ -1,10 +1,11 @@
 import { z } from "zod";
 
+import { roleSchema } from "../roles";
 import { paginatedSchema, paginationInputDefault, paginationInputSchema } from "./primitives";
 
 export const USERS_PAGE_SIZE = 20;
 
-export const userRoleSchema = z.enum(["customer", "staff", "admin"]);
+export const userRoleSchema = roleSchema;
 
 /**
  * Where an account stands. `guest` is one guest checkout created on someone's behalf and nobody

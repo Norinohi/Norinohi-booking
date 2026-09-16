@@ -16,9 +16,9 @@ import {
   routeStopReorderInputSchema,
   routeStopUpdateInputSchema,
   routeUpdateInputSchema,
-} from "../contracts/route";
-import { adminProcedure } from "../index";
-import { listGeographyOptions } from "../services/geography-admin";
+} from "../../contracts/route";
+import { adminProcedure } from "../../index";
+import { listGeographyOptions } from "../../services/geography-admin";
 import {
   createRoute,
   createRouteStop,
@@ -32,8 +32,8 @@ import {
   setRouteActive,
   updateRoute,
   updateRouteStop,
-} from "../services/route-admin";
-import { withJsonBodyExample } from "./openapi-examples";
+} from "../../services/route-admin";
+import { withJsonBodyExample } from "../openapi-examples";
 
 const routeDeletedSchema = z.object({ id: z.string() });
 

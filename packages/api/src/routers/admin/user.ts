@@ -1,7 +1,7 @@
-import { userAdminListInputSchema, userAdminListSchema } from "../contracts/user-admin";
-import { adminProcedure } from "../index";
-import { listUsersForAdmin } from "../services/user-admin";
-import { withJsonBodyExample } from "./openapi-examples";
+import { userAdminListInputSchema, userAdminListSchema } from "../../contracts/user-admin";
+import { adminProcedure } from "../../index";
+import { listUsersForAdmin } from "../../services/user-admin";
+import { withJsonBodyExample } from "../openapi-examples";
 
 export const userAdminRouter = {
   list: adminProcedure

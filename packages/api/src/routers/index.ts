@@ -8,7 +8,7 @@ import {
 } from "../contracts/profile";
 import { protectedProcedure, publicProcedure } from "../index";
 import { deactivateProfile, getProfile, updateProfile } from "../services/profile";
-import { adminRouter } from "./admin";
+import { adminRouter } from "./admin/index";
 import { availabilityRouter } from "./availability";
 import { bookingRouter, checkoutRouter } from "./booking";
 import { charterSearchRouter } from "./charter-search";

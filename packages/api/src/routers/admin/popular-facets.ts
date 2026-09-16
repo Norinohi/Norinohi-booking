@@ -9,23 +9,23 @@ import {
   popularFacetListSchema,
   popularFacetSetInputSchema,
   popularFacetSetSchema,
-} from "../contracts/popular-facets";
-import { adminProcedure } from "../index";
+} from "../../contracts/popular-facets";
+import { adminProcedure } from "../../index";
 import {
   getFacetMedia,
   listPopularFacets,
   setPopularFacets,
   updateFacetMedia,
   uploadFacetImage,
-} from "../services/popular-facets-admin";
-import { withJsonBodyExample } from "./openapi-examples";
+} from "../../services/popular-facets-admin";
+import { withJsonBodyExample } from "../openapi-examples";
 
 /*
  * The curated order of a facet's values: which countries head the country picker, which boat
  * types head the boat-type one, which amenities a card shows first, and which destinations the
  * home page leads with.
  *
- * Two procedures rather than the create/update/delete/reorder next door in `admin-faq.ts`,
+ * Two procedures rather than the create/update/delete/reorder next door in `faq.ts`,
  * which this otherwise copies. A FAQ row is content that has to be born and killed; a curated
  * facet is a rank on a row that already describes a value the catalogue holds, so every edit
  * this screen can make -- ticking, unticking, moving up, moving down -- is one statement of the

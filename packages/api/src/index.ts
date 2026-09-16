@@ -1,12 +1,9 @@
 import { ORPCError, os } from "@orpc/server";
-import { z } from "zod";
 
 import type { Context } from "./context";
 import { DomainError } from "./errors";
 import { domainErrorToORPCError } from "./orpc-errors";
-
-/** better-auth carries `role` as an additional field, outside its own user type. */
-const staffRoleSchema = z.object({ role: z.enum(["staff", "admin"]) });
+import { hasRole, type Role } from "./roles";
 
 export const o = os.$context<Context>();
 
@@ -39,21 +36,24 @@ const requireAuth = o.middleware(async ({ context, next }) => {
 
 export const protectedProcedure = publicProcedure.use(requireAuth);
 
-const requireAdmin = o.middleware(async ({ context, next }) => {
-  const session = context.session;
-  if (!session) {
-    throw new ORPCError("UNAUTHORIZED");
-  }
+export function requireRole(...roles: Role[]) {
+  return o.middleware(async ({ context, next }) => {
+    const session = context.session;
+    if (!session) {
+      throw new ORPCError("UNAUTHORIZED");
+    }
 
-  if (!staffRoleSchema.safeParse(session.user).success) {
-    throw new ORPCError("FORBIDDEN");
-  }
+    if (!hasRole(session, ...roles)) {
+      throw new ORPCError("FORBIDDEN");
+    }
 
-  return next({
-    context: {
-      session,
-    },
+    return next({
+      context: {
+        session,
+      },
+    });
   });
-});
+}
 
-export const adminProcedure = protectedProcedure.use(requireAdmin);
+/** Staff and admin share every admin screen today; split a procedure off with its own `requireRole`. */
+export const adminProcedure = protectedProcedure.use(requireRole("staff", "admin"));

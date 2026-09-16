@@ -1,13 +1,13 @@
-import { popularYachtsConfigSchema } from "../contracts/admin";
-import { emptyInputSchema } from "../contracts/primitives";
-import { popularYachtsConfigSavedSchema } from "../contracts/popular-yachts";
-import { adminProcedure } from "../index";
+import { popularYachtsConfigSchema } from "../../contracts/admin";
+import { emptyInputSchema } from "../../contracts/primitives";
+import { popularYachtsConfigSavedSchema } from "../../contracts/popular-yachts";
+import { adminProcedure } from "../../index";
 import {
   DEFAULT_POPULAR_YACHTS,
   getPopularYachtsConfig,
   updatePopularYachtsConfig,
-} from "../services/popular-yachts-settings";
-import { withJsonBodyExample } from "./openapi-examples";
+} from "../../services/popular-yachts-settings";
+import { withJsonBodyExample } from "../openapi-examples";
 
 export const popularYachtsAdminRouter = {
   get: adminProcedure

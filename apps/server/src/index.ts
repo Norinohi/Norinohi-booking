@@ -1,5 +1,3 @@
-import { timingSafeEqual } from "node:crypto";
-
 import { serve } from "@hono/node-server";
 import {
   createContext,
@@ -25,6 +23,7 @@ import { evlog, type EvlogVariables } from "evlog/hono";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { generateAuthOpenApiSchema } from "./auth-openapi";
+import { requireCronSecret } from "./cron-auth";
 import { flushObservabilityOnShutdown, observability } from "./observability";
 import { apiHandler, rpcHandler } from "./orpc";
 
@@ -92,51 +91,24 @@ app.post("/api/stripe/webhook", async (c) => {
 });
 
 // Scheduled maintenance. Above the oRPC dispatch for the same reason as the Stripe
-// route: that middleware matches "/*". Guarded by a shared secret rather than a
-// session, because the caller is a scheduler with no user.
-app.post("/api/cron/sweep-expiries", async (c) => {
-  if (!env.CRON_SECRET) {
-    return c.json({ error: "CRON_SECRET is not configured" }, 503);
-  }
+// route: that middleware matches "/*".
+const cronSecret = requireCronSecret(env.CRON_SECRET);
 
-  const presented = c.req.header("authorization")?.replace(/^Bearer\s+/i, "");
-  // Constant-time compare so a wrong secret cannot be discovered byte by byte.
-  if (!presented || !timingSafeEqualString(presented, env.CRON_SECRET)) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
+app.post("/api/cron/sweep-expiries", cronSecret, async (c) => {
   return c.json(await sweepExpiries(db, inventoryProvider));
 });
 
 // Every few hours. Asks each vendor what it changed and compares the answers to the bookings
 // we hold; the manual escape hatch for the case where an operator says they cancelled something
 // and the customer is on the phone.
-app.post("/api/cron/reconcile-reservations", async (c) => {
-  if (!env.CRON_SECRET) {
-    return c.json({ error: "CRON_SECRET is not configured" }, 503);
-  }
-
-  const presented = c.req.header("authorization")?.replace(/^Bearer\s+/i, "");
-  if (!presented || !timingSafeEqualString(presented, env.CRON_SECRET)) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
+app.post("/api/cron/reconcile-reservations", cronSecret, async (c) => {
   return c.json(await reconcileReservations(db, inventoryProvider));
 });
 
 // Daily. The window is ten days wide and every installment is claimed before it is mailed, so
 // running this more often sends nothing extra — and missing a day still catches the same booking
 // tomorrow.
-app.post("/api/cron/payment-reminders", async (c) => {
-  if (!env.CRON_SECRET) {
-    return c.json({ error: "CRON_SECRET is not configured" }, 503);
-  }
-
-  const presented = c.req.header("authorization")?.replace(/^Bearer\s+/i, "");
-  if (!presented || !timingSafeEqualString(presented, env.CRON_SECRET)) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
+app.post("/api/cron/payment-reminders", cronSecret, async (c) => {
   return c.json(await sendBalanceReminders(db));
 });
 
@@ -144,32 +116,14 @@ app.post("/api/cron/payment-reminders", async (c) => {
 // it has answered, so this only picks up what a replaced container or a mailer outage left
 // behind. A message is claimed with `for update skip locked`, so this can overlap a
 // request-time drain without either sending the other's mail.
-app.post("/api/cron/drain-outbox", async (c) => {
-  if (!env.CRON_SECRET) {
-    return c.json({ error: "CRON_SECRET is not configured" }, 503);
-  }
-
-  const presented = c.req.header("authorization")?.replace(/^Bearer\s+/i, "");
-  if (!presented || !timingSafeEqualString(presented, env.CRON_SECRET)) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
+app.post("/api/cron/drain-outbox", cronSecret, async (c) => {
   return c.json(await drainOutbox(db));
 });
 
 // The vendor asks for one full catalogue dump a day, after 01:00 GMT+1. The run is
 // started and then let go: a full sequential walk takes hours and the platform kills
 // a long request, so progress lives in sync_run / sync_error instead of the response.
-app.post("/api/cron/sync-catalogue", async (c) => {
-  if (!env.CRON_SECRET) {
-    return c.json({ error: "CRON_SECRET is not configured" }, 503);
-  }
-
-  const presented = c.req.header("authorization")?.replace(/^Bearer\s+/i, "");
-  if (!presented || !timingSafeEqualString(presented, env.CRON_SECRET)) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
+app.post("/api/cron/sync-catalogue", cronSecret, async (c) => {
   const providers = await getEnabledInventoryProviders();
   return c.json({
     runs: await startSyncForAll(providers.values(), (provider) => startCatalogueSync(db, provider)),
@@ -179,16 +133,7 @@ app.post("/api/cron/sync-catalogue", async (c) => {
 // The vendor asks for occupancy hourly or every few hours. Started and let go like
 // the catalogue run: the occupancy pass is quick, but the confirmation pass that
 // follows it runs until its own time budget stops it.
-app.post("/api/cron/sync-availability", async (c) => {
-  if (!env.CRON_SECRET) {
-    return c.json({ error: "CRON_SECRET is not configured" }, 503);
-  }
-
-  const presented = c.req.header("authorization")?.replace(/^Bearer\s+/i, "");
-  if (!presented || !timingSafeEqualString(presented, env.CRON_SECRET)) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
+app.post("/api/cron/sync-availability", cronSecret, async (c) => {
   const providers = await getEnabledInventoryProviders();
   return c.json({
     runs: await startSyncForAll(providers.values(), (provider) =>
@@ -215,14 +160,6 @@ app.use("/*", async (c, next) => {
 });
 
 app.get("/", (c) => c.text("OK"));
-
-/** Length-safe wrapper: timingSafeEqual throws when the buffers differ in size. */
-function timingSafeEqualString(a: string, b: string): boolean {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  if (left.length !== right.length) return false;
-  return timingSafeEqual(left, right);
-}
 
 serve(
   {

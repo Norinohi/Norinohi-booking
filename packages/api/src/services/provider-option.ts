@@ -3,14 +3,17 @@ import { listing } from "@yacht-charter/db/schema/listing";
 import { quote } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider, ProviderReservation } from "@yacht-charter/providers";
 import { ProviderError } from "@yacht-charter/providers/shared/errors";
+import type { z } from "zod";
 
 import { reportProviderRefusal } from "../lib/provider-failure";
 import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 
 import type { Database, DatabaseExecutor } from "../context";
 import { getEnabledInventoryProviders } from "../context";
+import type { waitingOptionsInputSchema, waitingOptionsSchema } from "../contracts/maintenance";
 import type { BookingStatus } from "./booking-state";
 import { enqueueOutbox } from "./outbox";
+import { providerForListing } from "./provider-routing";
 import { NotFoundError } from "../errors";
 
 type BookingRow = typeof booking.$inferSelect;
@@ -305,4 +308,20 @@ export async function listUnreleasedOptions(db: Database): Promise<UnreleasedOpt
     failedAt: row.failedAt.toISOString(),
     reason: row.reason ?? "The vendor refused the release",
   }));
+}
+
+export async function getWaitingOptions(
+  db: Database,
+  fallback: InventoryProvider,
+  input: z.infer<typeof waitingOptionsInputSchema>,
+): Promise<z.infer<typeof waitingOptionsSchema>> {
+  const adapter = await providerForListing(db, fallback, input.listingId);
+  if (!adapter.getWaitingOptions) return { count: 0, queue: [], supported: false };
+
+  const answer = await adapter.getWaitingOptions({
+    listingId: input.listingId,
+    from: input.from,
+    to: input.to,
+  });
+  return { ...answer, supported: true };
 }
