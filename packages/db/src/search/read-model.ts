@@ -49,18 +49,31 @@ const MEDIA_ROLE_RANK = sql`case lm.role when 'main' then 0 when 'gallery' then 
  * so excluding the ones that are too close advances to the next sellable charter, priced by the
  * laterals below against that period rather than against a charter nobody can buy.
  *
- * Two days, because a charter checking in this afternoon is not on sale: the booking has to reach
- * the operator and come back confirmed, and the base has to hand the boat over. It was one, and
- * Booking Manager refuses that: asked for three nights from tomorrow, 0 of 20 yachts free then
- * were offered, against 10 of 20 from two days out and the same from five or eight (Sep 2026,
- * `/offers`). The cards were sending the length filter's nearest charter to exactly that day.
- * Neither vendor publishes a notice period, so this is still a floor rather than the answer per
- * base.
+ * One day, because a charter checking in this afternoon is not on sale: the booking has to reach
+ * the operator and come back confirmed, and the base has to hand the boat over. It is the floor
+ * every provider shares; `providerLeadDaysSql` raises it where a vendor needs longer.
  */
-export const MIN_LEAD_DAYS = 2;
+export const MIN_LEAD_DAYS = 1;
+
+/*
+ * The notice a vendor needs, where it is longer than the shared floor. Measured in Sep 2026 on
+ * three nights among yachts our occupancy called free: Booking Manager offered none of 20 from
+ * tomorrow and half of them from two days out, the same share as from five or eight, so it takes
+ * two. NauSYS offered 55 of 60 from tomorrow against 57 of 60 from two days, so it keeps the floor.
+ */
+export const PROVIDER_LEAD_DAYS = { booking_manager: 2 } as const satisfies Record<string, number>;
+
+/** The lead time for the provider whose code `code` evaluates to, as an integer expression. */
+export function providerLeadDaysSql(code: SQL): SQL {
+  const cases = Object.entries(PROVIDER_LEAD_DAYS).map(
+    ([provider, days]) => sql`when ${provider} then ${days}::int`,
+  );
+  return sql`(case ${code} ${sql.join(cases, sql` `)} else ${MIN_LEAD_DAYS}::int end)`;
+}
 
 /** The earliest day a charter may check in on, as SQL, so every candidate branch shares it. */
-const EARLIEST_CHECKIN = sql`(current_date + cast(${MIN_LEAD_DAYS} as int))`;
+/* Read where provider `p` is in scope, which it is everywhere a charter is chosen. */
+const EARLIEST_CHECKIN = sql`(current_date + ${providerLeadDaysSql(sql`p.code`)})`;
 
 /*
  * The document columns a dated search reads from `listing_period_price` instead, where the

@@ -10,7 +10,7 @@ import { FX_BASE_CURRENCY } from "../fx/rates";
 import { AMENITY_GROUPS, amenityGroupFor } from "./amenity-groups";
 import { amenityIconFor } from "./amenity-icons";
 import { crewOptionsFor } from "./crew";
-import { MIN_LEAD_DAYS, PERIOD_PRICE_COLUMNS } from "./read-model";
+import { MIN_LEAD_DAYS, PERIOD_PRICE_COLUMNS, providerLeadDaysSql } from "./read-model";
 import {
   decodeSearchCursor,
   encodeSearchCursor,
@@ -1685,7 +1685,9 @@ function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
  * also has to fall inside the rule's own season, which is when that rule governs it.
  */
 function sellableStarts(nights: number | SQL, range: CandidateRange): SQL {
-  const opens = sql`greatest(free.start_date, ${range.earliestStart}::date, rule.season_start)`;
+  /* The range starts at the shared floor; a vendor needing longer notice starts later. */
+  const notice = providerLeadDaysSql(sql`(select code from provider where id = o.provider_id)`);
+  const opens = sql`greatest(free.start_date, ${range.earliestStart}::date, rule.season_start, current_date + ${notice})`;
   return sql`
     select c.start_date, free.end_date, o.id as offer_id
     from listing_offer o

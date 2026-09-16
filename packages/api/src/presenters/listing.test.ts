@@ -117,23 +117,13 @@ describe("presentListingSummary", () => {
     expect(summary.availability.bookablePeriod).toBeNull();
   });
 
-  /* Booking Manager refused every three-night charter from tomorrow it was asked about. */
-  it("drops a charter that checks in tomorrow", () => {
+  it("keeps a charter that checks in tomorrow", () => {
     const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
     const summary = presentListingSummary(
       doc({ bookableFrom: tomorrow, bookableTo: "2126-11-28" }),
     );
 
-    expect(summary.availability.bookablePeriod).toBeNull();
-  });
-
-  it("keeps a charter that checks in two days out", () => {
-    const inTwoDays = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10);
-    const summary = presentListingSummary(
-      doc({ bookableFrom: inTwoDays, bookableTo: "2126-11-28" }),
-    );
-
-    expect(summary.availability.bookablePeriod?.checkIn).toBe(inTwoDays);
+    expect(summary.availability.bookablePeriod?.checkIn).toBe(tomorrow);
   });
 });
 
