@@ -134,6 +134,31 @@ export const suggestedRouteStop = pgTable(
   ],
 );
 
+/*
+ * Per-locale note for a stop, the line a card prints under "Day 3 - Vis".
+ *
+ * Mirrors `suggested_route_translation` rather than adding three more columns to the stop: the
+ * read falls back to `suggested_route_stop.note` where a language has no row, so a stop written in
+ * one language still prints everywhere.
+ */
+export const suggestedRouteStopTranslation = pgTable(
+  "suggested_route_stop_translation",
+  {
+    id: id("srstt"),
+    stopId: text("stop_id")
+      .notNull()
+      .references(() => suggestedRouteStop.id, { onDelete: "cascade" }),
+    locale: text("locale").notNull(),
+    note: text("note"),
+    source: facetTranslationSource("source").default("editorial").notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    unique("suggested_route_stop_translation_locale_key").on(t.stopId, t.locale),
+    index("suggested_route_stop_translation_locale_idx").on(t.locale),
+  ],
+);
+
 export const suggestedRouteRelations = relations(suggestedRoute, ({ one, many }) => ({
   base: one(base, { fields: [suggestedRoute.baseId], references: [base.id] }),
   region: one(region, { fields: [suggestedRoute.regionId], references: [region.id] }),
@@ -151,9 +176,20 @@ export const suggestedRouteTranslationRelations = relations(
   }),
 );
 
-export const suggestedRouteStopRelations = relations(suggestedRouteStop, ({ one }) => ({
+export const suggestedRouteStopRelations = relations(suggestedRouteStop, ({ one, many }) => ({
   route: one(suggestedRoute, {
     fields: [suggestedRouteStop.routeId],
     references: [suggestedRoute.id],
   }),
+  translations: many(suggestedRouteStopTranslation),
 }));
+
+export const suggestedRouteStopTranslationRelations = relations(
+  suggestedRouteStopTranslation,
+  ({ one }) => ({
+    stop: one(suggestedRouteStop, {
+      fields: [suggestedRouteStopTranslation.stopId],
+      references: [suggestedRouteStop.id],
+    }),
+  }),
+);

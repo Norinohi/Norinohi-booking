@@ -131,6 +131,11 @@ describe("facet value normalisation", () => {
     ["M & S obrt za turizam", "mandsobrtzaturizam"],
     ["Master Yachting ", "masteryachting"],
     ["ACE Yachting", "aceyachting"],
+    /* The accented half of the catalogue, which the slug used to drop the letter from: the map
+       pin over Dénia counted nine boats and the marina filter behind it answered with none. */
+    ["Dènia / Marina El Portet", "deniamarinaelportet"],
+    ["Sukošan / D-Marin Dalmacija Marina", "sukosandmarindalmacijamarina"],
+    ["Marmaris / Adaköy Marina", "marmarisadakoymarina"],
   ];
 
   it.each(sqlNormalised)(

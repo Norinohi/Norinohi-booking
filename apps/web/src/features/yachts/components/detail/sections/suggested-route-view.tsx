@@ -13,7 +13,7 @@ import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 
 import { MapPin } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import MapPreview from "@/components/shared/overlay/map-preview";
 import { staticMapFrame } from "@/lib/mapbox";
@@ -170,13 +170,15 @@ function DayItem({
           />
         </span>
         {!isLast && (
+          /* A shade lighter than it was: the stops are what the section is about, and a 4px rail
+             between them read as the subject rather than as what joins them. */
           <span
             aria-hidden
-            className="relative w-1 flex-1 border-l-4 border-dotted border-brand-100"
+            className="relative w-0.75 flex-1 border-l-3 border-dotted border-brand-100"
           >
             <motion.span
               style={{ scaleY: fillScale }}
-              className="absolute inset-y-0 -left-1 w-1 origin-top bg-brand"
+              className="absolute inset-y-0 -left-0.75 w-0.75 origin-top bg-brand"
             />
           </span>
         )}
@@ -213,6 +215,7 @@ function RouteStill({ route }: { route: { title: string; stops: RouteStop[] } })
    * `pathLength` normalisation is computed against the unstretched length — which turned the drawn
    * line into a dashed one. Matching the box removes the mismatch instead of compensating for it.
    */
+  const maskId = useId();
   const svgRef = useRef<SVGSVGElement>(null);
   const [box, setBox] = useState<{ width: number; height: number } | null>(null);
 
@@ -267,22 +270,50 @@ function RouteStill({ route }: { route: { title: string; stops: RouteStop[] } })
               preserveAspectRatio="none"
               className="absolute inset-0 size-full"
             >
-              {/* Two passes, the marker's own colours: a white casing carrying the brand core. */}
-              {path
-                ? ["stroke-white/90", "stroke-brand"].map((stroke, index) => (
-                    <motion.path
-                      key={stroke}
-                      d={path}
-                      fill="none"
-                      strokeWidth={index === 0 ? 4 : 2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className={stroke}
-                      {...draw}
-                      transition={{ duration: ROUTE_DRAW_MS / 1000, ease: "easeInOut" }}
-                    />
-                  ))
-                : null}
+              {/*
+               * Two passes, the marker's own colours: a white casing carrying the brand core, both
+               * thin and dash-dotted so the stops carry the section and the line only joins them.
+               *
+               * The reveal runs on a mask rather than on the visible strokes: animating
+               * `pathLength` is itself implemented as a dash offset, so a dashed stroke and a drawn
+               * one cannot be the same element. The mask is a fat solid stroke of the same path,
+               * and the dashes show wherever it has already been drawn.
+               */}
+              {path ? (
+                <>
+                  <defs>
+                    <mask id={maskId} maskUnits="userSpaceOnUse">
+                      <motion.path
+                        d={path}
+                        fill="none"
+                        stroke="white"
+                        strokeWidth={12}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        {...draw}
+                        transition={{ duration: ROUTE_DRAW_MS / 1000, ease: "easeInOut" }}
+                      />
+                    </mask>
+                  </defs>
+                  <g mask={`url(#${maskId})`}>
+                    {[
+                      { stroke: "stroke-white/90", width: 3.5, dash: "9 4 1.5 4" },
+                      { stroke: "stroke-brand", width: 1.5, dash: "9 4 1.5 4" },
+                    ].map((line) => (
+                      <path
+                        key={line.stroke}
+                        d={path}
+                        fill="none"
+                        strokeWidth={line.width}
+                        strokeDasharray={line.dash}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={line.stroke}
+                      />
+                    ))}
+                  </g>
+                </>
+              ) : null}
             </svg>
           ) : null}
 

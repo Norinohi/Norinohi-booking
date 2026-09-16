@@ -41,12 +41,23 @@ const MULTI_CHAR_FOLDS: readonly (readonly [from: string, to: string])[] = [
  * options across the catalogue answered with nothing.
  */
 export function normalizedKey(value: string): string {
+  return foldedLetters(value).replace(/[^a-z0-9]+/g, "");
+}
+
+/**
+ * The same fold with the separators still in place, for values a person or a URL reads.
+ *
+ * Kept as its own step because `valueForLabel` mints its slugs from it: a slug that dropped the
+ * accented letter instead of folding it could not survive `normalizedKey` afterwards. "Dènia /
+ * Marina El Portet" became `d-nia-marina-el-portet`, which folds to `dniamarinaelportet` while
+ * the column folds to `deniamarinaelportet`, so the map's own marina filter answered with
+ * nothing for every accented base in the catalogue.
+ */
+export function foldedLetters(value: string): string {
   let folded = value.trim().toLowerCase();
   for (const [from, to] of MULTI_CHAR_FOLDS) folded = folded.replaceAll(from, to);
 
-  return folded
-    .replace(/[^a-z0-9]/g, (char) => FOLD_TO[FOLD_FROM.indexOf(char)] ?? char)
-    .replace(/[^a-z0-9]+/g, "");
+  return folded.replace(/[^a-z0-9]/g, (char) => FOLD_TO[FOLD_FROM.indexOf(char)] ?? char);
 }
 
 /**

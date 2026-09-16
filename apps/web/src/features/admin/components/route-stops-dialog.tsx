@@ -3,6 +3,7 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
+import { Tabs, TabsList, TabsPanel, TabsTab } from "@yacht-charter/ui/components/navigation/tabs";
 import {
   Dialog,
   DialogContent,
@@ -40,25 +41,43 @@ const RouteStopMap = dynamic(() => import("./route-stop-map"), {
   loading: () => <div className="size-full bg-natural-50" />,
 });
 
+/*
+ * English is not in this list: it is the stop's own `note`, the one every other language falls
+ * back to. The tab strip puts it first all the same, so the author writes it where they write
+ * the rest.
+ */
+const NOTE_LOCALES = ["uk", "de", "es"] as const;
+type NoteLocale = (typeof NOTE_LOCALES)[number];
+const NOTE_TABS = ["en", ...NOTE_LOCALES] as const;
+type NoteTab = (typeof NOTE_TABS)[number];
+
 type Working = {
   /** Null while adding; the stop's id while editing one. */
   id: string | null;
   name: string;
+  /** The English note. */
   note: string;
+  notes: Record<NoteLocale, string>;
   point: { lat: number; lng: number } | null;
 };
 
-const BLANK: Working = { id: null, name: "", note: "", point: null };
+const emptyNotes = () => ({ uk: "", de: "", es: "" }) satisfies Record<NoteLocale, string>;
+
+const BLANK: Working = { id: null, name: "", note: "", notes: emptyNotes(), point: null };
 
 /* Somewhere in the Adriatic, so a route whose base has no stored coordinates still opens on water
    rather than on the null island off Africa. The author drags from wherever it lands. */
 const FALLBACK_CENTRE = { lat: 43.51, lng: 16.44 };
 
 function toWorking(stop: RouteStopRow): Working {
+  const notes = emptyNotes();
+  for (const entry of stop.noteTranslations) notes[entry.locale] = entry.note ?? "";
+
   return {
     id: stop.id,
     name: stop.name,
     note: stop.note ?? "",
+    notes,
     point: { lat: stop.lat, lng: stop.lng },
   };
 }
@@ -71,7 +90,9 @@ interface RouteStopsDialogProps {
 
 export default function RouteStopsDialog({ route, open, onOpenChange }: RouteStopsDialogProps) {
   const t = useTranslations("Admin.Routes.stops");
+  const tLocales = useTranslations("Admin.Routes.dialog.locales");
   const [working, setWorking] = useState<Working>(BLANK);
+  const [noteTab, setNoteTab] = useState<NoteTab>("en");
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const createStop = useCreateRouteStop();
@@ -101,6 +122,12 @@ export default function RouteStopsDialog({ route, open, onOpenChange }: RouteSto
       lat: working.point.lat,
       lng: working.point.lng,
       note: working.note.trim() || null,
+      /* Every language every time, so clearing a field withdraws that translation rather than
+         leaving the previous text in place. */
+      noteTranslations: NOTE_LOCALES.map((code) => ({
+        locale: code,
+        note: working.notes[code].trim() || null,
+      })),
     };
 
     try {
@@ -214,6 +241,15 @@ export default function RouteStopsDialog({ route, open, onOpenChange }: RouteSto
                       {stop.note ? (
                         <p className="text-sm leading-[1.4] text-natural-500">{stop.note}</p>
                       ) : null}
+                      {stop.missingNoteLocales.length > 0 ? (
+                        <p className="text-xs text-natural-400">
+                          {t("missingNotes", {
+                            locales: stop.missingNoteLocales
+                              .map((code) => tLocales(code))
+                              .join(", "),
+                          })}
+                        </p>
+                      ) : null}
                       <div className="flex items-center gap-1">
                         <Button
                           variant="subtle"
@@ -307,15 +343,64 @@ export default function RouteStopsDialog({ route, open, onOpenChange }: RouteSto
                 }
               />
 
-              <TextField
-                multiline
-                label={t("form.note")}
-                value={working.note}
-                placeholder={t("form.notePlaceholder")}
-                onChange={(event) =>
-                  setWorking((previous) => ({ ...previous, note: event.target.value }))
-                }
-              />
+              <div className="flex flex-col gap-1.5">
+                <span className="text-sm leading-4.25 font-semibold text-foreground">
+                  {t("form.note")}
+                </span>
+                <span className="text-xs text-natural-500">{t("form.noteHint")}</span>
+                <Tabs
+                  value={noteTab}
+                  onValueChange={(next) => {
+                    const picked = NOTE_TABS.find((code) => code === next);
+                    if (picked) setNoteTab(picked);
+                  }}
+                >
+                  <TabsList>
+                    {NOTE_TABS.map((code) => (
+                      <TabsTab key={code} value={code} className="flex items-center gap-2">
+                        <span
+                          aria-hidden
+                          className={`size-2 shrink-0 rounded-full ${
+                            (code === "en" ? working.note : working.notes[code]).trim()
+                              ? "bg-positive-500"
+                              : "bg-natural-200"
+                          }`}
+                        />
+                        {tLocales(code)}
+                      </TabsTab>
+                    ))}
+                  </TabsList>
+
+                  <TabsPanel value="en" className="pt-2">
+                    <TextField
+                      multiline
+                      label={t("form.noteFor", { locale: tLocales("en") })}
+                      value={working.note}
+                      placeholder={t("form.notePlaceholder")}
+                      onChange={(event) =>
+                        setWorking((previous) => ({ ...previous, note: event.target.value }))
+                      }
+                    />
+                  </TabsPanel>
+
+                  {NOTE_LOCALES.map((code) => (
+                    <TabsPanel key={code} value={code} className="pt-2">
+                      <TextField
+                        multiline
+                        label={t("form.noteFor", { locale: tLocales(code) })}
+                        value={working.notes[code]}
+                        placeholder={t("form.notePlaceholder")}
+                        onChange={(event) =>
+                          setWorking((previous) => ({
+                            ...previous,
+                            notes: { ...previous.notes, [code]: event.target.value },
+                          }))
+                        }
+                      />
+                    </TabsPanel>
+                  ))}
+                </Tabs>
+              </div>
 
               <div className="flex items-center gap-2">
                 <Button

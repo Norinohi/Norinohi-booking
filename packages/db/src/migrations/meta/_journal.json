@@ -862,6 +862,13 @@
       "when": 1789464348477,
       "tag": "0122_facet_media_grid_hover_image",
       "breakpoints": true
+    },
+    {
+      "idx": 123,
+      "version": "7",
+      "when": 1789542636296,
+      "tag": "0123_left_fenris",
+      "breakpoints": true
     }
   ]
 }
