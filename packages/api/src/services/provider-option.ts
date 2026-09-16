@@ -23,7 +23,9 @@ export type ProviderEventPayload =
   | { reservation: ProviderReservation }
   | { message: string | null }
   | { reason: string | null }
-  | { released: boolean; error: string };
+  | { released: boolean; error: string }
+  /* A release nobody had to ask for: the vendor's own hold ran out first. */
+  | { released: true; lapsedAt: string };
 
 export async function recordEvent(
   db: DatabaseExecutor,
@@ -150,6 +152,27 @@ export async function retryReleaseForBooking(
 ): Promise<ProviderRelease> {
   const [row] = await db.select().from(booking).where(eq(booking.id, bookingId)).limit(1);
   if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown booking" });
+
+  /*
+   * A hold that has already lapsed holds nothing, so there is nothing to ask for.
+   *
+   * NauSYS answers a storno on an option that no longer exists with the same
+   * OPERATION_NOT_ALLOWED (errorCode 101) it uses for a permission refusal, so asking again
+   * could only ever fail, log an auth-class error, and leave the row on the list for good.
+   * Recorded as released instead, which is what takes it off the list: the week is back on
+   * sale upstream because the vendor's own deadline passed, not because we freed it.
+   */
+  if (row.holdExpiresAt !== null && row.holdExpiresAt.getTime() <= Date.now()) {
+    await recordEvent(
+      db,
+      row.id,
+      "option_released",
+      row.provider,
+      row.providerReservationId ?? row.providerOptionId,
+      { released: true, lapsedAt: row.holdExpiresAt.toISOString() },
+    );
+    return { released: true, reason: null };
+  }
 
   return releaseProviderOption(db, provider, row);
 }
