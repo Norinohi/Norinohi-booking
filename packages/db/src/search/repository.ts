@@ -10,7 +10,7 @@ import { FX_BASE_CURRENCY } from "../fx/rates";
 import { AMENITY_GROUPS, amenityGroupFor } from "./amenity-groups";
 import { amenityIconFor } from "./amenity-icons";
 import { crewOptionsFor } from "./crew";
-import { MIN_LEAD_DAYS } from "./read-model";
+import { MIN_LEAD_DAYS, PERIOD_PRICE_COLUMNS } from "./read-model";
 import {
   decodeSearchCursor,
   encodeSearchCursor,
@@ -177,26 +177,6 @@ const DEFAULT_LENGTH_UNITS: ListingFacetOption[] = [
   { value: "ft", label: "ft" },
   { value: "m", label: "m" },
 ];
-
-/*
- * The document columns a dated search reads from `listing_period_price` instead, where the
- * vendor priced exactly the dates asked for. Everything that compares, sorts or captions a price
- * reads these columns, so swapping them at the source keeps the card, the sort, the filter, the
- * slider and the map on one figure. The bookable week moves with them: it is the charter the
- * price describes, and the caption, the nightly division and the live-hold test all key on it.
- */
-const PERIOD_PRICE_COLUMNS = new Map([
-  ["price_from_minor", sql`pp.all_in_minor`],
-  ["price_from_minor_eur", sql`pp.all_in_minor_eur`],
-  ["base_price_from_minor", sql`pp.base_minor`],
-  ["base_price_from_minor_eur", sql`pp.base_minor_eur`],
-  ["list_price_from_minor", sql`pp.list_all_in_minor`],
-  ["currency", sql`pp.currency`],
-  ["price_is_from", sql`false`],
-  ["best_offer_id", sql`pp.offer_id`],
-  ["bookable_from", sql`pp.start_date`],
-  ["bookable_to", sql`pp.end_date`],
-]);
 
 /**
  * The documents a search reads, priced for the dates it names where a vendor priced them.

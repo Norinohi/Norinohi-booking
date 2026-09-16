@@ -59,6 +59,29 @@ export const MIN_LEAD_DAYS = 1;
 /** The earliest day a charter may check in on, as SQL, so every candidate branch shares it. */
 const EARLIEST_CHECKIN = sql`(current_date + cast(${MIN_LEAD_DAYS} as int))`;
 
+/*
+ * The document columns a dated search reads from `listing_period_price` instead, where the
+ * vendor priced exactly the dates asked for. Everything that compares, sorts or captions a price
+ * reads these columns, so swapping them at the source keeps the card, the sort, the filter, the
+ * slider and the map on one figure. The bookable week moves with them: it is the charter the
+ * price describes, and the caption, the nightly division and the live-hold test all key on it.
+ *
+ * The rebuild uses the same set to replace a season minimum with the nearest week a vendor
+ * priced; see `adoptNearestPricedWeek`.
+ */
+export const PERIOD_PRICE_COLUMNS = new Map([
+  ["price_from_minor", sql`pp.all_in_minor`],
+  ["price_from_minor_eur", sql`pp.all_in_minor_eur`],
+  ["base_price_from_minor", sql`pp.base_minor`],
+  ["base_price_from_minor_eur", sql`pp.base_minor_eur`],
+  ["list_price_from_minor", sql`pp.list_all_in_minor`],
+  ["currency", sql`pp.currency`],
+  ["price_is_from", sql`false`],
+  ["best_offer_id", sql`pp.offer_id`],
+  ["bookable_from", sql`pp.start_date`],
+  ["bookable_to", sql`pp.end_date`],
+]);
+
 export type RebuildListingSearchDocsOptions = {
   listingIds?: readonly string[];
 };
@@ -847,8 +870,42 @@ export async function rebuildListingSearchDocs(
     )
   `);
 
-  await markBestValue(db, listingIds);
   await rebuildListingPeriodPrices(db, listingIds);
+  await adoptNearestPricedWeek(db, listingIds);
+  await markBestValue(db, listingIds);
+}
+
+/*
+ * A card priced from the season minimum names no charter anyone quoted, so it reads
+ * "seasonal minimum" beside a week it cannot price. Where a vendor has priced any later charter
+ * of this listing, the card shows the nearest one instead, preferring a week because that is the
+ * length the fleet sells and the one cards compare on. The season minimum stays only for a
+ * listing no vendor has priced at all.
+ *
+ * After `rebuildListingPeriodPrices`, whose rows are already sellable, lead-time clear and
+ * rule-checked, and before `markBestValue`, which should rank the price the card now shows.
+ */
+async function adoptNearestPricedWeek(
+  db: NodePgDatabase<typeof schema>,
+  listingIds: readonly string[] | undefined,
+) {
+  const assignments = [...PERIOD_PRICE_COLUMNS].map(
+    ([name, value]) => sql`${sql.identifier(name)} = ${value}`,
+  );
+
+  await db.execute(sql`
+    update listing_search_doc doc
+    set ${sql.join(assignments, sql`, `)}, updated_at = now()
+    from (
+      select distinct on (listing_id) *
+      from listing_period_price
+      where ${listingScope(sql`listing_id`, listingIds)}
+      order by listing_id, (end_date - start_date) <> 7, start_date, end_date
+    ) pp
+    where pp.listing_id = doc.listing_id
+      and doc.price_is_from
+      and ${listingScope(sql`doc.listing_id`, listingIds)}
+  `);
 }
 
 /**

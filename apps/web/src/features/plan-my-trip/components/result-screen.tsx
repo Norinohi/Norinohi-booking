@@ -12,6 +12,7 @@ import EmptyState from "@/components/shared/feedback/empty-state";
 import { WishlistButton } from "@/features/wishlist";
 import { buildSearchHref } from "@/features/yachts";
 import { useMoney } from "@/hooks/use-money";
+import { dayToDisplay } from "@/lib/date";
 import { boatCardPrice } from "@/lib/boat-card-fields";
 import { DRAW, GROUP, RISE, SPARK_START, SPARKS } from "@/lib/motion";
 
@@ -111,18 +112,23 @@ export function ResultScreen({ answers }: ResultScreenProps) {
    * Most of the fleet sells the week the estimate is quoted in, but a few sell three days,
    * and captioning one of those "price for 7 days" prices a charter nobody is selling.
    *
-   * Where the two disagree the figure is captioned as the floor it is, rather than as a
-   * definite price for a charter of some third length: the panel beside it says "DURATION
-   * 7 days" and the card was answering with "Price for 1 day EUR 950", two claims about one
-   * trip that could not both be true. Nothing here can reprice the difference - the rate list
-   * does not survive being prorated into another length (see `read-model.ts`) - so the honest
-   * move is to stop naming a period the number does not price.
+   * Where the two disagree the caption names the charter the figure does price, rather than a
+   * length: the panel beside it says "DURATION 7 days" and the card was answering with "Price
+   * for 1 day EUR 950", two claims about one trip that could not both be true. Nothing here can
+   * reprice the difference - the rate list does not survive being prorated into another length
+   * (see `read-model.ts`). Only a true season floor, with no charter behind it, says so.
    */
-  const boatPriceLabel = listing
-    ? listing.priceIsFrom || listing.priceDetails.periodDays !== recommendation.durationDays
+  const pricedWeek = listing?.priceIsFrom ? null : listing?.availability.bookablePeriod;
+  const boatPriceLabel = !listing
+    ? ""
+    : !pricedWeek
       ? tCard("priceIndicative")
-      : tCard("priceFor", { days: listing.priceDetails.periodDays })
-    : "";
+      : listing.priceDetails.periodDays === recommendation.durationDays
+        ? tCard("priceFor", { days: listing.priceDetails.periodDays })
+        : tCard("priceForPeriod", {
+            from: dayToDisplay(pricedWeek.checkIn),
+            to: dayToDisplay(pricedWeek.checkOut),
+          });
   const boatPerPerson = recommendation.recommendedPerPerson
     ? t("price.perPerson", {
         price: formatMoney(
