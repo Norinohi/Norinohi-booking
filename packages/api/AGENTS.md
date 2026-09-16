@@ -10,10 +10,25 @@ The oRPC contract shared by the server and the web app — procedures, the route
 
 ```bash
 pnpm --filter @yacht-charter/api check-types   # tsc -b
-pnpm --filter @yacht-charter/api test          # vitest run
+pnpm --filter @yacht-charter/api test          # vitest run, without *.db.test.ts
+pnpm --filter @yacht-charter/api test:db       # only *.db.test.ts; needs `pnpm db:start`
 ```
 
-Tests are co-located as `src/**/*.test.ts`. There is no `vitest.config.ts` anywhere in the repo — the defaults already pick these up, so do not add one. Keep them to pure functions: there is no database harness, and mocking Drizzle's builder chain only tests the mock.
+Tests are co-located as `src/**/*.test.ts`. There is no `vitest.config.ts` anywhere in the repo — the defaults already pick these up, so do not add one. Plain tests stay pure functions: mocking Drizzle's builder chain only tests the mock.
+
+Anything that needs the schema is a `*.db.test.ts`, run by root `pnpm test:db` (and CI) against a
+throwaway database from `@yacht-charter/db/test-support/database` (see `packages/db/AGENTS.md`).
+The booking chain is pinned this way: `booking-chain.db.test.ts` (quote, hold, deposit, webhook,
+confirmation, redelivery, declined and refused payments), `booking-expiry.db.test.ts` (the sweep
+with its clock moved forward) and `hold-refusals.db.test.ts` (every refusal before money moves).
+Their support lives in `src/test-support/`:
+
+- `checkout-env.ts` is imported first by each suite. It sets the server env before
+  `@yacht-charter/env/server` parses it, with fake Stripe keys and no mail or revalidation keys.
+- `booking-world.ts` seeds a published yacht sold by a `mock` provider row and returns a
+  `MockInventoryProvider` over the suite's own `availability_slot` rows.
+- `fake-stripe.ts` spies on the four PaymentIntent calls of the real SDK client and signs events
+  for `handleStripeWebhook` offline. Nothing in these suites reaches the network.
 
 ## Conventions
 
