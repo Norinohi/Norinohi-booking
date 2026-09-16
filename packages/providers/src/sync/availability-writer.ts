@@ -10,6 +10,7 @@ import { providerRecord, syncError, syncRun } from "@yacht-charter/db/schema/pro
 import { MAX_MONEY_MINOR } from "@yacht-charter/db/schema/_shared";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
 import { and, eq, gte, inArray, isNotNull, lt, lte, or, sql } from "drizzle-orm";
+import { log } from "evlog";
 import { z } from "zod";
 
 import { describeErrorChain } from "../shared/error-chain";
@@ -1483,9 +1484,11 @@ export function createDrizzleAvailabilitySyncStore(
 
     async closeRun(input) {
       if (unstorablePrices > 0) {
-        console.warn(
-          `[availability] ${unstorablePrices} vendor amount(s) exceeded price_minor and were not stored`,
-        );
+        log.warn({
+          action: "availability.amounts_not_stored",
+          reason: "exceeded price_minor",
+          count: unstorablePrices,
+        });
       }
 
       await db

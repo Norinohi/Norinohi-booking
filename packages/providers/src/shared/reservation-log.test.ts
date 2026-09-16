@@ -1,4 +1,5 @@
 import { providerReservationEvent } from "@yacht-charter/db/schema/booking";
+import { log } from "evlog";
 import { describe, expect, it, vi } from "vitest";
 
 import type { Database } from "../registry";
@@ -147,7 +148,7 @@ describe("createReservationEventRecorder", () => {
    * nothing for a month of checkouts and nothing anywhere said so.
    */
   it("says so when no booking holds the quote, rather than dropping it in silence", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warn = vi.spyOn(log, "warn").mockImplementation(() => undefined);
     const { db, rows } = fakeDb(undefined);
 
     await createReservationEventRecorder(
@@ -159,7 +160,9 @@ describe("createReservationEventRecorder", () => {
     });
 
     expect(rows).toEqual([]);
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("nausys_8228780_d11155dee"));
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({ quoteId: "nausys_8228780_d11155dee" }),
+    );
     warn.mockRestore();
   });
 });

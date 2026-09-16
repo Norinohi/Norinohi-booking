@@ -17,7 +17,7 @@ import { handleStripeWebhook } from "@yacht-charter/api/services/stripe-webhook"
 import { auth } from "@yacht-charter/auth";
 import { db } from "@yacht-charter/db";
 import { env } from "@yacht-charter/env/server";
-import { initLogger } from "evlog";
+import { initLogger, log } from "evlog";
 import { createAuthMiddleware, type BetterAuthInstance } from "evlog/better-auth";
 import { evlog, type EvlogVariables } from "evlog/hono";
 import { Hono } from "hono";
@@ -167,6 +167,10 @@ serve(
     port: env.PORT,
   },
   (info) => {
-    console.log(`Server is running on http://localhost:${info.port}`);
+    log.info({
+      action: "server.started",
+      port: info.port,
+      url: `http://localhost:${info.port}`,
+    });
   },
 );

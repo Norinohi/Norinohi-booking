@@ -1,4 +1,6 @@
 import { outboxMessage } from "@yacht-charter/db/schema/outbox";
+import { thrownFields } from "@yacht-charter/providers/shared/log-fields";
+import { log, parseError } from "evlog";
 import { and, asc, eq, inArray, lte, sql } from "drizzle-orm";
 
 import type { Database } from "../context";
@@ -121,10 +123,13 @@ async function deliver(db: Database, message: ClaimedMessage): Promise<keyof Dra
   try {
     await HANDLERS[message.kind](db, message.subjectId);
   } catch (cause) {
-    console.error(
-      `[outbox] ${message.kind} for ${message.subjectId} failed on attempt ${message.attempts}`,
-      cause,
-    );
+    log.error({
+      action: "outbox.delivery_failed",
+      kind: message.kind,
+      subjectId: message.subjectId,
+      attempt: message.attempts,
+      ...thrownFields(parseError(cause)),
+    });
 
     const exhausted = isExhausted(message.attempts);
 
@@ -176,7 +181,7 @@ export function kickOutbox(db: Database): void {
   running = drainOutbox(db)
     .then(() => undefined)
     .catch((cause: unknown) => {
-      console.error("[outbox] drain failed", cause);
+      log.error({ action: "outbox.drain_failed", ...thrownFields(parseError(cause)) });
     })
     .finally(() => {
       running = null;

@@ -224,7 +224,7 @@ export const providerExtraTranslation = pgTable(
  *
  * Deliberately not scoped to a provider. These are generic charter fees, and one entry for
  * "Boat Cleaning" is meant to serve whichever vendor writes it that way. That makes it editorial
- * content rather than sourced content: it is curated in `translations/extra-labels.ts` and only
+ * content rather than sourced content: it is curated in `translations/extra-labels.json` and only
  * ever consulted where the id-keyed table has nothing, so a provider that does publish its own
  * wording always wins.
  *

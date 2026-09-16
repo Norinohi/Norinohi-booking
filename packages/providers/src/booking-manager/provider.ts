@@ -33,7 +33,7 @@ import {
   parseBookingManagerCatalogueCursor,
 } from "./catalogue";
 import type { BookingManagerConfig } from "./config";
-import { coldStartNotice } from "./warmup";
+import { reportColdStart } from "./warmup";
 import { resolveBookingManagerConfig } from "./config";
 import { BookingManagerClient } from "./client";
 import { listAdvertisedCharterPeriods } from "@yacht-charter/db/search/read-model";
@@ -152,10 +152,7 @@ export class BookingManagerInventoryProvider
       resume: parseResume(options.resume),
       companyScope: this.config.companyScope,
       listImportedCompanyIds: () => this.resolver.listYachtCompanyScopeKeys(),
-      onWarmup: (result) => {
-        const notice = coldStartNotice(result);
-        if (notice) console.warn(notice);
-      },
+      onWarmup: reportColdStart,
     });
   }
 

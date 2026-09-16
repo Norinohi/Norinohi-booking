@@ -36,6 +36,7 @@
     "@yacht-charter/db": "workspace:*",
     "@yacht-charter/env": "workspace:*",
     "drizzle-orm": "catalog:",
+    "evlog": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

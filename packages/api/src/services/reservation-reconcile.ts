@@ -1,6 +1,8 @@
 import { booking } from "@yacht-charter/db/schema/booking";
 import { provider as providerTable } from "@yacht-charter/db/schema/provider";
 import { readSyncCursor, writeSyncCursor } from "@yacht-charter/providers/sync/cursor";
+import { thrownFields } from "@yacht-charter/providers/shared/log-fields";
+import { log, parseError } from "evlog";
 import type { InventoryProvider, ProviderReservationState } from "@yacht-charter/providers";
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { z } from "zod";
@@ -123,10 +125,11 @@ export async function reconcileReservations(
     } catch (error) {
       /* The cursor is deliberately not advanced: the window this run missed is the next
          run's to cover, and a feed that is down must not quietly skip a day of changes. */
-      console.error(
-        `[reconcile] ${code} change feed unavailable`,
-        error instanceof Error ? error.message : error,
-      );
+      log.error({
+        action: "reconcile.feed_unavailable",
+        provider: code,
+        ...thrownFields(parseError(error)),
+      });
       result.unreachable.push(code);
       continue;
     }

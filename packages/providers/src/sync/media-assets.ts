@@ -2,12 +2,14 @@ import { findProviderMeta } from "@yacht-charter/env/providers";
 import { providerMediaAsset } from "@yacht-charter/db/schema/listing";
 import { provider as providerTable, syncError, syncRun } from "@yacht-charter/db/schema/provider";
 import { and, eq, inArray, isNull, lt, sql } from "drizzle-orm";
+import { log, parseError } from "evlog";
 import { createHash } from "node:crypto";
 
 import type { Database } from "../registry";
 import type { ProviderKey } from "../types";
 import { chunked, ROW_CHUNK } from "../shared/chunks";
 import { describeErrorChain } from "../shared/error-chain";
+import { thrownFields } from "../shared/log-fields";
 import { openSyncRun, releaseSyncRun } from "./run";
 
 export interface MediaAssetRef {
@@ -162,9 +164,12 @@ export async function cleanupEnabledProviderMediaAssets(
     try {
       syncRunId = await openSyncRun(db, provider.id, "media");
     } catch (error) {
-      const message = error instanceof Error ? describeErrorChain(error) : String(error);
       skipped += 1;
-      console.warn(`Skipped media cleanup for "${provider.code}": ${message}`);
+      log.warn({
+        action: "media_cleanup.skipped",
+        provider: provider.code,
+        ...thrownFields(parseError(error)),
+      });
       continue;
     }
 
@@ -196,7 +201,11 @@ export async function cleanupEnabledProviderMediaAssets(
         message: message.slice(0, 2000),
         context: { provider: provider.code },
       });
-      console.error(`Media cleanup failed for "${provider.code}":`, error);
+      log.error({
+        action: "media_cleanup.failed",
+        provider: provider.code,
+        ...thrownFields(parseError(error)),
+      });
     } finally {
       releaseSyncRun(syncRunId);
     }

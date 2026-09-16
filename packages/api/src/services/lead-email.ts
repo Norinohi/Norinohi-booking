@@ -1,4 +1,6 @@
 import { env } from "@yacht-charter/env/server";
+import { thrownFields } from "@yacht-charter/providers/shared/log-fields";
+import { log, parseError } from "evlog";
 import { sendEnquiryAnswerEmail, sendLeadFollowUpEmail } from "@yacht-charter/transactional";
 
 import type { LeadKind } from "../contracts/lead";
@@ -51,7 +53,12 @@ export async function notifyLeadReceived(lead: LeadReceivedEmail): Promise<void>
       supportUrl: appUrl("/support"),
     });
   } catch (cause) {
-    console.error(`[email] lead follow-up to ${lead.to} failed`, cause);
+    log.error({
+      action: "email.failed",
+      email: "lead_follow_up",
+      to: lead.to,
+      ...thrownFields(parseError(cause)),
+    });
   }
 
   await notifyStaff({
@@ -104,6 +111,11 @@ export async function notifyLeadAnswered(lead: LeadAnswered): Promise<void> {
         : undefined,
     });
   } catch (cause) {
-    console.error(`[email] lead answer to ${lead.to} failed`, cause);
+    log.error({
+      action: "email.failed",
+      email: "lead_answer",
+      to: lead.to,
+      ...thrownFields(parseError(cause)),
+    });
   }
 }

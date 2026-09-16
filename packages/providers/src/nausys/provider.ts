@@ -61,6 +61,8 @@ import {
 } from "../shared/sweep-periods";
 import { DEFAULT_HOT_WINDOW_COUNT, sweepWindows, upcomingCharterWeeks } from "./sweep-windows";
 import { and, eq, isNotNull } from "drizzle-orm";
+import { log, parseError } from "evlog";
+import { thrownFields } from "../shared/log-fields";
 
 import {
   fetchNausysCrewRequirements,
@@ -210,10 +212,11 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
         ref.securityToken,
       );
     } catch (error) {
-      console.warn(
-        `[nausys] crew requirements for ${ref.providerReservationId} unavailable`,
-        error instanceof Error ? error.message : error,
-      );
+      log.warn({
+        action: "nausys.crew_requirements_unavailable",
+        providerReservationId: ref.providerReservationId,
+        ...thrownFields(parseError(error)),
+      });
       return null;
     }
   }

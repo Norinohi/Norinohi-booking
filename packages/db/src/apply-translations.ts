@@ -32,7 +32,7 @@ import {
 /** Rows per insert, well inside the 65,535 parameters Postgres will bind at five per row. */
 const CURATED_BATCH = 5_000;
 
-/** The locale `translations/uk.ts` is written in; the other two files name their own. */
+/** The locale `translations/uk.json` is written in; the other two files name their own. */
 const LOCALE = "uk";
 const apply = process.argv.slice(2).includes("--apply");
 
@@ -79,8 +79,8 @@ const curatedFacets = facetLabelsSchema.parse(facetLabels);
 /**
  * Both facet files as one `value -> locale -> label` map for a kind.
  *
- * `translations/uk.ts` is a single-locale set produced for the vocabulary providers do name in
- * their own languages; `translations/facet-labels.ts` names the handful they never do, in all
+ * `translations/uk.json` is a single-locale set produced for the vocabulary providers do name in
+ * their own languages; `translations/facet-labels.json` names the handful they never do, in all
  * three. Nothing appears in both, and if something ever does, the multi-locale file wins,
  * because it is the one that can answer for every locale.
  */

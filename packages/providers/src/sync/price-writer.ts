@@ -4,6 +4,7 @@ import { MAX_MONEY_MINOR } from "@yacht-charter/db/schema/_shared";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { providerRecord } from "@yacht-charter/db/schema/provider";
 import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { log } from "evlog";
 import { z } from "zod";
 
 import type { Database } from "../registry";
@@ -234,9 +235,11 @@ export function createDrizzlePricePeriodStore(options: {
       if (rejected > 0) {
         // Printed rather than thrown: it is a vendor data problem, one boat wide, and
         // the run has thousands of other listings whose rates are fine.
-        console.warn(
-          `[prices] dropped ${rejected} rate(s) too large for price_minor; those periods keep their previous price`,
-        );
+        log.warn({
+          action: "prices.rates_dropped",
+          reason: "too large for price_minor; those periods keep their previous price",
+          rejected,
+        });
       }
       if (rows.length === 0) return 0;
 

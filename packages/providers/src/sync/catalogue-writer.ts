@@ -27,6 +27,7 @@ import {
 import { MAX_MONEY_MINOR, newId } from "@yacht-charter/db/schema/_shared";
 import { CONTENT_LOCALES, normalizedKey } from "@yacht-charter/db/search/localize";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { log } from "evlog";
 
 import type { Database } from "../registry";
 import { canonicalAmenityName } from "../shared/amenity-names";
@@ -1490,9 +1491,12 @@ function priceableExtras(listingId: string, item: CanonicalListing) {
       Number.isSafeInteger(extra.priceMinor) && Math.abs(extra.priceMinor) <= MAX_MONEY_MINOR,
   );
   if (extras.length !== item.extras.length) {
-    console.warn(
-      `[catalogue] listing ${listingId}: dropped ${item.extras.length - extras.length} extra(s) priced beyond price_minor`,
-    );
+    log.warn({
+      action: "catalogue.extras_dropped",
+      reason: "priced beyond price_minor",
+      listingId,
+      dropped: item.extras.length - extras.length,
+    });
   }
   return extras;
 }
@@ -1587,9 +1591,7 @@ async function dropUnreviewableCandidates(
   }
 
   if (dropped > 0) {
-    console.info(
-      `[catalogue] dropped ${dropped} sister-ship duplicate candidate(s) from the queue`,
-    );
+    log.info({ action: "catalogue.sister_ship_candidates_dropped", dropped });
   }
 }
 

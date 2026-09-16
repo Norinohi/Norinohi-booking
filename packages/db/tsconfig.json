@@ -6,5 +6,7 @@
     "sourceMap": true,
     "outDir": "dist",
     "composite": true
-  }
+  },
+  "include": ["**/*.ts", "src/**/*.json"],
+  "exclude": ["node_modules", "dist"]
 }

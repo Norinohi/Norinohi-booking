@@ -13,6 +13,8 @@ import {
   type QuotePaymentPolicy,
 } from "@yacht-charter/db/schema/quote";
 import { crewTypeSchema } from "@yacht-charter/providers";
+import { thrownFields } from "@yacht-charter/providers/shared/log-fields";
+import { log, parseError } from "evlog";
 import type {
   CrewType,
   InventoryProvider,
@@ -162,10 +164,11 @@ export async function createQuote(
       winningOfferId: selection.selected.listingOfferId,
     });
   } catch (error) {
-    console.warn(
-      "[quote] could not record offer attempts",
-      error instanceof Error ? error.message : error,
-    );
+    log.warn({
+      action: "quote.offer_attempts_not_recorded",
+      listingId: input.listingId,
+      ...thrownFields(parseError(error)),
+    });
   }
 
   /*
@@ -189,10 +192,11 @@ export async function createQuote(
       });
     }
   } catch (error) {
-    console.warn(
-      "[quote] could not learn billed extras",
-      error instanceof Error ? error.message : error,
-    );
+    log.warn({
+      action: "quote.billed_extras_not_learned",
+      listingId: input.listingId,
+      ...thrownFields(parseError(error)),
+    });
   }
 
   return quote;
@@ -253,10 +257,15 @@ async function sellableToASmallerParty(
 
   try {
     await selectBestOffer(db, provider, { ...input, guests: SMALLEST_PARTY });
-    console.warn(
-      `[quote] ${input.listingId} ${input.checkIn}..${input.checkOut} refused for ${input.guests} ` +
-        `guests but sells to ${SMALLEST_PARTY}; the party is the reason, so nothing is learned`,
-    );
+    log.warn({
+      action: "quote.refused_for_party_size",
+      listingId: input.listingId,
+      checkIn: input.checkIn,
+      checkOut: input.checkOut,
+      guests: input.guests,
+      sellsTo: SMALLEST_PARTY,
+      learned: false,
+    });
     return true;
   } catch {
     return false;
@@ -298,10 +307,11 @@ async function rememberCapacityRefusal(
 
     await rebuildListingSearchDocs(db, { listingIds: [input.listingId] });
   } catch (error) {
-    console.warn(
-      "[quote] could not record the refused party size",
-      error instanceof Error ? error.message : error,
-    );
+    log.warn({
+      action: "quote.refused_party_not_recorded",
+      listingId: input.listingId,
+      ...thrownFields(parseError(error)),
+    });
   }
 }
 
@@ -313,14 +323,19 @@ async function rememberCapacityRefusal(
  */
 function reportRefusal(input: QuoteRequest, attempts: readonly OfferAttempt[]): void {
   const { blame, said } = classifyRefusal(attempts);
-  const where = `${input.listingId} ${input.checkIn}..${input.checkOut}`;
+  const event = {
+    listingId: input.listingId,
+    checkIn: input.checkIn,
+    checkOut: input.checkOut,
+    said,
+  };
 
   if (blame === "ours") {
-    console.error(`[quote] ${where} refused by us, not the vendor: ${said}`);
+    log.error({ action: "quote.refused_by_us", ...event });
     return;
   }
 
-  console.warn(`[quote] ${where} unsellable: ${said}`);
+  log.warn({ action: "quote.unsellable", ...event });
 }
 
 /**
@@ -346,10 +361,11 @@ async function learnFromRefusal(
       winningOfferId: null,
     });
   } catch (error) {
-    console.warn(
-      "[quote] could not record offer attempts",
-      error instanceof Error ? error.message : error,
-    );
+    log.warn({
+      action: "quote.offer_attempts_not_recorded",
+      listingId: input.listingId,
+      ...thrownFields(parseError(error)),
+    });
   }
 
   /*
@@ -390,10 +406,11 @@ async function learnFromRefusal(
      */
     if (learned > 0) await rebuildListingSearchDocs(db, { listingIds: [input.listingId] });
   } catch (error) {
-    console.warn(
-      "[quote] could not record live refusal",
-      error instanceof Error ? error.message : error,
-    );
+    log.warn({
+      action: "quote.live_refusal_not_recorded",
+      listingId: input.listingId,
+      ...thrownFields(parseError(error)),
+    });
   }
 }
 
