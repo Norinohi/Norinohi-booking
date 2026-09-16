@@ -254,6 +254,14 @@ export const syncRunStatusQueryOptions = (input: { syncRunId: string; provider: 
  * stale only when a colleague authors one — the same reason the review queues carry a short
  * staleTime rather than none.
  */
+/*
+ * The home page's own list, which is a different question from the library: `admin.route.list`
+ * pages through everything staff ever wrote, this is the handful the site shows and the order it
+ * shows them in. Read on its own so the picker and the selection cannot disagree about the order.
+ */
+export const featuredRoutesQueryOptions = () =>
+  orpc.admin.route.listFeatured.queryOptions({ input: {}, staleTime: 15_000 });
+
 export const routeListQueryOptions = (input: {
   query?: string;
   kind?: RouteKind;

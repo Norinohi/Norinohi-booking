@@ -4,7 +4,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { orpc } from "@/utils/orpc";
 
-import { geographyOptionsQueryOptions, routeListQueryOptions } from "../api/queries";
+import {
+  featuredRoutesQueryOptions,
+  geographyOptionsQueryOptions,
+  routeListQueryOptions,
+} from "../api/queries";
 import type { RouteKind } from "../types";
 
 /*
@@ -29,6 +33,20 @@ export function useRoutes(input: {
   page: number;
 }) {
   return useQuery(routeListQueryOptions(input));
+}
+
+/** The routes the home page shows, in the order it shows them. */
+export function useFeaturedRoutes() {
+  return useQuery(featuredRoutesQueryOptions());
+}
+
+/*
+ * Replaces the whole featured list. Partial orders are refused by the procedure, so the dialog
+ * sends every id it is holding, including the ones it did not move.
+ */
+export function useReorderFeaturedRoutes() {
+  const invalidate = useInvalidateRoutes();
+  return useMutation(orpc.admin.route.reorderFeatured.mutationOptions({ onSettled: invalidate }));
 }
 
 /** Countries always, regions and bases narrowed to the chosen country and search term. */

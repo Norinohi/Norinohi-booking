@@ -2841,7 +2841,8 @@
         "edit": "Editar",
         "publish": "Publicar",
         "unpublish": "Despublicar",
-        "delete": "Eliminar"
+        "delete": "Eliminar",
+        "featured": "Página de inicio"
       },
       "stopCount": "{count, plural, =0 {Sin paradas} one {# parada} other {# paradas}}",
       "published": "{title} está publicada.",
@@ -2955,6 +2956,31 @@
         "title": "Vista previa de la ruta",
         "subtitle": "Tal como aparece en un yate de {target}.",
         "empty": "Añade una parada antes de ver la vista previa: todavía no hay nada que dibujar."
+      },
+      "featured": {
+        "title": "Rutas en la página de inicio",
+        "description": "La lista de rutas populares, en el orden en que la muestra el sitio. Las seis primeras llenan el carrusel; el resto se abre en «View All Popular».",
+        "chosen": "Elegidas ({count})",
+        "add": "Añadir una ruta",
+        "addAction": "Añadir",
+        "remove": "Quitar",
+        "search": "Buscar rutas publicadas",
+        "noCandidates": "No queda nada que añadir con esta búsqueda",
+        "moveUp": "Subir",
+        "moveDown": "Bajar",
+        "cancel": "Cancelar",
+        "save": "Guardar el orden",
+        "saved": "La página de inicio muestra ahora {count, plural, =0 {ninguna ruta} one {# ruta} other {# rutas}}.",
+        "failed": "No se pudo guardar el orden",
+        "placement": {
+          "slider": "En el carrusel",
+          "grid": "En View All",
+          "hidden": "No se muestra"
+        },
+        "empty": {
+          "title": "Ninguna ruta elegida",
+          "body": "La sección de la página de inicio queda vacía hasta que se añada una ruta aquí. Elige entre las publicadas a la derecha."
+        }
       }
     },
     "Payments": {

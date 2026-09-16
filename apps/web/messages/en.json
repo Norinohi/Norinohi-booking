@@ -2841,7 +2841,8 @@
         "edit": "Edit",
         "publish": "Publish",
         "unpublish": "Unpublish",
-        "delete": "Delete"
+        "delete": "Delete",
+        "featured": "Home page"
       },
       "stopCount": "{count, plural, =0 {No stops} one {# stop} other {# stops}}",
       "published": "{title} is live.",
@@ -2955,6 +2956,31 @@
         "title": "Route preview",
         "subtitle": "Exactly as it appears on a yacht at {target}.",
         "empty": "Add a stop before previewing — there is nothing to draw yet."
+      },
+      "featured": {
+        "title": "Routes on the home page",
+        "description": "The popular-routes list, in the order the site shows it. The first six fill the slider; the rest open under “View All Popular”.",
+        "chosen": "Chosen ({count})",
+        "add": "Add a route",
+        "addAction": "Add",
+        "remove": "Remove",
+        "search": "Search published routes",
+        "noCandidates": "Nothing left to add from this search",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "cancel": "Cancel",
+        "save": "Save order",
+        "saved": "The home page now shows {count, plural, =0 {no routes} one {# route} other {# routes}}.",
+        "failed": "Couldn't save the order",
+        "placement": {
+          "slider": "In the slider",
+          "grid": "Under View All",
+          "hidden": "Not shown"
+        },
+        "empty": {
+          "title": "No routes chosen",
+          "body": "The home page section stays empty until a route is added here. Pick from the published routes on the right."
+        }
       }
     },
     "Payments": {

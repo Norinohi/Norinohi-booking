@@ -2841,7 +2841,8 @@
         "edit": "Bearbeiten",
         "publish": "Veröffentlichen",
         "unpublish": "Zurückziehen",
-        "delete": "Löschen"
+        "delete": "Löschen",
+        "featured": "Startseite"
       },
       "stopCount": "{count, plural, =0 {Keine Stopps} one {# Stopp} other {# Stopps}}",
       "published": "{title} ist live.",
@@ -2955,6 +2956,31 @@
         "title": "Routenvorschau",
         "subtitle": "Genau so, wie sie bei einer Yacht in {target} erscheint.",
         "empty": "Fügen Sie einen Stopp hinzu, bevor Sie eine Vorschau ansehen — es gibt noch nichts zu zeichnen."
+      },
+      "featured": {
+        "title": "Routen auf der Startseite",
+        "description": "Die Liste der beliebten Routen in der Reihenfolge, in der die Website sie zeigt. Die ersten sechs füllen den Slider, der Rest öffnet sich unter „View All Popular“.",
+        "chosen": "Ausgewählt ({count})",
+        "add": "Route hinzufügen",
+        "addAction": "Hinzufügen",
+        "remove": "Entfernen",
+        "search": "Veröffentlichte Routen suchen",
+        "noCandidates": "Zu dieser Suche gibt es nichts mehr hinzuzufügen",
+        "moveUp": "Nach oben",
+        "moveDown": "Nach unten",
+        "cancel": "Abbrechen",
+        "save": "Reihenfolge speichern",
+        "saved": "Die Startseite zeigt jetzt {count, plural, =0 {keine Routen} one {# Route} other {# Routen}}.",
+        "failed": "Reihenfolge konnte nicht gespeichert werden",
+        "placement": {
+          "slider": "Im Slider",
+          "grid": "Unter View All",
+          "hidden": "Nicht sichtbar"
+        },
+        "empty": {
+          "title": "Keine Routen ausgewählt",
+          "body": "Der Bereich auf der Startseite bleibt leer, bis hier eine Route hinzugefügt wird. Wählen Sie rechts aus den veröffentlichten Routen."
+        }
       }
     },
     "Payments": {
