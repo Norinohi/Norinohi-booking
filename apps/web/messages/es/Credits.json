@@ -1,0 +1,20 @@
+{
+  "title": "Créditos y saldo",
+  "balance": {
+    "label": "Saldo disponible",
+    "expiringSoon": "{amount} caduca en 30 días",
+    "hint": "Los créditos se pueden usar en cualquier reserva de yate superior a €1000 y se descuentan de lo que pagas hoy."
+  },
+  "ledger": {
+    "title": "Historial de créditos",
+    "expires": "Caduca el {date}",
+    "emptyTitle": "Aún no tienes crédito",
+    "emptyDescription": "Invita a un amigo: ganas crédito cuando complete su viaje.",
+    "kind": {
+      "referral_reward": "Recompensa por referido",
+      "booking_redemption": "Aplicado a la reserva",
+      "expiry": "Caducado",
+      "adjustment": "Ajuste"
+    }
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "Footer": {
+    "tagline": "Explore the world by yacht.",
+    "description": "Over 30,000 boats worldwide ready for your next trip.",
+    "columns": {
+      "destinations": "Destinations",
+      "charterTypes": "Charter types",
+      "explore": "Explore"
+    },
+    "links": {
+      "croatia": "Croatia",
+      "greece": "Greece",
+      "italy": "Italy",
+      "turkey": "Turkey",
+      "caribbean": "Caribbean",
+      "thailand": "Thailand",
+      "catamaran": "Catamaran",
+      "sailingYacht": "Sailing yacht",
+      "motorYacht": "Motor yacht",
+      "bareboat": "Bareboat",
+      "skippered": "Skippered",
+      "planTrip": "Help me plan my trip",
+      "popularYachts": "Popular yachts",
+      "customerReviews": "What our customers say",
+      "howItWorks": "How it works",
+      "contact": "Contact us"
+    },
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "copyright": "© {year} YachtSkanner Platform. All rights reserved."
+  },
+  "Nav": {
+    "boatTypes": "Boat types",
+    "closeMenu": "Close menu",
+    "destinations": "Destinations",
+    "findByBudget": "Find by budget",
+    "findYacht": "Find Yacht",
+    "helpPlan": "Help Me Plan My Trip",
+    "language": "Language",
+    "openMenu": "Open menu",
+    "popularRoutes": "Popular routes",
+    "saved": "Saved",
+    "tryIt": "Try it"
+  },
+  "Sidebar": {
+    "menu": "Account menu",
+    "greeting": "Hello, {name}!",
+    "profile": "My Profile",
+    "bookings": "My Bookings",
+    "referrals": "Referrals",
+    "credits": "Credits & Balance",
+    "discount": "Discount Manager",
+    "logout": "Log Out",
+    "commission": "Commission Rates",
+    "duplicates": "Duplicate Review",
+    "sync": "Sync History",
+    "audit": "Audit Log",
+    "inbox": "Inbox",
+    "staffBookings": "Bookings",
+    "users": "Users",
+    "payments": "Payments",
+    "listings": "Listings",
+    "routes": "Suggested Routes",
+    "sections": {
+      "account": "Account",
+      "admin": "Admin"
+    },
+    "faq": "FAQ",
+    "groups": {
+      "fleet": "Yachts",
+      "content": "Website Content"
+    },
+    "settings": "Payment Settings",
+    "popular": "Popular picks",
+    "popularYachts": "Popular yachts"
+  },
+  "UserMenu": {
+    "account": "Account",
+    "signIn": "Sign In",
+    "signOut": "Log Out",
+    "profile": "My Profile",
+    "bookings": "My Bookings",
+    "referrals": "Referrals",
+    "credits": "Credits & Balance"
+  },
+  "description": "Charter yachts and catamarans worldwide. Compare boats, dates and prices, and book your next sailing trip in minutes.",
+  "title": "YachtSkanner — Yacht & Catamaran Rentals Worldwide",
+  "CookieConsent": {
+    "title": "Cookies",
+    "description": "We use analytics cookies to see how the site is used, so we can make it better. Nothing is measured until you agree.",
+    "manage": "Manage preferences",
+    "accept": "Accept",
+    "decline": "Decline",
+    "footerLink": "Cookies",
+    "dialog": {
+      "title": "Your privacy",
+      "description": "Choose which cookies this site may use. Your choice is stored on this device, and you can change it at any time from the footer.",
+      "close": "Close",
+      "alwaysActive": "Always active",
+      "necessary": {
+        "title": "Necessary",
+        "description": "Keep you signed in, protect payments against fraud, and remember this cookie choice. The site does not work without them."
+      },
+      "functional": {
+        "title": "Functional",
+        "description": "Remember the boats you saved and count a repeat visit to a listing only once. Stored in your browser and never shared."
+      },
+      "analytics": {
+        "title": "Analytics",
+        "description": "Google Analytics, so we can see which pages people use and where they get stuck. No advertising and no profiling."
+      },
+      "save": "Save my choice",
+      "acceptAll": "Accept all"
+    }
+  }
+}

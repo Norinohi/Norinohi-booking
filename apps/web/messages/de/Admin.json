@@ -1,0 +1,1343 @@
+{
+  "Commissions": {
+    "title": "Provisionssätze",
+    "subtitle": "Was CharterNavi über jeden Anbieter verdient, und ab wann.",
+    "add": "Satz hinzufügen",
+    "edit": "Bearbeiten",
+    "switchOff": "Deaktivieren",
+    "switchOn": "Aktivieren",
+    "switchedOff": "Satz deaktiviert",
+    "switchedOn": "Satz aktiviert",
+    "created": "Satz hinzugefügt",
+    "updated": "Satz gespeichert",
+    "error": "Provisionssätze konnten nicht geladen werden",
+    "empty": "Noch keine Sätze. Solange keiner erfasst ist, spielt die Provision bei der Auswahl des Angebots keine Rolle.",
+    "emptyFiltered": "Keine Sätze passen zu diesen Filtern.",
+    "allOperators": "Alle Vercharterer",
+    "openEnded": "Kein Enddatum",
+    "fromDate": "Ab {date}",
+    "untilDate": "Bis {date}",
+    "note": "Ein Satz entscheidet nur zwischen zwei Angeboten, die bei Preis und Pflichtzuschlägen bereits gleich sind. Er darf nie der Grund sein, warum ein Gast ein teureres Boot sieht. Bisher liest kein Schritt des Verkaufs diese Sätze.",
+    "filters": {
+      "provider": "Anbieter",
+      "anyProvider": "Alle Anbieter",
+      "status": "Status",
+      "anyStatus": "Beliebiger Status"
+    },
+    "status": {
+      "active": "Aktiv",
+      "scheduled": "Geplant",
+      "expired": "Abgelaufen",
+      "inactive": "Deaktiviert"
+    },
+    "table": {
+      "provider": "Anbieter",
+      "operator": "Vercharterer",
+      "rate": "Satz",
+      "window": "Gültig",
+      "status": "Status",
+      "added": "Erfasst",
+      "actions": "Aktionen"
+    },
+    "dialog": {
+      "createTitle": "Provisionssatz hinzufügen",
+      "editTitle": "Provisionssatz bearbeiten",
+      "description": "Was wir an einem Verkauf über diesen Anbieter verdienen. Ohne Vercharterer gilt der Satz für alle Charterfirmen dieses Anbieters.",
+      "provider": "Anbieter",
+      "operator": "Vercharterer",
+      "operatorSearch": "Vercharterer suchen",
+      "allOperators": "Alle Vercharterer dieses Anbieters",
+      "ratePct": "Satz (%)",
+      "startsAt": "Beginn",
+      "endsAt": "Ende",
+      "windowHint": "Beide Daten sind optional und einschließlich. Leer lassen für eine Vereinbarung, die bis zur Neuverhandlung gilt.",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "saving": "Wird gespeichert…",
+      "errors": {
+        "rateRequired": "Satz eingeben",
+        "rateRange": "Zahl zwischen 0 und 100 verwenden",
+        "endsBeforeStarts": "Das Enddatum darf nicht vor dem Startdatum liegen"
+      }
+    }
+  },
+  "Bookings": {
+    "title": "Buchungen",
+    "subtitle": "Alle Buchungen auf der Plattform, neueste zuerst. Öffnen Sie eine, um sie abzuwickeln.",
+    "createdAt": "Gebucht {at}",
+    "excluded": "Kein echtes Geschäft",
+    "empty": "Keine Buchung entspricht diesen Filtern.",
+    "error": "Die Buchungen konnten nicht geladen werden.",
+    "filters": {
+      "search": "Suche nach Referenz, Name oder E-Mail",
+      "status": "Status",
+      "allStatuses": "Alle Status",
+      "includeExcluded": "Als Test markierte Buchungen einbeziehen"
+    },
+    "table": {
+      "reference": "Referenz",
+      "customer": "Kunde",
+      "charter": "Yacht",
+      "dates": "Daten",
+      "total": "Gesamt",
+      "collected": "Eingegangen",
+      "status": "Status"
+    },
+    "status": {
+      "DRAFT": "Entwurf",
+      "QUOTED": "Angebot erstellt",
+      "OPTION_PENDING": "Wird reserviert",
+      "OPTION_HELD": "Reserviert",
+      "OPTION_EXPIRED": "Reservierung abgelaufen",
+      "QUOTE_EXPIRED": "Angebot abgelaufen",
+      "PAYMENT_PENDING": "Zahlung ausstehend",
+      "PAYMENT_FAILED": "Zahlung fehlgeschlagen",
+      "CONFIRMING": "Wird bestätigt",
+      "CONFIRMED": "Bestätigt",
+      "PROVIDER_REJECTED": "Vom Anbieter abgelehnt",
+      "CANCELLED": "Storniert",
+      "REFUND_PENDING": "Erstattung fällig",
+      "REFUNDED": "Erstattet"
+    }
+  },
+  "Users": {
+    "title": "Benutzer",
+    "subtitle": "Alle Konten mit Kontaktdaten und Anzahl der Buchungen.",
+    "createdAt": "Registriert {at}",
+    "unverified": "E-Mail nicht bestätigt",
+    "confirmed": "{count, plural, =0 {keine bestätigt} one {# bestätigt} other {# bestätigt}}",
+    "total": "{count, plural, one {# Benutzer} other {# Benutzer}}",
+    "empty": "Kein Benutzer entspricht diesen Filtern.",
+    "error": "Die Benutzer konnten nicht geladen werden.",
+    "filters": {
+      "search": "Nach Name, E-Mail oder Telefon suchen",
+      "role": "Rolle",
+      "allRoles": "Alle Rollen",
+      "status": "Status",
+      "allStatuses": "Alle Status",
+      "bookings": "Buchungen",
+      "anyBookings": "Mit oder ohne Buchungen",
+      "withBookings": "Hat Buchungen",
+      "withoutBookings": "Keine Buchungen",
+      "sort": "Sortierung"
+    },
+    "sort": {
+      "newest": "Neueste zuerst",
+      "mostBookings": "Meiste Buchungen",
+      "name": "Name A-Z"
+    },
+    "table": {
+      "user": "Benutzer",
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "bookings": "Buchungen",
+      "lastBooking": "Letzte Buchung",
+      "status": "Status"
+    },
+    "role": {
+      "customer": "Kunde",
+      "staff": "Mitarbeiter",
+      "admin": "Admin"
+    },
+    "status": {
+      "active": "Aktiv",
+      "guest": "Gast, nicht aktiviert",
+      "deactivated": "Deaktiviert"
+    }
+  },
+  "Duplicates": {
+    "title": "Duplikatprüfung",
+    "subtitle": "Führen Sie ähnliche Inserate zusammen, die zwei Anbieter für dieselbe Yacht gesendet haben.",
+    "metrics": {
+      "title": "Treffergenauigkeit",
+      "subtitle": "Wie oft jede Regel bisher richtig lag.",
+      "decided": "{count, plural, =0 {Noch keine Paare geprüft} one {# geprüftes Paar hinter diesen Werten} other {# geprüfte Paare hinter diesen Werten}}",
+      "error": "Genauigkeitswerte konnten nicht geladen werden",
+      "empty": "Es wurde noch nichts vorgeschlagen.",
+      "noSample": "Zu wenige Entscheidungen",
+      "note": "Die Genauigkeit sind die bestätigten Paare geteilt durch bestätigte und abgelehnte zusammen. Zusammenführungen, die später wieder getrennt wurden, zählen gegen die Regel. Zurückgestellte Paare bleiben außen vor: Sie waren nicht zu entscheiden, und sie als Fehler zu zählen würde eine Regel unterschätzen, die bei den entschiedenen Fällen gut arbeitet.",
+      "table": {
+        "rule": "Regel",
+        "band": "Konfidenz",
+        "proposed": "Vorgeschlagen",
+        "confirmed": "Zusammengeführt",
+        "rejected": "Keine Duplikate",
+        "undone": "Rückgängig",
+        "precision": "Genauigkeit"
+      }
+    },
+    "filter": {
+      "label": "Entscheidung",
+      "pending": "Ausstehend",
+      "confirmed": "Zusammengeführte Duplikate",
+      "rejected": "Keine Duplikate",
+      "deferred": "Nicht entschieden"
+    },
+    "empty": {
+      "pending": "Nichts zu prüfen. Alle Duplikat-Kandidaten wurden bearbeitet.",
+      "confirmed": "Es wurden noch keine Paare zusammengeführt.",
+      "rejected": "Es wurde noch kein Paar als zwei verschiedene Yachten erfasst.",
+      "deferred": "Es wurde noch nichts zurückgestellt.",
+      "filtered": "Keine Paare entsprechen diesen Filtern. Erweitern Sie den Konfidenz- oder Regelfilter, um den Rest zu sehen."
+    },
+    "error": "Die Duplikat-Warteschlange konnte nicht geladen werden",
+    "confidence": "{value} % Übereinstimmung",
+    "confidenceUnknown": "Konfidenz unbekannt",
+    "proposed": "Vorgeschlagen {date}",
+    "reviewed": "Geprüft {date}",
+    "undone": "Rückgängig",
+    "signals": "Übereinstimmung bei {signals}",
+    "sideA": "Seite A",
+    "sideB": "Seite B",
+    "keep": "Dieses Inserat behalten",
+    "keeping": "Wird zusammengeführt…",
+    "reject": "Kein Duplikat",
+    "reopen": "Zurück in die Warteschlange",
+    "differs": "abweichend",
+    "differsLegend": "Hervorgehobene Werte unterscheiden sich zwischen den beiden Seiten.",
+    "noImage": "Kein Bild",
+    "unavailable": {
+      "title": "Inserat nicht verfügbar",
+      "description": "Dieses Inserat wurde gelöscht, nachdem das Paar vorgeschlagen wurde."
+    },
+    "fields": {
+      "provider": "Anbieter",
+      "externalId": "Anbieter-ID",
+      "status": "Inseratsstatus",
+      "matchStatus": "Abgleichstatus",
+      "operator": "Betreiber",
+      "model": "Modell",
+      "year": "Baujahr",
+      "length": "Länge",
+      "cabins": "Kabinen",
+      "berths": "Kojen",
+      "base": "Heimathafen",
+      "location": "Standort"
+    },
+    "lengthValue": "{value} m",
+    "listingStatus": {
+      "draft": "Entwurf",
+      "published": "Veröffentlicht",
+      "hidden": "Ausgeblendet"
+    },
+    "matchStatus": {
+      "unmatched": "Nicht zugeordnet",
+      "auto": "Automatisch zugeordnet",
+      "confirmed": "Bestätigt",
+      "rejected": "Abgelehnt"
+    },
+    "showDetail": "Alle Details prüfen",
+    "showSources": "Quellen",
+    "detailTitle": "Vollständiger Vergleich",
+    "detailSubtitle": "Alle Fotos und technischen Daten, die beide Anbieter zu diesem Paar gesendet haben.",
+    "detailError": "Der vollständige Vergleich konnte nicht geladen werden",
+    "photoPosition": "{index} / {total}",
+    "openPhoto": "Foto {index} öffnen",
+    "amenitiesTitle": "Ausstattung ({count})",
+    "noAmenities": "Keine Ausstattung erfasst",
+    "descriptionTitle": "Beschreibung des Anbieters",
+    "noDescription": "Keine Beschreibung vom Anbieter",
+    "yes": "Ja",
+    "no": "Nein",
+    "litresValue": "{value} L",
+    "detailFields": {
+      "category": "Kategorie",
+      "builder": "Werft",
+      "crewType": "Crew",
+      "beam": "Breite",
+      "draft": "Tiefgang",
+      "heads": "Nasszellen",
+      "showers": "Duschen",
+      "engines": "Motoren",
+      "enginePower": "Motorleistung",
+      "fuelType": "Kraftstoffart",
+      "fuelCapacity": "Kraftstofftank",
+      "waterCapacity": "Wassertank",
+      "propulsion": "Antrieb",
+      "steering": "Steuerung",
+      "sail": "Rigg",
+      "deposit": "Kaution",
+      "depositInsurance": "Kautionsversicherung",
+      "pets": "Haustiere erlaubt",
+      "currency": "Währung",
+      "rating": "Anbieterbewertung",
+      "reviews": "Anbieterbewertungen",
+      "freshness": "Zuletzt synchronisiert",
+      "updated": "Zuletzt aktualisiert"
+    },
+    "summary": "{pairs, plural, =0 {Keine Paare} one {# Paar} other {# Paare}} · {yachts, plural, =0 {keine Yachten} one {# Yacht} other {# Yachten}}",
+    "sortNote": "höchste Übereinstimmung zuerst",
+    "sortNoteReviewed": "zuletzt entschiedene zuerst",
+    "optionCount": "{label} ({count})",
+    "filters": {
+      "confidence": "Übereinstimmung",
+      "anyConfidence": "Beliebige Übereinstimmung",
+      "matchType": "Abgeglichen nach",
+      "anyMatchType": "Beliebige Regel",
+      "any": "Alle",
+      "confidenceValue": "Übereinstimmung: {value}",
+      "matchTypeValue": "Regel: {value}"
+    },
+    "confidenceBand": {
+      "high": "Hoch (ab 90 %)",
+      "medium": "Mittel (70-89 %)",
+      "low": "Niedrig (unter 70 %)",
+      "unknown": "Ohne Bewertung"
+    },
+    "matchType": {
+      "name+model+year": "Name + Modell + Baujahr",
+      "base+model+year": "Heimathafen + Modell + Baujahr",
+      "model+year": "Nur Modell + Baujahr",
+      "model+yearBuilt": "Modell + Baujahr",
+      "name+base": "Name + Liegeplatz"
+    },
+    "signalFields": {
+      "name": "Name",
+      "base": "Heimathafen",
+      "area": "Region",
+      "length": "Länge",
+      "cabins": "Kabinen",
+      "berths": "Kojen",
+      "heads": "Nasszellen",
+      "builder": "Werft",
+      "operator": "Betreiber",
+      "model": "Modell",
+      "year": "Baujahr"
+    },
+    "toast": {
+      "confirmed": "Zusammengeführt. {count} Anbieterquellen verweisen jetzt auf das behaltene Inserat.",
+      "confirmedWithClosed": "Zusammengeführt. {count} Anbieterquellen zeigen jetzt auf das behaltene Inserat, und {closed} weitere Paare wurden mit geschlossen.",
+      "rejected": "Als zwei verschiedene Yachten erfasst.",
+      "conflict": "Jemand anderes hat dieses Paar bereits geprüft. Die Warteschlange wird neu geladen.",
+      "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "deferred": "Zurückgestellt. Zählt weder für noch gegen den Matcher.",
+      "reopened": "Wieder in der Warteschlange und erneut zu entscheiden."
+    },
+    "defer": "Zurückstellen",
+    "notePlaceholder": "Warum? (optional)",
+    "noteLabel": "Notiz des Prüfers",
+    "noteWas": "Notiz: {note}"
+  },
+  "Sync": {
+    "reliability": {
+      "title": "Zuverlässigkeit der Anbieter",
+      "subtitle": "Wie oft jeder Anbieter geantwortet hat, während ein Gast an der Kasse stand.",
+      "window": "Messzeitraum",
+      "windowValue": "Letzte {days} Tage",
+      "error": "Zuverlässigkeitswerte konnten nicht geladen werden",
+      "empty": "In diesem Zeitraum wurde kein Anbieter nach einem Preis gefragt.",
+      "noSample": "Keine Stichprobe",
+      "milliseconds": "{value} ms",
+      "note": "Eine Absage zählt als Antwort: Der Anbieter war erreichbar und hat gesagt, dass der Zeitraum vergeben ist, was eine Aussage über die Yacht ist und nicht über einen defekten Konnektor. Nur Fehler und Zeitüberschreitungen zählen gegen einen Anbieter. Anfragen, die unser eigener Kalender abgelehnt hat, bevor überhaupt ein Anbieter gefragt wurde, fließen gar nicht in die Quote ein. Bisher liest kein Schritt des Verkaufs diese Zahlen.",
+      "table": {
+        "provider": "Anbieter",
+        "asked": "Anfragen",
+        "answered": "Beantwortet",
+        "failed": "Keine Antwort",
+        "successRatio": "Antwortquote",
+        "latency": "Mittlere Antwortzeit"
+      }
+    },
+    "title": "Synchronisierungsverlauf",
+    "subtitle": "Alle Katalog- und Verfügbarkeitsläufe, neueste zuerst.",
+    "controls": {
+      "provider": "Zu synchronisierender Anbieter",
+      "allProviders": "Alle Anbieter",
+      "startCatalogue": "Katalog synchronisieren",
+      "startAvailability": "Verfügbarkeit synchronisieren",
+      "started": "{count, plural, one {# Lauf gestartet} other {# Läufe gestartet}}",
+      "skipped": "{count, plural, one {# Anbieter importiert bereits} other {# Anbieter importieren bereits}}",
+      "noProviders": "Kein Connector ist aktiviert.",
+      "capabilities": "Aktiver Connector: {provider}",
+      "capability": {
+        "supportsLiveQuote": "Live-Angebot",
+        "supportsOptions": "Reservierungen",
+        "supportsExtrasMutation": "Bearbeitbare Extras",
+        "supportsWebhooks": "Webhooks"
+      },
+      "hint": "Ein Lauf wird sofort gestartet und läuft weiter, nachdem diese Seite geschlossen wurde. Sein Ergebnis erscheint in der Tabelle unten."
+    },
+    "maintenance": {
+      "sweep": "Abgelaufene Reservierungen freigeben",
+      "remind": "Restzahlungserinnerungen senden",
+      "swept": "{count, plural, one {# Buchung abgelaufen} other {# Buchungen abgelaufen}}, {reaped, plural, one {# Synchronisierungslauf bereinigt} other {# Synchronisierungsläufe bereinigt}}.",
+      "staleConfirmations": "{count, plural, one {# Buchung hängt in der Bestätigung fest} other {# Buchungen hängen in der Bestätigung fest}}. Fragen Sie beim Anbieter nach, ob die Reservierung existiert.",
+      "releaseFailures": "{count, plural, one {# Anbieter-Slot konnte nicht freigegeben werden} other {# Anbieter-Slots konnten nicht freigegeben werden}}.",
+      "reminded": "{count, plural, one {# Erinnerung gesendet} other {# Erinnerungen gesendet}}.",
+      "remindSkipped": "{count, plural, one {# Buchung hat keine E-Mail-Adresse für den Versand} other {# Buchungen haben keine E-Mail-Adresse für den Versand}}.",
+      "hint": "Beide laufen bereits nach Zeitplan. Ein manueller Start ist sicher: Abläufe sind Compare-and-Set, und an jede Rate wird nur ein einziges Mal erinnert."
+    },
+    "filters": {
+      "provider": "Anbieter",
+      "kind": "Art",
+      "status": "Status",
+      "allProviders": "Alle Anbieter",
+      "allKinds": "Alle Arten",
+      "allStatuses": "Alle Status"
+    },
+    "table": {
+      "provider": "Anbieter",
+      "kind": "Art",
+      "status": "Status",
+      "results": "Ergebnisse",
+      "errors": "Fehler",
+      "started": "Gestartet",
+      "finished": "Beendet",
+      "details": "Details"
+    },
+    "kind": {
+      "catalogue": "Katalog",
+      "availability": "Verfügbarkeit",
+      "pricing": "Preise",
+      "media": "Medien"
+    },
+    "status": {
+      "pending": "Ausstehend",
+      "running": "Läuft",
+      "success": "Erfolgreich",
+      "failed": "Fehlgeschlagen",
+      "partial": "Teilweise"
+    },
+    "counts": {
+      "created": "{count, plural, one {# erstellt} other {# erstellt}}",
+      "updated": "{count, plural, one {# aktualisiert} other {# aktualisiert}}",
+      "skipped": "{count, plural, one {# übersprungen} other {# übersprungen}}",
+      "failed": "{count, plural, one {# fehlgeschlagen} other {# fehlgeschlagen}}"
+    },
+    "empty": "Noch keine Synchronisierungsläufe",
+    "error": "Synchronisierungsläufe konnten nicht geladen werden",
+    "pending": "Nicht gestartet",
+    "details": {
+      "show": "Fehler anzeigen",
+      "hide": "Fehler ausblenden",
+      "title": "Fehler aus diesem Lauf",
+      "empty": "Dieser Lauf hat keine Fehler protokolliert.",
+      "error": "Dieser Lauf konnte nicht geladen werden",
+      "unavailable": "Für diesen Anbieter sind keine Fehlerdetails verfügbar."
+    },
+    "errorType": {
+      "rate_limited": "Ratenlimit",
+      "transient": "Vorübergehend",
+      "auth": "Auth",
+      "not_found": "Nicht gefunden",
+      "contract": "Vertrag"
+    },
+    "unreleasedOptions": {
+      "title": "Vom Anbieter weiterhin blockierte Termine",
+      "subtitle": "Hier storniert, aber der Anbieter hat die Woche nicht zurückgenommen. Sie ist für niemanden buchbar, bis sie freigegeben wird oder die Option des Anbieters ausläuft.",
+      "empty": "Es ist nichts blockiert.",
+      "reference": "Buchung",
+      "yacht": "Yacht",
+      "dates": "Zeitraum",
+      "period": "{from} bis {to}",
+      "provider": "Anbieter",
+      "optionId": "Options-ID",
+      "hold": "Option",
+      "refusedAt": "Abgelehnt",
+      "reason": "Antwort des Anbieters",
+      "retry": "Erneut anfragen",
+      "holdUnknown": "Nicht angegeben",
+      "lapsed": "Abgelaufen",
+      "holdsUntil": "Gehalten bis {when}",
+      "released": "{reference}: Der Anbieter hat den Termin freigegeben.",
+      "refusedAgain": "{reference}: Der Anbieter hat erneut abgelehnt.",
+      "retryFailed": "{reference}: Der Anbieter war nicht erreichbar."
+    }
+  },
+  "Audit": {
+    "title": "Audit-Protokoll",
+    "subtitle": "Jede Mitarbeiteraktion, neueste zuerst. Einträge werden einmal geschrieben und nie bearbeitet.",
+    "filters": {
+      "entityType": "Entitätstyp",
+      "allEntities": "Alle Entitäten",
+      "action": "Aktion",
+      "allActions": "Alle Aktionen",
+      "entityId": "Entitäts-ID",
+      "entityIdPlaceholder": "Vollständige ID einfügen"
+    },
+    "table": {
+      "when": "Wann",
+      "actor": "Wer",
+      "action": "Aktion",
+      "entity": "Entität",
+      "entityId": "ID",
+      "details": "Details"
+    },
+    "action": {
+      "create": "Erstellt",
+      "update": "Aktualisiert",
+      "delete": "Gelöscht",
+      "sync": "Synchronisiert",
+      "merge": "Zusammengeführt",
+      "price_adjustment": "Preisänderung"
+    },
+    "entity": {
+      "booking": "Buchung",
+      "booking_enquiry": "Buchungsfrage",
+      "discount": "Gutscheincode",
+      "invoice_request": "Rechnung",
+      "lead": "Anfrage",
+      "listing": "Inserat",
+      "listing_duplicate_candidate": "Duplikat",
+      "maintenance": "Wartungsjob"
+    },
+    "details": {
+      "show": "Anzeigen",
+      "hide": "Ausblenden",
+      "before": "Vorher",
+      "after": "Nachher",
+      "metadata": "Kontext"
+    },
+    "actorGone": "Gelöschtes Konto",
+    "empty": "Noch nichts protokolliert.",
+    "error": "Das Audit-Protokoll konnte nicht geladen werden."
+  },
+  "Inbox": {
+    "title": "Posteingang",
+    "subtitle": "Fragen zu bestehenden Buchungen und Anfragen von Interessenten, die noch auswählen.",
+    "tabs": {
+      "enquiries": "Buchungsfragen",
+      "leads": "Anfragen"
+    },
+    "enquiries": {
+      "filters": {
+        "status": "Status",
+        "allStatuses": "Alle Status",
+        "search": "Suche nach E-Mail oder Buchungsreferenz"
+      },
+      "status": {
+        "open": "Offen",
+        "answered": "Beantwortet",
+        "closed": "Geschlossen"
+      },
+      "table": {
+        "received": "Eingegangen",
+        "customer": "Kunde",
+        "question": "Frage",
+        "status": "Status",
+        "booking": "Buchung",
+        "actions": "Aktionen"
+      },
+      "actions": {
+        "reply": "Antworten",
+        "replyAgain": "Erneut antworten",
+        "close": "Schließen",
+        "reopen": "Wieder öffnen"
+      },
+      "answered": "Beantwortet: {answer}",
+      "empty": "Nichts hier — keine Fragen entsprechen diesen Filtern.",
+      "error": "Die Fragen konnten nicht geladen werden."
+    },
+    "leads": {
+      "filters": {
+        "status": "Status",
+        "allStatuses": "Alle Status",
+        "kind": "Art",
+        "allKinds": "Alle Arten",
+        "search": "Suche nach Name oder E-Mail"
+      },
+      "status": {
+        "new": "Neu",
+        "contacted": "Kontaktiert",
+        "closed": "Geschlossen"
+      },
+      "kind": {
+        "quote_request": "Angebotsanfrage",
+        "booking_request": "Buchungsanfrage",
+        "charter_expert": "Charter-Experte",
+        "consultation": "Beratung"
+      },
+      "table": {
+        "received": "Eingegangen",
+        "from": "Von",
+        "kind": "Art",
+        "message": "Nachricht",
+        "status": "Status",
+        "actions": "Aktionen"
+      },
+      "actions": {
+        "reply": "Antworten",
+        "replyAgain": "Erneut antworten",
+        "contacted": "Als kontaktiert markieren",
+        "close": "Schließen",
+        "reopen": "Wieder öffnen"
+      },
+      "empty": "Nichts hier — keine Anfragen entsprechen diesen Filtern.",
+      "error": "Die Anfragen konnten nicht geladen werden.",
+      "answered": "Beantwortet: {answer}"
+    },
+    "answer": {
+      "title": "Auf diese Frage antworten",
+      "description": "Buchung {reference}. Ihre Antwort wird dem Kunden per E-Mail zugestellt.",
+      "label": "Ihre Antwort",
+      "placeholder": "Beantworten Sie die Frage vollständig — genau das erhält der Kunde.",
+      "close": "Diese Frage nach dem Senden schließen",
+      "cancel": "Abbrechen",
+      "send": "Antwort senden",
+      "sent": "Antwort gesendet",
+      "failed": "Die Antwort konnte nicht gesendet werden. Bitte versuchen Sie es erneut."
+    },
+    "leadAnswer": {
+      "title": "Auf diese Anfrage antworten",
+      "description": "Ihre Antwort wird per E-Mail an {name} gesendet.",
+      "noMessage": "Es wurde keine Nachricht hinterlassen.",
+      "label": "Ihre Antwort",
+      "placeholder": "Beantworten Sie die Anfrage vollständig — genau das wird zugestellt.",
+      "close": "Diese Anfrage nach dem Senden schließen",
+      "cancel": "Abbrechen",
+      "send": "Antwort senden",
+      "sent": "Antwort gesendet",
+      "failed": "Die Antwort konnte nicht gesendet werden. Bitte versuchen Sie es erneut."
+    }
+  },
+  "Listings": {
+    "title": "Inserate",
+    "subtitle": "Alle Inserate, die Mitarbeiter bearbeiten können, einschließlich Entwürfe. Importierter Bestand bleibt ein Entwurf, bis er hier freigegeben wird.",
+    "filters": {
+      "provider": "Anbieter",
+      "status": "Status",
+      "allProviders": "Alle Anbieter",
+      "operator": "Anbieter",
+      "allOperators": "Alle Anbieter",
+      "allStatuses": "Alle Status",
+      "search": "Suche nach Titel oder Slug"
+    },
+    "table": {
+      "listing": "Inserat",
+      "provider": "Anbieter",
+      "operator": "Betreiber",
+      "model": "Modell & Baujahr",
+      "place": "Heimathafen & Standort",
+      "price": "Ab",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "status": {
+      "draft": "Entwurf",
+      "published": "Veröffentlicht",
+      "hidden": "Ausgeblendet",
+      "merged": "Zusammengeführt"
+    },
+    "actions": {
+      "publish": "Veröffentlichen",
+      "unpublish": "Ausblenden",
+      "draft": "Zurück zum Entwurf",
+      "sources": "Quellen"
+    },
+    "moved": "{title} ist jetzt {status}.",
+    "noProvider": "Kein Anbieter",
+    "noPrice": "Noch kein Preis",
+    "notSet": "Nicht festgelegt",
+    "noImage": "Kein Foto",
+    "empty": "Keine Inserate entsprechen diesen Filtern",
+    "error": "Inserate konnten nicht geladen werden",
+    "publishDrafts": {
+      "providerLabel": "Freizugebender Anbieter",
+      "choose": "Anbieter wählen",
+      "action": "Alle Entwürfe veröffentlichen",
+      "hint": "Gibt alle Entwürfe des gewählten Anbieters frei. Ein Anbieter muss angegeben werden: Diese Ansicht veröffentlicht nie den gesamten Katalog auf einmal.",
+      "confirmTitle": "Alle Entwürfe veröffentlichen?",
+      "confirmBody": "Alle von {provider} importierten Entwürfe werden sofort für Kunden sichtbar. Entwürfe anderer Anbieter bleiben unberührt.",
+      "cancel": "Abbrechen",
+      "confirm": "Entwürfe veröffentlichen",
+      "publishing": "Wird veröffentlicht...",
+      "published": "{count, plural, =0 {Keine Entwürfe mehr für {provider} zu veröffentlichen.} one {# Entwurf für {provider} veröffentlicht.} other {# Entwürfe für {provider} veröffentlicht.}}",
+      "failed": "Die Entwürfe konnten nicht veröffentlicht werden"
+    },
+    "unpriced": "{count, plural, one {# Inserat hat Termine, aber keinen veröffentlichten Preis} other {# Inserate haben Termine, aber keinen veröffentlichten Preis}} — sie werden als „Auf Anfrage“ mit leerem Kalender angezeigt.",
+    "sources": {
+      "subtitle": "Von welchem Anbieter jeder Teil dieses Inserats stammt. Eine fixierte Gruppe lässt die nächtliche Synchronisation unangetastet.",
+      "error": "Anbieter dieses Inserats konnten nicht geladen werden",
+      "field": "Teil des Inserats",
+      "takenFrom": "Übernommen von",
+      "locked": "Fixiert",
+      "automatic": "Automatisch",
+      "release": "Freigeben",
+      "pinned": "Auf diesen Anbieter fixiert. Die Synchronisation ändert das nicht.",
+      "released": "Wieder automatisch. Die Synchronisation entscheidet erneut.",
+      "model": "Modell",
+      "year": "Baujahr",
+      "base": "Basis",
+      "operator": "Betreiber",
+      "photos": "Fotos",
+      "descriptions": "Beschreibungen",
+      "fields": {
+        "media": "Fotos",
+        "title": "Name",
+        "spec": "Technische Daten",
+        "description": "Beschreibung",
+        "taxonomy": "Werft, Modell, Typ",
+        "operator": "Betreiber",
+        "home_base": "Heimatbasis",
+        "pets": "Haustiere erlaubt"
+      },
+      "takeOut": "Aus diesem Inserat herauslösen",
+      "splitRestored": "Herausgelöst und in sein ursprüngliches Inserat zurückgeführt.",
+      "splitNew": "In ein eigenes Inserat herausgelöst.",
+      "confirmSplitBody": "Das Angebot von {provider} geht zurück auf sein eigenes Listing, und dieses Listing führt dann nicht mehr beide Anbieter. Das Paar lässt sich im Tab „Zusammengeführte Duplikate“ der Dublettenprüfung erneut zusammenführen.",
+      "confirmSplitAction": "Herausnehmen",
+      "confirmSplitBusy": "Wird herausgenommen…",
+      "confirmSplitCancel": "Abbrechen"
+    }
+  },
+  "Routes": {
+    "title": "Routenvorschläge",
+    "subtitle": "Von Hand geschriebene Routen. Eine Route gehört zu einer Charterbasis oder einem Segelrevier, und eine Inseratseite zeigt sie nur dort, wo jemand eine geschrieben hat — hier wird nichts generiert.",
+    "filters": {
+      "country": "Land",
+      "allCountries": "Alle Länder",
+      "kind": "Art",
+      "allKinds": "Alle Arten",
+      "status": "Status",
+      "allStatuses": "Alle Status",
+      "search": "Nach Titel suchen"
+    },
+    "table": {
+      "title": "Route",
+      "target": "Basis oder Revier",
+      "kind": "Art",
+      "nights": "Nächte",
+      "stops": "Stopps",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "kinds": {
+      "seven_days": "7 Tage",
+      "fourteen_days": "14 Tage",
+      "family": "Familie",
+      "first_time_sailors": "Segelneulinge",
+      "active_sailing": "Aktives Segeln"
+    },
+    "status": {
+      "live": "Live",
+      "draft": "Entwurf"
+    },
+    "actions": {
+      "create": "Neue Route",
+      "stops": "Stopps",
+      "preview": "Vorschau",
+      "edit": "Bearbeiten",
+      "publish": "Veröffentlichen",
+      "unpublish": "Zurückziehen",
+      "delete": "Löschen",
+      "featured": "Startseite"
+    },
+    "stopCount": "{count, plural, =0 {Keine Stopps} one {# Stopp} other {# Stopps}}",
+    "published": "{title} ist live.",
+    "unpublished": "{title} ist wieder ein Entwurf.",
+    "deleted": "{title} wurde gelöscht.",
+    "empty": "Keine Routen passen zu diesen Filtern",
+    "error": "Routen konnten nicht geladen werden",
+    "target": {
+      "country": "Land",
+      "allCountries": "Alle Länder",
+      "level": "Zuordnen zu",
+      "levelBase": "Einer Charterbasis",
+      "levelRegion": "Einem Segelrevier",
+      "base": "Basis",
+      "region": "Revier",
+      "searchBase": "Marina oder Ort suchen",
+      "searchRegion": "Revier suchen",
+      "chooseBase": "Basis wählen",
+      "chooseRegion": "Revier wählen",
+      "baseOption": "{base} · {place} ({count, plural, =0 {keine Yachten} one {# Yacht} other {# Yachten}})",
+      "regionOption": "{region} · {country} ({count, plural, =0 {keine Yachten} one {# Yacht} other {# Yachten}})",
+      "noMatches": "Keine Treffer für diese Suche",
+      "hint": "Eine Route gehört zu einer Basis oder zu einem Revier, nie zu beiden. Eine Basisroute schlägt eine Revierroute bei jeder dort liegenden Yacht. Beide Listen sind danach sortiert, wie viele veröffentlichte Yachten hinter jedem Eintrag stehen."
+    },
+    "dialog": {
+      "createTitle": "Neue Route",
+      "editTitle": "Route bearbeiten",
+      "description": "Die Angaben der Route selbst. Ihre Stopps werden auf dem nächsten Bildschirm auf einer Karte gesetzt.",
+      "fields": {
+        "title": "Titel",
+        "titlePlaceholder": "Von Split nach Vis und zurück",
+        "kind": "Art",
+        "nights": "Nächte",
+        "sortOrder": "Reihenfolge",
+        "sortOrderHint": "Niedrigste zuerst, wenn eine Basis mehrere Routen hat",
+        "description": "Beschreibung",
+        "descriptionPlaceholder": "Wie sich diese Route segelt, in ein bis zwei Sätzen.",
+        "defaultHint": "Wird in jeder Sprache ohne Übersetzung unten angezeigt.",
+        "difficulty": "Schwierigkeit",
+        "imageUrl": "Foto-URL",
+        "imageUrlHint": "Wird auf der Karte der Startseite angezeigt.",
+        "translations": "Übersetzungen",
+        "translationsHint": "Titel und Beschreibung je Sprache. Eine leere Sprache zeigt den Standardtext oben."
+      },
+      "errors": {
+        "target": "Wählen Sie eine Basis oder ein Revier für diese Route",
+        "nights": "Zwischen 1 und 28 Nächten",
+        "failed": "Route konnte nicht gespeichert werden"
+      },
+      "cancel": "Abbrechen",
+      "create": "Route anlegen",
+      "save": "Änderungen speichern",
+      "created": "{title} wurde angelegt. Fügen Sie als Nächstes die Stopps hinzu.",
+      "updated": "{title} wurde gespeichert.",
+      "difficulty": {
+        "none": "Nicht festgelegt",
+        "easy": "Leicht",
+        "moderate": "Mittel",
+        "advanced": "Anspruchsvoll"
+      },
+      "locales": {
+        "en": "Englisch",
+        "uk": "Ukrainisch",
+        "de": "Deutsch",
+        "es": "Spanisch"
+      }
+    },
+    "stops": {
+      "subtitle": "{target} · {nights} Nächte",
+      "listTitle": "Route ({count})",
+      "add": "Stopp hinzufügen",
+      "day": "Tag {day}",
+      "moveUp": "Nach vorn schieben",
+      "moveDown": "Nach hinten schieben",
+      "edit": "Bearbeiten",
+      "remove": "Stopp entfernen",
+      "empty": {
+        "title": "Noch keine Stopps",
+        "body": "Die Route existiert, hat aber nichts zu zeichnen: Sie lässt sich nicht veröffentlichen und erscheint auf keiner Inseratseite. Suchen Sie rechts einen Hafen oder tippen Sie auf die Karte, benennen Sie den Stopp und fügen Sie ihn hinzu."
+      },
+      "form": {
+        "addTitle": "Stopp hinzufügen",
+        "editTitle": "Diesen Stopp bearbeiten",
+        "name": "Name des Stopps",
+        "namePlaceholder": "Stadt Vis",
+        "note": "Notiz",
+        "noteHint": "Englisch greift dort, wo eine Sprache keine eigene Notiz hat.",
+        "noteFor": "Notiz ({locale})",
+        "notePlaceholder": "Was hier passiert — die Ankerbucht, der Spaziergang, das Restaurant.",
+        "placed": "Pin bei {lat}, {lng}. Ziehen Sie ihn, um den Stopp zu verschieben.",
+        "unplaced": "Noch keine Position. Suchen Sie einen Ort oder tippen Sie auf die Karte, um den Pin zu setzen.",
+        "save": "Stopp speichern",
+        "append": "Zur Route hinzufügen",
+        "cancelEdit": "Abbrechen"
+      },
+      "search": {
+        "label": "Ort finden",
+        "placeholder": "Vis, Hvar, Bol…",
+        "hint": "Setzt den Pin auf das Ergebnis. Ziehen Sie ihn danach, wenn die Ankerbucht nicht der Ort ist.",
+        "searching": "Wird gesucht…"
+      },
+      "preview": "Vorschau",
+      "close": "Schließen",
+      "saved": "{name} wurde gespeichert.",
+      "added": "{name} wurde hinzugefügt.",
+      "removed": "{name} wurde entfernt.",
+      "failed": "Stopp konnte nicht gespeichert werden",
+      "missingNotes": "Keine Notiz in: {locales}"
+    },
+    "previewDialog": {
+      "title": "Routenvorschau",
+      "subtitle": "Genau so, wie sie bei einer Yacht in {target} erscheint.",
+      "empty": "Fügen Sie einen Stopp hinzu, bevor Sie eine Vorschau ansehen — es gibt noch nichts zu zeichnen."
+    },
+    "featured": {
+      "title": "Routen auf der Startseite",
+      "description": "Die Liste der beliebten Routen in der Reihenfolge, in der die Website sie zeigt. Die ersten sechs füllen den Slider, der Rest öffnet sich unter „View All Popular“.",
+      "chosen": "Ausgewählt ({count})",
+      "add": "Route hinzufügen",
+      "addAction": "Hinzufügen",
+      "remove": "Entfernen",
+      "search": "Veröffentlichte Routen suchen",
+      "noCandidates": "Zu dieser Suche gibt es nichts mehr hinzuzufügen",
+      "moveUp": "Nach oben",
+      "moveDown": "Nach unten",
+      "cancel": "Abbrechen",
+      "save": "Reihenfolge speichern",
+      "saved": "Die Startseite zeigt jetzt {count, plural, =0 {keine Routen} one {# Route} other {# Routen}}.",
+      "failed": "Reihenfolge konnte nicht gespeichert werden",
+      "placement": {
+        "slider": "Im Slider",
+        "grid": "Unter View All",
+        "hidden": "Nicht sichtbar"
+      },
+      "empty": {
+        "title": "Keine Routen ausgewählt",
+        "body": "Der Bereich auf der Startseite bleibt leer, bis hier eine Route hinzugefügt wird. Wählen Sie rechts aus den veröffentlichten Routen."
+      }
+    }
+  },
+  "Payments": {
+    "title": "Zahlungen",
+    "subtitle": "Überweisungen, die noch zu verbuchen sind, und Beträge, die Kunden zurückgezahlt werden müssen.",
+    "tabs": {
+      "invoices": "Rechnungsanforderungen",
+      "refunds": "Fällige Erstattungen"
+    },
+    "invoices": {
+      "filters": {
+        "status": "Nach Status filtern",
+        "allStatuses": "Alle Status"
+      },
+      "table": {
+        "issued": "Ausgestellt",
+        "invoice": "Rechnung",
+        "customer": "Kunde",
+        "booking": "Buchung",
+        "amount": "Betrag",
+        "status": "Status",
+        "actions": "Aktionen"
+      },
+      "status": {
+        "pending": "Ausstehend",
+        "sent": "Gesendet",
+        "paid": "Bezahlt",
+        "cancelled": "Zurückgezogen"
+      },
+      "due": "Fällig {date}",
+      "settledAt": "Verbucht {date}",
+      "actions": {
+        "settle": "Überweisung eingegangen",
+        "withdraw": "Zurückziehen"
+      },
+      "empty": "Keine Rechnungsanforderungen vorhanden.",
+      "error": "Rechnungsanforderungen konnten nicht geladen werden."
+    },
+    "refunds": {
+      "filters": {
+        "search": "Suche nach Referenz, Name oder E-Mail"
+      },
+      "table": {
+        "cancelled": "Storniert",
+        "customer": "Kunde",
+        "booking": "Buchung",
+        "charter": "Charter",
+        "collected": "Eingegangen",
+        "actions": "Aktionen"
+      },
+      "ofTotal": "von {total}",
+      "actions": {
+        "refund": "Geld zurückzahlen"
+      },
+      "empty": "Derzeit sind keine Rückzahlungen offen.",
+      "error": "Die Erstattungs-Warteschlange konnte nicht geladen werden."
+    },
+    "settle": {
+      "title": "Eingegangene Überweisung erfassen",
+      "description": "Buchung {reference} wird beim Betreiber verbindlich bestätigt, sobald dies erfasst ist.",
+      "invoiced": "Rechnung {number} · {amount} in Rechnung gestellt",
+      "amountLabel": "Eingegangener Betrag ({currency})",
+      "amountHint": "Ändern Sie dies, falls wegen Bankgebühren ein anderer Betrag eingegangen ist.",
+      "noteLabel": "Notiz",
+      "notePlaceholder": "Verwendungszweck der Überweisung, wer sie bestätigt hat…",
+      "cancel": "Abbrechen",
+      "confirm": "Überweisung erfassen",
+      "settling": "Wird erfasst…",
+      "settled": "Überweisung erfasst — Buchung {reference} ist bestätigt.",
+      "rejected": "Überweisung erfasst, aber der Betreiber hat abgelehnt: {reason}. Für die Buchung ist nun eine Erstattung fällig.",
+      "failed": "Die Überweisung konnte nicht erfasst werden."
+    },
+    "withdraw": {
+      "title": "Diese Rechnungsanforderung zurückziehen",
+      "description": "Buchung {reference} wird storniert und die Option des Betreibers freigegeben.",
+      "reasonLabel": "Grund",
+      "reasonPlaceholder": "Keine Rückmeldung nach drei Erinnerungen…",
+      "cancel": "Behalten",
+      "confirm": "Zurückziehen und stornieren",
+      "withdrawing": "Wird zurückgezogen…",
+      "withdrawn": "Rechnung zurückgezogen und Buchung {reference} storniert.",
+      "failed": "Die Rechnung konnte nicht zurückgezogen werden."
+    },
+    "refund": {
+      "title": "Geld zurückzahlen",
+      "description": "Zahlt für Buchung {reference} eingegangenes Geld zurück.",
+      "collected": "{amount} eingegangen",
+      "cancelReason": "Storniert: {reason}",
+      "amountLabel": "Zurückzuzahlender Betrag",
+      "amountPlaceholder": "Alles ({amount})",
+      "amountHint": "Leer lassen, um alles zurückzuzahlen. Weniger eingeben, um den laut Stornobedingungen einbehaltenen Teil zu behalten.",
+      "amountInvalid": "Geben Sie einen Betrag zwischen 0 und dem eingegangenen Betrag ein.",
+      "reasonLabel": "Grund",
+      "reasonPlaceholder": "Betreiber hat die Yacht zurückgezogen…",
+      "manualLabel": "Ich habe die Überweisung zurückgesendet",
+      "manualHint": "Nur ankreuzen, wenn das Geld tatsächlich abgebucht wurde. Kartenzahlungen werden automatisch über Stripe zurückerstattet.",
+      "cancel": "Abbrechen",
+      "confirm": "Erstatten",
+      "refunding": "Wird erstattet…",
+      "refunded": "{amount} zurückgezahlt.",
+      "partial": "{amount} zurückgezahlt. {outstanding} noch offen.",
+      "manualPending": "Kartenzahlungen zurückerstattet. {count, plural, one {# Überweisung muss} other {# Überweisungen müssen}} noch manuell gesendet werden.",
+      "failed": "Die Erstattung konnte nicht verarbeitet werden."
+    }
+  },
+  "StaffBooking": {
+    "back": "Buchungen",
+    "staffOnly": "Mitarbeiteransicht — dies ist die Buchung eines Kunden. Teilen Sie diese Seite nicht.",
+    "error": "Diese Buchung konnte nicht geladen werden.",
+    "guestAccount": "Gastkonto",
+    "guests": "{count, plural, one {# Gast} other {# Gäste}}",
+    "noReservationId": "Noch keine Reservierungs-ID",
+    "outstanding": "{amount} ausstehend",
+    "dueAtCheckIn": "{amount} fällig in der Marina",
+    "createdAt": "Erstellt {at}",
+    "holdExpiresAt": "Reservierung läuft ab {at}",
+    "confirmedAt": "Bestätigt {at}",
+    "cancelledAt": "Storniert {at}",
+    "cancelReason": "Stornierungsgrund: {reason}",
+    "fields": {
+      "customer": "Kunde",
+      "charter": "Charter",
+      "provider": "Anbieter",
+      "total": "Gesamt",
+      "collected": "Eingegangen",
+      "timeline": "Verlauf"
+    },
+    "invoice": {
+      "title": "Rechnungsanforderung",
+      "number": "Nummer",
+      "amount": "Betrag",
+      "status": "Status",
+      "billedTo": "Rechnungsempfänger",
+      "issued": "Ausgestellt",
+      "due": "Fällig"
+    },
+    "payments": {
+      "title": "Zahlungen",
+      "kind": "Rate",
+      "amount": "Betrag",
+      "method": "Methode",
+      "status": "Status",
+      "paidAt": "Bezahlt",
+      "empty": "Es ist noch nichts eingegangen.",
+      "disputed": "Beanstandet: {state}",
+      "methods": {
+        "card": "Karte",
+        "transfer": "Überweisung"
+      },
+      "disputeStatus": {
+        "open": "offen"
+      }
+    },
+    "schedule": {
+      "title": "Zahlungsplan",
+      "kind": "Rate",
+      "amount": "Betrag",
+      "dueAt": "Fällig",
+      "status": "Status",
+      "empty": "Kein Zahlungsplan für diese Buchung.",
+      "statuses": {
+        "pending": "Ausstehend",
+        "paid": "Bezahlt",
+        "cancelled": "Storniert",
+        "refunded": "Erstattet"
+      }
+    },
+    "priceLines": {
+      "title": "Preisaufschlüsselung"
+    },
+    "excluded": {
+      "chip": "Kein echtes Geschäft",
+      "exclude": "Als Testbuchung markieren",
+      "restore": "In die Warteschlangen zurückholen",
+      "excludedAt": "Aus Warteschlangen und Summen ausgeschlossen {at}",
+      "help": "Eine ausgeschlossene Buchung behält ihren Status, ihre Zahlungen und ihre Anbieterreservierung. Sie wird lediglich nicht mehr in Mitarbeiter-Warteschlangen und Geldsummen mitgezählt."
+    },
+    "cancel": {
+      "action": "Buchung stornieren",
+      "title": "Diese Buchung stornieren?",
+      "description": "{reference} für {customer}",
+      "confirmedWarning": "Diese Buchung ist bestätigt. Die Stornierung verschiebt sie in die Erstattungsliste; das Geld wird erst zurückgezahlt, wenn es dort erstattet wird.",
+      "reasonLabel": "Grund (optional)",
+      "reasonPlaceholder": "Anbieter hat die Yacht zurückgezogen",
+      "keep": "Behalten",
+      "confirm": "Buchung stornieren",
+      "success": "Buchung storniert.",
+      "successRefund": "Buchung storniert und in die Erstattungsliste verschoben.",
+      "providerHeld": "Hier storniert, aber {provider} hat die Reservierung behalten: {error}",
+      "providerHeldUnknown": "der Anbieter nannte keinen Grund",
+      "error": "Diese Buchung konnte nicht storniert werden."
+    },
+    "providerHold": {
+      "title": "{provider} hält diese Reservierung weiterhin",
+      "body": "Wir haben auf unserer Seite storniert, der Anbieter hat die Reservierung aber nicht freigegeben. Der Charter besteht beim Vercharterer weiter. Klären Sie das mit ihm, bevor eine Erstattung ausgezahlt wird, sonst geht das Geld für eine Woche zurück, die uns weiterhin berechnet wird."
+    }
+  },
+  "providers": {
+    "mock": "Mock",
+    "booking_manager": "Booking Manager",
+    "nausys": "NauSYS"
+  },
+  "Faq": {
+    "title": "FAQ",
+    "subtitle": "Jede Frage der Website, mit allen vier Sprachen in einer Zeile. Eine Frage erscheint nur in den Sprachen auf einer Seite, in denen sie beantwortet ist.",
+    "scope": {
+      "site": "Seitenweit",
+      "listing": "Eine Yacht"
+    },
+    "categories": {
+      "booking": "Buchung",
+      "payment": "Zahlung",
+      "prices": "Preise",
+      "licences": "Führerscheine",
+      "travel": "Anreise",
+      "cancellation": "Stornierung"
+    },
+    "locales": {
+      "en": "Englisch",
+      "de": "Deutsch",
+      "es": "Spanisch",
+      "uk": "Ukrainisch"
+    },
+    "localeCodes": {
+      "en": "EN",
+      "de": "DE",
+      "es": "ES",
+      "uk": "UK"
+    },
+    "state": {
+      "answered": "Beantwortet — auf der öffentlichen Seite",
+      "unanswered": "Noch ohne Antwort — auf der Seite ausgeblendet",
+      "missing": "Keine Übersetzung"
+    },
+    "gaps": {
+      "missing_answer": "Ohne Antwort",
+      "missing_locale": "Ohne Übersetzung"
+    },
+    "filters": {
+      "scope": "Geltungsbereich",
+      "category": "Kategorie",
+      "locale": "Zu prüfende Sprache",
+      "gap": "Anzeige",
+      "allCategories": "Alle Kategorien",
+      "anyLocale": "Beliebige Sprache",
+      "allEntries": "Alle Einträge",
+      "search": "Fragen und Antworten durchsuchen",
+      "listing": "Yacht",
+      "listingSearch": "Yachten nach Namen suchen"
+    },
+    "legend": {
+      "title": "Sprachstatus:"
+    },
+    "table": {
+      "order": "Reihenfolge",
+      "question": "Frage",
+      "locales": "Sprachen",
+      "category": "Kategorie",
+      "actions": "Aktionen"
+    },
+    "actions": {
+      "create": "Neuer Eintrag",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "moveUp": "Nach oben",
+      "moveDown": "Nach unten"
+    },
+    "reorderDisabled": "Zum Sortieren eine Kategorie und eine Sprache wählen und Suche und Filter zurücksetzen.",
+    "reordered": "Reihenfolge in allen Sprachen gespeichert.",
+    "deleted": "{count, plural, one {# Übersetzung gelöscht.} other {# Übersetzungen gelöscht.}}",
+    "unpublished": "Noch auf keiner Seite",
+    "noCategory": "Keine Kategorie",
+    "noQuestion": "Ohne Titel",
+    "chooseListing": "Wählen Sie eine Yacht, um ihre eigenen Einträge zu sehen",
+    "empty": "Keine Einträge passen zu diesen Filtern",
+    "error": "FAQ konnte nicht geladen werden",
+    "summary": {
+      "missingAnswer": "{count} von {total} Einträgen haben noch keine Antwort und fehlen deshalb auf der öffentlichen Seite. Geprüft: {locale}.",
+      "missingLocale": "{count} von {total} Einträgen fehlt eine Übersetzung. Geprüft: {locale}."
+    },
+    "dialog": {
+      "createTitle": "Neuer FAQ-Eintrag",
+      "editTitle": "FAQ-Eintrag bearbeiten",
+      "description": "Eine Frage, alle vier Sprachen. Eine leer gelassene Sprache behält, was sie hatte — mit „Diese Übersetzung entfernen“ nehmen Sie eine von der Website.",
+      "scope": {
+        "label": "Wo der Eintrag erscheint"
+      },
+      "category": {
+        "label": "Kategorie",
+        "placeholder": "Kategorie wählen"
+      },
+      "listing": {
+        "label": "Yacht",
+        "search": "Yachten nach Namen suchen",
+        "clear": "Gewählte Yacht entfernen",
+        "noResults": "Keine Yacht mit diesem Namen"
+      },
+      "question": {
+        "label": "Frage",
+        "placeholder": "Die Frage in dieser Sprache schreiben"
+      },
+      "answer": {
+        "label": "Antwort",
+        "placeholder": "Leer lassen, bis die Antwort geschrieben ist",
+        "hint": "Ohne Antwort bleibt die Frage hier und erreicht die öffentliche Seite nie."
+      },
+      "removeTranslation": "Diese Übersetzung entfernen",
+      "translationRemoved": "Die Übersetzung ({locale}) wurde entfernt.",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "create": "Anlegen",
+      "created": "Eintrag angelegt.",
+      "saved": "Eintrag gespeichert.",
+      "failed": "Eintrag konnte nicht gespeichert werden",
+      "cacheRefreshing": "Die öffentliche Seite wird zwischengespeichert; geben Sie ihr einen Moment.",
+      "cacheStale": "Gespeichert, aber der Cache der öffentlichen Seite ließ sich nicht leeren — sie zeigt womöglich noch eine Weile den alten Text.",
+      "errors": {
+        "listingRequired": "Wählen Sie eine Yacht für diesen Eintrag",
+        "categoryRequired": "Ein seitenweiter Eintrag braucht eine Kategorie — er hat keine Yachtseite, auf der er stehen könnte",
+        "questionRequired": "Schreiben Sie die Frage in mindestens einer Sprache",
+        "answerWithoutQuestion": "Diese Sprache hat eine Antwort, aber keine Frage",
+        "questionTooLong": "Die Frage darf höchstens 500 Zeichen haben",
+        "answerTooLong": "Die Antwort darf höchstens 8000 Zeichen haben"
+      }
+    }
+  },
+  "Popular": {
+    "title": "Beliebte Auswahl",
+    "subtitle": "Welche Werte eine Filterliste anführen und welche die Startseite.",
+    "kinds": {
+      "country": "Länder",
+      "category": "Bootstypen",
+      "equipment": "Ausstattung",
+      "region": "Segelgebiete",
+      "marina": "Marinas",
+      "model": "Modelle",
+      "location": "Orte",
+      "crew": "Crew-Typen",
+      "sail_type": "Großsegeltypen"
+    },
+    "surfaces": {
+      "popular": "Filter-Pins",
+      "featured": "Startseite",
+      "filter": "Filterliste"
+    },
+    "surfaceHint": {
+      "popular": "Erscheint als Gruppe „Beliebt“ oben in den Suchfiltern.",
+      "featured": "Die Reihenfolge für die Slider und Raster der Startseite.",
+      "filter": "Die einzigen Werte, die der Suchfilter anbietet. Leer bietet er jeden Wert des Katalogs an."
+    },
+    "filters": {
+      "kind": "Facette",
+      "surface": "Wo es erscheint",
+      "search": "Werte suchen"
+    },
+    "table": {
+      "order": "Reihenfolge",
+      "value": "Wert",
+      "count": "Yachten",
+      "actions": "Aktionen"
+    },
+    "actions": {
+      "moveUp": "Nach oben",
+      "moveDown": "Nach unten",
+      "remove": "Entfernen",
+      "edit": "Foto und Text bearbeiten"
+    },
+    "empty": "Noch nichts ausgewählt. Wählen Sie oben Werte aus.",
+    "emptyFilter": "Nichts ausgewählt, daher bietet der Filter jeden Wert an. Wählen Sie oben Werte aus, um die Liste zu kürzen.",
+    "error": "Die Reihenfolge konnte nicht gespeichert werden.",
+    "saved": "Reihenfolge gespeichert.",
+    "cacheWarning": "Gespeichert, aber die zwischengespeicherten Seiten konnten noch nicht aktualisiert werden.",
+    "noListings": "Keine Yachten",
+    "media": {
+      "title": "{name} bearbeiten",
+      "description": "Foto und Text, die die Karte dieses Werts auf der Startseite zeigt. Gespeicherter Text wird von einer Anbieter-Synchronisierung nie überschrieben.",
+      "imageUrl": "Foto-URL",
+      "imageHint": "Datei hochladen oder URL einfügen. JPEG, PNG, WebP oder AVIF, bis 10 MB.",
+      "imageHintNoUpload": "URL einfügen. Datei-Upload ist in dieser Umgebung nicht eingerichtet.",
+      "hoverImageUrl": "Foto beim Überfahren",
+      "hoverImageHint": "Erscheint auf den hervorgehobenen Kacheln der Startseite, wenn der Mauszeiger über der Karte ist, z. B. der Ort von oben. Leer lassen für ein einziges Foto.",
+      "gridUsesHoverImage": "Foto beim Überfahren im Raster „Alle beliebten ansehen“ verwenden",
+      "gridUsesHoverImageHint": "Das Raster hat kein Überfahren und zeigt ein Foto. Angehakt ist es das Foto beim Überfahren, sonst das Hauptfoto.",
+      "upload": "Foto hochladen",
+      "uploading": "Wird hochgeladen...",
+      "uploadFailed": "Das Foto konnte nicht hochgeladen werden.",
+      "label": "Name",
+      "labelHint": "Leer lassen, um den Katalognamen {name} oder die Übersetzung des Anbieters zu verwenden.",
+      "descriptionField": "Beschreibung",
+      "descriptionHintEn": "Wird auch in Sprachen ohne eigene Beschreibung angezeigt.",
+      "descriptionHint": "Leer lassen, um die englische Beschreibung zu zeigen.",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "saving": "Wird gespeichert...",
+      "saved": "Gespeichert.",
+      "saveFailed": "Speichern fehlgeschlagen.",
+      "cacheWarning": "Gespeichert, aber die zwischengespeicherten Seiten konnten noch nicht aktualisiert werden.",
+      "locales": {
+        "en": "Englisch",
+        "uk": "Ukrainisch",
+        "de": "Deutsch",
+        "es": "Spanisch"
+      }
+    }
+  },
+  "PopularYachts": {
+    "title": "Slider „Beliebte Yachten“",
+    "subtitle": "Wie der Slider mit beliebten Yachten auf der Startseite zusammengestellt wird. Die Typverteilung ist ein Richtwert: Fehlen einem Typ Boote, gehen die freien Plätze an die nächstbesten.",
+    "limit": "Angezeigte Boote",
+    "maxAgeYears": "Max. Alter (Jahre)",
+    "maxPerCountry": "Max. pro Land",
+    "maxPerBase": "Max. pro Basis",
+    "mix": "Boote je Typ",
+    "mixHint": "Es werden nur die Reiseziele unten berücksichtigt. Ein Typ mit null bleibt außen vor.",
+    "destinations": "Reiseziele",
+    "destinationsHint": "Ein Land pro Zeile, nach Priorität: \"Croatia: Split / Trogir; Zadar / Sukošan\". Orte werden mit \";\" getrennt, \"/\" trennt Schreibweisen eines Ortes, die in Marina, Standort und Region des Bootes gesucht werden. Jeder Ort zählt als eine Basis. Ein Land ohne Orte umfasst das ganze Land; eine leere Liste greift auf die ausgewählten beliebten Länder zurück.",
+    "save": "Änderungen speichern",
+    "saving": "Wird gespeichert...",
+    "saved": "Slider gespeichert.",
+    "saveFailed": "Der Slider konnte nicht gespeichert werden.",
+    "cacheWarning": "Gespeichert, aber die zwischengespeicherten Seiten konnten noch nicht aktualisiert werden."
+  },
+  "Settings": {
+    "title": "Marktplatz-Einstellungen",
+    "subtitle": "Wie viel eines Charters im Voraus eingezogen wird und über welchen Anbieter wir verkaufen, wenn die Angebote gleich sind.",
+    "source": {
+      "legend": "Welcher Zahlungsplan gilt",
+      "vendor": {
+        "title": "Der Plan des Anbieters",
+        "hint": "Jedes Angebot folgt den Raten, die der Anbieter fur diese Yacht und diese Daten geliefert hat, samt seinem eigenen Falligkeitsdatum. Anbieter unterscheiden sich, also unterscheidet sich der Prozentsatz je Buchung."
+      },
+      "marketplace": {
+        "title": "Unsere eigene Richtlinie",
+        "hint": "Jedes Angebot nutzt den Prozentsatz unten; der Plan des Anbieters wird vollstandig ignoriert, auch sein Falligkeitsdatum."
+      }
+    },
+    "ourPolicy": {
+      "deposit": "Anzahlung nehmen",
+      "full": "Vollstandig abrechnen",
+      "percentLabel": "Anzahlung in Prozent",
+      "percentError": "Bitte einen Wert zwischen 1 und 100 eingeben."
+    },
+    "leadTime": {
+      "legend": "Vollzahlung kurz vor Abfahrt",
+      "toggle": "Vollzahlung bei bald startenden Chartern verlangen",
+      "hint": "Eine Untergrenze fur den oben gewahlten Plan, nie ein dritter Plan. Ausgeschaltet gelten die 30% eines Anbieters auch fur eine Charter, die morgen startet.",
+      "daysLabel": "Tage vor Check-in",
+      "daysError": "Bitte eine ganze Zahl zwischen 0 und 365 eingeben."
+    },
+    "preference": {
+      "legend": "Bevorzugter Anbieter",
+      "hint": "Wer gewinnt, wenn Verfügbarkeit, Preis und Pflichtgebühren gleich sind. Ein günstigeres Angebot wird dadurch nie übergangen: es entscheidet nur den Gleichstand.",
+      "rebuildNote": "Gilt sofort für neue Angebote und den Verfügbarkeitskalender. Katalogkarten werden direkt nach dem Speichern im Hintergrund neu aufgebaut, das dauert deutlich unter einer Minute."
+    },
+    "currency": {
+      "legend": "Anzeigewährung",
+      "toggle": "Preise in der Währung des Besuchers zeigen",
+      "hint": "Nur zur Anzeige. Eine Buchung wird in der Währung abgerechnet, in der sie kalkuliert wurde, und der Zahlungsbildschirm nennt den Betrag, der tatsächlich abgebucht wird, sobald beide auseinandergehen. Umgerechnete Beträge sind als ungefähr gekennzeichnet: Referenzkurse sind nicht die Kurse der Kartennetze. Sind die Kurse veraltet, bleiben die Preise in der Währung des Anbieters.",
+      "fallback": "Wenn das Land unbekannt ist"
+    },
+    "ranking": {
+      "reliabilityToggle": "Gleichstand über die Antwortquote lösen",
+      "reliabilityHint": "Nur wenn Preis, Pflichtzuschläge und Provision gleich sind. Übersprungen, sobald einer der beiden Anbieter im Zeitraum zu wenige Anfragen für eine Messung hat, damit ein neu angebundener Anbieter nie für sein Schweigen zurückgestuft wird. Die Zahlen stehen auf der Seite Sync-Verlauf.",
+      "windowDays": "Gemessen über die letzten (Tage)",
+      "catalogueToggle": "Charterpreis auf den Karten zeigen",
+      "catalogueHint": "Aus zeigt eine Karte den Gesamtpreis. An zeigt sie den reinen Charterpreis mit den Pflichtzuschlägen darunter, und Sortierung, Preisfilter und Schieberegler folgen derselben Zahl. Unabhängig vom Schalter darüber: was eine Karte bewirbt und über wen wir verkaufen, sind zwei Entscheidungen.",
+      "legend": "Angebotsauswahl",
+      "toggle": "Nach Charterpreis vergleichen",
+      "hint": "Aus gewinnt der Anbieter mit dem niedrigeren Gesamtpreis, also mit dem Betrag, den der Gast tatsächlich zahlt. An entscheidet der reine Charterpreis, und die Pflichtzuschläge lösen nur einen Gleichstand auf. Der Vergleich nach Charterpreis kann den Törn wählen, der den Gast insgesamt mehr kostet."
+    },
+    "nameSearch": {
+      "legend": "Freitextsuche",
+      "toggle": "Freitextfeld in der Suchleiste anzeigen",
+      "hint": "Eine Testhilfe, kein Teil des Designs. Eingeschaltet erhält die Yachtsuche ein Feld, das Name, Modell, Werft, Charterfirma oder Basis eines Bootes abgleicht — Wort für Wort und in beliebiger Reihenfolge."
+    },
+    "save": "Anderungen speichern",
+    "saving": "Wird gespeichert...",
+    "saved": "Einstellungen gespeichert.",
+    "saveFailed": "Einstellungen konnten nicht gespeichert werden.",
+    "appliesNext": "Gilt fur neue Angebote. Ein bereits gehaltenes Angebot behalt die Richtlinie, zu der es berechnet wurde."
+  }
+}

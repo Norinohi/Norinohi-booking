@@ -1,0 +1,184 @@
+{
+  "BoatTypes": {
+    "heading": "Choose Your Boat Type",
+    "previous": "Previous boat types",
+    "next": "Next boat types"
+  },
+  "BudgetFinder": {
+    "heading": "Find Yachts By Your Budget",
+    "viewResults": "View Results",
+    "labels": {
+      "budget": "Budget Per Person",
+      "people": "People",
+      "skipper": "Skipper",
+      "destinations": "Destinations (Optional)"
+    },
+    "options": {
+      "any": "Any",
+      "budgetFrom": "{from}+",
+      "peopleNotSure": "Not sure",
+      "skipperYes": "Yes",
+      "skipperNo": "No",
+      "destinationsAll": "All Destinations"
+    }
+  },
+  "EarnCta": {
+    "heading": "Earn With Your Yacht",
+    "description": "List your yacht on our platform and start receiving bookings from travelers worldwide. We handle visibility, demand, and tools — you stay in control of your schedule and pricing.",
+    "cta": "List Your Yacht",
+    "dialog": {
+      "title": "Send a request",
+      "description": "Leave your details and our team will get in touch about listing your yacht.",
+      "submit": "Send request",
+      "success": "Thanks! We'll be in touch shortly."
+    }
+  },
+  "Hero": {
+    "tagline": "Over 30,000 yachts in 1,200 destinations. Charters from €120/day",
+    "heading": "Explore the world by yacht",
+    "wherePlaceholder": "Where to?",
+    "datesPlaceholder": "Any Dates",
+    "clearDates": "Clear dates",
+    "boatPlaceholder": "Any boat",
+    "captainPlaceholder": "With Captain",
+    "search": "Search",
+    "dontKnow": "Don't know how to choose?",
+    "helpPlan": "Help Me Plan My Trip",
+    "options": {
+      "croatia": "Croatia",
+      "greece": "Greece",
+      "italy": "Italy",
+      "turkey": "Turkey",
+      "caribbean": "Caribbean",
+      "thailand": "Thailand",
+      "catamaran": "Catamaran",
+      "sailingYacht": "Sailing yacht",
+      "motorYacht": "Motor yacht",
+      "gulet": "Gulet",
+      "luxuryYacht": "Luxury yacht",
+      "withCaptain": "With captain",
+      "bareboat": "Bareboat",
+      "skippered": "Skippered"
+    },
+    "stats": {
+      "yachts": {
+        "label": "yachts"
+      },
+      "destinations": {
+        "label": "destinations"
+      },
+      "travelers": {
+        "label": "happy travelers"
+      },
+      "rating": {
+        "label": "average rating"
+      }
+    }
+  },
+  "HowItWorks": {
+    "heading": "How It Works",
+    "intro": "Booking a yacht is easier than you think.",
+    "introSecondLine": "We guide you from choosing a destination to stepping on board — no experience needed.",
+    "cta": "Find Yachts",
+    "steps": {
+      "destination": {
+        "title": "Choose destination",
+        "description": "Explore over 1,200 sailing destinations worldwide. From Croatia to the Caribbean — pick the place that fits your trip."
+      },
+      "yacht": {
+        "title": "Select your yacht",
+        "description": "Browse yachts based on your group size, budget, and preferences. Compare options and find the best fit for your trip."
+      },
+      "book": {
+        "title": "Book your trip",
+        "description": "Confirm your dates, add extras if needed, and secure your booking online. You're ready to sail."
+      }
+    }
+  },
+  "PlanTrip": {
+    "heading": "Not Sure What To Choose Plan Your Perfect Yacht Trip In 30 Seconds",
+    "cta": "Help Me Plan My Trip",
+    "checklist": {
+      "questions": "Answer a few simple questions",
+      "recommendation": "Get a personalized recommendation",
+      "explore": "Explore the best yachts for your trip"
+    },
+    "steps": {
+      "preferences": {
+        "title": "Choose preferences",
+        "description": "Specify your ideal destinations, from the turquoise coasts of Palawan to the historic harbors of Valetta."
+      },
+      "recommendation": {
+        "title": "Get recommendation",
+        "description": "We'll suggest yachts based on your group's needs. Review our recommendations and select the perfect yacht."
+      },
+      "yachts": {
+        "title": "View yachts",
+        "description": "Finalize the details, add any extras, and book. Now you can anticipate your unforgettable yachting adventure."
+      }
+    }
+  },
+  "PopularDestinations": {
+    "heading": "Popular Destinations",
+    "previous": "Previous destinations",
+    "next": "Next destinations",
+    "seeAll": "View All Popular",
+    "showLess": "Show fewer",
+    "perPersonWeek": "From {price} per person/week",
+    "yachtCount": "{count, plural, one {# yacht} other {# yachts}}"
+  },
+  "PopularYachts": {
+    "heading": "Popular Yachts",
+    "previous": "Previous yachts",
+    "next": "Next yachts",
+    "seeAll": "See All Yachts",
+    "from": "From",
+    "viewDetails": "View Details",
+    "perDay": "/ per day"
+  },
+  "SailingRoutes": {
+    "heading": "Popular Sailing Routes",
+    "previous": "Previous routes",
+    "next": "Next routes",
+    "seeAll": "View All Popular",
+    "showLess": "Show fewer",
+    "exploreRoute": "Explore Route",
+    "days": "{count, plural, one {# day} other {# days}}",
+    "levels": {
+      "easy": "Easy",
+      "moderate": "Moderate",
+      "advanced": "Advanced"
+    }
+  },
+  "Testimonials": {
+    "heading": "What Our Customers Say",
+    "allReviews": "All Reviews",
+    "comingSoon": "Coming Soon",
+    "items": {
+      "weber": {
+        "quote": "We booked a yacht in Croatia for the first time and everything just worked. The process was simple, and the boat was exactly what we expected.",
+        "location": "Germany"
+      },
+      "martin": {
+        "quote": "I had no sailing experience, but the platform made it easy to find a skipper and plan the whole trip. It felt like a regular holiday, just better.",
+        "location": "France"
+      },
+      "carter": {
+        "quote": "The price transparency was the biggest surprise. We could see the full cost upfront and split it between friends — super convenient.",
+        "location": "United Kingdom"
+      },
+      "rossi": {
+        "quote": "We compared a few yachts and found the perfect one for our group. The route suggestions were really helpful — we didn't have to plan anything.",
+        "location": "Italy"
+      },
+      "kowalska": {
+        "quote": "Great selection of boats and very clear filters. We found exactly what we needed in just a few minutes.",
+        "location": "Poland"
+      },
+      "jensen": {
+        "quote": "Everything from booking to boarding felt effortless. Clear communication, no hidden fees, and a boat that looked even better in person.",
+        "location": "Denmark"
+      }
+    }
+  }
+}

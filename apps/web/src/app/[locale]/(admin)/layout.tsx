@@ -1,3 +1,7 @@
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
+
+import { adminClientMessages } from "@/i18n/messages";
 import { STAFF_ROLES } from "@/lib/auth/roles";
 import { requireRole } from "@/lib/auth/server";
 
@@ -14,5 +18,12 @@ export const instant = false;
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireRole(...STAFF_ROLES);
 
-  return children;
+  /* A nested provider replaces the root one's messages rather than merging, so this repeats the
+     public namespaces alongside `Admin`. They are the same objects the root provider got, which
+     React's serializer sends as references when both layouts render in one payload. */
+  return (
+    <NextIntlClientProvider messages={adminClientMessages(await getMessages())}>
+      {children}
+    </NextIntlClientProvider>
+  );
 }

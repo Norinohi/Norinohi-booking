@@ -1,0 +1,22 @@
+{
+  "title": "My Bookings",
+  "history": "History",
+  "anyDates": "Any dates",
+  "clearDates": "Clear dates",
+  "emptyTitle": "No yachts yet",
+  "emptyDescription": "Start exploring yachts and plan your first trip — your bookings will appear here.",
+  "cancel": {
+    "action": "Cancel booking",
+    "title": "Cancel this booking?",
+    "description": "This can't be undone, and the charter company will be notified.",
+    "reasonLabel": "Reason (optional)",
+    "reasonPlaceholder": "Tell us why you're cancelling",
+    "confirm": "Cancel booking",
+    "keep": "Keep booking",
+    "success": "Your booking has been cancelled.",
+    "error": "We couldn't cancel your booking. Please try again."
+  },
+  "statusCancelled": "Cancelled",
+  "payBalance": "Pay {amount}",
+  "completePayment": "Complete payment {amount}"
+}

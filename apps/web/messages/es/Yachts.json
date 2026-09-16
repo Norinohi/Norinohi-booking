@@ -1,0 +1,22 @@
+{
+  "heading": "Buscador de alquiler de yates",
+  "searchByMap": "Buscar en el mapa",
+  "emptyTitle": "No se han encontrado yates para tus filtros",
+  "emptyDescription": "Prueba a ajustar las fechas, el presupuesto o el lugar; te ayudaremos a encontrar la opción ideal.",
+  "searchBar": {
+    "location": "Ubicación",
+    "startTyping": "Empieza a escribir",
+    "searchCountries": "Buscar países...",
+    "addDates": "Añadir fechas",
+    "clearDates": "Borrar fechas",
+    "anyBoat": "Cualquier barco",
+    "search": "Buscar",
+    "noLocations": "No hay destinos coincidentes",
+    "popularCountries": "Países populares",
+    "popularBoatTypes": "Tipos de barco populares",
+    "allBoatTypes": "Todos los tipos de barco",
+    "clearLocation": "Borrar destino",
+    "freeText": "Nombre, modelo o empresa"
+  },
+  "paginationSummary": "Mostrando {from}-{to} de {total}"
+}

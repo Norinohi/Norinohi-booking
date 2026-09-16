@@ -1,0 +1,206 @@
+{
+  "backToSearch": "Back To Search",
+  "breadcrumbSearch": "Search",
+  "share": "Share",
+  "linkCopied": "Link copied",
+  "seeOnMap": "See On Map",
+  "addToWishlist": "Add To Wishlist",
+  "removeFromWishlist": "Remove From Wishlist",
+  "included": "Included",
+  "amenities": {
+    "groups": {
+      "navigation-and-safety": "Navigation and safety",
+      "deck-and-cockpit": "Deck and cockpit",
+      "interior-and-cabins": "Interior and cabins",
+      "galley": "Galley",
+      "entertainment-and-water-toys": "Entertainment and water toys",
+      "systems-and-power": "Systems and power",
+      "other": "Other equipment"
+    },
+    "itemCount": "{count, plural, one {# item} other {# items}}",
+    "allIncluded": "All listed amenities are included in the charter price.",
+    "dismissNote": "Dismiss"
+  },
+  "importantInfo": {
+    "charterCompany": "Charter company",
+    "pickUpAddress": "Yacht pick-up address",
+    "pickUp": "Yacht pick-up",
+    "dropOff": "Yacht drop-off",
+    "policies": "Cancellation / Payment policies",
+    "securityDeposit": "Refundable security deposit",
+    "securityDepositNote": "Held by the charter base at check-in and returned after an undamaged handover.",
+    "securityDepositInsured": "Reduced to {amount} if you take the base’s deposit insurance.",
+    "license": "Sailing licence",
+    "pets": "Pets",
+    "paymentMethods": "Payment methods accepted by charter company",
+    "marinaInfo": "Information about the marina",
+    "policiesVariesBySelection": "Cancellation and prepayment policies vary according to your selection. Payment conditions are confirmed during quote and booking.",
+    "licenseRequired": "Valid sailing license or local equivalent required.",
+    "licenseNotRequired": "No license is needed when booking with crew or skipper.",
+    "petsAllowedWithConfirmation": "Pets are allowed on this yacht with charter company confirmation.",
+    "petsAskBase": "Pet policy is set by the charter base — ask before booking.",
+    "marinaInfoText": "{marina} is located in {location}, {country}. Check-in and check-out times are provided by the charter base.",
+    "paymentMethod": {
+      "card": "Card",
+      "bank_transfer": "Bank transfer",
+      "cash": "Cash"
+    }
+  },
+  "popular": {
+    "from": "From",
+    "perPeriod": "/ {days, plural, one {# day} other {# days}}",
+    "seeAll": "See All Yachts",
+    "previous": "Previous yachts",
+    "next": "Next yachts"
+  },
+  "route": {
+    "start": "Start",
+    "finish": "Finish",
+    "day": "Day {day}",
+    "stopTitle": "Day {day} - {place}",
+    "disclaimer": "Indicative route. The final itinerary and overnight stops depend on weather, availability and the skipper's decision."
+  },
+  "review": {
+    "count": "({count, plural, one {# review} other {# reviews}})",
+    "summary": "Showing {shown} of {total}",
+    "empty": "No written reviews yet",
+    "operatorRated": "The score comes from {count, plural, one {# guest rating} other {# guest ratings}} collected by the charter operator."
+  },
+  "sidebar": {
+    "crew": "Crew",
+    "people": "People",
+    "datesPlaceholder": "Select dates",
+    "selectDates": "Please select dates to see the price",
+    "unavailable": "This yacht has no available dates",
+    "unavailableHint": "Ask us about other dates or a similar yacht.",
+    "slotRefused": "Those dates are not bookable. Please choose another period.",
+    "searchedPeriodRefused": "{from} to {to} is not available for this yacht. Pick another period, or use the dates shown.",
+    "loadFailed": "We couldn't load this booking's price.",
+    "loadRetry": "Try again",
+    "prepayment": "{percent}% Booking Prepayment",
+    "boatPrice": "Boat price",
+    "boatPriceHint": "Full rental price",
+    "deposit": "Refundable deposit",
+    "howItWorks": "See how it works",
+    "scheduleDetails": "What this payment covers",
+    "scheduleIncludes": "Includes",
+    "scheduleSplit": "Split across both payments",
+    "groups": {
+      "mandatory": "Mandatory extras",
+      "selectedExtras": "Selected extras",
+      "crew": "Crew"
+    },
+    "payNow": "Booking Prepayment (Pay Now)",
+    "payAt": "Pay at: {date}",
+    "payAtCheckIn": "Pay at check-in: {date}",
+    "firstPayment": "{amount} (1st payment)",
+    "fullPayment": "{amount} (full payment)",
+    "secondPayment": "{amount} (2nd payment)",
+    "extrasPayment": "{amount} (extras)",
+    "depositNote": "+ {amount} (Refundable security deposit)",
+    "totalPrice": "Total Price",
+    "discountsHeading": "Included in the rental price above",
+    "dueNow": "Due Now",
+    "payNowCta": "Pay {amount} Now",
+    "requestBookingCta": "Send booking request",
+    "requestBookingHint": "This yacht's operator confirms every booking personally. We'll ask them for your dates and come back to you. Nothing is charged now.",
+    "requestQuote": "Request Quote",
+    "promo": {
+      "label": "Promo code",
+      "placeholder": "Enter code",
+      "apply": "Apply",
+      "remove": "Remove",
+      "applied": "{amount} off",
+      "rejected": {
+        "unknown_code": "We don't recognise that code.",
+        "inactive": "That code is no longer active.",
+        "not_started": "That code is not valid yet.",
+        "expired": "That code has expired.",
+        "usage_limit_reached": "That code has been fully redeemed.",
+        "not_applicable": "That code doesn't apply to this yacht."
+      }
+    },
+    "credit": {
+      "label": "Referral credit",
+      "available": "{amount} available on this booking",
+      "applied": "{amount} applied",
+      "apply": "Apply",
+      "remove": "Remove"
+    },
+    "onRequest": "This yacht is priced on request",
+    "onRequestHint": "We have dates for it, but no published rate covers them. Tell us when you would like to sail and we will come back with a price.",
+    "dropOff": "Drop-off marina",
+    "pickUp": "Pick-up: {marina}",
+    "boatPriceHintDiscounted": "Rental price after discount",
+    "depositWhenInsured": "or {amount} with the damage waiver"
+  },
+  "panels": {
+    "details": "Yacht Details",
+    "booking": "Booking Summary"
+  },
+  "tabs": {
+    "overview": "Overview",
+    "amenities": "Amenities",
+    "mandatory-extras": "Mandatory extras",
+    "optional-extras": "Optional extras",
+    "description": "Description",
+    "important-info": "Important info",
+    "suggested-route": "Suggested route",
+    "review": "Review",
+    "faq": "FAQ",
+    "popular-yachts": "Popular yachts"
+  },
+  "sections": {
+    "overview": "Overview",
+    "amenities": "Amenities",
+    "mandatoryExtras": "Mandatory extras",
+    "optionalExtras": "Optional extras",
+    "description": "Description",
+    "media": "Video and tour",
+    "importantInfo": "Important information",
+    "suggestedRoute": "Suggested route",
+    "review": "Review",
+    "faq": "FAQ",
+    "popularYachts": "Other popular yachts"
+  },
+  "faqCategories": {
+    "booking": "Booking",
+    "payment": "Payment",
+    "prices": "Prices",
+    "licences": "Licences",
+    "travel": "Travel",
+    "cancellation": "Cancellation"
+  },
+  "overview": {
+    "location": "Location",
+    "mainsail": "Type Of Mainsail",
+    "year": "Year",
+    "draught": "Draught",
+    "boatType": "Boat Type",
+    "beam": "Beam",
+    "cabins": "Cabins",
+    "fuelTank": "Fuel Tank",
+    "bathrooms": "Bathrooms",
+    "waterTank": "Water Tank",
+    "length": "Length",
+    "engine": "Engine",
+    "showers": "Showers",
+    "notSpecified": "Not specified"
+  },
+  "bookingRequestDialog": {
+    "title": "Request this booking",
+    "description": "The operator confirms each charter of this yacht personally. Leave your details and a charter expert will confirm these dates with them and get back to you within one working day.",
+    "submit": "Send booking request",
+    "success": "Thanks! We've sent your request and will be in touch shortly."
+  },
+  "quoteDialog": {
+    "title": "Request a quote",
+    "description": "Leave your details and a charter expert will send you a tailored quote for these dates.",
+    "submit": "Send request",
+    "success": "Thanks! We'll be in touch shortly."
+  },
+  "media": {
+    "video": "Watch the video",
+    "tour": "360° tour"
+  }
+}

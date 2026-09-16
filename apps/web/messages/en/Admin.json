@@ -1,0 +1,1343 @@
+{
+  "Commissions": {
+    "title": "Commission Rates",
+    "subtitle": "What CharterNavi earns through each provider, and from when.",
+    "add": "Add rate",
+    "edit": "Edit",
+    "switchOff": "Switch off",
+    "switchOn": "Switch on",
+    "switchedOff": "Rate switched off",
+    "switchedOn": "Rate switched on",
+    "created": "Rate added",
+    "updated": "Rate saved",
+    "error": "Couldn't load the commission rates",
+    "empty": "No rates yet. Until one is entered, commission plays no part in choosing which offer a visitor sees.",
+    "emptyFiltered": "No rates match these filters.",
+    "allOperators": "All operators",
+    "openEnded": "No end date",
+    "fromDate": "From {date}",
+    "untilDate": "Until {date}",
+    "note": "A rate only breaks a tie between two offers already equal on price and on obligatory extras. It can never be the reason a visitor is shown a dearer boat. Nothing in the sale reads these rates yet.",
+    "filters": {
+      "provider": "Provider",
+      "anyProvider": "All providers",
+      "status": "Status",
+      "anyStatus": "Any status"
+    },
+    "status": {
+      "active": "Active",
+      "scheduled": "Scheduled",
+      "expired": "Expired",
+      "inactive": "Switched off"
+    },
+    "table": {
+      "provider": "Provider",
+      "operator": "Operator",
+      "rate": "Rate",
+      "window": "Valid",
+      "status": "Status",
+      "added": "Added",
+      "actions": "Actions"
+    },
+    "dialog": {
+      "createTitle": "Add a commission rate",
+      "editTitle": "Edit commission rate",
+      "description": "What we earn on a sale through this provider. Leave the operator blank to cover every charter company at this vendor.",
+      "provider": "Provider",
+      "operator": "Operator",
+      "operatorSearch": "Search operators",
+      "allOperators": "All operators at this provider",
+      "ratePct": "Rate (%)",
+      "startsAt": "Starts",
+      "endsAt": "Ends",
+      "windowHint": "Both dates are optional and inclusive. Leave them empty for an agreement that runs until it is renegotiated.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving…",
+      "errors": {
+        "rateRequired": "Enter a rate",
+        "rateRange": "Use a number between 0 and 100",
+        "endsBeforeStarts": "The end date cannot be before the start date"
+      }
+    }
+  },
+  "Bookings": {
+    "title": "Bookings",
+    "subtitle": "Every booking on the platform, newest first. Open one to settle it.",
+    "createdAt": "Booked {at}",
+    "excluded": "Not real business",
+    "empty": "No booking matches these filters.",
+    "error": "The bookings could not be loaded.",
+    "filters": {
+      "search": "Search by reference, name or email",
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "includeExcluded": "Include bookings marked as test"
+    },
+    "table": {
+      "reference": "Reference",
+      "customer": "Customer",
+      "charter": "Yacht",
+      "dates": "Dates",
+      "total": "Total",
+      "collected": "Collected",
+      "status": "Status"
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "QUOTED": "Quoted",
+      "OPTION_PENDING": "Holding",
+      "OPTION_HELD": "Held",
+      "OPTION_EXPIRED": "Hold expired",
+      "QUOTE_EXPIRED": "Quote expired",
+      "PAYMENT_PENDING": "Awaiting payment",
+      "PAYMENT_FAILED": "Payment failed",
+      "CONFIRMING": "Confirming",
+      "CONFIRMED": "Confirmed",
+      "PROVIDER_REJECTED": "Provider refused",
+      "CANCELLED": "Cancelled",
+      "REFUND_PENDING": "Refund due",
+      "REFUNDED": "Refunded"
+    }
+  },
+  "Users": {
+    "title": "Users",
+    "subtitle": "Every account with its contact details and how much it has booked.",
+    "createdAt": "Joined {at}",
+    "unverified": "Email not verified",
+    "confirmed": "{count, plural, =0 {none confirmed} one {# confirmed} other {# confirmed}}",
+    "total": "{count, plural, one {# user} other {# users}}",
+    "empty": "No user matches these filters.",
+    "error": "The users could not be loaded.",
+    "filters": {
+      "search": "Search by name, email or phone",
+      "role": "Role",
+      "allRoles": "All roles",
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "bookings": "Bookings",
+      "anyBookings": "With or without bookings",
+      "withBookings": "Has bookings",
+      "withoutBookings": "No bookings",
+      "sort": "Sort"
+    },
+    "sort": {
+      "newest": "Newest first",
+      "mostBookings": "Most bookings",
+      "name": "Name A-Z"
+    },
+    "table": {
+      "user": "User",
+      "email": "Email",
+      "phone": "Phone",
+      "bookings": "Bookings",
+      "lastBooking": "Last booking",
+      "status": "Status"
+    },
+    "role": {
+      "customer": "Customer",
+      "staff": "Staff",
+      "admin": "Admin"
+    },
+    "status": {
+      "active": "Active",
+      "guest": "Guest, unclaimed",
+      "deactivated": "Deactivated"
+    }
+  },
+  "Duplicates": {
+    "title": "Duplicate Review",
+    "subtitle": "Merge the look-alike listings two providers sent for the same yacht.",
+    "metrics": {
+      "title": "Matcher accuracy",
+      "subtitle": "How often each rule has been right so far.",
+      "decided": "{count, plural, =0 {No reviewed pairs yet} one {# reviewed pair behind these rates} other {# reviewed pairs behind these rates}}",
+      "error": "Couldn't load the accuracy figures",
+      "empty": "Nothing has been proposed yet.",
+      "noSample": "Not enough decisions",
+      "note": "Precision is confirmed pairs over confirmed and rejected together. Merges a split later undid count against the rule. Set-aside pairs are left out: nobody could call them, and counting them as failures would understate a rule that is doing fine on the ones it does settle.",
+      "table": {
+        "rule": "Rule",
+        "band": "Confidence",
+        "proposed": "Proposed",
+        "confirmed": "Merged",
+        "rejected": "Not duplicates",
+        "undone": "Undone",
+        "precision": "Precision"
+      }
+    },
+    "filter": {
+      "label": "Decision",
+      "pending": "Pending",
+      "confirmed": "Merged duplicates",
+      "rejected": "Not duplicates",
+      "deferred": "Not decided"
+    },
+    "empty": {
+      "pending": "Nothing to review. Every duplicate candidate has been resolved.",
+      "confirmed": "No pairs have been merged yet.",
+      "rejected": "No pairs have been marked as different yachts yet.",
+      "deferred": "Nothing has been set aside yet.",
+      "filtered": "No pairs match these filters. Widen the confidence or rule filter to see the rest."
+    },
+    "error": "Couldn't load the duplicate queue",
+    "confidence": "{value}% match",
+    "confidenceUnknown": "Confidence unknown",
+    "proposed": "Proposed {date}",
+    "reviewed": "Reviewed {date}",
+    "undone": "Undone",
+    "signals": "Matched on {signals}",
+    "sideA": "Side A",
+    "sideB": "Side B",
+    "keep": "Keep this listing",
+    "keeping": "Merging…",
+    "reject": "Not a duplicate",
+    "reopen": "Return to queue",
+    "differs": "differs",
+    "differsLegend": "Highlighted values differ between the two sides.",
+    "noImage": "No image",
+    "unavailable": {
+      "title": "Listing unavailable",
+      "description": "This listing was deleted after the pair was proposed."
+    },
+    "fields": {
+      "provider": "Provider",
+      "externalId": "Provider ID",
+      "status": "Listing status",
+      "matchStatus": "Match status",
+      "operator": "Operator",
+      "model": "Model",
+      "year": "Year built",
+      "length": "Length",
+      "cabins": "Cabins",
+      "berths": "Berths",
+      "base": "Home base",
+      "location": "Location"
+    },
+    "lengthValue": "{value} m",
+    "listingStatus": {
+      "draft": "Draft",
+      "published": "Published",
+      "hidden": "Hidden"
+    },
+    "matchStatus": {
+      "unmatched": "Unmatched",
+      "auto": "Auto-matched",
+      "confirmed": "Confirmed",
+      "rejected": "Rejected"
+    },
+    "showDetail": "Review all details",
+    "showSources": "Sources",
+    "detailTitle": "Full comparison",
+    "detailSubtitle": "Every photo and specification both providers sent for this pair.",
+    "detailError": "Couldn't load the full comparison",
+    "photoPosition": "{index} / {total}",
+    "openPhoto": "Open photo {index}",
+    "amenitiesTitle": "Amenities ({count})",
+    "noAmenities": "No amenities recorded",
+    "descriptionTitle": "Provider description",
+    "noDescription": "No description from the provider",
+    "yes": "Yes",
+    "no": "No",
+    "litresValue": "{value} L",
+    "detailFields": {
+      "category": "Category",
+      "builder": "Builder",
+      "crewType": "Crew",
+      "beam": "Beam",
+      "draft": "Draft",
+      "heads": "Heads",
+      "showers": "Showers",
+      "engines": "Engines",
+      "enginePower": "Engine power",
+      "fuelType": "Fuel type",
+      "fuelCapacity": "Fuel capacity",
+      "waterCapacity": "Water capacity",
+      "propulsion": "Propulsion",
+      "steering": "Steering",
+      "sail": "Rig",
+      "deposit": "Security deposit",
+      "depositInsurance": "Deposit insurance",
+      "pets": "Pets allowed",
+      "currency": "Currency",
+      "rating": "Provider rating",
+      "reviews": "Provider reviews",
+      "freshness": "Last synced",
+      "updated": "Last updated"
+    },
+    "summary": "{pairs, plural, =0 {No pairs} one {# pair} other {# pairs}} · {yachts, plural, =0 {no yachts} one {# yacht} other {# yachts}}",
+    "sortNote": "highest confidence first",
+    "sortNoteReviewed": "most recently decided first",
+    "optionCount": "{label} ({count})",
+    "filters": {
+      "confidence": "Match confidence",
+      "anyConfidence": "Any confidence",
+      "matchType": "Matched on",
+      "anyMatchType": "Any rule",
+      "any": "Any",
+      "confidenceValue": "Confidence: {value}",
+      "matchTypeValue": "Rule: {value}"
+    },
+    "confidenceBand": {
+      "high": "High (90%+)",
+      "medium": "Medium (70-89%)",
+      "low": "Low (under 70%)",
+      "unknown": "Unscored"
+    },
+    "matchType": {
+      "name+model+year": "Name + model + year",
+      "base+model+year": "Base + model + year",
+      "model+year": "Model + year only",
+      "model+yearBuilt": "Model + year built",
+      "name+base": "Name + berth"
+    },
+    "signalFields": {
+      "name": "Name",
+      "base": "Base",
+      "area": "Area",
+      "length": "Length",
+      "cabins": "Cabins",
+      "berths": "Berths",
+      "heads": "Heads",
+      "builder": "Builder",
+      "operator": "Operator",
+      "model": "Model",
+      "year": "Year built"
+    },
+    "toast": {
+      "confirmed": "Merged. {count} provider sources now point at the kept listing.",
+      "confirmedWithClosed": "Merged. {count} provider sources now point at the kept listing, and {closed} further pairs closed with it.",
+      "rejected": "Recorded as two different yachts.",
+      "conflict": "Someone else already reviewed this pair. Reloading the queue.",
+      "error": "Something went wrong. Please try again.",
+      "deferred": "Set aside for later. It is not counted for or against the matcher.",
+      "reopened": "Back in the queue, waiting to be decided again."
+    },
+    "defer": "Set aside",
+    "notePlaceholder": "Why? (optional)",
+    "noteLabel": "Reviewer note",
+    "noteWas": "Note: {note}"
+  },
+  "Sync": {
+    "reliability": {
+      "title": "Provider reliability",
+      "subtitle": "How often each vendor answered when a visitor was standing at the checkout.",
+      "window": "Measurement window",
+      "windowValue": "Last {days} days",
+      "error": "Couldn't load the reliability figures",
+      "empty": "No vendor has been asked for a quote in this window.",
+      "noSample": "No sample",
+      "milliseconds": "{value} ms",
+      "note": "A refusal counts as an answer: the vendor was reached and said the period is gone, which is a fact about the boat rather than a broken connector. Only an error or a timeout counts against a vendor. Asks our own cached calendar refused before any vendor was called are left out of the rate entirely. Nothing in the sale reads these numbers yet.",
+      "table": {
+        "provider": "Provider",
+        "asked": "Asked",
+        "answered": "Answered",
+        "failed": "No answer",
+        "successRatio": "Answered",
+        "latency": "Median reply"
+      }
+    },
+    "title": "Sync History",
+    "subtitle": "Every catalogue and availability run, newest first.",
+    "controls": {
+      "provider": "Provider to sync",
+      "allProviders": "All providers",
+      "startCatalogue": "Sync catalogue",
+      "startAvailability": "Sync availability",
+      "started": "{count, plural, one {# run started} other {# runs started}}",
+      "skipped": "{count, plural, one {# provider is already importing} other {# providers are already importing}}",
+      "noProviders": "No connector is enabled.",
+      "capabilities": "Active connector: {provider}",
+      "capability": {
+        "supportsLiveQuote": "Live quote",
+        "supportsOptions": "Holds",
+        "supportsExtrasMutation": "Editable extras",
+        "supportsWebhooks": "Webhooks"
+      },
+      "hint": "A run is opened immediately and keeps going after this page is closed. Its outcome appears in the table below."
+    },
+    "maintenance": {
+      "sweep": "Expire stale holds",
+      "remind": "Send balance reminders",
+      "swept": "{count, plural, one {# booking expired} other {# bookings expired}}, {reaped, plural, one {# sync run reaped} other {# sync runs reaped}}.",
+      "staleConfirmations": "{count, plural, one {# booking is stuck confirming} other {# bookings are stuck confirming}}. Ask the provider whether the reservation exists.",
+      "releaseFailures": "{count, plural, one {# provider slot could not be released} other {# provider slots could not be released}}.",
+      "reminded": "{count, plural, one {# reminder sent} other {# reminders sent}}.",
+      "remindSkipped": "{count, plural, one {# booking has no email address to send to} other {# bookings have no email address to send to}}.",
+      "hint": "Both run on a schedule already. Running one by hand is safe: expiries are compare-and-set, and each installment is only ever reminded once."
+    },
+    "filters": {
+      "provider": "Provider",
+      "kind": "Kind",
+      "status": "Status",
+      "allProviders": "All providers",
+      "allKinds": "All kinds",
+      "allStatuses": "All statuses"
+    },
+    "table": {
+      "provider": "Provider",
+      "kind": "Kind",
+      "status": "Status",
+      "results": "Results",
+      "errors": "Errors",
+      "started": "Started",
+      "finished": "Finished",
+      "details": "Details"
+    },
+    "kind": {
+      "catalogue": "Catalogue",
+      "availability": "Availability",
+      "pricing": "Pricing",
+      "media": "Media"
+    },
+    "status": {
+      "pending": "Pending",
+      "running": "Running",
+      "success": "Success",
+      "failed": "Failed",
+      "partial": "Partial"
+    },
+    "counts": {
+      "created": "{count, plural, one {# created} other {# created}}",
+      "updated": "{count, plural, one {# updated} other {# updated}}",
+      "skipped": "{count, plural, one {# skipped} other {# skipped}}",
+      "failed": "{count, plural, one {# failed} other {# failed}}"
+    },
+    "empty": "No sync runs yet",
+    "error": "Couldn't load sync runs",
+    "pending": "Not started",
+    "details": {
+      "show": "Show errors",
+      "hide": "Hide errors",
+      "title": "Errors from this run",
+      "empty": "This run recorded no errors.",
+      "error": "Couldn't load this run",
+      "unavailable": "Error details aren't available for this provider."
+    },
+    "errorType": {
+      "rate_limited": "Rate limited",
+      "transient": "Transient",
+      "auth": "Auth",
+      "not_found": "Not found",
+      "contract": "Contract"
+    },
+    "unreleasedOptions": {
+      "title": "Slots still held by a vendor",
+      "subtitle": "Cancelled here, but the operator refused to take the week back. It sells to nobody until it is freed or the vendor's own hold lapses.",
+      "empty": "Nothing is held against us.",
+      "reference": "Booking",
+      "yacht": "Yacht",
+      "dates": "Dates",
+      "period": "{from} to {to}",
+      "provider": "Vendor",
+      "optionId": "Option id",
+      "hold": "Hold",
+      "refusedAt": "Refused",
+      "reason": "What the vendor said",
+      "retry": "Ask again",
+      "holdUnknown": "Not published",
+      "lapsed": "Lapsed",
+      "holdsUntil": "Held until {when}",
+      "released": "{reference}: the vendor let the slot go.",
+      "refusedAgain": "{reference}: the vendor refused again.",
+      "retryFailed": "{reference}: could not reach the vendor."
+    }
+  },
+  "Audit": {
+    "title": "Audit Log",
+    "subtitle": "Every staff action, newest first. Entries are written once and never edited.",
+    "filters": {
+      "entityType": "Entity type",
+      "allEntities": "All entities",
+      "action": "Action",
+      "allActions": "All actions",
+      "entityId": "Entity id",
+      "entityIdPlaceholder": "Paste a full id"
+    },
+    "table": {
+      "when": "When",
+      "actor": "Who",
+      "action": "Action",
+      "entity": "Entity",
+      "entityId": "Id",
+      "details": "Details"
+    },
+    "action": {
+      "create": "Created",
+      "update": "Updated",
+      "delete": "Deleted",
+      "sync": "Synced",
+      "merge": "Merged",
+      "price_adjustment": "Price change"
+    },
+    "entity": {
+      "booking": "Booking",
+      "booking_enquiry": "Booking question",
+      "discount": "Promo code",
+      "invoice_request": "Invoice",
+      "lead": "Enquiry",
+      "listing": "Listing",
+      "listing_duplicate_candidate": "Duplicate",
+      "maintenance": "Maintenance job"
+    },
+    "details": {
+      "show": "Show",
+      "hide": "Hide",
+      "before": "Before",
+      "after": "After",
+      "metadata": "Context"
+    },
+    "actorGone": "Deleted account",
+    "empty": "Nothing recorded yet.",
+    "error": "The audit log could not be loaded."
+  },
+  "Inbox": {
+    "title": "Inbox",
+    "subtitle": "Questions about existing bookings and enquiries from people still choosing.",
+    "tabs": {
+      "enquiries": "Booking questions",
+      "leads": "Enquiries"
+    },
+    "enquiries": {
+      "filters": {
+        "status": "Status",
+        "allStatuses": "All statuses",
+        "search": "Search by email or booking reference"
+      },
+      "status": {
+        "open": "Open",
+        "answered": "Answered",
+        "closed": "Closed"
+      },
+      "table": {
+        "received": "Received",
+        "customer": "Customer",
+        "question": "Question",
+        "status": "Status",
+        "booking": "Booking",
+        "actions": "Actions"
+      },
+      "actions": {
+        "reply": "Reply",
+        "replyAgain": "Reply again",
+        "close": "Close",
+        "reopen": "Reopen"
+      },
+      "answered": "Answered: {answer}",
+      "empty": "Nothing here — no questions match these filters.",
+      "error": "We couldn't load the questions."
+    },
+    "leads": {
+      "filters": {
+        "status": "Status",
+        "allStatuses": "All statuses",
+        "kind": "Kind",
+        "allKinds": "All kinds",
+        "search": "Search by name or email"
+      },
+      "status": {
+        "new": "New",
+        "contacted": "Contacted",
+        "closed": "Closed"
+      },
+      "kind": {
+        "quote_request": "Quote request",
+        "booking_request": "Booking request",
+        "charter_expert": "Charter expert",
+        "consultation": "Consultation"
+      },
+      "table": {
+        "received": "Received",
+        "from": "From",
+        "kind": "Kind",
+        "message": "Message",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "actions": {
+        "reply": "Reply",
+        "replyAgain": "Reply again",
+        "contacted": "Mark contacted",
+        "close": "Close",
+        "reopen": "Reopen"
+      },
+      "empty": "Nothing here — no enquiries match these filters.",
+      "error": "We couldn't load the enquiries.",
+      "answered": "Answered: {answer}"
+    },
+    "answer": {
+      "title": "Reply to this question",
+      "description": "Booking {reference}. Your reply is emailed to the customer.",
+      "label": "Your reply",
+      "placeholder": "Answer the question in full — this is what the customer receives.",
+      "close": "Close this question after sending",
+      "cancel": "Cancel",
+      "send": "Send reply",
+      "sent": "Reply sent",
+      "failed": "We couldn't send the reply. Please try again."
+    },
+    "leadAnswer": {
+      "title": "Reply to this enquiry",
+      "description": "Your reply is emailed to {name}.",
+      "noMessage": "They left no message.",
+      "label": "Your reply",
+      "placeholder": "Answer the enquiry in full — this is what they receive.",
+      "close": "Close this enquiry after sending",
+      "cancel": "Cancel",
+      "send": "Send reply",
+      "sent": "Reply sent",
+      "failed": "We couldn't send the reply. Please try again."
+    }
+  },
+  "Listings": {
+    "title": "Listings",
+    "subtitle": "Every listing staff can act on, drafts included. Imported inventory stays a draft until it is released here.",
+    "filters": {
+      "provider": "Provider",
+      "status": "Status",
+      "allProviders": "All providers",
+      "operator": "Operator",
+      "allOperators": "All operators",
+      "allStatuses": "All statuses",
+      "search": "Search by title or slug"
+    },
+    "table": {
+      "listing": "Listing",
+      "provider": "Provider",
+      "operator": "Operator",
+      "model": "Model & year",
+      "place": "Base & location",
+      "price": "From",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "hidden": "Hidden",
+      "merged": "Merged"
+    },
+    "actions": {
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "draft": "Back to draft",
+      "sources": "Sources"
+    },
+    "moved": "{title} is now {status}.",
+    "noProvider": "No provider",
+    "noPrice": "Not priced yet",
+    "notSet": "Not set",
+    "noImage": "No photo",
+    "empty": "No listings match these filters",
+    "error": "Couldn't load listings",
+    "publishDrafts": {
+      "providerLabel": "Provider to release",
+      "choose": "Choose a provider",
+      "action": "Publish all drafts",
+      "hint": "Releases every draft belonging to the chosen provider. A provider must be named: this screen never publishes the whole catalogue at once.",
+      "confirmTitle": "Publish all drafts?",
+      "confirmBody": "Every draft imported from {provider} becomes visible to customers straight away. Drafts from other providers are left alone.",
+      "cancel": "Cancel",
+      "confirm": "Publish drafts",
+      "publishing": "Publishing...",
+      "published": "{count, plural, =0 {No drafts left to publish for {provider}.} one {# draft published for {provider}.} other {# drafts published for {provider}.}}",
+      "failed": "Couldn't publish the drafts"
+    },
+    "unpriced": "{count, plural, one {# listing has dates but no published rate} other {# listings have dates but no published rate}} — they show as “On request” with an empty calendar.",
+    "sources": {
+      "subtitle": "Which provider each part of this listing is taken from. A pinned group is left alone by the nightly sync.",
+      "error": "Couldn't load this listing's providers",
+      "field": "Part of the listing",
+      "takenFrom": "Taken from",
+      "locked": "Pinned",
+      "automatic": "Automatic",
+      "release": "Release",
+      "pinned": "Pinned to that provider. The sync will leave it alone.",
+      "released": "Back to automatic. The sync decides it again.",
+      "model": "Model",
+      "year": "Year",
+      "base": "Base",
+      "operator": "Operator",
+      "photos": "Photos",
+      "descriptions": "Descriptions",
+      "fields": {
+        "media": "Photos",
+        "title": "Name",
+        "spec": "Specification",
+        "description": "Description",
+        "taxonomy": "Builder, model, type",
+        "operator": "Operator",
+        "home_base": "Home base",
+        "pets": "Pets allowed"
+      },
+      "takeOut": "Take out of this listing",
+      "splitRestored": "Taken out and returned to the listing it came from.",
+      "splitNew": "Taken out onto a listing of its own.",
+      "confirmSplitBody": "The {provider} offer goes back to its own listing, and this listing stops carrying both providers. You can merge the pair again from the Merged duplicates tab of Duplicate Review.",
+      "confirmSplitAction": "Take it out",
+      "confirmSplitBusy": "Taking out…",
+      "confirmSplitCancel": "Cancel"
+    }
+  },
+  "Routes": {
+    "title": "Suggested routes",
+    "subtitle": "Hand-authored itineraries. A route belongs to one charter base or one sailing region, and a listing page shows it only where somebody wrote one — nothing here is generated.",
+    "filters": {
+      "country": "Country",
+      "allCountries": "All countries",
+      "kind": "Kind",
+      "allKinds": "All kinds",
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "search": "Search by title"
+    },
+    "table": {
+      "title": "Route",
+      "target": "Base or region",
+      "kind": "Kind",
+      "nights": "Nights",
+      "stops": "Stops",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "kinds": {
+      "seven_days": "7 days",
+      "fourteen_days": "14 days",
+      "family": "Family",
+      "first_time_sailors": "First-time sailors",
+      "active_sailing": "Active sailing"
+    },
+    "status": {
+      "live": "Live",
+      "draft": "Draft"
+    },
+    "actions": {
+      "create": "New route",
+      "stops": "Stops",
+      "preview": "Preview",
+      "edit": "Edit",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "delete": "Delete",
+      "featured": "Home page"
+    },
+    "stopCount": "{count, plural, =0 {No stops} one {# stop} other {# stops}}",
+    "published": "{title} is live.",
+    "unpublished": "{title} is back to draft.",
+    "deleted": "{title} was deleted.",
+    "empty": "No routes match these filters",
+    "error": "Couldn't load routes",
+    "target": {
+      "country": "Country",
+      "allCountries": "All countries",
+      "level": "Attach to",
+      "levelBase": "A charter base",
+      "levelRegion": "A sailing region",
+      "base": "Base",
+      "region": "Region",
+      "searchBase": "Search a marina or town",
+      "searchRegion": "Search a region",
+      "chooseBase": "Choose a base",
+      "chooseRegion": "Choose a region",
+      "baseOption": "{base} · {place} ({count, plural, =0 {no yachts} one {# yacht} other {# yachts}})",
+      "regionOption": "{region} · {country} ({count, plural, =0 {no yachts} one {# yacht} other {# yachts}})",
+      "noMatches": "Nothing matches that search",
+      "hint": "A route attaches to a base or to a region, never to both. A base route wins over a region one on any yacht moored there. Both lists are ordered by how many published yachts sit behind each entry."
+    },
+    "dialog": {
+      "createTitle": "New route",
+      "editTitle": "Edit route",
+      "description": "The route's own details. Its stops are drawn on a map on the next screen.",
+      "fields": {
+        "title": "Title",
+        "titlePlaceholder": "Split to Vis and back",
+        "kind": "Kind",
+        "nights": "Nights",
+        "sortOrder": "Order",
+        "sortOrderHint": "Lowest first when a base has several routes",
+        "description": "Description",
+        "descriptionPlaceholder": "What this itinerary is like to sail, in a sentence or two.",
+        "defaultHint": "Shown in any language that has no translation below.",
+        "difficulty": "Difficulty",
+        "imageUrl": "Photo URL",
+        "imageUrlHint": "Shown on the home page card.",
+        "translations": "Translations",
+        "translationsHint": "Title and description per language. A blank language falls back to the default copy above."
+      },
+      "errors": {
+        "target": "Choose a base or a region for this route",
+        "nights": "Between 1 and 28 nights",
+        "failed": "Couldn't save the route"
+      },
+      "cancel": "Cancel",
+      "create": "Create route",
+      "save": "Save changes",
+      "created": "{title} was created. Add its stops next.",
+      "updated": "{title} was saved.",
+      "difficulty": {
+        "none": "Not set",
+        "easy": "Easy",
+        "moderate": "Moderate",
+        "advanced": "Advanced"
+      },
+      "locales": {
+        "en": "English",
+        "uk": "Ukrainian",
+        "de": "German",
+        "es": "Spanish"
+      }
+    },
+    "stops": {
+      "subtitle": "{target} · {nights} nights",
+      "listTitle": "Itinerary ({count})",
+      "add": "Add stop",
+      "day": "Day {day}",
+      "moveUp": "Move earlier",
+      "moveDown": "Move later",
+      "edit": "Edit",
+      "remove": "Remove stop",
+      "empty": {
+        "title": "No stops yet",
+        "body": "The route exists but has nothing to draw, so it cannot be published and no listing page will show it. Search for a harbour on the right, or tap the map, then name the stop and add it."
+      },
+      "form": {
+        "addTitle": "Add a stop",
+        "editTitle": "Edit this stop",
+        "name": "Stop name",
+        "namePlaceholder": "Vis town",
+        "note": "Note",
+        "noteHint": "English is what a language with no note of its own falls back to.",
+        "noteFor": "Note ({locale})",
+        "notePlaceholder": "What happens here — the anchorage, the walk, the restaurant.",
+        "placed": "Pin at {lat}, {lng}. Drag it to move the stop.",
+        "unplaced": "No position yet. Search for a place or tap the map to drop the pin.",
+        "save": "Save stop",
+        "append": "Add to itinerary",
+        "cancelEdit": "Cancel"
+      },
+      "search": {
+        "label": "Find a place",
+        "placeholder": "Vis, Hvar, Bol…",
+        "hint": "Picks the pin up and drops it on the result. Drag it afterwards if the anchorage is not the town.",
+        "searching": "Searching…"
+      },
+      "preview": "Preview",
+      "close": "Close",
+      "saved": "{name} was saved.",
+      "added": "{name} was added.",
+      "removed": "{name} was removed.",
+      "failed": "Couldn't save the stop",
+      "missingNotes": "No note in: {locales}"
+    },
+    "previewDialog": {
+      "title": "Route preview",
+      "subtitle": "Exactly as it appears on a yacht at {target}.",
+      "empty": "Add a stop before previewing — there is nothing to draw yet."
+    },
+    "featured": {
+      "title": "Routes on the home page",
+      "description": "The popular-routes list, in the order the site shows it. The first six fill the slider; the rest open under “View All Popular”.",
+      "chosen": "Chosen ({count})",
+      "add": "Add a route",
+      "addAction": "Add",
+      "remove": "Remove",
+      "search": "Search published routes",
+      "noCandidates": "Nothing left to add from this search",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "cancel": "Cancel",
+      "save": "Save order",
+      "saved": "The home page now shows {count, plural, =0 {no routes} one {# route} other {# routes}}.",
+      "failed": "Couldn't save the order",
+      "placement": {
+        "slider": "In the slider",
+        "grid": "Under View All",
+        "hidden": "Not shown"
+      },
+      "empty": {
+        "title": "No routes chosen",
+        "body": "The home page section stays empty until a route is added here. Pick from the published routes on the right."
+      }
+    }
+  },
+  "Payments": {
+    "title": "Payments",
+    "subtitle": "Bank transfers waiting to be settled, and money owed back to customers.",
+    "tabs": {
+      "invoices": "Invoice requests",
+      "refunds": "Refunds due"
+    },
+    "invoices": {
+      "filters": {
+        "status": "Filter by status",
+        "allStatuses": "All statuses"
+      },
+      "table": {
+        "issued": "Issued",
+        "invoice": "Invoice",
+        "customer": "Customer",
+        "booking": "Booking",
+        "amount": "Amount",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "status": {
+        "pending": "Pending",
+        "sent": "Sent",
+        "paid": "Paid",
+        "cancelled": "Withdrawn"
+      },
+      "due": "Due {date}",
+      "settledAt": "Settled {date}",
+      "actions": {
+        "settle": "Transfer received",
+        "withdraw": "Withdraw"
+      },
+      "empty": "No invoice requests here.",
+      "error": "Could not load invoice requests."
+    },
+    "refunds": {
+      "filters": {
+        "search": "Search by reference, name or email"
+      },
+      "table": {
+        "cancelled": "Cancelled",
+        "customer": "Customer",
+        "booking": "Booking",
+        "charter": "Charter",
+        "collected": "Collected",
+        "actions": "Actions"
+      },
+      "ofTotal": "of {total}",
+      "actions": {
+        "refund": "Return the money"
+      },
+      "empty": "Nothing is owed back right now.",
+      "error": "Could not load the refund queue."
+    },
+    "settle": {
+      "title": "Record a received transfer",
+      "description": "Booking {reference} will be committed with the operator once this is recorded.",
+      "invoiced": "Invoice {number} · {amount} invoiced",
+      "amountLabel": "Amount received ({currency})",
+      "amountHint": "Change this if bank fees mean a different figure landed.",
+      "noteLabel": "Note",
+      "notePlaceholder": "Reference on the transfer, who confirmed it…",
+      "cancel": "Cancel",
+      "confirm": "Record transfer",
+      "settling": "Recording…",
+      "settled": "Transfer recorded — booking {reference} is confirmed.",
+      "rejected": "Transfer recorded, but the operator refused: {reason}. The booking now owes a refund.",
+      "failed": "Could not record the transfer."
+    },
+    "withdraw": {
+      "title": "Withdraw this invoice request",
+      "description": "Booking {reference} will be cancelled and the operator's option released.",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "No response after three reminders…",
+      "cancel": "Keep it",
+      "confirm": "Withdraw and cancel",
+      "withdrawing": "Withdrawing…",
+      "withdrawn": "Invoice withdrawn and booking {reference} cancelled.",
+      "failed": "Could not withdraw the invoice."
+    },
+    "refund": {
+      "title": "Return the money",
+      "description": "Returns money collected on booking {reference}.",
+      "collected": "{amount} collected",
+      "cancelReason": "Cancelled: {reason}",
+      "amountLabel": "Amount to return",
+      "amountPlaceholder": "Everything ({amount})",
+      "amountHint": "Leave blank to return everything. Enter less to keep what the cancellation policy retains.",
+      "amountInvalid": "Enter an amount between 0 and what was collected.",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "Operator withdrew the yacht…",
+      "manualLabel": "I have sent the bank transfer back",
+      "manualHint": "Only tick this once the money has actually left. Card payments go back through Stripe on their own.",
+      "cancel": "Cancel",
+      "confirm": "Refund",
+      "refunding": "Refunding…",
+      "refunded": "{amount} returned.",
+      "partial": "{amount} returned. {outstanding} still owed back.",
+      "manualPending": "Card payments returned. {count, plural, one {# bank transfer still has} other {# bank transfers still have}} to be sent by hand.",
+      "failed": "Could not process the refund."
+    }
+  },
+  "StaffBooking": {
+    "back": "Bookings",
+    "staffOnly": "Staff view — this is a customer's booking. Do not share this page.",
+    "error": "Could not load this booking.",
+    "guestAccount": "Guest account",
+    "guests": "{count, plural, one {# guest} other {# guests}}",
+    "noReservationId": "No reservation id yet",
+    "outstanding": "{amount} outstanding",
+    "dueAtCheckIn": "{amount} due at the marina",
+    "createdAt": "Created {at}",
+    "holdExpiresAt": "Hold expires {at}",
+    "confirmedAt": "Confirmed {at}",
+    "cancelledAt": "Cancelled {at}",
+    "cancelReason": "Cancellation reason: {reason}",
+    "fields": {
+      "customer": "Customer",
+      "charter": "Charter",
+      "provider": "Provider",
+      "total": "Total",
+      "collected": "Collected",
+      "timeline": "Timeline"
+    },
+    "invoice": {
+      "title": "Invoice request",
+      "number": "Number",
+      "amount": "Amount",
+      "status": "Status",
+      "billedTo": "Billed to",
+      "issued": "Issued",
+      "due": "Due"
+    },
+    "payments": {
+      "title": "Payments",
+      "kind": "Installment",
+      "amount": "Amount",
+      "method": "Method",
+      "status": "Status",
+      "paidAt": "Paid",
+      "empty": "Nothing has been collected yet.",
+      "disputed": "Disputed: {state}",
+      "methods": {
+        "card": "Card",
+        "transfer": "Bank transfer"
+      },
+      "disputeStatus": {
+        "open": "open"
+      }
+    },
+    "schedule": {
+      "title": "Payment schedule",
+      "kind": "Installment",
+      "amount": "Amount",
+      "dueAt": "Due",
+      "status": "Status",
+      "empty": "No schedule on this booking.",
+      "statuses": {
+        "pending": "Pending",
+        "paid": "Paid",
+        "cancelled": "Cancelled",
+        "refunded": "Refunded"
+      }
+    },
+    "priceLines": {
+      "title": "Price breakdown"
+    },
+    "excluded": {
+      "chip": "Not real business",
+      "exclude": "Mark as test booking",
+      "restore": "Restore to the queues",
+      "excludedAt": "Excluded from the queues and totals {at}",
+      "help": "An excluded booking keeps its status, its payments and its provider reservation. It only stops being counted by staff queues and money totals."
+    },
+    "cancel": {
+      "action": "Cancel booking",
+      "title": "Cancel this booking?",
+      "description": "{reference} for {customer}",
+      "confirmedWarning": "This booking is confirmed. Cancelling moves it to the refund queue; the money is not returned until someone refunds it there.",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "Operator withdrew the yacht",
+      "keep": "Keep it",
+      "confirm": "Cancel booking",
+      "success": "Booking cancelled.",
+      "successRefund": "Booking cancelled and moved to the refund queue.",
+      "providerHeld": "Cancelled here, but {provider} kept the reservation: {error}",
+      "providerHeldUnknown": "the provider gave no reason",
+      "error": "Could not cancel this booking."
+    },
+    "providerHold": {
+      "title": "{provider} still holds this reservation",
+      "body": "We cancelled our side and the provider did not let go. The charter still stands with the operator, so settle it with them before any refund is paid, or the money goes back on a week we are still billed for."
+    }
+  },
+  "providers": {
+    "mock": "Mock",
+    "booking_manager": "Booking Manager",
+    "nausys": "NauSYS"
+  },
+  "Faq": {
+    "title": "FAQ",
+    "subtitle": "Every question on the site, with all four languages on one row. A question reaches a page only in the languages that have an answer.",
+    "scope": {
+      "site": "Site-wide",
+      "listing": "One yacht"
+    },
+    "categories": {
+      "booking": "Booking",
+      "payment": "Payment",
+      "prices": "Prices",
+      "licences": "Licences",
+      "travel": "Travel",
+      "cancellation": "Cancellation"
+    },
+    "locales": {
+      "en": "English",
+      "de": "German",
+      "es": "Spanish",
+      "uk": "Ukrainian"
+    },
+    "localeCodes": {
+      "en": "EN",
+      "de": "DE",
+      "es": "ES",
+      "uk": "UK"
+    },
+    "state": {
+      "answered": "Answered — on the public page",
+      "unanswered": "No answer yet — hidden from the page",
+      "missing": "No translation"
+    },
+    "gaps": {
+      "missing_answer": "Missing an answer",
+      "missing_locale": "Missing a translation"
+    },
+    "filters": {
+      "scope": "Scope",
+      "category": "Category",
+      "locale": "Language to check",
+      "gap": "What to show",
+      "allCategories": "All categories",
+      "anyLocale": "Any language",
+      "allEntries": "All entries",
+      "search": "Search questions and answers",
+      "listing": "Yacht",
+      "listingSearch": "Search yachts by name"
+    },
+    "legend": {
+      "title": "Language status:"
+    },
+    "table": {
+      "order": "Order",
+      "question": "Question",
+      "locales": "Languages",
+      "category": "Category",
+      "actions": "Actions"
+    },
+    "actions": {
+      "create": "New entry",
+      "edit": "Edit",
+      "delete": "Delete",
+      "moveUp": "Move up",
+      "moveDown": "Move down"
+    },
+    "reorderDisabled": "Pick one category and one language, and clear the search and filters, to reorder.",
+    "reordered": "Order saved, in every language.",
+    "deleted": "{count, plural, one {# translation deleted.} other {# translations deleted.}}",
+    "unpublished": "On no page yet",
+    "noCategory": "No category",
+    "noQuestion": "Untitled",
+    "chooseListing": "Choose a yacht to see its own entries",
+    "empty": "No entries match these filters",
+    "error": "Couldn't load the FAQ",
+    "summary": {
+      "missingAnswer": "{count} of {total} entries have no answer yet, so the public page leaves them out. Checking: {locale}.",
+      "missingLocale": "{count} of {total} entries are missing a translation. Checking: {locale}."
+    },
+    "dialog": {
+      "createTitle": "New FAQ entry",
+      "editTitle": "Edit FAQ entry",
+      "description": "One question, all four languages. A language left blank keeps whatever it already had — use Remove this translation to take one off the site.",
+      "scope": {
+        "label": "Where it appears"
+      },
+      "category": {
+        "label": "Category",
+        "placeholder": "Choose a category"
+      },
+      "listing": {
+        "label": "Yacht",
+        "search": "Search yachts by name",
+        "clear": "Clear the chosen yacht",
+        "noResults": "No yachts match that name"
+      },
+      "question": {
+        "label": "Question",
+        "placeholder": "Write the question in this language"
+      },
+      "answer": {
+        "label": "Answer",
+        "placeholder": "Leave empty until the answer is written",
+        "hint": "Without an answer the question stays here and never reaches the public page."
+      },
+      "removeTranslation": "Remove this translation",
+      "translationRemoved": "The {locale} translation was removed.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "create": "Create",
+      "created": "Entry created.",
+      "saved": "Entry saved.",
+      "failed": "Couldn't save the entry",
+      "cacheRefreshing": "The public page is cached, so give it a moment to catch up.",
+      "cacheStale": "Saved, but the public page's cache could not be cleared — it may show the old text for a while.",
+      "errors": {
+        "listingRequired": "Choose a yacht for this entry",
+        "categoryRequired": "A site-wide entry needs a category — it has no yacht page to sit on",
+        "questionRequired": "Write the question in at least one language",
+        "answerWithoutQuestion": "This language has an answer but no question",
+        "questionTooLong": "Keep the question under 500 characters",
+        "answerTooLong": "Keep the answer under 8000 characters"
+      }
+    }
+  },
+  "Popular": {
+    "title": "Popular picks",
+    "subtitle": "Which values head a filter's list, and which lead the home page.",
+    "kinds": {
+      "country": "Countries",
+      "category": "Boat types",
+      "equipment": "Amenities",
+      "region": "Sailing areas",
+      "marina": "Marinas",
+      "model": "Models",
+      "location": "Locations",
+      "crew": "Crew types",
+      "sail_type": "Mainsail types"
+    },
+    "surfaces": {
+      "popular": "Filter pins",
+      "featured": "Home page",
+      "filter": "Filter list"
+    },
+    "surfaceHint": {
+      "popular": "Shown as a “Popular” group at the top of the search filters.",
+      "featured": "The order the home page's sliders and grids use.",
+      "filter": "The only values the search filter offers. Empty, it offers every value the catalogue carries."
+    },
+    "filters": {
+      "kind": "Facet",
+      "surface": "Where it shows",
+      "search": "Search values"
+    },
+    "table": {
+      "order": "Order",
+      "value": "Value",
+      "count": "Yachts",
+      "actions": "Actions"
+    },
+    "actions": {
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "remove": "Remove",
+      "edit": "Edit photo and text"
+    },
+    "empty": "Nothing curated yet. Pick values above to pin them.",
+    "emptyFilter": "Nothing chosen, so the filter offers every value. Pick values above to shorten the list.",
+    "error": "Could not save the order.",
+    "saved": "Order saved.",
+    "cacheWarning": "Saved, but the site's cached pages could not be refreshed yet.",
+    "noListings": "No yachts",
+    "media": {
+      "title": "Edit {name}",
+      "description": "The photo and text this value's home page card shows. Saved text is never overwritten by a provider sync.",
+      "imageUrl": "Photo URL",
+      "imageHint": "Upload a file or paste a URL. JPEG, PNG, WebP or AVIF, up to 10 MB.",
+      "imageHintNoUpload": "Paste a URL. File upload is not configured in this environment.",
+      "hoverImageUrl": "Hover photo",
+      "hoverImageHint": "Shown on the home page's featured tiles when the cursor is over the card, e.g. the place from above. Leave blank to keep one photo.",
+      "gridUsesHoverImage": "Use the hover photo in the \"View All Popular\" grid",
+      "gridUsesHoverImageHint": "The grid has no hover, so it shows one photo. Ticked, that is the hover photo; unticked, the main one.",
+      "upload": "Upload photo",
+      "uploading": "Uploading...",
+      "uploadFailed": "Could not upload the photo.",
+      "label": "Name",
+      "labelHint": "Leave blank to use the catalogue name, {name}, or the provider's translation.",
+      "descriptionField": "Description",
+      "descriptionHintEn": "Also shown in any language that has no description of its own.",
+      "descriptionHint": "Leave blank to show the English description.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving...",
+      "saved": "Saved.",
+      "saveFailed": "Could not save.",
+      "cacheWarning": "Saved, but the site's cached pages could not be refreshed yet.",
+      "locales": {
+        "en": "English",
+        "uk": "Ukrainian",
+        "de": "German",
+        "es": "Spanish"
+      }
+    }
+  },
+  "PopularYachts": {
+    "title": "Popular yachts slider",
+    "subtitle": "How the home page's popular-yachts slider is composed. The type mix is a target: when the caps leave a type short, the remaining places go to the next best boats.",
+    "limit": "Boats shown",
+    "maxAgeYears": "Max age (years)",
+    "maxPerCountry": "Max per country",
+    "maxPerBase": "Max per base",
+    "mix": "Boats per type",
+    "mixHint": "Only the destinations below are drawn from. A type set to zero is left out.",
+    "destinations": "Destinations",
+    "destinationsHint": "One country per line, in priority order: \"Croatia: Split / Trogir; Zadar / Sukošan\". Places are separated by \";\", and \"/\" separates spellings of one place, matched against the boat's marina, location and region. Each place counts as one base. A country with no places draws from the whole country; an empty list falls back to the curated popular countries.",
+    "save": "Save changes",
+    "saving": "Saving...",
+    "saved": "Slider saved.",
+    "saveFailed": "Could not save the slider.",
+    "cacheWarning": "Saved, but the site's cached pages could not be refreshed yet."
+  },
+  "Settings": {
+    "title": "Marketplace settings",
+    "subtitle": "How much of a charter is collected up front, and which provider we sell through when the offers are equal.",
+    "source": {
+      "legend": "Which payment plan we use",
+      "vendor": {
+        "title": "The provider's own schedule",
+        "hint": "Each quote follows the instalments the provider returned for that yacht and those dates, including its own balance due date. Providers differ, so the percentage differs from booking to booking."
+      },
+      "marketplace": {
+        "title": "Our own policy",
+        "hint": "Every quote uses the percentage below and the provider's schedule is ignored entirely, its due date included."
+      }
+    },
+    "ourPolicy": {
+      "deposit": "Take a deposit",
+      "full": "Take payment in full",
+      "percentLabel": "Deposit percentage",
+      "percentError": "Enter a percentage between 1 and 100."
+    },
+    "leadTime": {
+      "legend": "Full payment close to departure",
+      "toggle": "Require full payment for charters starting soon",
+      "hint": "A floor on whichever plan is selected above, never a third plan of its own. Switched off, a provider's 30% stands even on a charter leaving tomorrow.",
+      "daysLabel": "Days before check-in",
+      "daysError": "Enter a whole number of days between 0 and 365."
+    },
+    "preference": {
+      "legend": "Preferred provider",
+      "hint": "Which vendor wins when availability, price and mandatory fees are equal. It never overrides a cheaper offer: it only settles a tie.",
+      "rebuildNote": "Applies to new quotes and the availability calendar immediately. Catalogue cards are rebuilt in the background right after the save, which takes well under a minute."
+    },
+    "currency": {
+      "legend": "Display currency",
+      "toggle": "Show prices in the visitor's own currency",
+      "hint": "Display only. A booking is settled in the currency it was priced in, and the payment screen states the amount that will actually be charged whenever the two differ. Converted figures are marked as approximate: reference rates are not what a card network applies. Prices stay in the vendor's currency whenever the rates have gone stale.",
+      "fallback": "Where the country is unknown"
+    },
+    "ranking": {
+      "reliabilityToggle": "Break a tie on how often a provider answers",
+      "reliabilityHint": "Only where price, obligatory extras and commission are all equal. Skipped for any pair where either provider has too few asks in the window to measure, so a newly connected vendor is never ranked down for its silence. The figures are on the Sync History page.",
+      "windowDays": "Measured over the last (days)",
+      "catalogueToggle": "Show the charter rate on cards",
+      "catalogueHint": "Off, a card shows the all-in total. On, it shows the charter rate with the obligatory extras named beneath it, and the sort, the price filter and the slider all follow the same figure. Independent of the switch above: what a card advertises and which vendor we sell through are separate decisions.",
+      "legend": "Offer ranking",
+      "toggle": "Rank on the charter rate",
+      "hint": "Off, the vendor whose all-in total is lower wins, which is what the guest actually pays. On, the charter rate decides and the obligatory extras only settle a tie on it. Ranking on the rate can pick the charter that costs the guest more overall."
+    },
+    "nameSearch": {
+      "legend": "Free-text search",
+      "toggle": "Show the free-text field in the search bar",
+      "hint": "A testing aid rather than part of the design. Switched on, the yacht search bar gains a field that matches a boat's name, model, builder, charter company or base, word by word and in any order."
+    },
+    "save": "Save changes",
+    "saving": "Saving...",
+    "saved": "Settings saved.",
+    "saveFailed": "Could not save the settings.",
+    "appliesNext": "Applies to new quotes. A quote a customer is already holding keeps the policy it was priced under."
+  }
+}

@@ -1,4 +1,4 @@
-import type messages from "./messages/en.json";
+import type messages from "./messages/en";
 import type { Locale } from "./src/i18n/config";
 import type { formats } from "./src/i18n/formats";
 

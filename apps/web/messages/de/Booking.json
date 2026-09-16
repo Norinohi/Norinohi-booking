@@ -1,0 +1,446 @@
+{
+  "confirmBooking": "Buchung bestätigen",
+  "review": {
+    "title": "Buchungsübersicht",
+    "yacht": "Yacht",
+    "dates": "Zeitraum",
+    "crew": "Crew",
+    "people": "Personen",
+    "extras": "Extras",
+    "noExtras": "Keine ausgewählt",
+    "boatPrice": "Bootspreis (voller Mietpreis)",
+    "deposit": "Rückzahlbare Kaution",
+    "depositRefundable": "Rückzahlbar, von der Charterbasis einbehalten",
+    "schedule": {
+      "payNow": "jetzt zahlen",
+      "payAt": "fällig am {date}",
+      "payAtCheckIn": "beim Check-in am {date}",
+      "firstPayment": "1. Zahlung ({when})",
+      "fullPayment": "Gesamtzahlung ({when})",
+      "secondPayment": "2. Zahlung ({when})",
+      "extrasPayment": "Extras ({when})",
+      "depositNote": "Rückzahlbare Kaution ({when})"
+    },
+    "totalPrice": "Gesamtpreis",
+    "dueNow": "Jetzt fällig",
+    "terms": "Ich akzeptiere die <b>AGB und den Chartervertrag</b>.",
+    "cancellation": "Ich akzeptiere die <b>Stornierungsbedingungen</b>.",
+    "operatorTerms": "Bedingungen des Anbieters, einschliesslich Stornierungsbedingungen"
+  },
+  "extras": {
+    "mandatory": "Obligatorisch",
+    "optional": "Optionale Extras",
+    "included": "Inklusive",
+    "notOnTheseDates": "In diesem Zeitraum nicht verfügbar",
+    "notOnTheseDatesAsk": "An diesen Daten nicht verfügbar - Sie können die Basis fragen",
+    "requestedAtBase": "Bei der Basis angefragt, dort zu zahlen"
+  },
+  "guestDetails": {
+    "notice": "Mit diesen Angaben bestätigen wir Ihre Buchung und stimmen uns mit dem Basismanager ab.",
+    "guestNotice": "Zum Buchen ist kein Konto nötig. Wir legen eines für diese Reservierung an und senden Ihnen per E-Mail einen Link, mit dem Sie jederzeit ein Passwort wählen können.",
+    "fullName": "Vollständiger Name",
+    "fullNamePlaceholder": "Max Mustermann",
+    "email": "E-Mail-Adresse",
+    "emailPlaceholder": "name@example.com",
+    "phone": "Telefonnummer",
+    "phonePlaceholder": "+49 151 23456789",
+    "country": "Land",
+    "countryPlaceholder": "Land auswählen",
+    "specialRequests": "Besondere Wünsche (optional)",
+    "specialRequestsPlaceholder": "Bitte früher Check-in"
+  },
+  "errors": {
+    "fullName": "Geben Sie Ihren vollständigen Namen ein",
+    "email": "Geben Sie eine gültige E-Mail-Adresse ein",
+    "phone": "Geben Sie eine gültige Telefonnummer ein",
+    "country": "Wählen Sie Ihr Land aus",
+    "terms": "Akzeptieren Sie die Bedingungen, um fortzufahren",
+    "cancellation": "Akzeptieren Sie die Stornierungsbedingungen, um fortzufahren",
+    "paymentMessage": "Geben Sie Ihre Frage oder Anfrage ein",
+    "hold": {
+      "SLOT_GONE": "Diese Yacht ist für diese Daten nicht mehr verfügbar. Bitte wählen Sie neue Daten und versuchen Sie es erneut.",
+      "PROVIDER_TIMEOUT": "Das System des Anbieters hat nicht rechtzeitig geantwortet. Bitte versuchen Sie es gleich noch einmal.",
+      "PROVIDER_REFUSED": "Wir konnten diese Buchung beim Anbieter nicht abschließen. Unser Team ist informiert. Bitte versuchen Sie es in Kürze erneut oder kontaktieren Sie uns.",
+      "SLOT_TAKEN": "Diese Yacht wurde während Ihrer Buchung vergeben. Bitte wählen Sie neue Daten und versuchen Sie es erneut.",
+      "HOLD_NEVER_HELD": "Diese Buchung konnte nicht reserviert werden. Bitte wählen Sie Ihre Daten erneut, um einen neuen Preis zu erhalten."
+    },
+    "confirmFailed": "Ihre Buchung konnte nicht bestätigt werden. Bitte versuchen Sie es erneut.",
+    "holdInProgress": "Ihr letzter Versuch wird noch abgeschlossen. Bitte warten Sie einen Moment und bestätigen Sie erneut.",
+    "billingName": "Geben Sie den Rechnungsnamen ein",
+    "billingAddress": "Geben Sie die Rechnungsadresse ein",
+    "city": "Geben Sie die Stadt ein"
+  },
+  "backToYacht": "Zurück zu {name}",
+  "panels": {
+    "main": "Buchungsdetails",
+    "aside": "Buchungsübersicht"
+  },
+  "continue": "Weiter",
+  "steps": {
+    "guestDetails": "Gastdaten",
+    "extras": "Extras",
+    "reviewAndBook": "Prüfen & buchen",
+    "payment": "Zahlung"
+  },
+  "payment": {
+    "chargedIn": "Abgebucht werden {amount} in {currency}. In einer anderen Währung angezeigte Preise sind zu Referenzkursen umgerechnet und ungefähr.",
+    "heading": "Wählen Sie, wie Sie fortfahren möchten",
+    "submitFailed": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "tabs": {
+      "card": "Mit Karte zahlen",
+      "invoice": "Rechnung anfordern",
+      "question": "Frage stellen"
+    },
+    "card": {
+      "notice": "Ihre Karte wird jetzt nur reserviert und erst belastet, wenn der Anbieter die Buchung bestätigt. Kann er sie nicht annehmen, wird die Reservierung freigegeben und Sie zahlen nichts.",
+      "unavailable": "Die Online-Kartenzahlung ist derzeit nicht verfügbar. Bitte nutzen Sie „Rechnung anfordern“ oder „Frage stellen“.",
+      "quoteExpired": "Ihr Preis ist abgelaufen. Gehen Sie zurück und aktualisieren Sie das Angebot, bevor Sie zahlen.",
+      "notPayable": "Diese Buchung kann nicht mehr bezahlt werden. Bitte starten Sie eine neue Buchung.",
+      "failed": "Die Zahlung konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.",
+      "cta": "{amount} zahlen",
+      "orCard": "oder mit Karte zahlen",
+      "preparing": "Zahlungsoptionen werden vorbereitet"
+    },
+    "invoice": {
+      "email": "Rechnungs-E-Mail",
+      "emailPlaceholder": "billing@gmail.com",
+      "company": "Firmenname (optional)",
+      "companyPlaceholder": "Yachts Adventures",
+      "vat": "USt-IdNr. (optional)",
+      "vatPlaceholder": "DE123456789",
+      "notice": "Lieber offline zahlen? Wir senden Ihnen eine Rechnung, die Sie per Banküberweisung begleichen können.",
+      "cta": "Rechnung anfordern (über {amount})",
+      "name": "Rechnungsname",
+      "namePlaceholder": "Erika Mustermann",
+      "addressLine1": "Adresse",
+      "addressLine1Placeholder": "Hafenstraße 12",
+      "addressLine2": "Adresszusatz (optional)",
+      "addressLine2Placeholder": "Wohnung, Etage, c/o",
+      "city": "Stadt",
+      "cityPlaceholder": "Split",
+      "postalCode": "Postleitzahl (optional)",
+      "postalCodePlaceholder": "21000",
+      "country": "Land",
+      "countryPlaceholder": "Land auswählen",
+      "registration": "Handelsregisternummer (optional)",
+      "registrationPlaceholder": "HRB 12345"
+    },
+    "question": {
+      "label": "Ihre Frage oder Anfrage",
+      "placeholder": "Senden Sie vor der Buchung eine Anfrage (z. B. Führerscheinprüfung, besondere Anforderungen)",
+      "cta": "Anfrage senden"
+    }
+  },
+  "confirmation": {
+    "reserved": "Ihre Yacht ist reserviert!",
+    "notFound": "Buchung nicht gefunden",
+    "browse": "Yachten entdecken",
+    "remaining": "Die restlichen {amount} werden beim Check-in bezahlt.",
+    "invoiceSent": "Rechnung gesendet",
+    "invoiceHold": "Wir halten Ihre Yacht reserviert, bis Ihre Überweisung über {amount} eingeht — fällig bis {date}.",
+    "invoiceEmailed": "Wir haben Ihnen Rechnung {number} mit den Bankdaten geschickt und bestätigen, sobald die Überweisung eingeht",
+    "remainingBy": "Der Restbetrag von {amount} ist bis zum {date} fällig.",
+    "emailed": "Wir haben Ihnen die Details per E-Mail gesendet und melden uns erneut, sobald der Anbieter bestätigt",
+    "guestEmailed": "Wir haben Ihnen die Details per E-Mail gesendet – mit einem Link, um ein Passwort festzulegen und diese Buchung in Ihrem Konto zu behalten",
+    "viewBooking": "Buchung ansehen",
+    "summaryTitle": "Buchungsübersicht",
+    "quote": "„Diese Yacht ist ideal für Inselhopping in Kroatien – stabil, geräumig und perfekt für Gruppenreisen. Ihre Route führt über Hvar und Vis, zwei der schönsten Inseln der Adria.“",
+    "shareTrip": "Reise teilen",
+    "downloadReceipt": "Beleg herunterladen",
+    "summary": {
+      "yacht": "Yacht",
+      "dates": "Zeitraum",
+      "crew": "Crew",
+      "mandatory": "Obligatorisch",
+      "selectedExtras": "Gewählte Extras",
+      "boatPrice": "Bootspreis (voller Mietpreis)",
+      "deposit": "Rückzahlbare Kaution",
+      "secondPayment": "2. Zahlung (fällig am: {date})",
+      "secondPaymentAtCheckIn": "2. Zahlung (fällig beim Check-in)",
+      "totalPrice": "Gesamtpreis",
+      "perPerson": "~ {price} pro Person",
+      "dueNow": "Jetzt fällig"
+    },
+    "viewInvoice": "Rechnung ansehen",
+    "settling": {
+      "title": "Zahlung eingegangen",
+      "body": "Wir bestätigen Ihre Buchung gerade mit der Charterbasis. Das dauert in der Regel nur wenige Sekunden."
+    },
+    "failed": {
+      "title": "Wir konnten diese Buchung nicht bestätigen",
+      "body": "Die Charterbasis konnte diese Reservierung nicht annehmen. Eine bereits geleistete Zahlung wird zurückerstattet."
+    },
+    "shareText": "Wir chartern {name}, {dates}!",
+    "shareCopied": "Link kopiert",
+    "shareFailed": "Der Link konnte nicht kopiert werden"
+  },
+  "invoice": {
+    "title": "Rechnung",
+    "print": "Drucken / als PDF speichern",
+    "backToBookings": "Zurück zu den Buchungen",
+    "browse": "Yachten entdecken",
+    "issuedOn": "Ausgestellt am {date}",
+    "dueOn": "Fällig am {date}",
+    "status": {
+      "pending": "Zahlung ausstehend",
+      "sent": "Gesendet",
+      "paid": "Bezahlt",
+      "cancelled": "Storniert"
+    },
+    "from": "Von",
+    "billTo": "Rechnung an",
+    "vat": "USt-IdNr. {value}",
+    "registration": "Reg.-Nr. {value}",
+    "summary": {
+      "reference": "Buchungsnummer",
+      "yacht": "Yacht",
+      "base": "Basis",
+      "dates": "Charterzeitraum",
+      "guests": "Gäste"
+    },
+    "lines": {
+      "description": "Beschreibung",
+      "collected": "Eingezogen",
+      "amount": "Betrag"
+    },
+    "payWhen": {
+      "now": "Mit dieser Rechnung",
+      "at_check_in": "Beim Check-in"
+    },
+    "totals": {
+      "charterTotal": "Charter gesamt",
+      "paid": "Bereits bezahlt",
+      "dueNow": "Jetzt fällig",
+      "balance": "Restbetrag",
+      "securityDeposit": "Eine rückzahlbare Kaution von {amount} wird beim Check-in hinterlegt und ist nicht Teil dieser Rechnung."
+    },
+    "payment": {
+      "title": "Zahlungsdetails",
+      "beneficiary": "Empfänger",
+      "bank": "Bank",
+      "iban": "IBAN",
+      "bic": "BIC / SWIFT",
+      "reference": "Verwendungszweck",
+      "amount": "Zu überweisender Betrag",
+      "note": "Geben Sie bei der Überweisung den Verwendungszweck an, damit wir die Zahlung Ihrer Buchung zuordnen können. Ihre Reservierung ist bestätigt, sobald der Betrag eingegangen ist."
+    },
+    "footnote": "Ausgestellt von {company}. Diese Rechnung wurde elektronisch erstellt und ist ohne Unterschrift gültig.",
+    "error": {
+      "title": "Die Rechnung konnte nicht geladen werden",
+      "description": "Bitte versuchen Sie es gleich noch einmal."
+    },
+    "missing": {
+      "title": "Keine Rechnung für diese Buchung",
+      "description": "Diese Buchung wurde nicht per Banküberweisung bezahlt, daher wurde keine Rechnung ausgestellt."
+    }
+  },
+  "balance": {
+    "title": "Restbetrag zahlen",
+    "titleUnpaid": "Zahlung abschließen",
+    "reference": "Buchung {reference}",
+    "pay": "{amount} zahlen",
+    "notFound": "Wir konnten diese Buchung nicht finden",
+    "browse": "Yachten entdecken",
+    "viewBookings": "Meine Buchungen",
+    "unavailable": "Die Online-Zahlung ist derzeit nicht verfügbar. Bitte kontaktieren Sie uns, um diese Buchung zu begleichen.",
+    "summary": {
+      "total": "Gesamtpreis",
+      "paid": "Bereits bezahlt",
+      "atCheckIn": "Fällig in der Marina",
+      "due": "Jetzt fällig"
+    },
+    "paid": {
+      "title": "Ihre Buchung ist vollständig bezahlt",
+      "body": "Für Buchung {reference} ist nichts mehr zu zahlen. Extras und die Kaution werden in der Marina abgerechnet.",
+      "viewBooking": "Buchung ansehen"
+    },
+    "notPayable": {
+      "title": "Dieser Preis ist abgelaufen",
+      "body": "Wir können für diese Buchung keine Zahlung mehr annehmen: Der angebotene Preis und die Reservierung beim Anbieter sind beide abgelaufen. Prüfen Sie die Daten erneut, und wir erstellen Ihnen ein neues Angebot.",
+      "action": "Verfügbarkeit prüfen"
+    },
+    "settling": {
+      "title": "Zahlung eingegangen",
+      "body": "Wir aktualisieren Ihre Buchung. Das dauert in der Regel nur wenige Sekunden."
+    },
+    "received": {
+      "title": "Zahlung eingegangen",
+      "body": "Vielen Dank. Für diesen Charter sind noch {outstanding} offen – wir erinnern Sie rechtzeitig vor der Fälligkeit.",
+      "viewBooking": "Buchung ansehen"
+    }
+  },
+  "detail": {
+    "notFound": "Wir konnten diese Buchung nicht finden",
+    "browse": "Yachten entdecken",
+    "reference": "Buchung {reference}",
+    "guests": "{count} Gäste",
+    "payBalance": "{amount} zahlen",
+    "completePayment": "Zahlung abschließen {amount}",
+    "viewInvoice": "Rechnung ansehen",
+    "priceTitle": "Preisaufstellung",
+    "total": "Gesamtpreis",
+    "paymentsTitle": "Zahlungen",
+    "paid": "Bisher bezahlt",
+    "outstanding": "Noch zu zahlen",
+    "dueAtCheckIn": "Fällig in der Marina",
+    "atMarina": "in der Marina bezahlt",
+    "noPayments": "Für diese Buchung wurden noch keine Zahlungen geleistet.",
+    "disputed": "strittig",
+    "kind": {
+      "deposit": "Erste Zahlung",
+      "balance": "Zweite Zahlung",
+      "full": "Vollständige Zahlung",
+      "checkin_extras": "Extras beim Check-in",
+      "security_deposit": "Kaution"
+    },
+    "method": {
+      "card": "Karte",
+      "transfer": "Banküberweisung"
+    },
+    "paymentStatus": {
+      "requires_payment": "Nicht bezahlt",
+      "processing": "In Bearbeitung",
+      "authorized": "Auf der Karte reserviert",
+      "succeeded": "Bezahlt",
+      "failed": "Fehlgeschlagen",
+      "refunded": "Erstattet"
+    },
+    "status": {
+      "DRAFT": "Entwurf",
+      "QUOTED": "Angebot erstellt",
+      "OPTION_PENDING": "Wird reserviert",
+      "OPTION_HELD": "Reserviert",
+      "PAYMENT_PENDING": "Zahlung ausstehend",
+      "CONFIRMING": "Wird bestätigt",
+      "CONFIRMED": "Bestätigt",
+      "QUOTE_EXPIRED": "Abgelaufen",
+      "OPTION_EXPIRED": "Abgelaufen",
+      "PAYMENT_FAILED": "Zahlung fehlgeschlagen",
+      "PROVIDER_REJECTED": "Nicht verfügbar",
+      "CANCELLED": "Storniert",
+      "REFUND_PENDING": "Wird erstattet",
+      "REFUNDED": "Erstattet"
+    },
+    "backToBookings": "Zurück zu meinen Buchungen",
+    "panels": {
+      "main": "Buchung",
+      "aside": "Preis"
+    },
+    "charterTitle": "Charter",
+    "dates": "Zeitraum",
+    "guestsLabel": "Gäste",
+    "crew": "Crew",
+    "marina": "Marina",
+    "referenceLabel": "Buchungsnummer",
+    "settled": "Nichts mehr zu zahlen",
+    "viewYacht": "Yachtseite ansehen",
+    "supportTitle": "Brauchen Sie Hilfe?",
+    "supportBody": "Fragen zu Ihrem Charter, Änderungen am Zeitraum oder etwas anderes – unser Team antwortet innerhalb eines Werktags.",
+    "contactSupport": "Support kontaktieren",
+    "supportSubject": "Buchung {reference}",
+    "marinaContact": "Kontakt zur Marina",
+    "signInTitle": "Melden Sie sich an, um diese Buchung zu sehen",
+    "signInBody": "Diese Buchung ist mit Ihrem Konto verknüpft. Melden Sie sich mit der E-Mail-Adresse an, mit der Sie gebucht haben, und wir bringen Sie direkt hierher zurück.",
+    "signIn": "Anmelden",
+    "cancelledOn": "Storniert am",
+    "cancelReason": "Grund",
+    "requestCancel": "Stornierung anfragen",
+    "crewList": {
+      "title": "Crewliste",
+      "notice": "Die Charterfirma muss den Behörden vor dem Ablegen eine Liste aller an Bord melden. Füllen Sie sie hier aus, wir leiten sie weiter – was fehlt, fragt die Basis bei der Ankunft am Schalter ab.",
+      "alsoAsked": "Sie fragt außerdem nach {fields}; das nimmt die Basis bei der Ankunft am Schalter auf.",
+      "maxPassengers": "Ihre Liste fasst höchstens {count} Personen.",
+      "loading": "Ihre Crewliste wird geladen…",
+      "empty": "Noch niemand hinzugefügt. Ihre Buchung gilt für {guests} Gäste – fügen Sie jede Person an Bord hinzu, einschließlich des Skippers.",
+      "member": "Crewmitglied {number}",
+      "remove": "Crewmitglied {number} entfernen",
+      "add": "Crewmitglied hinzufügen",
+      "save": "Crewliste speichern",
+      "saved": "Crewliste gespeichert",
+      "saveFailed": "Ihre Crewliste konnte nicht gespeichert werden",
+      "role": "Rolle",
+      "rolePlaceholder": "Skipper, Gast…",
+      "dateOfBirth": "Geburtsdatum",
+      "documentNumber": "Reisepass- oder Ausweisnummer",
+      "documentNumberPlaceholder": "X1234567",
+      "nationality": "Staatsangehörigkeit",
+      "nationalityPlaceholder": "Land auswählen",
+      "errors": {
+        "dateOfBirth": "Bitte ein gültiges Datum angeben",
+        "firstName": "Bitte den Vornamen angeben",
+        "lastName": "Bitte den Nachnamen angeben",
+        "skipperEmail": "Bitte eine gültige E-Mail-Adresse angeben",
+        "oneSkipper": "Nur eine Person kann der Skipper sein"
+      },
+      "requires": {
+        "shoeSize": "Schuhgrößen",
+        "disabledPerson": "ob jemand an Bord eine Behinderung hat"
+      },
+      "legend": "Mit * markierte Felder verlangt diese Charterfirma.",
+      "sent": "Am {when} an die Charterfirma gesendet.",
+      "notSent": "Noch nicht bei der Charterfirma: {reason} Ihre Angaben sind gespeichert – die Basis nimmt die Liste bei der Ankunft auf.",
+      "notSentUnknown": "wir konnten sie nicht erreichen.",
+      "savedNotSent": "Gespeichert, aber die Charterfirma hat sie noch nicht",
+      "firstName": "Vorname",
+      "firstNamePlaceholder": "Wie im Reisepass",
+      "lastName": "Nachname",
+      "lastNamePlaceholder": "Wie im Reisepass",
+      "gender": "Geschlecht",
+      "genderPlaceholder": "Auswählen",
+      "birthPlace": "Geburtsort",
+      "birthCountry": "Geburtsland",
+      "livingPlace": "Wohnort",
+      "livingCountry": "Wohnsitzland",
+      "placePlaceholder": "Stadt oder Ort",
+      "documentType": "Dokumentenart",
+      "documentTypePlaceholder": "Auswählen",
+      "isSkipper": "Diese Person ist der Skipper",
+      "skipperLicence": "Skipperschein",
+      "skipperLicencePlaceholder": "Nummer des Scheins",
+      "vhfLicence": "Funkschein (VHF)",
+      "skipperEmail": "E-Mail des Skippers",
+      "skipperMobile": "Telefon des Skippers",
+      "note": "Was die Basis wissen sollte",
+      "notePlaceholder": "Ankunftszeit, Flugnummer, jemand mit Assistenzbedarf…",
+      "documents": {
+        "passport": "Reisepass",
+        "idCard": "Personalausweis",
+        "other": "Sonstiges"
+      },
+      "genders": {
+        "male": "Männlich",
+        "female": "Weiblich"
+      },
+      "placeSearch": "Orte suchen",
+      "placeEmpty": "Kein Ort dieses Namens"
+    }
+  },
+  "support": {
+    "title": "Wie können wir helfen?",
+    "subtitle": "Schreiben Sie uns eine Nachricht, und wir melden uns innerhalb eines Werktags bei Ihnen.",
+    "messageLabel": "Ihre Nachricht",
+    "messagePlaceholder": "Sagen Sie uns, wobei Sie Hilfe brauchen – Zeitraum, Boot, Zahlung, was auch immer.",
+    "required": "Schreiben Sie zuerst eine Nachricht",
+    "send": "Nachricht senden",
+    "sent": "Nachricht gesendet",
+    "sentTitle": "Nachricht gesendet",
+    "sentBody": "Wir haben sie erhalten, zusammen mit Ihren Buchungsdetails. Sie hören per E-Mail von uns.",
+    "backToBooking": "Zurück zu meiner Buchung",
+    "failed": "Ihre Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
+    "marinaContact": "Oder kontaktieren Sie die Marina direkt",
+    "cancellation": {
+      "title": "Stornierung anfragen",
+      "subtitle": "Senden Sie uns die Anfrage, und wir melden uns mit dem, was Ihre Stornierungsbedingungen zulassen.",
+      "messageLabel": "Warum möchten Sie stornieren?",
+      "messagePlaceholder": "Alles, was uns hilft – geänderte Pläne, Termine, Wetter, eine Erkrankung.",
+      "template": "Ich möchte die Buchung {reference} ({dates}) stornieren.\n\nGrund: ",
+      "send": "Stornierungsanfrage senden",
+      "sentTitle": "Stornierung angefragt",
+      "sentBody": "Ihre Buchung bleibt unverändert, bis unser Team die Anfrage geprüft hat. Sie hören per E-Mail von uns, was Ihre Stornierungsbedingungen zulassen."
+    }
+  },
+  "booked": "Gebucht",
+  "consentRequired": "Bitte bestätigen Sie beide Kästchen oben, um die Buchung abzuschließen.",
+  "saveAndContinue": "Speichern & weiter",
+  "extrasSkipped": "Werfen Sie zuerst einen Blick auf die optionalen Extras – und bestätigen Sie dann."
+}

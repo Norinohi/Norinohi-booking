@@ -1,0 +1,22 @@
+{
+  "heading": "Yacht Charter Search",
+  "searchByMap": "Search by map",
+  "emptyTitle": "No yachts found for your filters",
+  "emptyDescription": "Try adjusting your dates, budget, or location — we will help you find the perfect match.",
+  "searchBar": {
+    "location": "Location",
+    "startTyping": "Start Typing",
+    "searchCountries": "Search Countries...",
+    "addDates": "Add dates",
+    "clearDates": "Clear dates",
+    "anyBoat": "Any boat",
+    "search": "Search",
+    "noLocations": "No matching destinations",
+    "popularCountries": "Popular countries",
+    "popularBoatTypes": "Popular boat types",
+    "allBoatTypes": "All boat types",
+    "clearLocation": "Clear location",
+    "freeText": "Name, model or company"
+  },
+  "paginationSummary": "Showing {from}-{to} of {total}"
+}

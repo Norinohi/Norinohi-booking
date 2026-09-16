@@ -1,0 +1,246 @@
+{
+  "crewTypes": {
+    "bareboat": "Bareboat",
+    "skipper": "Skipper",
+    "full-crew": "Full crew"
+  },
+  "extras": {
+    "payAtCheckIn": "Pay at check-in",
+    "dueWithPrepayment": "Due with the prepayment",
+    "payNow": "Included in prepayment",
+    "includedInPrice": "Included in the price",
+    "priceOnRequest": "Price on request",
+    "confirmWithBase": "Price not published, confirm with the base",
+    "percentageOfCharter": "{percent}% of the charter price",
+    "oneWayOnly": "One-way charters only",
+    "measure": {
+      "booking": "{price} per booking",
+      "day": "{price} per day",
+      "night": "{price} per night",
+      "week": "{price} per week",
+      "person": "{price} per person",
+      "nightPerson": "{price} per person / night",
+      "dayWithFood": "{price} per day incl. food",
+      "oneWayPerson": "{price} one-way per person",
+      "set": "{price} per set",
+      "service": "{price} per service"
+    }
+  },
+  "resultsCount": "{count, plural, one {# yacht found} other {# yachts found}}",
+  "removeFilter": "Remove filter {label}",
+  "passwordToggle": {
+    "show": "Show password",
+    "hide": "Hide password"
+  },
+  "sorting": {
+    "label": "Sort by: {value}",
+    "recommended": "Recommended",
+    "price-asc": "Price: low to high",
+    "price-desc": "Price: high to low",
+    "rating": "Guest rating",
+    "newest": "Newest first"
+  },
+  "priceBasis": {
+    "label": "Price: {value}",
+    "aria": "Which price to show",
+    "boat": "Boat only",
+    "charter": "Whole charter",
+    "hintLabel": "What the prices include",
+    "boatHint": "the boat's own rental price, the figure other charter sites compare. Obligatory extras such as the charter pack or final cleaning are added at booking.",
+    "charterHint": "the boat plus every obligatory extra (charter pack, cleaning and other mandatory fees): what the charter actually costs."
+  },
+  "boatCard": {
+    "save": "Save to wishlist",
+    "remove": "Remove from wishlist",
+    "viewDetails": "View Details",
+    "imageAlt": "{name} moored at {marina}",
+    "openGallery": "Open photo gallery",
+    "priceFor": "Charter price · {days, plural, one {# day} other {# days}}",
+    "priceIndicative": "Charter price · base rate, extra charges may apply",
+    "boatPriceFor": "Boat price · {days, plural, one {# day} other {# days}}",
+    "boatPriceIndicative": "Boat price · base rate, extra charges may apply",
+    "priceForPeriod": "Charter price · for {from, date, dayCompact} - {to, date, dayCompact}",
+    "boatPriceForPeriod": "Boat price · for {from, date, dayCompact} - {to, date, dayCompact}",
+    "priceFromLabel": "From",
+    "plusObligatory": "plus {amount} obligatory extras",
+    "approximatePrice": "approx.",
+    "chargedIn": "Charged in {currency}: {amount}",
+    "currencyLabel": "Currency",
+    "priceOnRequest": "On request",
+    "priceUnavailable": "Unavailable",
+    "perPerson": "{price} per person",
+    "perPersonApprox": "~ {price} per person",
+    "perBerth": "{price} per person in {berths} berths",
+    "perNight": "{price} per night",
+    "datesAlternative": "Not available on your dates. This boat sells:",
+    "prepayment": "Booking prepayment: {amount}",
+    "prepaymentInfo": "This is the part of the charter price paid up front to secure the booking. It counts towards the total, and the rest is due before check-in.",
+    "securityDeposit": "Refundable deposit: {amount}",
+    "securityDepositInfo": "A refundable deposit held by the charter base against damage during your trip. It is collected at check-in, is not part of the price, and is returned after check-out if everything is in good condition.",
+    "specs": {
+      "year": "Year",
+      "people": "People",
+      "toilets": "Toilets",
+      "showers": "Showers",
+      "mainsail": "Mainsail type",
+      "cabins": "Cabins",
+      "length": "Length"
+    },
+    "battenMainsail": "Batten mainsail",
+    "badges": {
+      "available": "Available",
+      "temporarilyHeld": "Temporarily held",
+      "onRequest": "On request",
+      "unavailable": "Unavailable",
+      "bestForFamilies": "Best for families",
+      "bestValue": "Best value",
+      "new": "New",
+      "discount": "{percent}% OFF",
+      "petsAllowed": "Pets allowed",
+      "depositInsurance": "Deposit insurance included",
+      "topRated": "Top rated"
+    },
+    "stats": {
+      "booked": "{count, plural, one {# booked this month} other {# booked this month}}",
+      "viewed": "{count, plural, one {# person viewed today} other {# people viewed today}}"
+    },
+    "amenities": {
+      "wifi": "Free Wi-Fi",
+      "solar": "3 Sun Panels",
+      "paddle": "Free Standup Paddle",
+      "air": "Air conditioning",
+      "waterToys": "Water toys",
+      "galley": "Full galley",
+      "fridge": "Fridge & freezer",
+      "tender": "Tender with outboard"
+    },
+    "charterTypes": {
+      "bareboat": "Bareboat",
+      "bareboatSailingYacht": "Bareboat Sailing Yacht",
+      "catamaran": "Catamaran"
+    },
+    "crews": {
+      "fullCrew": "Full crew",
+      "skipperOptional": "Skipper optional"
+    },
+    "moreAmenities": "Show {count} more amenities",
+    "moreAmenitiesShort": "+{count}",
+    "holdEndsIn": "Hold ends in {time}",
+    "holdEnding": "Hold is ending, check back shortly",
+    "holdNoDeadline": "On hold until the other customer confirms"
+  },
+  "gallery": {
+    "close": "Close",
+    "previous": "Previous",
+    "next": "Next",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out"
+  },
+  "marina": {
+    "viewDetails": "View Details"
+  },
+  "map": {
+    "open": "Open the map of {place}",
+    "satellite": "Satellite",
+    "streets": "Map",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "locate": "Show my location",
+    "locateUnavailable": "Location unavailable"
+  },
+  "leadForm": {
+    "fields": {
+      "name": {
+        "label": "Full name",
+        "placeholder": "Jane Doe"
+      },
+      "email": {
+        "label": "Email",
+        "placeholder": "jane@example.com"
+      },
+      "phone": {
+        "label": "Phone (optional)",
+        "placeholder": "+1 234 567 8900"
+      },
+      "country": {
+        "label": "Country",
+        "placeholder": "Select your country"
+      },
+      "message": {
+        "label": "Message (optional)",
+        "placeholder": "Anything else we should know about your trip?"
+      }
+    },
+    "errors": {
+      "nameRequired": "Please enter your name",
+      "emailInvalid": "Please enter a valid email address",
+      "submitFailed": "We couldn't send your request. Please try again."
+    }
+  },
+  "charterPeriod": {
+    "day": {
+      "booked": "Booked",
+      "held": "On hold, may become available"
+    },
+    "or": ", or ",
+    "daysAndNights": "{days}, {nights}",
+    "weekdayRange": "{from} to {to}",
+    "wholeWeeksAnyDay": "Any start day, in whole weeks",
+    "wholeWeeksFromDays": "Starts {days}, in whole weeks",
+    "weekdaysToDay": "Starts {days}, ends {to}",
+    "weekdayStart": "Starts on {day}",
+    "weekdayEnd": "Ends on {day}",
+    "nightsExact": "{count, plural, one {# night} other {# nights}}",
+    "nightsFrom": "from {count, plural, one {# night} other {# nights}}",
+    "nightsUpTo": "up to {count, plural, one {# night} other {# nights}}",
+    "nightsRange": "{min} to {max} nights",
+    "label": "Charter period",
+    "rulesMore": "Show all charter rules",
+    "rulesLess": "Show less"
+  },
+  "countryPicker": {
+    "search": "Search countries",
+    "loading": "Loading countries…",
+    "empty": "No countries match that"
+  },
+  "errors": {
+    "requestFailed": "Something went wrong",
+    "retry": "Retry"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you are looking for doesn't exist or has been moved.",
+    "home": "Back to home",
+    "browse": "Browse yachts"
+  },
+  "error": {
+    "title": "Something went wrong",
+    "description": "We couldn't load this page. Please try again, or come back in a moment.",
+    "retry": "Try again",
+    "home": "Back to home"
+  },
+  "ui": {
+    "close": "Close",
+    "previousPage": "Go to previous page",
+    "nextPage": "Go to next page",
+    "pagination": "Pagination",
+    "breadcrumb": "Breadcrumb",
+    "previousPhoto": "Previous photo",
+    "nextPhoto": "Next photo",
+    "goToPhoto": "Go to photo {index} of {total}",
+    "showPhoto": "Show photo {index}",
+    "clear": "Clear {label}",
+    "noOptions": "No options",
+    "noMatches": "No matches",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "rating": "Rating {rating} out of {max}"
+  },
+  "quoteLines": {
+    "referral-welcome": "Referral welcome discount",
+    "referral-credit": "Referral credit",
+    "provider-discount": "Charter discount"
+  }
+}

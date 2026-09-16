@@ -32,6 +32,13 @@ pnpm --filter web check-types  # tsc --noEmit
 - `next.config.ts` imports `@yacht-charter/env/web` purely for its validation side effect — keep that import first.
 - Logging is split across `src/lib/evlog.ts`, `instrumentation.ts`, and `src/proxy.ts`. Edit `src/lib/evlog.ts`; the other two delegate to it.
 
+## Translations
+
+- **One file per top-level namespace**: `messages/<locale>/<Namespace>.json`, for `en`, `de`, `es`, `uk`. Each locale's `messages/<locale>/index.ts` imports its files and default-exports the merged object, so `useTranslations("Booking.review")` resolves exactly as it did against one big file. `src/i18n/messages.ts` holds one loader per locale (checked with `satisfies` against the `en` shape) and `src/i18n/request.ts` calls it. The next-intl `Messages` type in `global.d.ts` comes from `messages/en`.
+- **A new namespace** is a `<Namespace>.json` in all four folders plus an import and an entry in all four `index.ts` files. A new key goes into all four locales in the same change.
+- **`pnpm --filter web check-messages`** (`scripts/check-messages.mjs`) fails on any key missing from or extra to `en`, and on a namespace file its `index.ts` does not import. next-intl renders a missing key as its path instead of throwing, so this is the only thing that catches one.
+- **The browser gets less than the server.** The root layout passes `publicClientMessages` to `NextIntlClientProvider`, which drops `Seo` (read only by `generateMetadata` and server components) and `Admin`. The `(admin)` layout mounts a nested provider with `adminClientMessages`, which keeps `Admin`; a nested provider replaces messages instead of merging, so it carries the public namespaces too. The lists in `src/i18n/messages.ts` name what to leave out, so a new namespace reaches the client by default. Before reading `Seo` from a client component, or `Admin` outside the `(admin)` group, change those lists, or the browser renders the key path.
+
 ## Mobile and breakpoints
 
 - **Breakpoints are Tailwind's defaults**, and `globals.css` declares no `--breakpoint-*` of its own: `sm` 40rem (640px), `md` 48rem (768px), `lg` 64rem (1024px), `xl` 80rem (1280px), `2xl` 96rem (1536px). Styles are mobile-first: the bare class is the phone, a prefix adds from that width up. `md` is where the typography tokens switch to the desktop scale, `xl` is where the density dial and the desktop macro start. The only off-scale value in use is `max-[360px]:` for very narrow phones; do not add others without a design reason.

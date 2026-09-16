@@ -1,0 +1,246 @@
+{
+  "crewTypes": {
+    "bareboat": "Без екіпажу",
+    "skipper": "Зі шкіпером",
+    "full-crew": "Повний екіпаж"
+  },
+  "extras": {
+    "payAtCheckIn": "Оплата при заїзді",
+    "dueWithPrepayment": "Сплачується разом із передоплатою",
+    "payNow": "Входить у передоплату",
+    "includedInPrice": "Включено у ціну",
+    "priceOnRequest": "Ціна за запитом",
+    "confirmWithBase": "Ціну не вказано, уточніть на базі",
+    "percentageOfCharter": "{percent}% від вартості чартеру",
+    "oneWayOnly": "Лише для рейсів в один бік",
+    "measure": {
+      "booking": "{price} за бронювання",
+      "day": "{price} за день",
+      "night": "{price} за ніч",
+      "week": "{price} за тиждень",
+      "person": "{price} за особу",
+      "nightPerson": "{price} за особу за ніч",
+      "dayWithFood": "{price} за день, харчування включено",
+      "oneWayPerson": "{price} за особу в один бік",
+      "set": "{price} за комплект",
+      "service": "{price} за послугу"
+    }
+  },
+  "resultsCount": "{count, plural, one {# яхта знайдена} few {# яхти знайдено} many {# яхт знайдено} other {# яхти знайдено}}",
+  "removeFilter": "Прибрати фільтр {label}",
+  "passwordToggle": {
+    "show": "Показати пароль",
+    "hide": "Приховати пароль"
+  },
+  "sorting": {
+    "label": "Сортувати: {value}",
+    "recommended": "Рекомендовані",
+    "price-asc": "Ціна: від нижчої",
+    "price-desc": "Ціна: від вищої",
+    "rating": "Оцінка гостей",
+    "newest": "Спочатку нові"
+  },
+  "priceBasis": {
+    "label": "Ціна: {value}",
+    "aria": "Яку ціну показувати",
+    "boat": "Тільки за яхту",
+    "charter": "За весь чартер",
+    "hintLabel": "Що входить у ціну",
+    "boatHint": "ціна оренди самої яхти, як її порівнюють на інших чартерних платформах. Обов'язкові доплати, як-от чартерний пакет чи фінальне прибирання, додаються при бронюванні.",
+    "charterHint": "яхта разом з усіма обов'язковими доплатами (чартерний пакет, прибирання та інші обов'язкові збори): скільки чартер коштує насправді."
+  },
+  "boatCard": {
+    "save": "Зберегти у обране",
+    "remove": "Видалити з обраного",
+    "viewDetails": "Детальніше",
+    "imageAlt": "{name} біля причалу {marina}",
+    "openGallery": "Відкрити галерею фото",
+    "priceFor": "Ціна чартеру · {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
+    "priceIndicative": "Ціна чартеру · базова, можливі доплати",
+    "boatPriceFor": "Ціна яхти · {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
+    "boatPriceIndicative": "Ціна яхти · базова, можливі доплати",
+    "priceForPeriod": "Ціна чартеру · за {from, date, dayCompact} - {to, date, dayCompact}",
+    "boatPriceForPeriod": "Ціна яхти · за {from, date, dayCompact} - {to, date, dayCompact}",
+    "priceFromLabel": "Від",
+    "plusObligatory": "плюс {amount} обов'язкових доплат",
+    "approximatePrice": "прибл.",
+    "chargedIn": "Списання у {currency}: {amount}",
+    "currencyLabel": "Валюта",
+    "priceOnRequest": "За запитом",
+    "priceUnavailable": "Недоступно",
+    "perPerson": "{price} з особи",
+    "perPersonApprox": "~ {price} з особи",
+    "perBerth": "{price} з особи при {berths} спальних місцях",
+    "perNight": "{price} за ніч",
+    "datesAlternative": "На ваші дати недоступна. Ця яхта продає:",
+    "prepayment": "Передоплата бронювання: {amount}",
+    "prepaymentInfo": "Це частина вартості чартеру, яку сплачують наперед, щоб закріпити бронювання. Вона зараховується в загальну суму, решту потрібно сплатити до заселення.",
+    "securityDeposit": "Поворотна застава: {amount}",
+    "securityDepositInfo": "Поворотна застава на випадок пошкоджень під час подорожі. Її бере база при заселенні, вона не входить у вартість і повертається після завершення чартеру, якщо все в належному стані.",
+    "specs": {
+      "year": "Рік",
+      "people": "Осіб",
+      "toilets": "Туалетів",
+      "showers": "Душових",
+      "mainsail": "Тип грота",
+      "cabins": "Кают",
+      "length": "Довжина"
+    },
+    "battenMainsail": "Грот на латах",
+    "badges": {
+      "available": "Доступна",
+      "temporarilyHeld": "Тимчасово заброньовано",
+      "onRequest": "За запитом",
+      "unavailable": "Недоступна",
+      "bestForFamilies": "Ідеально для родин",
+      "bestValue": "Найкраща ціна",
+      "new": "Нове",
+      "discount": "-{percent}%",
+      "petsAllowed": "Можна з тваринами",
+      "depositInsurance": "Страхування застави включено",
+      "topRated": "Висока оцінка"
+    },
+    "stats": {
+      "booked": "{count, plural, one {# бронювання цього місяця} few {# бронювання цього місяця} many {# бронювань цього місяця} other {# бронювань цього місяця}}",
+      "viewed": "{count, plural, one {# особа переглянула сьогодні} few {# особи переглянули сьогодні} many {# осіб переглянули сьогодні} other {# осіб переглянули сьогодні}}"
+    },
+    "amenities": {
+      "wifi": "Безкоштовний Wi-Fi",
+      "solar": "3 сонячні панелі",
+      "paddle": "Безкоштовний сапборд",
+      "air": "Кондиціонер",
+      "waterToys": "Водні розваги",
+      "galley": "Повністю обладнаний камбуз",
+      "fridge": "Холодильник і морозильник",
+      "tender": "Тендер із підвісним мотором"
+    },
+    "charterTypes": {
+      "bareboat": "Без екіпажу",
+      "bareboatSailingYacht": "Вітрильна яхта без екіпажу",
+      "catamaran": "Катамаран"
+    },
+    "crews": {
+      "fullCrew": "Повний екіпаж",
+      "skipperOptional": "Шкіпер за бажанням"
+    },
+    "moreAmenities": "Показати ще {count} зручностей",
+    "moreAmenitiesShort": "+{count}",
+    "holdEndsIn": "Бронь спливає через {time}",
+    "holdEnding": "Бронь ось-ось спливе, перевірте трохи згодом",
+    "holdNoDeadline": "Заброньовано, доки інший клієнт не підтвердить"
+  },
+  "gallery": {
+    "close": "Закрити",
+    "previous": "Назад",
+    "next": "Далі",
+    "zoomIn": "Збільшити",
+    "zoomOut": "Зменшити"
+  },
+  "marina": {
+    "viewDetails": "Детальніше"
+  },
+  "map": {
+    "open": "Відкрити мапу: {place}",
+    "satellite": "Супутник",
+    "streets": "Карта",
+    "zoomIn": "Збільшити",
+    "zoomOut": "Зменшити",
+    "locate": "Показати моє місцезнаходження",
+    "locateUnavailable": "Місцезнаходження недоступне"
+  },
+  "leadForm": {
+    "fields": {
+      "name": {
+        "label": "Повне ім'я",
+        "placeholder": "Jane Doe"
+      },
+      "email": {
+        "label": "Електронна пошта",
+        "placeholder": "jane@example.com"
+      },
+      "phone": {
+        "label": "Телефон (необов'язково)",
+        "placeholder": "+1 234 567 8900"
+      },
+      "country": {
+        "label": "Країна",
+        "placeholder": "Оберіть країну"
+      },
+      "message": {
+        "label": "Повідомлення (необов'язково)",
+        "placeholder": "Чи є щось ще, що нам варто знати про вашу подорож?"
+      }
+    },
+    "errors": {
+      "nameRequired": "Будь ласка, введіть ваше ім'я",
+      "emailInvalid": "Будь ласка, введіть дійсну електронну адресу",
+      "submitFailed": "Не вдалося надіслати ваш запит. Спробуйте ще раз."
+    }
+  },
+  "charterPeriod": {
+    "day": {
+      "booked": "Заброньовано",
+      "held": "Під опцією, може звільнитися"
+    },
+    "or": ", або ",
+    "daysAndNights": "{days}, {nights}",
+    "weekdayRange": "Початок: {from}, завершення: {to}",
+    "wholeWeeksAnyDay": "Будь-який день початку, повними тижнями",
+    "wholeWeeksFromDays": "Початок: {days}, повними тижнями",
+    "weekdaysToDay": "Початок: {days}, завершення: {to}",
+    "weekdayStart": "Початок: {day}",
+    "weekdayEnd": "Завершення: {day}",
+    "nightsExact": "{count, plural, one {# ніч} few {# ночі} many {# ночей} other {# ночей}}",
+    "nightsFrom": "від {count, plural, one {# ночі} few {# ночей} many {# ночей} other {# ночей}}",
+    "nightsUpTo": "до {count, plural, one {# ночі} few {# ночей} many {# ночей} other {# ночей}}",
+    "nightsRange": "від {min} до {max} ночей",
+    "label": "Період чартеру",
+    "rulesMore": "Показати всі правила чартеру",
+    "rulesLess": "Згорнути"
+  },
+  "countryPicker": {
+    "search": "Пошук країн",
+    "loading": "Завантаження країн…",
+    "empty": "Немає країн за цим запитом"
+  },
+  "errors": {
+    "requestFailed": "Щось пішло не так",
+    "retry": "Повторити"
+  },
+  "notFound": {
+    "title": "Сторінку не знайдено",
+    "description": "Сторінки, яку ви шукаєте, не існує або її перенесли.",
+    "home": "На головну",
+    "browse": "Переглянути яхти"
+  },
+  "error": {
+    "title": "Щось пішло не так",
+    "description": "Не вдалося завантажити цю сторінку. Спробуйте ще раз або поверніться трохи пізніше.",
+    "retry": "Спробувати ще раз",
+    "home": "На головну"
+  },
+  "ui": {
+    "close": "Закрити",
+    "previousPage": "Перейти на попередню сторінку",
+    "nextPage": "Перейти на наступну сторінку",
+    "pagination": "Пагінація",
+    "breadcrumb": "Навігаційний шлях",
+    "previousPhoto": "Попереднє фото",
+    "nextPhoto": "Наступне фото",
+    "goToPhoto": "Перейти до фото {index} з {total}",
+    "showPhoto": "Показати фото {index}",
+    "clear": "Очистити {label}",
+    "noOptions": "Немає варіантів",
+    "noMatches": "Нічого не знайдено",
+    "showPassword": "Показати пароль",
+    "hidePassword": "Приховати пароль",
+    "previousMonth": "Попередній місяць",
+    "nextMonth": "Наступний місяць",
+    "rating": "Оцінка {rating} з {max}"
+  },
+  "quoteLines": {
+    "referral-welcome": "Вітальна знижка за рекомендацією",
+    "referral-credit": "Бонус за рекомендацією",
+    "provider-discount": "Знижка на чартер"
+  }
+}

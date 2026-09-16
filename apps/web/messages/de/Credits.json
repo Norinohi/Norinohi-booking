@@ -1,0 +1,20 @@
+{
+  "title": "Guthaben & Saldo",
+  "balance": {
+    "label": "Verfügbares Guthaben",
+    "expiringSoon": "{amount} verfällt innerhalb von 30 Tagen",
+    "hint": "Guthaben kann für jede Yachtbuchung über 1000 € eingesetzt werden und wird von Ihrer heutigen Zahlung abgezogen."
+  },
+  "ledger": {
+    "title": "Guthabenverlauf",
+    "expires": "Verfällt am {date}",
+    "emptyTitle": "Noch kein Guthaben",
+    "emptyDescription": "Laden Sie Freunde ein – Sie erhalten Guthaben, sobald diese ihre Reise abgeschlossen haben.",
+    "kind": {
+      "referral_reward": "Empfehlungsprämie",
+      "booking_redemption": "Auf Buchung angerechnet",
+      "expiry": "Verfallen",
+      "adjustment": "Anpassung"
+    }
+  }
+}

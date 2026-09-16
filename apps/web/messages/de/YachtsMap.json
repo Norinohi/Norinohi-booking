@@ -1,0 +1,14 @@
+{
+  "loading": "Yachten werden geladen…",
+  "noResults": "Keine Yachten entsprechen diesen Filtern. Bitte passen Sie sie an.",
+  "title": "Yachten auf der Karte",
+  "backToSearch": "Zurück zur Suche",
+  "viewInCatalogue": "Im Katalog ansehen",
+  "showAllList": "Ganze Liste anzeigen",
+  "closeList": "Liste schließen",
+  "marker": "Marina {name}",
+  "clusterCount": "{count, plural, one {# Yacht} other {# Yachten}}",
+  "previousBoat": "Vorherige Yacht",
+  "nextBoat": "Nächste Yacht",
+  "allInCatalogue": "{count, plural, one {# Yacht im Katalog} other {Alle # Yachten im Katalog}}"
+}

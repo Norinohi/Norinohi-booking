@@ -1,0 +1,118 @@
+{
+  "title": "Rabatt- & Preisverwaltung",
+  "subtitle": "Verwalten Sie Aktionscodes und Yachtpreise.",
+  "create": "Rabatt erstellen",
+  "tabs": {
+    "discounts": "Rabatte",
+    "managePrices": "Preise verwalten"
+  },
+  "table": {
+    "name": "Rabattname",
+    "code": "Code",
+    "typeValue": "Typ & Wert",
+    "appliesTo": "Gilt für",
+    "status": "Status",
+    "usage": "Nutzung",
+    "empty": "Keine Rabatte gefunden",
+    "error": "Rabatte konnten nicht geladen werden"
+  },
+  "status": {
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "scheduled": "Geplant",
+    "expired": "Abgelaufen"
+  },
+  "type": {
+    "percentage": "Prozentual",
+    "fixed_amount": "Festbetrag"
+  },
+  "applies": {
+    "allYachts": "Alle Yachten",
+    "allCatamarans": "Alle Katamarane",
+    "allGullets": "Alle Gulets",
+    "allMotorboats": "Alle Motorboote",
+    "allMotorYachts": "Alle Motoryachten",
+    "allSailboats": "Alle Segelboote",
+    "specific": "Bestimmte Yachten",
+    "allSailingYachts": "Alle Segelyachten",
+    "allLuxuryYachts": "Alle Luxusyachten"
+  },
+  "dialog": {
+    "createTitle": "Neuen Rabatt erstellen",
+    "editTitle": "Rabatt bearbeiten",
+    "name": {
+      "label": "Rabattname",
+      "placeholder": "z. B. Sommer 2026"
+    },
+    "code": {
+      "label": "Rabattcode",
+      "placeholder": "z. B. SUMMER2026"
+    },
+    "type": {
+      "label": "Rabatttyp"
+    },
+    "price": {
+      "label": "Rabattwert",
+      "placeholder": "10"
+    },
+    "expiration": {
+      "label": "Ablaufdatum",
+      "placeholder": "Beliebiges Datum"
+    },
+    "appliesTo": {
+      "label": "Rabatttyp"
+    },
+    "search": {
+      "placeholder": "Yacht suchen"
+    },
+    "submitCreate": "Rabatt erstellen",
+    "submitSave": "Änderungen speichern",
+    "created": "Rabatt erstellt",
+    "saved": "Rabatt aktualisiert",
+    "errors": {
+      "nameRequired": "Geben Sie einen Rabattnamen ein",
+      "codeRequired": "Geben Sie einen Rabattcode ein",
+      "priceRequired": "Geben Sie einen Rabattwert ein",
+      "appliesRequired": "Wählen Sie, wofür der Rabatt gilt",
+      "usageLimitInvalid": "Geben Sie eine ganze Zahl an Nutzungen ein oder lassen Sie das Feld leer"
+    },
+    "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "usageLimit": {
+      "label": "Nutzungslimit",
+      "placeholder": "Unbegrenzt",
+      "hint": "Leer lassen für unbegrenzte Nutzung"
+    },
+    "active": {
+      "label": "Aktiv",
+      "on": "Rabatt aktiviert",
+      "off": "Rabatt deaktiviert"
+    }
+  },
+  "prices": {
+    "search": "Nach Name suchen",
+    "allTypes": "Alle Typen",
+    "allLocations": "Alle Standorte",
+    "table": {
+      "yacht": "Yacht",
+      "location": "Standort",
+      "basePrice": "Basispreis",
+      "currentPrice": "Aktueller Preis",
+      "edit": "Preis bearbeiten"
+    },
+    "dialog": {
+      "title": "Preis bearbeiten",
+      "basePrice": "Basispreis",
+      "newPrice": "Neuer Preis",
+      "newPricePlaceholder": "z. B. €14.539",
+      "submit": "Preis aktualisieren",
+      "updated": "Preis aktualisiert",
+      "errors": {
+        "priceRequired": "Geben Sie einen neuen Preis ein"
+      },
+      "reset": "Auf Anbieterpreis zurücksetzen",
+      "cleared": "Preis auf den Anbieterpreis zurückgesetzt"
+    },
+    "empty": "Keine Yachten gefunden",
+    "error": "Preise konnten nicht geladen werden"
+  }
+}

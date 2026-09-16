@@ -1,0 +1,173 @@
+{
+  "Commissions": {
+    "title": "Commission Rates",
+    "description": "What CharterNavi earns through each provider."
+  },
+  "Yachts": {
+    "title": "Yacht Charter Search",
+    "description": "Search yachts and catamarans for charter across the Mediterranean and beyond. Filter by destination, dates, guests and price."
+  },
+  "YachtsMap": {
+    "title": "Yachts on the Map",
+    "description": "Browse available yachts and catamarans on an interactive map. Explore marinas and destinations, then filter by dates, guests and price."
+  },
+  "YachtDetail": {
+    "title": "Yacht Details",
+    "description": "View photos, specifications, crew options and pricing for this yacht, and check availability for your dates.",
+    "titleAtPlace": "{boat} Charter in {place}",
+    "titlePlain": "{boat} Charter",
+    "metaSpecs": "{category} with {cabins, plural, one {# cabin} other {# cabins}} for up to {guests} guests.",
+    "metaPlace": "{crew} charter from {place}.",
+    "metaPriceFrom": "From {price}.",
+    "metaPriceForDays": "{price} for {days, plural, one {# day} other {# days}}.",
+    "metaCta": "Check availability for your dates."
+  },
+  "Booking": {
+    "title": "Book Your Yacht",
+    "description": "Complete your yacht charter booking — guest details, extras and secure payment."
+  },
+  "BookingConfirmation": {
+    "title": "Booking Confirmed",
+    "description": "Your yacht charter booking is confirmed. Review your trip details and next steps."
+  },
+  "PlanMyTrip": {
+    "title": "Plan My Trip",
+    "description": "Tell us about your ideal trip and we'll suggest the right yachts, routes and dates for you."
+  },
+  "Login": {
+    "title": "Sign In",
+    "description": "Sign in to your YachtSkanner account to manage bookings and saved yachts."
+  },
+  "Register": {
+    "title": "Create Account",
+    "description": "Create a YachtSkanner account to book yachts, save favourites and manage your trips."
+  },
+  "Wishlist": {
+    "title": "Your Wishlist",
+    "description": "The yachts and catamarans you have saved. Compare your favourites and check availability for your dates."
+  },
+  "Profile": {
+    "title": "Your Profile",
+    "description": "Manage your YachtSkanner account details, contact information and preferences."
+  },
+  "Bookings": {
+    "title": "My Bookings",
+    "description": "Review your yacht charter bookings, trip details and booking history."
+  },
+  "Referrals": {
+    "title": "Your Referrals",
+    "description": "Track the friends you have invited to YachtSkanner and the rewards you have earned."
+  },
+  "Credits": {
+    "title": "Credits & Balance",
+    "description": "See your available referral credit, what expires soon, and every entry behind the balance."
+  },
+  "Discounts": {
+    "title": "Discount & Price Manager",
+    "description": "Manage promotional codes and yacht pricing for your listings."
+  },
+  "Duplicates": {
+    "title": "Duplicate Review",
+    "description": "Review and merge look-alike yacht listings proposed by the catalogue sync."
+  },
+  "Sync": {
+    "title": "Sync History",
+    "description": "Catalogue and availability sync runs with their counts and errors."
+  },
+  "Listings": {
+    "title": "Listings",
+    "description": "Review imported yacht listings and release drafts to the catalogue."
+  },
+  "Routes": {
+    "title": "Suggested routes",
+    "description": "Write the sailing itineraries shown on a listing page, base by base."
+  },
+  "Audit": {
+    "title": "Audit Log",
+    "description": "Every staff action recorded against a booking, listing, discount or enquiry."
+  },
+  "Invoice": {
+    "title": "Invoice",
+    "description": "The invoice for your yacht charter booking, with payment details."
+  },
+  "ForgotPassword": {
+    "title": "Forgot password",
+    "description": "Reset your YachtSkanner account password."
+  },
+  "ResetPassword": {
+    "title": "Reset password",
+    "description": "Choose a new password for your YachtSkanner account."
+  },
+  "SetPassword": {
+    "title": "Set password",
+    "description": "Choose a password for your YachtSkanner account."
+  },
+  "Balance": {
+    "title": "Pay your balance",
+    "description": "Settle the remaining amount on your yacht charter booking."
+  },
+  "BookingDetail": {
+    "title": "Your booking",
+    "description": "Details, payments and documents for your yacht charter booking."
+  },
+  "Inbox": {
+    "title": "Inbox",
+    "description": "Customer questions and enquiries waiting for a reply."
+  },
+  "Payments": {
+    "title": "Payments",
+    "description": "Invoice requests and refunds awaiting staff."
+  },
+  "StaffBooking": {
+    "title": "Booking (staff)",
+    "description": "Staff view of a customer booking."
+  },
+  "StaffBookings": {
+    "title": "Bookings (staff)",
+    "description": "Every booking on the platform, for staff."
+  },
+  "Users": {
+    "title": "Users",
+    "description": "Every account on the platform, for staff."
+  },
+  "CatalogPage": {
+    "country": "Yacht Charter in {place}",
+    "geo": "Yacht Charter in {place}, {country}",
+    "marina": "Yacht Charter at {place}",
+    "type": "{type} Charter",
+    "typeCountry": "{type} Charter in {place}",
+    "typeGeo": "{type} Charter in {place}, {country}",
+    "typeMarina": "{type} Charter at {place}",
+    "builder": "{brand} Yacht Charter",
+    "model": "{model} Charter",
+    "intro": "{count, plural, one {# boat} other {# boats}} available, from {price} per week.",
+    "introNoPrice": "{count, plural, one {# boat} other {# boats}} available.",
+    "description": "Compare {count, plural, one {# yacht} other {# yachts}} for charter. Filter by dates, guests, cabins and price, then check availability for your trip.",
+    "siblings": "Also worth a look",
+    "empty": "No boats match right now. Try the full catalogue."
+  },
+  "Support": {
+    "title": "Support",
+    "description": "Ask us anything about your booking."
+  },
+  "Consultation": {
+    "title": "Get in touch",
+    "description": "Book a call or send us a message about your trip."
+  },
+  "Faq": {
+    "title": "FAQ",
+    "description": "Write and translate the questions shown on yacht pages."
+  },
+  "Popular": {
+    "title": "Popular picks",
+    "description": "Curate which facet values head the filters and the home page."
+  },
+  "PopularYachts": {
+    "title": "Popular yachts",
+    "description": "Configure how the home page's popular-yachts slider is composed."
+  },
+  "Contact": {
+    "title": "Contact",
+    "description": "Talk to a charter expert about your next trip."
+  }
+}

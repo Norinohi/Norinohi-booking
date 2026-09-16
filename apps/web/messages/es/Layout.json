@@ -1,0 +1,116 @@
+{
+  "Footer": {
+    "tagline": "Explora el mundo en yate.",
+    "description": "Más de 30.000 barcos en todo el mundo listos para tu próximo viaje.",
+    "columns": {
+      "destinations": "Destinos",
+      "charterTypes": "Tipos de chárter",
+      "explore": "Descubre"
+    },
+    "links": {
+      "croatia": "Croacia",
+      "greece": "Grecia",
+      "italy": "Italia",
+      "turkey": "Turquía",
+      "caribbean": "Caribe",
+      "thailand": "Tailandia",
+      "catamaran": "Catamarán",
+      "sailingYacht": "Velero",
+      "motorYacht": "Yate a motor",
+      "bareboat": "Sin patrón",
+      "skippered": "Con patrón incluido",
+      "planTrip": "Ayúdame a planificar mi viaje",
+      "popularYachts": "Yates populares",
+      "customerReviews": "Lo que dicen nuestros clientes",
+      "howItWorks": "Cómo funciona",
+      "contact": "Contacto"
+    },
+    "privacy": "Política de privacidad",
+    "terms": "Términos del servicio",
+    "copyright": "© {year} YachtSkanner Platform. Todos los derechos reservados."
+  },
+  "Nav": {
+    "boatTypes": "Tipos de barco",
+    "closeMenu": "Cerrar menú",
+    "destinations": "Destinos",
+    "findByBudget": "Buscar por presupuesto",
+    "findYacht": "Buscar yate",
+    "helpPlan": "Planificar mi viaje",
+    "language": "Idioma",
+    "openMenu": "Abrir menú",
+    "popularRoutes": "Rutas populares",
+    "saved": "Guardados",
+    "tryIt": "Pruébalo"
+  },
+  "Sidebar": {
+    "menu": "Menú de la cuenta",
+    "greeting": "¡Hola, {name}!",
+    "profile": "Mi perfil",
+    "bookings": "Mis reservas",
+    "referrals": "Referidos",
+    "credits": "Créditos y saldo",
+    "discount": "Gestión de descuentos",
+    "logout": "Cerrar sesión",
+    "commission": "Tasas de comisión",
+    "duplicates": "Revisión de duplicados",
+    "sync": "Historial de sincronización",
+    "audit": "Registro de auditoría",
+    "inbox": "Bandeja de entrada",
+    "staffBookings": "Reservas",
+    "users": "Usuarios",
+    "payments": "Pagos",
+    "listings": "Anuncios",
+    "routes": "Rutas sugeridas",
+    "sections": {
+      "account": "Cuenta",
+      "admin": "Administración"
+    },
+    "faq": "Preguntas frecuentes",
+    "groups": {
+      "fleet": "Yates",
+      "content": "Contenido del sitio"
+    },
+    "settings": "Ajustes de pago",
+    "popular": "Selección popular",
+    "popularYachts": "Yates populares"
+  },
+  "UserMenu": {
+    "account": "Cuenta",
+    "signIn": "Iniciar sesión",
+    "signOut": "Cerrar sesión",
+    "profile": "Mi perfil",
+    "bookings": "Mis reservas",
+    "referrals": "Referidos",
+    "credits": "Créditos y saldo"
+  },
+  "description": "Alquila yates y catamaranes en todo el mundo. Compara barcos, fechas y precios, y reserva tu próxima travesía en minutos.",
+  "title": "YachtSkanner — Alquiler de Yates y Catamaranes",
+  "CookieConsent": {
+    "title": "Cookies",
+    "description": "Usamos cookies analíticas para ver cómo se utiliza el sitio y mejorarlo. No se recopila nada hasta que aceptes.",
+    "manage": "Configurar",
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "footerLink": "Cookies",
+    "dialog": {
+      "title": "Tu privacidad",
+      "description": "Elige qué cookies puede usar este sitio. Tu elección se guarda en este dispositivo y puedes cambiarla cuando quieras desde el pie de página.",
+      "close": "Cerrar",
+      "alwaysActive": "Siempre activas",
+      "necessary": {
+        "title": "Necesarias",
+        "description": "Mantienen tu sesión iniciada, protegen los pagos frente al fraude y recuerdan esta elección. Sin ellas el sitio no funciona."
+      },
+      "functional": {
+        "title": "Funcionales",
+        "description": "Recuerdan los barcos que has guardado y cuentan una sola vez una visita repetida a un anuncio. Se quedan en tu navegador."
+      },
+      "analytics": {
+        "title": "Analíticas",
+        "description": "Google Analytics, para ver qué páginas se usan y dónde se atascan las personas. Sin publicidad ni perfilado."
+      },
+      "save": "Guardar mi elección",
+      "acceptAll": "Aceptar todas"
+    }
+  }
+}

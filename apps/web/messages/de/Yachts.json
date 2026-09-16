@@ -1,0 +1,22 @@
+{
+  "heading": "Yachtcharter-Suche",
+  "searchByMap": "Auf der Karte suchen",
+  "emptyTitle": "Keine Yachten für Ihre Filter gefunden",
+  "emptyDescription": "Passen Sie Termine, Budget oder Ort an – wir helfen Ihnen, die passende Yacht zu finden.",
+  "searchBar": {
+    "location": "Ort",
+    "startTyping": "Tippen Sie los",
+    "searchCountries": "Länder suchen...",
+    "addDates": "Daten wählen",
+    "clearDates": "Daten löschen",
+    "anyBoat": "Beliebiges Boot",
+    "search": "Suchen",
+    "noLocations": "Keine passenden Reiseziele",
+    "popularCountries": "Beliebte Länder",
+    "popularBoatTypes": "Beliebte Bootstypen",
+    "allBoatTypes": "Alle Bootstypen",
+    "clearLocation": "Ort löschen",
+    "freeText": "Name, Modell oder Firma"
+  },
+  "paginationSummary": "{from}–{to} von {total}"
+}

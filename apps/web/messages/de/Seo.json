@@ -1,0 +1,173 @@
+{
+  "Commissions": {
+    "title": "Provisionssätze",
+    "description": "Was CharterNavi über jeden Anbieter verdient."
+  },
+  "Yachts": {
+    "title": "Yachtcharter-Suche",
+    "description": "Suchen Sie Yachten und Katamarane zum Chartern im Mittelmeer und darüber hinaus. Filtern Sie nach Reiseziel, Terminen, Gästen und Preis."
+  },
+  "YachtsMap": {
+    "title": "Yachten auf der Karte",
+    "description": "Durchstöbern Sie verfügbare Yachten und Katamarane auf einer interaktiven Karte. Entdecken Sie Marinas und Reiseziele und filtern Sie nach Terminen, Gästen und Preis."
+  },
+  "YachtDetail": {
+    "title": "Yachtdetails",
+    "description": "Fotos, technische Daten, Crew-Optionen und Preise dieser Yacht ansehen und die Verfügbarkeit für Ihre Termine prüfen.",
+    "titleAtPlace": "{boat} chartern in {place}",
+    "titlePlain": "{boat} chartern",
+    "metaSpecs": "{category} mit {cabins, plural, one {# Kabine} other {# Kabinen}} für bis zu {guests} Gäste.",
+    "metaPlace": "Charter {crew} ab {place}.",
+    "metaPriceFrom": "Ab {price}.",
+    "metaPriceForDays": "{price} für {days, plural, one {# Tag} other {# Tage}}.",
+    "metaCta": "Verfügbarkeit für Ihre Termine prüfen."
+  },
+  "Booking": {
+    "title": "Yacht buchen",
+    "description": "Schließen Sie Ihre Yachtcharter-Buchung ab – Gästedaten, Extras und sichere Zahlung."
+  },
+  "BookingConfirmation": {
+    "title": "Buchung bestätigt",
+    "description": "Ihre Yachtcharter-Buchung ist bestätigt. Sehen Sie sich Ihre Reisedetails und die nächsten Schritte an."
+  },
+  "PlanMyTrip": {
+    "title": "Meine Reise planen",
+    "description": "Erzählen Sie uns von Ihrer Wunschreise – wir schlagen Ihnen passende Yachten, Routen und Termine vor."
+  },
+  "Login": {
+    "title": "Anmelden",
+    "description": "Melden Sie sich bei Ihrem YachtSkanner-Konto an, um Buchungen und gemerkte Yachten zu verwalten."
+  },
+  "Register": {
+    "title": "Konto erstellen",
+    "description": "Erstellen Sie ein YachtSkanner-Konto, um Yachten zu buchen, Favoriten zu speichern und Ihre Reisen zu verwalten."
+  },
+  "Wishlist": {
+    "title": "Ihre Merkliste",
+    "description": "Die Yachten und Katamarane, die Sie gespeichert haben. Vergleichen Sie Ihre Favoriten und prüfen Sie die Verfügbarkeit für Ihre Termine."
+  },
+  "Profile": {
+    "title": "Ihr Profil",
+    "description": "Verwalten Sie Ihre YachtSkanner-Kontodaten, Kontaktinformationen und Einstellungen."
+  },
+  "Bookings": {
+    "title": "Meine Buchungen",
+    "description": "Überblick über Ihre Yachtcharter-Buchungen, Reisedetails und Buchungsverlauf."
+  },
+  "Referrals": {
+    "title": "Ihre Empfehlungen",
+    "description": "Verfolgen Sie die Freunde, die Sie zu YachtSkanner eingeladen haben, und Ihre verdienten Prämien."
+  },
+  "Credits": {
+    "title": "Guthaben & Saldo",
+    "description": "Sehen Sie Ihr verfügbares Empfehlungsguthaben, was bald abläuft, und jede Buchung hinter dem Saldo."
+  },
+  "Discounts": {
+    "title": "Rabatt- & Preisverwaltung",
+    "description": "Verwalten Sie Aktionscodes und Yachtpreise für Ihre Inserate."
+  },
+  "Duplicates": {
+    "title": "Duplikatprüfung",
+    "description": "Prüfen und führen Sie ähnliche Yachtinserate zusammen, die der Katalog-Sync vorschlägt."
+  },
+  "Sync": {
+    "title": "Sync-Verlauf",
+    "description": "Katalog- und Verfügbarkeits-Sync-Läufe mit ihren Zahlen und Fehlern."
+  },
+  "Listings": {
+    "title": "Inserate",
+    "description": "Prüfen Sie importierte Yachtinserate und geben Sie Entwürfe für den Katalog frei."
+  },
+  "Routes": {
+    "title": "Routenvorschläge",
+    "description": "Schreiben Sie die Segelrouten, die auf einer Inseratseite erscheinen, Basis für Basis."
+  },
+  "Audit": {
+    "title": "Audit-Log",
+    "description": "Jede Mitarbeiteraktion zu einer Buchung, einem Inserat, einem Rabatt oder einer Anfrage."
+  },
+  "Invoice": {
+    "title": "Rechnung",
+    "description": "Die Rechnung für Ihre Yachtcharter-Buchung mit Zahlungsdetails."
+  },
+  "ForgotPassword": {
+    "title": "Passwort vergessen",
+    "description": "Setzen Sie das Passwort Ihres YachtSkanner-Kontos zurück."
+  },
+  "ResetPassword": {
+    "title": "Passwort zurücksetzen",
+    "description": "Wählen Sie ein neues Passwort für Ihr YachtSkanner-Konto."
+  },
+  "SetPassword": {
+    "title": "Passwort festlegen",
+    "description": "Wählen Sie ein Passwort für Ihr YachtSkanner-Konto."
+  },
+  "Balance": {
+    "title": "Restbetrag bezahlen",
+    "description": "Begleichen Sie den offenen Betrag Ihrer Yachtcharter-Buchung."
+  },
+  "BookingDetail": {
+    "title": "Ihre Buchung",
+    "description": "Details, Zahlungen und Dokumente zu Ihrer Yachtcharter-Buchung."
+  },
+  "Inbox": {
+    "title": "Posteingang",
+    "description": "Kundenfragen und Anfragen, die auf eine Antwort warten."
+  },
+  "Payments": {
+    "title": "Zahlungen",
+    "description": "Rechnungsanforderungen und Erstattungen, die auf Bearbeitung warten."
+  },
+  "StaffBooking": {
+    "title": "Buchung (Mitarbeiter)",
+    "description": "Mitarbeiteransicht einer Kundenbuchung."
+  },
+  "StaffBookings": {
+    "title": "Buchungen (Mitarbeiter)",
+    "description": "Alle Buchungen auf der Plattform, für Mitarbeiter."
+  },
+  "Users": {
+    "title": "Benutzer",
+    "description": "Alle Konten der Plattform, für Mitarbeiter."
+  },
+  "CatalogPage": {
+    "country": "Yachtcharter in {place}",
+    "geo": "Yachtcharter in {place}, {country}",
+    "marina": "Yachtcharter ab {place}",
+    "type": "{type} chartern",
+    "typeCountry": "{type} chartern in {place}",
+    "typeGeo": "{type} chartern in {place}, {country}",
+    "typeMarina": "{type} chartern ab {place}",
+    "builder": "{brand} Yachtcharter",
+    "model": "{model} chartern",
+    "intro": "{count, plural, one {# Boot} other {# Boote}} verfügbar, ab {price} pro Woche.",
+    "introNoPrice": "{count, plural, one {# Boot} other {# Boote}} verfügbar.",
+    "description": "Vergleichen Sie {count, plural, one {# Yacht} other {# Yachten}} zum Chartern. Filtern Sie nach Terminen, Gästen, Kabinen und Preis und prüfen Sie die Verfügbarkeit für Ihre Reise.",
+    "siblings": "Auch einen Blick wert",
+    "empty": "Derzeit passt kein Boot. Probieren Sie den gesamten Katalog."
+  },
+  "Support": {
+    "title": "Support",
+    "description": "Fragen Sie uns alles rund um Ihre Buchung."
+  },
+  "Consultation": {
+    "title": "Kontakt aufnehmen",
+    "description": "Vereinbaren Sie einen Anruf oder schreiben Sie uns zu Ihrer Reise."
+  },
+  "Faq": {
+    "title": "FAQ",
+    "description": "Die Fragen auf den Yachtseiten schreiben und übersetzen."
+  },
+  "Popular": {
+    "title": "Beliebte Auswahl",
+    "description": "Legen Sie fest, welche Werte die Filter und die Startseite anführen."
+  },
+  "PopularYachts": {
+    "title": "Beliebte Yachten",
+    "description": "Legen Sie fest, wie der Slider mit beliebten Yachten auf der Startseite zusammengestellt wird."
+  },
+  "Contact": {
+    "title": "Kontakt",
+    "description": "Sprechen Sie mit einem Charter-Experten über Ihre nächste Reise."
+  }
+}
