@@ -1,5 +1,6 @@
 "use client";
 
+import { PROVIDER_KEYS } from "@yacht-charter/env/providers";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import {
@@ -18,13 +19,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { useSyncRuns } from "../hooks/use-sync-runs";
-import {
-  type ProviderKey,
-  type SyncRunKind,
-  type SyncRunRow,
-  type SyncRunState,
-  toProviderKey,
-} from "../types";
+import { type SyncRunKind, type SyncRunRow, type SyncRunState, toProviderKey } from "../types";
 import SyncRunErrors from "./sync-run-errors";
 
 /*
@@ -43,7 +38,6 @@ import SyncRunErrors from "./sync-run-errors";
  */
 const ALL = "all";
 
-const PROVIDERS: readonly ProviderKey[] = ["mock", "booking_manager", "nausys"];
 const KINDS: readonly SyncRunKind[] = ["catalogue", "availability", "pricing", "media"];
 const STATUSES: readonly SyncRunState[] = ["pending", "running", "success", "failed", "partial"];
 
@@ -74,7 +68,7 @@ export default function SyncRunsTable() {
 
   const { data, isPending, isError } = useSyncRuns({
     /* The ALL sentinel is in none of the three lists, so it drops out as `undefined`. */
-    provider: PROVIDERS.find((option) => option === provider),
+    provider: PROVIDER_KEYS.find((option) => option === provider),
     kind: KINDS.find((option) => option === kind),
     status: STATUSES.find((option) => option === status),
     page,
@@ -123,7 +117,7 @@ export default function SyncRunsTable() {
             onValueChange={onFilterChange(setProvider)}
             options={[
               { value: ALL, label: t("filters.allProviders") },
-              ...PROVIDERS.map((key) => ({ value: key, label: tProviders(key) })),
+              ...PROVIDER_KEYS.map((key) => ({ value: key, label: tProviders(key) })),
             ]}
           />
         </div>

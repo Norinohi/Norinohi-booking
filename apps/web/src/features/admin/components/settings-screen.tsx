@@ -1,5 +1,6 @@
 "use client";
 
+import { PROVIDER_KEYS, providerMeta, type ProviderKey } from "@yacht-charter/env/providers";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Input } from "@yacht-charter/ui/components/form/input";
 import { Label } from "@yacht-charter/ui/components/form/label";
@@ -23,7 +24,6 @@ import {
 
 type PaymentSource = "vendor" | "marketplace";
 type PaymentMode = "deposit" | "full";
-type ProviderCode = "booking_manager" | "nausys" | "mock";
 type DisplayCurrency = "EUR" | "USD" | "GBP" | "PLN" | "UAH";
 
 interface FormState {
@@ -34,7 +34,7 @@ interface FormState {
   enforceLeadTime: boolean;
   leadTimeDays: string;
   /* Provider codes, most preferred first. Saved whole; the radios only move the winner. */
-  preference: ProviderCode[];
+  preference: ProviderKey[];
   offerRankingUsesBasePrice: boolean;
   catalogueShowsBasePrice: boolean;
   offerRankingUsesReliability: boolean;
@@ -55,14 +55,7 @@ const PRESET_PERCENTS = ["30", "50", "100"] as const;
  * saved order, but it is a development fixture rather than something anybody sells through, so
  * it is not something to put in front of an operator.
  */
-const CHOOSABLE_PROVIDERS = ["booking_manager", "nausys"] as const;
-
-/* Brand names, so they stay as written in every locale. */
-const PROVIDER_NAME = {
-  booking_manager: "Booking Manager",
-  nausys: "NauSYS",
-  mock: "Mock",
-} satisfies Record<ProviderCode, string>;
+const CHOOSABLE_PROVIDERS = PROVIDER_KEYS.filter((key) => !providerMeta(key).fixture);
 
 /**
  * The same order with `code` promoted to the front.
@@ -70,7 +63,7 @@ const PROVIDER_NAME = {
  * The rest keep their relative places, so choosing a winner is the only thing the radios change:
  * an operator picking NauSYS is not also silently reordering everyone below it.
  */
-function preferFirst(order: readonly ProviderCode[], code: ProviderCode): ProviderCode[] {
+function preferFirst(order: readonly ProviderKey[], code: ProviderKey): ProviderKey[] {
   return [code, ...order.filter((entry) => entry !== code)];
 }
 
@@ -169,9 +162,7 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
   /* The first vendor an operator can actually choose. A saved order that leads with `mock` is a
      development database, not a decision, so the radios fall back to the first real vendor. */
   const preferred =
-    form?.preference.find((code): code is (typeof CHOOSABLE_PROVIDERS)[number] =>
-      CHOOSABLE_PROVIDERS.some((entry) => entry === code),
-    ) ?? CHOOSABLE_PROVIDERS[0];
+    form?.preference.find((code) => CHOOSABLE_PROVIDERS.includes(code)) ?? CHOOSABLE_PROVIDERS[0];
 
   return (
     <div className="flex flex-col">
@@ -367,7 +358,8 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
                         className="flex cursor-pointer items-center gap-2 text-sm leading-4.5 font-medium text-foreground"
                       >
                         <Radio value={code} />
-                        {PROVIDER_NAME[code]}
+                        {/* Brand names, so they stay as written in every locale. */}
+                        {providerMeta(code).displayName}
                       </label>
                     ))}
                   </RadioGroup>

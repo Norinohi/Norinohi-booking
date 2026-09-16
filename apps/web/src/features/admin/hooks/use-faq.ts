@@ -2,9 +2,15 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { orpc } from "@/utils/orpc";
-
-import { faqListQueryOptions } from "../api/queries";
+import {
+  createFaqEntryMutationOptions,
+  deleteFaqEntryMutationOptions,
+  faqKey,
+  faqListingOptionsQueryOptions,
+  faqListQueryOptions,
+  reorderFaqMutationOptions,
+  updateFaqEntryMutationOptions,
+} from "../api/queries";
 import type { FaqCategory, FaqGap, FaqLocale, FaqScope } from "../types";
 
 /*
@@ -36,35 +42,30 @@ export function useFaqList(input: {
 
 function useFaqInvalidation() {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: orpc.admin.faq.key() });
+  return () => queryClient.invalidateQueries({ queryKey: faqKey() });
 }
 
 export function useCreateFaqEntry() {
   const invalidate = useFaqInvalidation();
-  return useMutation(orpc.admin.faq.create.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...createFaqEntryMutationOptions(), onSettled: invalidate });
 }
 
 export function useUpdateFaqEntry() {
   const invalidate = useFaqInvalidation();
-  return useMutation(orpc.admin.faq.update.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...updateFaqEntryMutationOptions(), onSettled: invalidate });
 }
 
 export function useDeleteFaqEntry() {
   const invalidate = useFaqInvalidation();
-  return useMutation(orpc.admin.faq.delete.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...deleteFaqEntryMutationOptions(), onSettled: invalidate });
 }
 
 export function useReorderFaq() {
   const invalidate = useFaqInvalidation();
-  return useMutation(orpc.admin.faq.reorder.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...reorderFaqMutationOptions(), onSettled: invalidate });
 }
 
 /** The yacht typeahead behind the listing scope picker, shared with the discount editor. */
 export function useFaqListingOptions(query: string) {
-  return useQuery(
-    orpc.admin.discount.yachtOptions.queryOptions({
-      input: { query: query.trim() || undefined, limit: 20 },
-      staleTime: 60_000,
-    }),
-  );
+  return useQuery(faqListingOptionsQueryOptions(query));
 }

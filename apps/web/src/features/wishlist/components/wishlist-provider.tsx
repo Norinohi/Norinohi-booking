@@ -15,9 +15,14 @@ import {
 import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-client";
-import { orpc } from "@/utils/orpc";
 
-import { wishlistIdsQueryOptions } from "../api/queries";
+import {
+  addToWishlistMutationOptions,
+  mergeWishlistMutationOptions,
+  removeFromWishlistMutationOptions,
+  wishlistIdsQueryOptions,
+  wishlistListKey,
+} from "../api/queries";
 import * as localWishlist from "../lib/local-wishlist";
 import type { WishlistMode } from "../types";
 
@@ -122,7 +127,7 @@ export default function WishlistProvider({ children }: { children: React.ReactNo
     (listingId: string) => {
       markPending(listingId, false);
       queryClient.invalidateQueries({ queryKey: wishlistIdsQueryOptions().queryKey });
-      queryClient.invalidateQueries({ queryKey: orpc.wishlist.list.key() });
+      queryClient.invalidateQueries({ queryKey: wishlistListKey() });
     },
     [markPending, queryClient],
   );
@@ -136,23 +141,21 @@ export default function WishlistProvider({ children }: { children: React.ReactNo
     [queryClient, t],
   );
 
-  const addMutation = useMutation(
-    orpc.wishlist.add.mutationOptions({
-      onMutate: ({ listingId }) => patchIds(listingId, true),
-      onError: (_error, _input, context) => rollback(context),
-      onSettled: (_data, _error, { listingId }) => settleIds(listingId),
-    }),
-  );
+  const addMutation = useMutation({
+    ...addToWishlistMutationOptions(),
+    onMutate: ({ listingId }) => patchIds(listingId, true),
+    onError: (_error, _input, context) => rollback(context),
+    onSettled: (_data, _error, { listingId }) => settleIds(listingId),
+  });
 
-  const removeMutation = useMutation(
-    orpc.wishlist.remove.mutationOptions({
-      onMutate: ({ listingId }) => patchIds(listingId, false),
-      onError: (_error, _input, context) => rollback(context),
-      onSettled: (_data, _error, { listingId }) => settleIds(listingId),
-    }),
-  );
+  const removeMutation = useMutation({
+    ...removeFromWishlistMutationOptions(),
+    onMutate: ({ listingId }) => patchIds(listingId, false),
+    onError: (_error, _input, context) => rollback(context),
+    onSettled: (_data, _error, { listingId }) => settleIds(listingId),
+  });
 
-  const mergeMutation = useMutation(orpc.wishlist.merge.mutationOptions({}));
+  const mergeMutation = useMutation(mergeWishlistMutationOptions());
   const mergeAsync = mergeMutation.mutateAsync;
 
   const mergedForUser = useRef<string | null>(null);
@@ -190,7 +193,7 @@ export default function WishlistProvider({ children }: { children: React.ReactNo
         mergedForUser.current = null;
       } finally {
         queryClient.invalidateQueries({ queryKey: wishlistIdsQueryOptions().queryKey });
-        queryClient.invalidateQueries({ queryKey: orpc.wishlist.list.key() });
+        queryClient.invalidateQueries({ queryKey: wishlistListKey() });
       }
     })();
   }, [mergeAsync, queryClient, sessionPending, t, userId]);

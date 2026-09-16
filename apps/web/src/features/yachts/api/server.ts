@@ -175,6 +175,11 @@ export async function prefetchCatalogPages(locale: string) {
   return publicClient.charterSearch.catalogPages({ locale });
 }
 
+/* Uncached on its own: the sitemap walk that reads it caches the whole walk instead. */
+export async function readCatalogResultsPage(page: number, pageSize: number) {
+  return publicClient.charterSearch.results({ pageSize, page });
+}
+
 /** The page's own boats, rendered into the HTML rather than fetched by the browser. */
 export async function prefetchCatalogResults(
   filters: CatalogPage["filters"],

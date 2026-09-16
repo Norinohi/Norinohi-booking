@@ -20,8 +20,8 @@ import { toast } from "sonner";
 import z from "zod";
 
 import CountryCombobox from "@/components/shared/form/country-combobox";
+import { createLeadMutationOptions, profileQueryOptions } from "@/lib/api/queries";
 import { authClient } from "@/lib/auth-client";
-import { orpc } from "@/utils/orpc";
 
 type LeadInput = Parameters<AppRouterClient["lead"]["create"]>[0];
 type LeadKind = LeadInput["kind"];
@@ -85,10 +85,10 @@ export function LeadEnquiryForm({
    * `profile.get` is protected and an enquiry is open to everyone.
    */
   const { data: profile } = useQuery({
-    ...orpc.profile.get.queryOptions({ staleTime: 30_000 }),
+    ...profileQueryOptions(),
     enabled: Boolean(session?.user),
   });
-  const createLead = useMutation(orpc.lead.create.mutationOptions());
+  const createLead = useMutation(createLeadMutationOptions());
 
   const schema = useLeadSchema();
   const form = useForm<Values>({

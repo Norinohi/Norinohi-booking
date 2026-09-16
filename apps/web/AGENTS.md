@@ -81,6 +81,7 @@ definition, so server-prefetched and client cache keys always match.
 
 - Data-loading pages are Server Components that prefetch on the server (`features/*/api/server.ts`) and wrap the subtree in **one** `HydrationBoundary` (via a `<Hydrated>` helper); client leaves read the **same** query through a hook. Prefetch several queries with `Promise.all`.
 - `api/queries.ts` holds isomorphic `orpc.*.queryOptions()` factories used by **both** server prefetch and client hooks, so cache keys never drift. `api/server.ts` is server-only (`import "server-only"`).
+- Only `api/` folders (a feature's, a shared component's, or `src/lib/api/` for what no feature owns) may import `orpc` from `@/utils/orpc`. Hooks and components import the factories. `no-restricted-imports` in `.oxlintrc.json` enforces it; `getQueryClient` is allowed anywhere.
 - Pages with no server data skip prefetch entirely. Never hand-write request/response types — infer from `AppRouterClient`.
 
 ### Server vs Client

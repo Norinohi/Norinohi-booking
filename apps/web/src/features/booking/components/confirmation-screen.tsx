@@ -16,9 +16,12 @@ import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
 import { useMoney } from "@/hooks/use-money";
 import { GROUP, POP, RISE } from "@/lib/motion";
-import { client } from "@/utils/orpc";
 
-import { bookingDetailQueryOptions, checkoutStatusQueryOptions } from "../api/queries";
+import {
+  bookingDetailQueryOptions,
+  checkoutStatusQueryOptions,
+  fetchBookingReceipt,
+} from "../api/queries";
 import { hasFailed, isSettling } from "../lib/checkout-status";
 import { guestAccessFor } from "../lib/guest-access";
 import { confirmationParsers } from "../lib/search-params";
@@ -375,7 +378,7 @@ export default function BookingConfirmationScreen() {
     if (!bookingId) return;
     setDownloading(true);
     try {
-      const receipt = await client.booking.receipt({ id: bookingId, accessToken: access?.token });
+      const receipt = await fetchBookingReceipt(bookingId, access?.token);
       const blob = new Blob([JSON.stringify(receipt, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");

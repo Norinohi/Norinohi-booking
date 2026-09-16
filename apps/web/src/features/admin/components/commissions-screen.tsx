@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFAULT_TRANSACTING_PREFERENCE } from "@yacht-charter/env/providers";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import {
@@ -24,7 +25,7 @@ import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { authClient } from "@/lib/auth-client";
 
 import { useCommissions, useSetCommissionActive } from "../hooks/use-commissions";
-import { type CommissionRow, type CommissionStatus, type ProviderKey } from "../types";
+import { type CommissionRow, type CommissionStatus } from "../types";
 import CommissionDialog from "./commission-dialog";
 
 /*
@@ -39,7 +40,8 @@ import CommissionDialog from "./commission-dialog";
  */
 
 const ALL = "all";
-const PROVIDERS: readonly ProviderKey[] = ["booking_manager", "nausys", "mock"];
+/* Real vendors ahead of the fixture, which is the default transacting order. */
+const PROVIDERS = DEFAULT_TRANSACTING_PREFERENCE;
 const STATUSES: readonly CommissionStatus[] = ["active", "scheduled", "expired", "inactive"];
 
 const STATUS_VARIANTS = {

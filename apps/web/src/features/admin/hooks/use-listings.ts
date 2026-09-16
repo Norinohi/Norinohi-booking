@@ -2,9 +2,15 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { orpc } from "@/utils/orpc";
-
-import { listingAdminListQueryOptions } from "../api/queries";
+import {
+  listingAdminListQueryOptions,
+  listingFieldSourcesQueryOptions,
+  listingKey,
+  publishDraftsMutationOptions,
+  setListingFieldSourceMutationOptions,
+  setListingStatusMutationOptions,
+  splitListingOfferMutationOptions,
+} from "../api/queries";
 import type { ListingStatus, ProviderKey } from "../types";
 
 /*
@@ -29,11 +35,10 @@ export function useListings(input: {
 export function useSetListingStatus() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.listing.setStatus.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.listing.key() }),
-    }),
-  );
+  return useMutation({
+    ...setListingStatusMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: listingKey() }),
+  });
 }
 
 /**
@@ -44,11 +49,10 @@ export function useSetListingStatus() {
 export function usePublishDrafts() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.listing.publishDrafts.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.listing.key() }),
-    }),
-  );
+  return useMutation({
+    ...publishDraftsMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: listingKey() }),
+  });
 }
 
 /**
@@ -58,7 +62,7 @@ export function usePublishDrafts() {
  * between, and that is nearly every listing.
  */
 export function useListingFieldSources(listingId: string) {
-  return useQuery(orpc.admin.listing.fieldSources.queryOptions({ input: { listingId } }));
+  return useQuery(listingFieldSourcesQueryOptions(listingId));
 }
 
 /**
@@ -70,11 +74,10 @@ export function useListingFieldSources(listingId: string) {
 export function useSetListingFieldSource() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.listing.setFieldSource.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.listing.key() }),
-    }),
-  );
+  return useMutation({
+    ...setListingFieldSourceMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: listingKey() }),
+  });
 }
 
 /**
@@ -86,9 +89,8 @@ export function useSetListingFieldSource() {
 export function useSplitListingOffer() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.match.split.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.listing.key() }),
-    }),
-  );
+  return useMutation({
+    ...splitListingOfferMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: listingKey() }),
+  });
 }

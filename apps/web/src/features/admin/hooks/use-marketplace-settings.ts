@@ -2,9 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { orpc } from "@/utils/orpc";
-
-import { marketplaceSettingsQueryOptions } from "../api/queries";
+import {
+  marketplaceSettingsKey,
+  marketplaceSettingsQueryOptions,
+  updateMarketplaceSettingsMutationOptions,
+} from "../api/queries";
 
 /*
  * Hooks over the marketplace settings screen.
@@ -20,9 +22,8 @@ export function useMarketplaceSettings() {
 
 export function useUpdateMarketplaceSettings() {
   const queryClient = useQueryClient();
-  return useMutation(
-    orpc.admin.settings.update.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.settings.key() }),
-    }),
-  );
+  return useMutation({
+    ...updateMarketplaceSettingsMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: marketplaceSettingsKey() }),
+  });
 }

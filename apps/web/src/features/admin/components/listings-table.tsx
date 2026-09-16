@@ -1,5 +1,6 @@
 "use client";
 
+import { PROVIDER_KEYS } from "@yacht-charter/env/providers";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import {
@@ -30,7 +31,6 @@ import {
   type ListingAdminRow,
   type ListingStatus,
   type MovableStatus,
-  type ProviderKey,
   toProviderKey,
 } from "../types";
 
@@ -47,7 +47,6 @@ import {
 /* Sentinel for "All …": a real value, since a falsy selection makes Select show its placeholder. */
 const ALL = "all";
 
-const PROVIDERS: readonly ProviderKey[] = ["mock", "booking_manager", "nausys"];
 /*
  * The three a person can move a listing between. `merged` is absent on purpose: a merge
  * writes it to record that this listing's offers moved to another one, and nothing here
@@ -93,7 +92,7 @@ export default function ListingsTable() {
 
   const { data, isPending, isError } = useListings({
     /* The ALL sentinel is in neither list, so it drops out as `undefined`. */
-    provider: PROVIDERS.find((option) => option === provider),
+    provider: PROVIDER_KEYS.find((option) => option === provider),
     operatorId: operatorId === ALL ? undefined : operatorId,
     status: FILTER_STATUSES.find((option) => option === status),
     query: query.trim() || undefined,
@@ -161,7 +160,7 @@ export default function ListingsTable() {
             onValueChange={onFilterChange(setProvider)}
             options={[
               { value: ALL, label: t("filters.allProviders") },
-              ...PROVIDERS.map((key) => ({
+              ...PROVIDER_KEYS.map((key) => ({
                 value: key,
                 label: tProviders(key),
               })),

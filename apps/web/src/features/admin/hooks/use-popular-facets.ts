@@ -2,9 +2,14 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { orpc } from "@/utils/orpc";
-
-import { popularFacetsQueryOptions } from "../api/queries";
+import {
+  facetMediaQueryOptions,
+  popularFacetsKey,
+  popularFacetsQueryOptions,
+  setPopularFacetsMutationOptions,
+  updateFacetMediaMutationOptions,
+  uploadFacetImageMutationOptions,
+} from "../api/queries";
 import type { PopularFacetKind, PopularFacetSurface } from "../types";
 
 /*
@@ -25,18 +30,15 @@ export function usePopularFacets(input: {
 
 export function useSetPopularFacets() {
   const queryClient = useQueryClient();
-  return useMutation(
-    orpc.admin.popularFacets.set.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.popularFacets.key() }),
-    }),
-  );
+  return useMutation({
+    ...setPopularFacetsMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: popularFacetsKey() }),
+  });
 }
 
 export function useFacetMedia(input: { kind: PopularFacetKind; value: string } | null) {
   return useQuery({
-    ...orpc.admin.popularFacets.media.queryOptions({
-      input: input ?? { kind: "country", value: "" },
-    }),
+    ...facetMediaQueryOptions(input ?? { kind: "country", value: "" }),
     enabled: input !== null,
   });
 }
@@ -44,13 +46,12 @@ export function useFacetMedia(input: { kind: PopularFacetKind; value: string } |
 /* Invalidates the list as well as the card: the table shows each value's photo. */
 export function useUpdateFacetMedia() {
   const queryClient = useQueryClient();
-  return useMutation(
-    orpc.admin.popularFacets.updateMedia.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.popularFacets.key() }),
-    }),
-  );
+  return useMutation({
+    ...updateFacetMediaMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: popularFacetsKey() }),
+  });
 }
 
 export function useUploadFacetImage() {
-  return useMutation(orpc.admin.popularFacets.uploadImage.mutationOptions());
+  return useMutation(uploadFacetImageMutationOptions());
 }

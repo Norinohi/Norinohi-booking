@@ -2,7 +2,14 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { orpc } from "@/utils/orpc";
+import {
+  retryReleaseMutationOptions,
+  sendPaymentRemindersMutationOptions,
+  sweepExpiriesMutationOptions,
+  syncRunsKey,
+  unreleasedOptionsKey,
+  unreleasedOptionsQueryOptions,
+} from "../api/queries";
 
 /*
  * The scheduled jobs, run by hand. Both are idempotent, so neither needs a confirmation step —
@@ -16,17 +23,15 @@ import { orpc } from "@/utils/orpc";
 export function useSweepExpiries() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.maintenance.sweepExpiries.mutationOptions({
-      onSuccess: () =>
-        queryClient.invalidateQueries({ queryKey: orpc.admin.provider.syncRuns.key() }),
-    }),
-  );
+  return useMutation({
+    ...sweepExpiriesMutationOptions(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: syncRunsKey() }),
+  });
 }
 
 /** Mails the balance reminders due in the next ten days. Each installment is only ever sent once. */
 export function useSendPaymentReminders() {
-  return useMutation(orpc.admin.maintenance.sendPaymentReminders.mutationOptions());
+  return useMutation(sendPaymentRemindersMutationOptions());
 }
 
 /**
@@ -37,19 +42,15 @@ export function useSendPaymentReminders() {
  * about the connection rather than about the booking.
  */
 export function useUnreleasedOptions() {
-  return useQuery(orpc.admin.maintenance.unreleasedOptions.queryOptions({ input: {} }));
+  return useQuery(unreleasedOptionsQueryOptions());
 }
 
 /** Asks the vendor again for one of them, and re-reads the list with whatever it answered. */
 export function useRetryRelease() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.maintenance.retryRelease.mutationOptions({
-      onSuccess: () =>
-        queryClient.invalidateQueries({
-          queryKey: orpc.admin.maintenance.unreleasedOptions.key(),
-        }),
-    }),
-  );
+  return useMutation({
+    ...retryReleaseMutationOptions(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: unreleasedOptionsKey() }),
+  });
 }

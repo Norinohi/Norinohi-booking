@@ -43,6 +43,29 @@
       }
     },
     {
+      "files": ["apps/web/src/**"],
+      "excludeFiles": [
+        "apps/web/src/features/*/api/**",
+        "apps/web/src/components/**/api/**",
+        "apps/web/src/lib/api/**",
+        "apps/web/src/utils/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@/utils/orpc",
+                "allowImportNames": ["getQueryClient"],
+                "message": "Build oRPC query and mutation options in the owning feature's api/queries.ts (or src/lib/api/ when no feature owns them) and import those factories instead."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": ["packages/providers/src/shared/errors.ts"],
       "rules": {
         "anti-slop/no-known-value-widening": "off",

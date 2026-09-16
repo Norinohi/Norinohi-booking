@@ -2,13 +2,13 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { orpc } from "@/utils/orpc";
-
 import {
   providerCapabilitiesQueryOptions,
   providerReliabilityQueryOptions,
-  syncRunStatusQueryOptions,
+  startSyncMutationOptions,
+  syncRunsKey,
   syncRunsQueryOptions,
+  syncRunStatusQueryOptions,
 } from "../api/queries";
 import type { ProviderKey, SyncRunKind, SyncRunState } from "../types";
 
@@ -52,13 +52,8 @@ export function useProviderCapabilities() {
  */
 export function useStartSync(kind: "catalogue" | "availability") {
   const queryClient = useQueryClient();
-  const procedure =
-    kind === "catalogue" ? orpc.admin.provider.syncCatalogue : orpc.admin.provider.syncAvailability;
-
-  return useMutation(
-    procedure.mutationOptions({
-      onSuccess: () =>
-        queryClient.invalidateQueries({ queryKey: orpc.admin.provider.syncRuns.key() }),
-    }),
-  );
+  return useMutation({
+    ...startSyncMutationOptions(kind),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: syncRunsKey() }),
+  });
 }

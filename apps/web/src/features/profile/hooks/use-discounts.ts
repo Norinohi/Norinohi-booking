@@ -2,15 +2,20 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { orpc } from "@/utils/orpc";
-
 import {
+  clearListingPriceMutationOptions,
+  createDiscountMutationOptions,
+  discountKey,
   discountListQueryOptions,
   discountQueryOptions,
   discountYachtOptionsQueryOptions,
   listingPriceFiltersQueryOptions,
   listingPriceListQueryOptions,
+  listingPriceKey,
   listingPriceQueryOptions,
+  setDiscountActiveMutationOptions,
+  updateDiscountMutationOptions,
+  updateListingPriceMutationOptions,
 } from "../api/queries";
 
 /*
@@ -36,32 +41,29 @@ export function useDiscountYachtOptions(query: string) {
 export function useCreateDiscount() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.discount.create.mutationOptions({
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: orpc.admin.discount.key() }),
-    }),
-  );
+  return useMutation({
+    ...createDiscountMutationOptions(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: discountKey() }),
+  });
 }
 
 export function useUpdateDiscount() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.discount.update.mutationOptions({
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: orpc.admin.discount.key() }),
-    }),
-  );
+  return useMutation({
+    ...updateDiscountMutationOptions(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: discountKey() }),
+  });
 }
 
 /** Deactivating a code is its own audited action, separate from editing its fields. */
 export function useSetDiscountActive() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.discount.setActive.mutationOptions({
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: orpc.admin.discount.key() }),
-    }),
-  );
+  return useMutation({
+    ...setDiscountActiveMutationOptions(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: discountKey() }),
+  });
 }
 
 export function useListingPrices(input: {
@@ -85,20 +87,18 @@ export function useListingPriceFilters() {
 export function useUpdateListingPrice() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.listingPrice.update.mutationOptions({
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: orpc.admin.listingPrice.key() }),
-    }),
-  );
+  return useMutation({
+    ...updateListingPriceMutationOptions(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: listingPriceKey() }),
+  });
 }
 
 /** Drops the override and hands the listing back to the provider's own price. */
 export function useClearListingPrice() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.listingPrice.clear.mutationOptions({
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: orpc.admin.listingPrice.key() }),
-    }),
-  );
+  return useMutation({
+    ...clearListingPriceMutationOptions(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: listingPriceKey() }),
+  });
 }

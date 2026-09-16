@@ -2,12 +2,20 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { orpc } from "@/utils/orpc";
-
 import {
+  createRouteMutationOptions,
+  createRouteStopMutationOptions,
+  deleteRouteMutationOptions,
+  deleteRouteStopMutationOptions,
   featuredRoutesQueryOptions,
   geographyOptionsQueryOptions,
+  reorderFeaturedRoutesMutationOptions,
+  reorderRouteStopsMutationOptions,
+  routeKey,
   routeListQueryOptions,
+  setRouteActiveMutationOptions,
+  updateRouteMutationOptions,
+  updateRouteStopMutationOptions,
 } from "../api/queries";
 import type { RouteKind } from "../types";
 
@@ -22,7 +30,7 @@ import type { RouteKind } from "../types";
 
 function useInvalidateRoutes() {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: orpc.admin.route.key() });
+  return () => queryClient.invalidateQueries({ queryKey: routeKey() });
 }
 
 export function useRoutes(input: {
@@ -46,7 +54,7 @@ export function useFeaturedRoutes() {
  */
 export function useReorderFeaturedRoutes() {
   const invalidate = useInvalidateRoutes();
-  return useMutation(orpc.admin.route.reorderFeatured.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...reorderFeaturedRoutesMutationOptions(), onSettled: invalidate });
 }
 
 /** Countries always, regions and bases narrowed to the chosen country and search term. */
@@ -56,40 +64,40 @@ export function useGeographyOptions(input: { countryId?: string; query?: string 
 
 export function useCreateRoute() {
   const invalidate = useInvalidateRoutes();
-  return useMutation(orpc.admin.route.create.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...createRouteMutationOptions(), onSettled: invalidate });
 }
 
 export function useUpdateRoute() {
   const invalidate = useInvalidateRoutes();
-  return useMutation(orpc.admin.route.update.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...updateRouteMutationOptions(), onSettled: invalidate });
 }
 
 export function useSetRouteActive() {
   const invalidate = useInvalidateRoutes();
-  return useMutation(orpc.admin.route.setActive.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...setRouteActiveMutationOptions(), onSettled: invalidate });
 }
 
 export function useDeleteRoute() {
   const invalidate = useInvalidateRoutes();
-  return useMutation(orpc.admin.route.delete.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...deleteRouteMutationOptions(), onSettled: invalidate });
 }
 
 export function useCreateRouteStop() {
   const invalidate = useInvalidateRoutes();
-  return useMutation(orpc.admin.route.stop.create.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...createRouteStopMutationOptions(), onSettled: invalidate });
 }
 
 export function useUpdateRouteStop() {
   const invalidate = useInvalidateRoutes();
-  return useMutation(orpc.admin.route.stop.update.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...updateRouteStopMutationOptions(), onSettled: invalidate });
 }
 
 export function useDeleteRouteStop() {
   const invalidate = useInvalidateRoutes();
-  return useMutation(orpc.admin.route.stop.delete.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...deleteRouteStopMutationOptions(), onSettled: invalidate });
 }
 
 export function useReorderRouteStops() {
   const invalidate = useInvalidateRoutes();
-  return useMutation(orpc.admin.route.stop.reorder.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...reorderRouteStopsMutationOptions(), onSettled: invalidate });
 }

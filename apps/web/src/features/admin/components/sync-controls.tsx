@@ -1,5 +1,6 @@
 "use client";
 
+import { PROVIDER_KEYS } from "@yacht-charter/env/providers";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { Select } from "@yacht-charter/ui/components/form/select";
@@ -9,7 +10,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { useProviderCapabilities, useStartSync } from "../hooks/use-sync-runs";
-import type { ProviderKey } from "../types";
 
 /*
  * SyncControls — starting an import by hand, above the run history on /sync.
@@ -22,8 +22,6 @@ import type { ProviderKey } from "../types";
 
 /* Same sentinel as the history filters: "" would blank the Select trigger. */
 const ALL = "all";
-
-const PROVIDERS: readonly ProviderKey[] = ["mock", "booking_manager", "nausys"];
 
 /** The capability flags worth showing staff, in the order they matter to a booking. */
 const CAPABILITY_KEYS = [
@@ -44,7 +42,7 @@ export default function SyncControls() {
   const running = catalogue.isPending || availability.isPending;
 
   const start = (mutation: typeof catalogue) => {
-    const target = PROVIDERS.find((key) => key === provider);
+    const target = PROVIDER_KEYS.find((key) => key === provider);
 
     mutation.mutate(target ? { provider: target } : {}, {
       onSuccess: (result) => {
@@ -72,7 +70,7 @@ export default function SyncControls() {
             onValueChange={setProvider}
             options={[
               { value: ALL, label: t("allProviders") },
-              ...PROVIDERS.map((key) => ({ value: key, label: tProviders(key) })),
+              ...PROVIDER_KEYS.map((key) => ({ value: key, label: tProviders(key) })),
             ]}
           />
         </div>

@@ -2,9 +2,16 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { orpc } from "@/utils/orpc";
-
-import { enquiryListQueryOptions, leadListQueryOptions } from "../api/queries";
+import {
+  answerEnquiryMutationOptions,
+  answerLeadMutationOptions,
+  enquiryKey,
+  enquiryListQueryOptions,
+  leadKey,
+  leadListQueryOptions,
+  setEnquiryStatusMutationOptions,
+  setLeadStatusMutationOptions,
+} from "../api/queries";
 import type { EnquiryStatus, LeadKind, LeadStatus } from "../types";
 
 /*
@@ -29,39 +36,35 @@ export function useLeads(input: {
 export function useAnswerEnquiry() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.enquiry.answer.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.enquiry.key() }),
-    }),
-  );
+  return useMutation({
+    ...answerEnquiryMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: enquiryKey() }),
+  });
 }
 
 export function useSetEnquiryStatus() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.enquiry.setStatus.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.enquiry.key() }),
-    }),
-  );
+  return useMutation({
+    ...setEnquiryStatusMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: enquiryKey() }),
+  });
 }
 
 export function useAnswerLead() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.lead.answer.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.lead.key() }),
-    }),
-  );
+  return useMutation({
+    ...answerLeadMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: leadKey() }),
+  });
 }
 
 export function useSetLeadStatus() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.lead.setStatus.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.lead.key() }),
-    }),
-  );
+  return useMutation({
+    ...setLeadStatusMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: leadKey() }),
+  });
 }

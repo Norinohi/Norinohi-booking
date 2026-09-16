@@ -2,12 +2,17 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { orpc } from "@/utils/orpc";
-
 import {
+  adminBookingKey,
   bookingDetailQueryOptions,
   bookingQueueQueryOptions,
+  cancelAdminBookingMutationOptions,
+  cancelInvoiceMutationOptions,
+  invoiceKey,
   invoiceListQueryOptions,
+  refundBookingMutationOptions,
+  setBookingExcludedMutationOptions,
+  settleInvoiceMutationOptions,
 } from "../api/queries";
 import type { BookingStatus, InvoiceStatus } from "../types";
 
@@ -25,8 +30,8 @@ function useInvalidateQueues() {
 
   return () =>
     Promise.all([
-      queryClient.invalidateQueries({ queryKey: orpc.admin.invoice.key() }),
-      queryClient.invalidateQueries({ queryKey: orpc.admin.booking.key() }),
+      queryClient.invalidateQueries({ queryKey: invoiceKey() }),
+      queryClient.invalidateQueries({ queryKey: adminBookingKey() }),
     ]);
 }
 
@@ -51,12 +56,12 @@ export function useAdminBooking(id: string) {
 
 export function useSettleInvoice() {
   const invalidate = useInvalidateQueues();
-  return useMutation(orpc.admin.invoice.settle.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...settleInvoiceMutationOptions(), onSettled: invalidate });
 }
 
 export function useCancelInvoice() {
   const invalidate = useInvalidateQueues();
-  return useMutation(orpc.admin.invoice.cancel.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...cancelInvoiceMutationOptions(), onSettled: invalidate });
 }
 
 /**
@@ -68,15 +73,15 @@ export function useCancelInvoice() {
  */
 export function useSetBookingExcluded() {
   const invalidate = useInvalidateQueues();
-  return useMutation(orpc.admin.booking.setExcluded.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...setBookingExcludedMutationOptions(), onSettled: invalidate });
 }
 
 export function useRefundBooking() {
   const invalidate = useInvalidateQueues();
-  return useMutation(orpc.admin.booking.refund.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...refundBookingMutationOptions(), onSettled: invalidate });
 }
 
 export function useCancelBooking() {
   const invalidate = useInvalidateQueues();
-  return useMutation(orpc.admin.booking.cancel.mutationOptions({ onSettled: invalidate }));
+  return useMutation({ ...cancelAdminBookingMutationOptions(), onSettled: invalidate });
 }

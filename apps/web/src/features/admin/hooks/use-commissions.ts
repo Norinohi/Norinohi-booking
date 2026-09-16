@@ -2,9 +2,14 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { orpc } from "@/utils/orpc";
-
-import { commissionListQueryOptions, commissionOperatorOptionsQueryOptions } from "../api/queries";
+import {
+  commissionKey,
+  commissionListQueryOptions,
+  commissionOperatorOptionsQueryOptions,
+  createCommissionMutationOptions,
+  setCommissionActiveMutationOptions,
+  updateCommissionMutationOptions,
+} from "../api/queries";
 import type { CommissionStatus, ProviderKey } from "../types";
 
 /*
@@ -31,30 +36,27 @@ export function useCommissionOperatorOptions(query: string) {
 export function useCreateCommission() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.commission.create.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.commission.key() }),
-    }),
-  );
+  return useMutation({
+    ...createCommissionMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: commissionKey() }),
+  });
 }
 
 export function useUpdateCommission() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.commission.update.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.commission.key() }),
-    }),
-  );
+  return useMutation({
+    ...updateCommissionMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: commissionKey() }),
+  });
 }
 
 /** Switching off keeps the row, so a lapsed agreement stays readable in the table. */
 export function useSetCommissionActive() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.commission.setActive.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.commission.key() }),
-    }),
-  );
+  return useMutation({
+    ...setCommissionActiveMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: commissionKey() }),
+  });
 }

@@ -349,3 +349,106 @@ export const marketplaceSettingsQueryOptions = () => orpc.admin.settings.get.que
 
 /** How the home page's popular-yachts slider is composed. One row, like the settings. */
 export const popularYachtsConfigQueryOptions = () => orpc.admin.popularYachts.get.queryOptions({});
+
+/*
+ * Mutation option factories and the router-segment keys the hooks invalidate after them. Which
+ * segments a write invalidates, and whether on success or on settle, is decided in the hooks.
+ */
+
+export const duplicateKey = () => orpc.admin.match.key();
+export const confirmDuplicateMutationOptions = () => orpc.admin.match.confirm.mutationOptions();
+export const rejectDuplicateMutationOptions = () => orpc.admin.match.reject.mutationOptions();
+export const reopenDuplicateMutationOptions = () => orpc.admin.match.reopen.mutationOptions();
+export const deferDuplicateMutationOptions = () => orpc.admin.match.defer.mutationOptions();
+export const splitListingOfferMutationOptions = () => orpc.admin.match.split.mutationOptions();
+
+export const enquiryKey = () => orpc.admin.enquiry.key();
+export const answerEnquiryMutationOptions = () => orpc.admin.enquiry.answer.mutationOptions();
+export const setEnquiryStatusMutationOptions = () => orpc.admin.enquiry.setStatus.mutationOptions();
+
+export const leadKey = () => orpc.admin.lead.key();
+export const answerLeadMutationOptions = () => orpc.admin.lead.answer.mutationOptions();
+export const setLeadStatusMutationOptions = () => orpc.admin.lead.setStatus.mutationOptions();
+
+export const invoiceKey = () => orpc.admin.invoice.key();
+export const settleInvoiceMutationOptions = () => orpc.admin.invoice.settle.mutationOptions();
+export const cancelInvoiceMutationOptions = () => orpc.admin.invoice.cancel.mutationOptions();
+
+export const adminBookingKey = () => orpc.admin.booking.key();
+export const setBookingExcludedMutationOptions = () =>
+  orpc.admin.booking.setExcluded.mutationOptions();
+export const refundBookingMutationOptions = () => orpc.admin.booking.refund.mutationOptions();
+export const cancelAdminBookingMutationOptions = () => orpc.admin.booking.cancel.mutationOptions();
+
+export const listingKey = () => orpc.admin.listing.key();
+export const listingFieldSourcesQueryOptions = (listingId: string) =>
+  orpc.admin.listing.fieldSources.queryOptions({ input: { listingId } });
+export const setListingStatusMutationOptions = () => orpc.admin.listing.setStatus.mutationOptions();
+export const publishDraftsMutationOptions = () =>
+  orpc.admin.listing.publishDrafts.mutationOptions();
+export const setListingFieldSourceMutationOptions = () =>
+  orpc.admin.listing.setFieldSource.mutationOptions();
+
+export const commissionKey = () => orpc.admin.commission.key();
+export const createCommissionMutationOptions = () => orpc.admin.commission.create.mutationOptions();
+export const updateCommissionMutationOptions = () => orpc.admin.commission.update.mutationOptions();
+export const setCommissionActiveMutationOptions = () =>
+  orpc.admin.commission.setActive.mutationOptions();
+
+export const syncRunsKey = () => orpc.admin.provider.syncRuns.key();
+export const startSyncMutationOptions = (kind: "catalogue" | "availability") => {
+  const procedure =
+    kind === "catalogue" ? orpc.admin.provider.syncCatalogue : orpc.admin.provider.syncAvailability;
+  return procedure.mutationOptions();
+};
+
+export const unreleasedOptionsKey = () => orpc.admin.maintenance.unreleasedOptions.key();
+export const unreleasedOptionsQueryOptions = () =>
+  orpc.admin.maintenance.unreleasedOptions.queryOptions({ input: {} });
+export const sweepExpiriesMutationOptions = () =>
+  orpc.admin.maintenance.sweepExpiries.mutationOptions();
+export const sendPaymentRemindersMutationOptions = () =>
+  orpc.admin.maintenance.sendPaymentReminders.mutationOptions();
+export const retryReleaseMutationOptions = () =>
+  orpc.admin.maintenance.retryRelease.mutationOptions();
+
+export const routeKey = () => orpc.admin.route.key();
+export const reorderFeaturedRoutesMutationOptions = () =>
+  orpc.admin.route.reorderFeatured.mutationOptions();
+export const createRouteMutationOptions = () => orpc.admin.route.create.mutationOptions();
+export const updateRouteMutationOptions = () => orpc.admin.route.update.mutationOptions();
+export const setRouteActiveMutationOptions = () => orpc.admin.route.setActive.mutationOptions();
+export const deleteRouteMutationOptions = () => orpc.admin.route.delete.mutationOptions();
+export const createRouteStopMutationOptions = () => orpc.admin.route.stop.create.mutationOptions();
+export const updateRouteStopMutationOptions = () => orpc.admin.route.stop.update.mutationOptions();
+export const deleteRouteStopMutationOptions = () => orpc.admin.route.stop.delete.mutationOptions();
+export const reorderRouteStopsMutationOptions = () =>
+  orpc.admin.route.stop.reorder.mutationOptions();
+
+export const faqKey = () => orpc.admin.faq.key();
+export const faqListingOptionsQueryOptions = (query: string) =>
+  orpc.admin.discount.yachtOptions.queryOptions({
+    input: { query: query.trim() || undefined, limit: 20 },
+    staleTime: 60_000,
+  });
+export const createFaqEntryMutationOptions = () => orpc.admin.faq.create.mutationOptions();
+export const updateFaqEntryMutationOptions = () => orpc.admin.faq.update.mutationOptions();
+export const deleteFaqEntryMutationOptions = () => orpc.admin.faq.delete.mutationOptions();
+export const reorderFaqMutationOptions = () => orpc.admin.faq.reorder.mutationOptions();
+
+export const popularFacetsKey = () => orpc.admin.popularFacets.key();
+export const facetMediaQueryOptions = (input: { kind: PopularFacetKind; value: string }) =>
+  orpc.admin.popularFacets.media.queryOptions({ input });
+export const setPopularFacetsMutationOptions = () => orpc.admin.popularFacets.set.mutationOptions();
+export const updateFacetMediaMutationOptions = () =>
+  orpc.admin.popularFacets.updateMedia.mutationOptions();
+export const uploadFacetImageMutationOptions = () =>
+  orpc.admin.popularFacets.uploadImage.mutationOptions();
+
+export const marketplaceSettingsKey = () => orpc.admin.settings.key();
+export const updateMarketplaceSettingsMutationOptions = () =>
+  orpc.admin.settings.update.mutationOptions();
+
+export const popularYachtsConfigKey = () => orpc.admin.popularYachts.key();
+export const updatePopularYachtsConfigMutationOptions = () =>
+  orpc.admin.popularYachts.update.mutationOptions();

@@ -2,9 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { orpc } from "@/utils/orpc";
-
-import { popularYachtsConfigQueryOptions } from "../api/queries";
+import {
+  popularYachtsConfigKey,
+  popularYachtsConfigQueryOptions,
+  updatePopularYachtsConfigMutationOptions,
+} from "../api/queries";
 
 /*
  * Hooks over the popular-yachts slider screen. The save invalidates on settle, like the other
@@ -17,9 +19,8 @@ export function usePopularYachtsConfig() {
 
 export function useUpdatePopularYachtsConfig() {
   const queryClient = useQueryClient();
-  return useMutation(
-    orpc.admin.popularYachts.update.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.popularYachts.key() }),
-    }),
-  );
+  return useMutation({
+    ...updatePopularYachtsConfigMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: popularYachtsConfigKey() }),
+  });
 }

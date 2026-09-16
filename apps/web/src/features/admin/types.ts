@@ -1,4 +1,5 @@
 import type { AppRouterClient } from "@yacht-charter/api/routers/index";
+import { PROVIDER_KEYS } from "@yacht-charter/env/providers";
 
 /* Admin console view-types, inferred from the oRPC contract. */
 type AdminClient = AppRouterClient["admin"];
@@ -96,8 +97,6 @@ export type ProviderKey = SyncRunStatus["provider"];
 export type AuditList = Awaited<ReturnType<AdminClient["audit"]["list"]>>;
 export type AuditRow = AuditList["items"][number];
 export type AuditAction = AuditRow["action"];
-
-const PROVIDER_KEYS: readonly ProviderKey[] = ["mock", "booking_manager", "nausys"];
 
 /**
  * `SyncRunRow.provider` is the stored provider code, deliberately a plain string so a run

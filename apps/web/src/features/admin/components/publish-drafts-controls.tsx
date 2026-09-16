@@ -1,5 +1,6 @@
 "use client";
 
+import { PROVIDER_KEYS } from "@yacht-charter/env/providers";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import {
@@ -16,7 +17,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { usePublishDrafts } from "../hooks/use-listings";
-import type { ProviderKey } from "../types";
 
 /*
  * PublishDraftsControls: releasing a provider's remaining drafts in one go, above the table.
@@ -27,8 +27,6 @@ import type { ProviderKey } from "../types";
  * stays disabled until a provider is named, and the named provider is repeated back in the
  * confirmation. Releasing the whole catalogue at once remains possible from the API, on purpose.
  */
-
-const PROVIDERS: readonly ProviderKey[] = ["mock", "booking_manager", "nausys"];
 
 /* Nothing chosen yet. Not "" because a falsy Select value renders the placeholder, which is what
    an unmade choice should look like, but it also has to be distinguishable from a real key. */
@@ -41,7 +39,7 @@ export default function PublishDraftsControls() {
   const [confirming, setConfirming] = useState(false);
   const publishDrafts = usePublishDrafts();
 
-  const target = PROVIDERS.find((key) => key === provider);
+  const target = PROVIDER_KEYS.find((key) => key === provider);
 
   const confirm = async () => {
     if (!target) return;
@@ -65,7 +63,7 @@ export default function PublishDraftsControls() {
             value={provider}
             placeholder={t("choose")}
             onValueChange={setProvider}
-            options={PROVIDERS.map((key) => ({ value: key, label: tProviders(key) }))}
+            options={PROVIDER_KEYS.map((key) => ({ value: key, label: tProviders(key) }))}
           />
         </div>
 

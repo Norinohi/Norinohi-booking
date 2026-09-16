@@ -10,6 +10,15 @@ export const wishlistIdsQueryOptions = () =>
 export const wishlistListQueryOptions = (page: number, pageSize: number = WISHLIST_PAGE_SIZE) =>
   orpc.wishlist.list.queryOptions({ input: { page, pageSize }, staleTime: 30_000 });
 
+/* Every page at once, which is what a toggle or a merge leaves stale. */
+export const wishlistListKey = () => orpc.wishlist.list.key();
+
+export const addToWishlistMutationOptions = () => orpc.wishlist.add.mutationOptions();
+
+export const removeFromWishlistMutationOptions = () => orpc.wishlist.remove.mutationOptions();
+
+export const mergeWishlistMutationOptions = () => orpc.wishlist.merge.mutationOptions({});
+
 /* wishlist.list is protected, so guests turn their localStorage ids into cards
  * through this public procedure instead. */
 export const listingsByIdsQueryOptions = (listingIds: readonly string[]) =>

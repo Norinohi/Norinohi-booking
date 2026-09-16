@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFAULT_TRANSACTING_PREFERENCE, PROVIDER_KEYS } from "@yacht-charter/env/providers";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import {
@@ -44,7 +45,8 @@ import type { CommissionRow, ProviderKey } from "../types";
  * Overlaps are refused by the server rather than here: only it can see the other rates.
  */
 
-const PROVIDERS: readonly ProviderKey[] = ["booking_manager", "nausys", "mock"];
+/* Real vendors ahead of the fixture, which is the default transacting order. */
+const PROVIDERS = DEFAULT_TRANSACTING_PREFERENCE;
 
 /* Sentinel for "every operator at this vendor" — an empty Select value shows the placeholder. */
 const ALL_OPERATORS = "all";
@@ -74,7 +76,7 @@ function useCommissionSchema() {
     () =>
       z
         .object({
-          provider: z.enum(["booking_manager", "nausys", "mock"]),
+          provider: z.enum(PROVIDER_KEYS),
           operatorId: z.string(),
           /* Typed, so it arrives as text and the message has to be ours rather than Zod's
              "expected number, received nan", which tells an editor nothing. */

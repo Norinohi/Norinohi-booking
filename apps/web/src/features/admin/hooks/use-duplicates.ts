@@ -3,12 +3,15 @@
 import { ORPCError } from "@orpc/client";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { orpc } from "@/utils/orpc";
-
 import {
+  confirmDuplicateMutationOptions,
+  deferDuplicateMutationOptions,
   duplicateDetailQueryOptions,
+  duplicateKey,
   duplicateMetricsQueryOptions,
   duplicateQueueQueryOptions,
+  rejectDuplicateMutationOptions,
+  reopenDuplicateMutationOptions,
 } from "../api/queries";
 import type { DuplicateConfidenceFilter, DuplicateDecision } from "../types";
 
@@ -58,21 +61,19 @@ export function isResolvedElsewhere(error: Error): boolean {
 export function useConfirmDuplicate() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.match.confirm.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.match.key() }),
-    }),
-  );
+  return useMutation({
+    ...confirmDuplicateMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: duplicateKey() }),
+  });
 }
 
 export function useRejectDuplicate() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.match.reject.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.match.key() }),
-    }),
-  );
+  return useMutation({
+    ...rejectDuplicateMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: duplicateKey() }),
+  });
 }
 
 /**
@@ -84,20 +85,18 @@ export function useRejectDuplicate() {
 export function useReopenDuplicate() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.match.reopen.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.match.key() }),
-    }),
-  );
+  return useMutation({
+    ...reopenDuplicateMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: duplicateKey() }),
+  });
 }
 
 /** "I looked and I cannot tell" — a third verdict, kept out of the precision denominator. */
 export function useDeferDuplicate() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.admin.match.defer.mutationOptions({
-      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.match.key() }),
-    }),
-  );
+  return useMutation({
+    ...deferDuplicateMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: duplicateKey() }),
+  });
 }

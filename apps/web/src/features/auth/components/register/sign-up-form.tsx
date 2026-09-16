@@ -23,7 +23,8 @@ import z from "zod";
 import Loader from "@/components/shared/feedback/loader";
 import { usePasswordToggleLabels } from "@/hooks/use-password-toggle-labels";
 import { authClient } from "@/lib/auth-client";
-import { client } from "@/utils/orpc";
+
+import { claimReferralCode } from "../../api/queries";
 
 /*
  * SignUpForm — Figma "Registration" (972:53926 desktop / error variant 972:54137).
@@ -98,8 +99,7 @@ export default function SignUpForm() {
           // Sign-up auto-signs the user in, so the protected claim call is authorized here.
           // Fire-and-forget: a bad or expired code must not break a successful registration.
           if (referralCode) {
-            void client.referral
-              .claim({ code: referralCode })
+            void claimReferralCode(referralCode)
               .then(({ accepted }) => {
                 if (accepted) {
                   toast.success(t("referralApplied"));
