@@ -67,7 +67,8 @@ export const MARINA_PAGE_SIZE = 20;
  * enough that no zoom separates them, and the count on the pin is their sum. Asking for one of them
  * made the pager count to a smaller number than the pin had promised.
  *
- * `marina` matches a base by name *or* id, so the ids from the markers address them exactly.
+ * The pin passes names, not ids: one pin can be two vendors' bases for the same marina, and only
+ * the normalised name joins them. `marina` matches a base by name or id either way.
  * Previous data is kept while the next page loads, so paging the card never blanks it.
  */
 export const marinaListingsQueryOptions = (input: ResultsInput, marinas: string[], page: number) =>

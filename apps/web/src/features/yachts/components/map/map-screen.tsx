@@ -228,7 +228,11 @@ export default function MapScreen() {
   /* The page holding the card on screen. Only that page is fetched, so opening a marina of three
      hundred costs the same as opening one of three. */
   const marinaPage = Math.floor(marinaIndex / MARINA_PAGE_SIZE) + 1;
-  const { data: marinaBoats } = useQuery({
+  const {
+    data: marinaBoats,
+    isError: marinaBoatsFailed,
+    refetch: refetchMarinaBoats,
+  } = useQuery({
     /* By name, the way the pin was grouped: one marina can be two vendors' bases. */
     ...marinaListingsQueryOptions(input, openMarina?.values ?? [], marinaPage),
     enabled: Boolean(openMarina),
@@ -610,6 +614,19 @@ export default function MapScreen() {
           ) : null}
         </MapCanvas>
 
+        {/* A pin whose boats failed to load used to do nothing at all, which reads as a dead
+            click rather than as a request worth retrying. */}
+        {openMarina && !marinaBoats && marinaBoatsFailed && (
+          <div
+            role="status"
+            className="absolute inset-x-3 top-28 mx-auto w-fit max-w-full rounded-xl bg-card p-3 text-center text-sm shadow-md md:top-auto md:bottom-24"
+          >
+            {common("errors.requestFailed")}
+            <Button variant="subtle" size="sm" onClick={() => refetchMarinaBoats()}>
+              {common("errors.retry")}
+            </Button>
+          </div>
+        )}
         {!popupOpen && (isPending || isError || data?.marinas.length === 0) && (
           <div
             role="status"
