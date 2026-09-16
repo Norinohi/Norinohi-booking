@@ -38,12 +38,19 @@ import type { Quote, QuoteLine } from "@/features/booking/api/queries";
 
 export type CrewType = NonNullable<Quote["crewType"]>;
 
-/** Quote line `group` → the sidebar section it renders under (i18n key on `sidebar.groups`). */
-const GROUPS = [
-  { group: "mandatory", labelKey: "mandatory" },
-  { group: "optional", labelKey: "selectedExtras" },
-  { group: "crew", labelKey: "crew" },
-] as const;
+/**
+ * Quote line `group`s → the sidebar section they render under (i18n key on `sidebar.groups`).
+ * An extra the base prices sits with the ones the offer priced: to the customer both are extras
+ * they chose, and the difference is only in who we could book it through.
+ */
+const GROUPS: readonly {
+  groups: readonly QuoteLine["group"][];
+  labelKey: "mandatory" | "selectedExtras" | "crew";
+}[] = [
+  { groups: ["mandatory"], labelKey: "mandatory" },
+  { groups: ["optional", "requested"], labelKey: "selectedExtras" },
+  { groups: ["crew"], labelKey: "crew" },
+];
 
 /** Payment-schedule `kind` → the amount-caption message on `sidebar.*`. */
 const SCHEDULE_AMOUNT_KEY = {
@@ -881,12 +888,12 @@ export default function BookingSummary({
           <>
             <Separator />
 
-            {GROUPS.map(({ group, labelKey }) => {
-              const lines = quote.lines.filter((line) => line.group === group);
+            {GROUPS.map(({ groups, labelKey }) => {
+              const lines = quote.lines.filter((line) => groups.includes(line.group));
               if (lines.length === 0) return null;
               return (
                 <div
-                  key={group}
+                  key={labelKey}
                   className={cn(
                     "flex w-full flex-col py-4 transition-opacity",
                     shaded && "border-b border-border bg-natural-50",

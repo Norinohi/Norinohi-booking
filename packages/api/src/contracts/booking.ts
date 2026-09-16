@@ -19,7 +19,7 @@ export const paymentScheduleKindSchema = z.enum([
 ]);
 
 /** Mirrors the quote line's `group`: which booking-summary section shows a line. */
-export const lineGroupSchema = z.enum(["mandatory", "optional", "crew"]);
+export const lineGroupSchema = z.enum(["mandatory", "optional", "crew", "requested"]);
 
 export const paymentStatusSchema = z.enum([
   "requires_payment",

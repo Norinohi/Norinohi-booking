@@ -36,9 +36,10 @@ export const quotePaymentScheduleEntrySchema = z.object({
 export const persistedQuoteSchema = providerQuoteSchema.extend({
   quoteId: z.string(),
   /**
-   * Extras the customer asked for that no vendor sells through us -- they cost nothing here and
-   * appear on no line. They travel to the base as special-request text when the booking is made,
-   * and come back on the quote so the page that offered them can show them still ticked.
+   * Extras the customer asked for that no vendor sells through us. Each one with a countable
+   * catalogue rate also appears as a `requested` line paid at check-in, so the total covers it.
+   * They travel to the base as special-request text when the booking is made, and come back on
+   * the quote so the page that offered them can show them still ticked.
    */
   requestedExtras: z.array(z.string()),
   /** The total split across the party, for the "~€3,500 for person" line. */

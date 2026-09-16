@@ -23,10 +23,11 @@ import DetailSection from "./detail-section";
  * only part of it. Both used to render as ordinary checkboxes that quietly cost nothing.
  *
  * All three are tickable, but only the first is bought. The other two go through `requestExtras`,
- * which puts them on the quote as a record of what was asked and adds nothing to the total: at
- * Confirm they are written into the booking's special requests, which is the field somebody at
- * the base actually reads. That is the honest version of the checkbox they used to be -- the
- * caption says the price is settled there, and no figure moves when the box is ticked.
+ * and at Confirm they are written into the booking's special requests, which is the field
+ * somebody at the base actually reads. An arrange-at-base extra with a published rate still
+ * moves the total: the quote adds it at that rate as a charge paid at check-in, because the
+ * whole cost of the charter is what the sidebar promises. One not offered on these dates has
+ * no rate that applies, so it stays a question for the base.
  *
  * Nothing renders as a choice until the first quote lands. Every answer on this list — the
  * price, whether it is settled at the base, whether it can be bought at all — is the offer's,
@@ -102,7 +103,7 @@ export default function OptionalExtrasSection() {
 
         {[
           { items: notOnTheseDates, note: tBooking("notOnTheseDatesAsk") },
-          { items: arrangeAtBase, note: tBooking("arrangeAtBase") },
+          { items: arrangeAtBase, note: undefined },
         ].map(({ items, note }) =>
           items.map((item) => (
             <label
@@ -119,7 +120,7 @@ export default function OptionalExtrasSection() {
                   )
                 }
               />
-              <ExtraRow item={item} offered={null} note={note} />
+              <ExtraRow item={item} offered={null} note={note} settledAtBase={note === undefined} />
             </label>
           )),
         )}
@@ -147,11 +148,14 @@ function ExtraRow({
   item,
   offered,
   note,
+  settledAtBase = false,
   repricing = false,
 }: {
   item: OptionalExtra;
   offered: OfferedExtra | null;
   note?: string;
+  /** No vendor prices it, so the quote adds its catalogue rate to what is paid at check-in. */
+  settledAtBase?: boolean;
   repricing?: boolean;
 }) {
   const tExtras = useTranslations("Common.extras");
@@ -160,9 +164,9 @@ function ExtraRow({
   const kind = extraPriceKind(item, offered);
   /* Whether it is settled at the base is the offer's answer where there is one; the two
      sources disagree on individual extras, and the offer is what will be charged. */
-  const atCheckIn = offered
-    ? offered.payWhen === "at_check_in"
-    : item.pricingType === "pay_at_check_in";
+  const atCheckIn =
+    settledAtBase ||
+    (offered ? offered.payWhen === "at_check_in" : item.pricingType === "pay_at_check_in");
   /*
    * An extra the charter price already covers is collected nowhere, so it carries no caption.
    * One with no published rate carries the opposite: the figure beside it is not a price, and

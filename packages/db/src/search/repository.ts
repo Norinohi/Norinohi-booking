@@ -2742,6 +2742,65 @@ export async function listRequestableExtras(
   );
 }
 
+/** A requestable extra's catalogue price, which is what its quote line is computed from. */
+export type RequestableExtraPrice = {
+  name: string;
+  priceMinor: number;
+  priceCurrency: string | null;
+  priceMeasure: string | null;
+  /** A share of the charter rather than money: 0.35 is 35%. */
+  percentage: number | null;
+  /** INCLUDED_IN_PRICE is covered by the charter and charged nowhere. */
+  included: boolean;
+};
+
+/**
+ * The prices behind `listRequestableExtras`, by canonical code.
+ *
+ * No vendor will price these on the offer, so the catalogue's figure is the only one there is.
+ * It is the operator's own published rate for the item, which is what the base bills on arrival.
+ */
+export async function listRequestableExtraPrices(
+  db: NodePgDatabase<typeof schema>,
+  listingId: string,
+  listingOfferId?: string | null,
+): Promise<Map<string, RequestableExtraPrice>> {
+  const rows = await db.execute<{
+    source: string;
+    kind: string;
+    externalId: string;
+    name: string;
+    priceMinor: number | null;
+    priceCurrency: string | null;
+    priceMeasure: string | null;
+    calculationType: string | null;
+    percentage: string | null;
+  }>(sql`
+    select source, kind, external_id as "externalId", name,
+      price_minor as "priceMinor", price_currency as "priceCurrency",
+      price_measure as "priceMeasure", calculation_type as "calculationType", percentage
+    from provider_extra_catalogue
+    where obligatory = false
+      and ${listingOfferId ? sql`listing_offer_id = ${listingOfferId}` : sql`listing_id = ${listingId}`}
+  `);
+
+  return new Map(
+    rows.rows
+      .filter((row) => !isSelectableExtra(row.source, row.kind))
+      .map((row) => [
+        `${row.kind}:${row.externalId}`,
+        {
+          name: row.name,
+          priceMinor: row.priceMinor ?? 0,
+          priceCurrency: row.priceCurrency,
+          priceMeasure: row.priceMeasure,
+          percentage: row.percentage === null ? null : Number(row.percentage),
+          included: row.calculationType === "INCLUDED_IN_PRICE",
+        },
+      ]),
+  );
+}
+
 /**
  * The optional extras this listing will actually price, as canonical codes.
  *

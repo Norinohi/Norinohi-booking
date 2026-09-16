@@ -1,5 +1,9 @@
 import { ORPCError } from "@orpc/server";
-import { listRequestableExtras, listSelectableExtraCodes } from "@yacht-charter/db/search";
+import {
+  listRequestableExtraPrices,
+  listRequestableExtras,
+  listSelectableExtraCodes,
+} from "@yacht-charter/db/search";
 import { rebuildListingSearchDocs } from "@yacht-charter/db/search/read-model";
 import { listing } from "@yacht-charter/db/schema/listing";
 import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
@@ -28,7 +32,9 @@ import {
 } from "./offer-selection";
 import { and, eq, gt, isNull, or } from "drizzle-orm";
 
+import { daysBetween } from "../lib/dates";
 import { classifyRefusal } from "../lib/refusal-report";
+import { requestedExtraAmountMinor } from "../lib/requested-extra-amount";
 import { saysSlotIsGone } from "../lib/provider-failure";
 
 import type { Database, DatabaseExecutor } from "../context";
@@ -49,7 +55,7 @@ import {
 import { getMarketplaceSettings } from "./marketplace-settings";
 export type PersistedQuote = ProviderQuote & {
   quoteId: string;
-  /** Asked of the base rather than bought here; priced by nothing. See the quote schema. */
+  /** Asked of the base rather than bought here; priced off the catalogue. See the quote schema. */
   requestedExtras: string[];
   /** The trip split across the party; null when the guest count is unusable. */
   perPerson: { amountMinor: number; currency: string } | null;
@@ -895,6 +901,10 @@ async function persistPricedQuote(
     return mapped;
   });
 
+  lines.push(
+    ...(await requestedExtraLines(db, priced, options.requestedExtras, options.listingOfferId)),
+  );
+
   const applied: AppliedAdjustment[] = [];
 
   // 1. Internal price_adjustment_rule, against the charter base.
@@ -1010,6 +1020,52 @@ async function persistPricedQuote(
     creditAvailable,
     adjustments: applied,
   };
+}
+
+/**
+ * The requested extras as lines, so the total is everything the charter will cost.
+ *
+ * The vendor never sees these on the offer, and every one of them is settled with the base on
+ * arrival, so they are `at_check_in`: counted in the total, never in what is charged here. Their
+ * own group keeps them apart from the extras the offer priced, which the booking flow reads back
+ * as the customer's purchasable selection. An extra whose catalogue rate cannot be counted for
+ * this charter gets no line and stays a request the base prices.
+ */
+async function requestedExtraLines(
+  db: DatabaseExecutor,
+  priced: ProviderQuote,
+  requestedExtras: readonly string[],
+  listingOfferId: string | null,
+): Promise<QuoteLine[]> {
+  if (requestedExtras.length === 0) return [];
+
+  const catalogue = await listRequestableExtraPrices(db, priced.listingId, listingOfferId);
+  const basis = {
+    nights: daysBetween(priced.checkIn, priced.checkOut) ?? 0,
+    guests: priced.guests,
+    baseMinor: priced.lines.find((line) => line.kind === "base")?.amount.amountMinor ?? 0,
+  };
+
+  return [...new Set(requestedExtras)].flatMap((code): QuoteLine[] => {
+    const rate = catalogue.get(code);
+    // A catalogue row in another currency cannot be summed into this quote's total.
+    if (!rate || (rate.priceCurrency !== null && rate.priceCurrency !== priced.currency)) return [];
+
+    const amountMinor = requestedExtraAmountMinor(rate, basis);
+    if (amountMinor === null) return [];
+
+    return [
+      {
+        code,
+        label: rate.name,
+        amountMinor,
+        currency: priced.currency,
+        payWhen: "at_check_in",
+        kind: "extra",
+        group: "requested",
+      },
+    ];
+  });
 }
 
 function toPerPerson(

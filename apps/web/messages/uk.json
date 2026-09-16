@@ -32,7 +32,6 @@
       "mandatory": "Обов'язкове",
       "optional": "Додаткові опції",
       "included": "Включено",
-      "arrangeAtBase": "Домовитися з базою",
       "notOnTheseDates": "Недоступно на ці дати",
       "notOnTheseDatesAsk": "Недоступно на ці дати - можна запитати базу",
       "requestedAtBase": "Запит до бази, оплата на місці"

@@ -32,7 +32,6 @@
       "mandatory": "Obligatorisch",
       "optional": "Optionale Extras",
       "included": "Inklusive",
-      "arrangeAtBase": "Mit der Basis vereinbaren",
       "notOnTheseDates": "In diesem Zeitraum nicht verfügbar",
       "notOnTheseDatesAsk": "An diesen Daten nicht verfügbar - Sie können die Basis fragen",
       "requestedAtBase": "Bei der Basis angefragt, dort zu zahlen"

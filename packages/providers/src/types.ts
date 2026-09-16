@@ -170,8 +170,11 @@ export const providerQuoteSchema = z.object({
        * grouped, which `kind` cannot answer — an unavoidable cleaning fee and an
        * optional hot tub are both charges against the same yacht. Absent on lines
        * that belong to no section (the base, discounts, credit).
+       *
+       * `requested` is never an adapter's to set: the quote service adds those lines for
+       * extras the offer would not price, at the catalogue rate.
        */
-      group: z.enum(["mandatory", "optional", "crew"]).optional(),
+      group: z.enum(["mandatory", "optional", "crew", "requested"]).optional(),
     }),
   ),
   total: moneySchema,

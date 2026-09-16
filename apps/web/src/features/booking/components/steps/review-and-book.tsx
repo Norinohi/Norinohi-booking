@@ -73,7 +73,7 @@ export default function ReviewAndBookStep() {
 
   const base = quote?.lines.find((line) => line.kind === "base");
   const optionalNames = (quote?.lines ?? [])
-    .filter((line) => line.group === "optional")
+    .filter((line) => line.group === "optional" || line.group === "requested")
     .map((line) => labelOf(line))
     .join(", ");
 

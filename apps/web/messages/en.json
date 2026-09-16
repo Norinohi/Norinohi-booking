@@ -32,7 +32,6 @@
       "mandatory": "Mandatory",
       "optional": "Optional extras",
       "included": "Included",
-      "arrangeAtBase": "Arrange with the base",
       "notOnTheseDates": "Not available on these dates",
       "notOnTheseDatesAsk": "Not available on these dates - you can ask the base",
       "requestedAtBase": "Requested from the base, paid there"
