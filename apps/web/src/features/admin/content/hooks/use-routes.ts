@@ -60,7 +60,7 @@ export function useReorderFeaturedRoutes() {
 
 /** Countries always, regions and bases narrowed to the chosen country and search term. */
 export function useGeographyOptions(input: { countryId?: string; query?: string } = {}) {
-  return useQuery(geographyOptionsQueryOptions(input));
+  return useQuery(geographyOptionsQueryOptions({ ...input, locale: useLocale() }));
 }
 
 export function useCreateRoute() {

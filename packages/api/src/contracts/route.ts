@@ -256,6 +256,7 @@ export const geographyOptionsInputSchema = z
     countryId: z.string().min(1).optional(),
     query: z.string().trim().max(200).optional(),
     limit: z.coerce.number().int().min(1).max(200).default(50),
+    locale: z.string().min(2).max(10).optional(),
   })
   .default({ limit: 50 });
 

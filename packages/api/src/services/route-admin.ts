@@ -381,6 +381,8 @@ export async function listFeaturedRoutes(db: Database): Promise<{ routes: Route[
   };
 }
 
+const FEATURED_ROUTES_ENTITY_ID = "featured_routes";
+
 /**
  * Replaces the featured list with the routes given, in the order given.
  *
@@ -436,12 +438,13 @@ export async function reorderFeaturedRoutes(
     const named = (ids: string[]) => ids.map((id) => ({ id, title: titles.get(id) ?? null }));
 
     /* The list has no id of its own, so an entry that features or unfeatures one route is filed
-       under that route, which is what the audit's ID filter searches. */
+       under that route, which is what the audit's ID filter searches. Any other change, a pure
+       reorder included, is filed under the list's fixed name. */
     await writeAuditLog(tx, {
       actorUserId,
       action: "update",
       entityType: "suggested_route_featured",
-      entityId: changed.length === 1 ? changed[0] : undefined,
+      entityId: changed.length === 1 ? changed[0] : FEATURED_ROUTES_ENTITY_ID,
       before: named(beforeIds),
       after: named(input.ids),
     });

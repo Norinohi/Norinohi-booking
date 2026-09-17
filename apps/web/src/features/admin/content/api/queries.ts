@@ -53,7 +53,11 @@ export const routeListQueryOptions = (input: {
  * Geography is written by the catalogue sync and read here; it changes when a provider ships a
  * new marina, which is not within one authoring session. Kept for the life of the tab.
  */
-export const geographyOptionsQueryOptions = (input: { countryId?: string; query?: string } = {}) =>
+export const geographyOptionsQueryOptions = (input: {
+  countryId?: string;
+  query?: string;
+  locale: string;
+}) =>
   orpc.admin.geography.options.queryOptions({
     input: { ...input, limit: 200 },
     staleTime: 5 * 60_000,

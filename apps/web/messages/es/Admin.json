@@ -1348,28 +1348,28 @@
     "title": "Ajustes del marketplace",
     "subtitle": "Cuánto del chárter se cobra por adelantado y a través de qué proveedor vendemos cuando las ofertas son iguales.",
     "source": {
-      "legend": "Que plan de pago usamos",
+      "legend": "Qué plan de pago usamos",
       "vendor": {
         "title": "El calendario del proveedor",
-        "hint": "Cada presupuesto sigue los plazos que el proveedor devolvio para ese barco y esas fechas, incluida su fecha de vencimiento. Los proveedores difieren, asi que el porcentaje cambia de una reserva a otra."
+        "hint": "Cada presupuesto sigue los plazos que el proveedor devolvió para ese barco y esas fechas, incluida su fecha de vencimiento. Los proveedores difieren, así que el porcentaje cambia de una reserva a otra."
       },
       "marketplace": {
-        "title": "Nuestra propia politica",
+        "title": "Nuestra propia política",
         "hint": "Cada presupuesto usa el porcentaje de abajo y el calendario del proveedor se ignora por completo, incluida su fecha de vencimiento."
       }
     },
     "ourPolicy": {
-      "deposit": "Cobrar un deposito",
+      "deposit": "Cobrar un depósito",
       "full": "Cobrar el importe completo",
-      "percentLabel": "Porcentaje del deposito",
+      "percentLabel": "Porcentaje del depósito",
       "percentError": "Introduce un porcentaje entre 1 y 100."
     },
     "leadTime": {
       "legend": "Pago completo cerca de la salida",
-      "toggle": "Exigir pago completo en charters que empiezan pronto",
-      "hint": "Un minimo sobre el plan elegido arriba, nunca un tercer plan. Desactivado, el 30% de un proveedor se mantiene aunque el charter salga manana.",
-      "daysLabel": "Dias antes del check-in",
-      "daysError": "Introduce un numero entero de dias entre 0 y 365."
+      "toggle": "Exigir pago completo en chárters que empiezan pronto",
+      "hint": "Un mínimo sobre el plan elegido arriba, nunca un tercer plan. Desactivado, el 30% de un proveedor se mantiene aunque el chárter salga mañana.",
+      "daysLabel": "Días antes del check-in",
+      "daysError": "Introduce un número entero de días entre 0 y 365."
     },
     "preference": {
       "legend": "Proveedor preferido",
@@ -1401,6 +1401,6 @@
     "saving": "Guardando...",
     "saved": "Ajustes guardados.",
     "saveFailed": "No se han podido guardar los ajustes.",
-    "appliesNext": "Se aplica a presupuestos nuevos. Un presupuesto ya emitido conserva la politica con la que se calculo."
+    "appliesNext": "Se aplica a presupuestos nuevos. Un presupuesto ya emitido conserva la política con la que se calculó."
   }
 }
