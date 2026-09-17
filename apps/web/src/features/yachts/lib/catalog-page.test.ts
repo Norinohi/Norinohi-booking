@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { type CatalogPage, catalogPageSiblings } from "./catalog-page";
+import { type CatalogPage, catalogPageRegions, catalogPageSiblings } from "./catalog-page";
 
 const page = (kind: CatalogPage["kind"], segments: string[], count: number): CatalogPage => ({
   root: "yacht-charter",
@@ -46,5 +46,31 @@ describe("catalogPageSiblings", () => {
     const region = page("geo", ["croatia", "split-region"], 900);
 
     expect(paths(catalogPageSiblings([...pages, region], region))).toEqual(["croatia/kastela"]);
+  });
+});
+
+describe("catalogPageRegions", () => {
+  const croatia = page("country", ["croatia"], 5000);
+  const region = (segments: string[], count: number): CatalogPage => ({
+    ...page("geo", segments, count),
+    filters: { country: "Croatia", region: segments.at(-1) },
+  });
+  const pages = [
+    croatia,
+    region(["croatia", "istria"], 100),
+    region(["croatia", "dalmatia"], 900),
+    page("geo", ["croatia", "kastela"], 241),
+    region(["greece", "ionian"], 500),
+  ];
+
+  it("links a country's region pages, busiest first, leaving cities out", () => {
+    expect(paths(catalogPageRegions(pages, croatia))).toEqual([
+      "croatia/dalmatia",
+      "croatia/istria",
+    ]);
+  });
+
+  it("gives no region links below the country level", () => {
+    expect(catalogPageRegions(pages, page("geo", ["croatia", "kastela"], 241))).toEqual([]);
   });
 });

@@ -128,6 +128,27 @@ export function catalogPageSiblings(pages: CatalogPage[], page: CatalogPage): Ca
 }
 
 /**
+ * The region pages under a country page, busiest first.
+ *
+ * A country page's siblings are other countries, so without this its regions were reachable only
+ * from the sitemap. Cities stay out: they are the regions' own level of detail.
+ */
+export function catalogPageRegions(pages: CatalogPage[], page: CatalogPage): CatalogPage[] {
+  if (page.kind !== "country") return [];
+  const prefix = page.segments.join("/");
+  return pages
+    .filter(
+      (other) =>
+        other.root === page.root &&
+        other.kind === "geo" &&
+        other.filters.region !== undefined &&
+        other.segments.length === page.segments.length + 1 &&
+        other.segments.slice(0, -1).join("/") === prefix,
+    )
+    .toSorted((a, b) => b.count - a.count);
+}
+
+/**
  * One step of the trail. `name` is the page heading `BreadcrumbList` carries; `label` is the
  * place, type or shipyard alone, which is what fits in a visible crumb.
  */

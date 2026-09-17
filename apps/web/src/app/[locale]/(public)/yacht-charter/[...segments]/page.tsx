@@ -14,6 +14,7 @@ import {
   type CatalogPage,
   catalogPageHeading,
   catalogPageHref,
+  catalogPageRegions,
   catalogPageSiblings,
   catalogPageTrail,
   findCatalogPage,
@@ -124,7 +125,12 @@ export default async function CatalogPageRoute({
           heading={heading}
           locked={lockedFor(page)}
           resultsFallback={<CatalogCards listings={listings} />}
-          footer={<CatalogSiblings siblings={catalogPageSiblings(pages, page)} />}
+          footer={
+            <CatalogSiblings
+              siblings={catalogPageSiblings(pages, page)}
+              regions={catalogPageRegions(pages, page)}
+            />
+          }
         />
       </Hydrated>
     </>

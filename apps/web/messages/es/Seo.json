@@ -144,6 +144,7 @@
     "introNoPrice": "{count, plural, one {# barco disponible} other {# barcos disponibles}}.",
     "description": "Compara {count, plural, one {# yate} other {# yates}} de alquiler. Filtra por fechas, huéspedes, camarotes y precio, y comprueba la disponibilidad.",
     "siblings": "También te puede interesar",
+    "regions": "Regiones",
     "empty": "Ahora mismo no hay barcos que coincidan. Prueba el catálogo completo."
   },
   "Support": {

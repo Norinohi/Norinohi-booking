@@ -144,6 +144,7 @@
     "introNoPrice": "{count, plural, one {# Boot} other {# Boote}} verfügbar.",
     "description": "Vergleichen Sie {count, plural, one {# Yacht} other {# Yachten}} zum Chartern. Filtern Sie nach Terminen, Gästen, Kabinen und Preis und prüfen Sie die Verfügbarkeit für Ihre Reise.",
     "siblings": "Auch einen Blick wert",
+    "regions": "Regionen",
     "empty": "Derzeit passt kein Boot. Probieren Sie den gesamten Katalog."
   },
   "Support": {

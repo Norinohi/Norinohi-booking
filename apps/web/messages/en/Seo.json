@@ -144,6 +144,7 @@
     "introNoPrice": "{count, plural, one {# boat} other {# boats}} available.",
     "description": "Compare {count, plural, one {# yacht} other {# yachts}} for charter. Filter by dates, guests, cabins and price, then check availability for your trip.",
     "siblings": "Also worth a look",
+    "regions": "Regions",
     "empty": "No boats match right now. Try the full catalogue."
   },
   "Support": {
