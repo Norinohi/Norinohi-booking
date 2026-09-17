@@ -15,6 +15,17 @@ describe("staticMapUrl", () => {
 });
 
 describe("staticMapFrame", () => {
+  it("orders the still with a rounded centre and zoom, so server and browser agree", () => {
+    const frame = staticMapFrame(
+      [
+        { lat: 43.51, lng: 16.25 },
+        { lat: 43.06, lng: 16.38 },
+      ],
+      SIZE,
+    );
+    expect(frame.url).toMatch(/\/static\/-?\d+(\.\d{1,6})?,-?\d+(\.\d{1,6})?,\d+(\.\d{1,2})?\//);
+  });
+
   it("centres a lone point at street level", () => {
     const frame = staticMapFrame([{ lat: 43.5, lng: 16.44 }], SIZE);
 

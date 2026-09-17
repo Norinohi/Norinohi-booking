@@ -67,6 +67,11 @@ const unprojectY = (y: number) => {
   return (Math.atan(Math.sinh(n)) * 180) / Math.PI;
 };
 
+const roundTo = (value: number, decimals: number) => {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+};
+
 export type StillPosition = { leftPercent: number; topPercent: number };
 
 /**
@@ -115,7 +120,7 @@ export function staticMapFrame(
   const usableWidth = Math.max(width - FRAME_PADDING * 2, 1);
   const usableHeight = Math.max(height - FRAME_PADDING * 2, 1);
 
-  const zoom =
+  const fittedZoom =
     spanX > 0 || spanY > 0
       ? Math.min(
           spanX > 0 ? Math.log2(usableWidth / (TILE_SIZE * spanX)) : MAP_MAX_ZOOM,
@@ -124,8 +129,17 @@ export function staticMapFrame(
         )
       : SINGLE_POINT_ZOOM;
 
-  const centreX = (minX + maxX) / 2;
-  const centreY = (minY + maxY) / 2;
+  /*
+   * Rounded before anything is derived from them. The server and the browser run different
+   * engines, and `Math.sinh`/`Math.log` may disagree in the last bits, which made the still's URL
+   * differ at hydration now and then. Six decimals of a degree is about 10 cm; the zoom is floored
+   * so the rounding can only widen the frame, never push an outer stop past the padding.
+   */
+  const zoom = Math.floor(fittedZoom * 100) / 100;
+  const centreLng = roundTo(unprojectX((minX + maxX) / 2), 6);
+  const centreLat = roundTo(unprojectY((minY + maxY) / 2), 6);
+  const centreX = projectX(centreLng);
+  const centreY = projectY(centreLat);
   const worldSize = TILE_SIZE * 2 ** zoom;
 
   const project = (point: Point): StillPosition => ({
@@ -134,7 +148,7 @@ export function staticMapFrame(
   });
 
   return {
-    url: `${BASE}/${unprojectX(centreX)},${unprojectY(centreY)},${zoom}/${width}x${height}@2x?access_token=${env.NEXT_PUBLIC_MAPBOX_TOKEN}`,
+    url: `${BASE}/${centreLng},${centreLat},${zoom}/${width}x${height}@2x?access_token=${env.NEXT_PUBLIC_MAPBOX_TOKEN}`,
     markers: points.map(project),
     project,
   };
