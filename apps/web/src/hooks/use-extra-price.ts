@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl";
 
-import { useMoney } from "./use-money";
+import { useExactMoney, useMoney } from "./use-money";
 
 type MeasureKey =
   | "booking"
@@ -100,9 +100,12 @@ const levelled = (measure: string) =>
  * a new one appearing in a sync should read a little rough rather than be relabelled "per
  * booking" and understate what the charter will be billed.
  */
-export function useExtraPrice() {
+export function useExtraPrice(options: { exact?: boolean } = {}) {
   const t = useTranslations("Common.extras.measure");
-  const money = useMoney();
+  const rounded = useMoney();
+  const exactMoney = useExactMoney();
+  /* Exact where a unit rate explains a charged total: 1.33 a night rounded to 1 no longer adds up. */
+  const money = options.exact ? exactMoney : rounded;
 
   /*
    * `toMinor` is the top of a range, for a fee the provider keys as several variants at

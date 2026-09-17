@@ -10,6 +10,7 @@ import type { CharterPeriod } from "@/components/shared/form/charter-date-field"
 import type { AppPathname } from "@/i18n/navigation";
 
 import type { Quote } from "../../api/queries";
+import type { RateSource } from "../../lib/line-rate";
 import type { CrewType } from "../../types";
 import { CharterOptions } from "./charter-options";
 import { CharterPeriodField } from "./charter-period-field";
@@ -59,6 +60,8 @@ export interface BookingSummaryProps {
   depositWhenInsured?: { amountMinor: number; currency: string } | null;
   checkInTime?: string | null;
   checkOutTime?: string | null;
+  /** The listing's extras, so a fee billed per night or per person says so beside its total. */
+  extraRates?: readonly RateSource[];
   crewType: CrewType | undefined;
   crewOptions: readonly CrewType[];
   onCrewChange: (next: CrewType) => void;
@@ -120,6 +123,7 @@ export default function BookingSummary({
   depositWhenInsured,
   checkInTime,
   checkOutTime,
+  extraRates,
   crewType,
   crewOptions,
   onCrewChange,
@@ -230,7 +234,7 @@ export default function BookingSummary({
                   )}
                   aria-busy={repricing}
                 >
-                  <PriceGroup labelKey={labelKey} lines={lines} />
+                  <PriceGroup labelKey={labelKey} lines={lines} catalogue={extraRates} />
                 </div>
               );
             })}

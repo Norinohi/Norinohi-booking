@@ -12,6 +12,8 @@ import { useTranslations } from "next-intl";
 import { useExactMoney } from "@/hooks/use-money";
 
 import type { QuoteLine } from "../../api/queries";
+import { useLineRateLabel } from "../../hooks/use-line-rate-label";
+import type { RateSource } from "../../lib/line-rate";
 
 /**
  * Quote line `group`s → the sidebar section they render under (i18n key on `sidebar.groups`).
@@ -30,12 +32,19 @@ export const GROUPS: readonly {
 export interface PriceGroupProps {
   labelKey: (typeof GROUPS)[number]["labelKey"];
   lines: QuoteLine[];
+  /** The listing's extras, for the unit rate behind a line's total. */
+  catalogue?: readonly RateSource[];
 }
 
-export function PriceGroup({ labelKey, lines }: PriceGroupProps) {
+export function PriceGroup({ labelKey, lines, catalogue }: PriceGroupProps) {
   const t = useTranslations("YachtDetail");
   const tExtras = useTranslations("Common.extras");
   const money = useExactMoney();
+  const rateOf = useLineRateLabel(catalogue);
+  /* A line the charter covers has no total for a rate to explain. */
+  const rates = new Map(
+    lines.map((line) => [line.code, line.amount.amountMinor === 0 ? null : rateOf(line)]),
+  );
 
   return (
     <Accordion defaultValue={[labelKey]}>
@@ -58,6 +67,11 @@ export function PriceGroup({ labelKey, lines }: PriceGroupProps) {
                 <div className="flex items-start gap-2 px-4">
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <p className="text-base leading-5.5 text-foreground">{line.label}</p>
+                    {rates.get(line.code) ? (
+                      <p className="text-xs font-semibold text-natural-500">
+                        {rates.get(line.code)}
+                      </p>
+                    ) : null}
                     {/*
                       A line the charter already covers is collected nowhere, so naming a moment
                       to pay it is naming a payment nobody will make. The others all say when:

@@ -10,6 +10,7 @@ import { useExactMoney } from "@/hooks/use-money";
 import { Link } from "@/i18n/navigation";
 import { dayToDisplay } from "@/lib/date";
 
+import { useLineRateLabel } from "../../hooks/use-line-rate-label";
 import { useQuoteLineLabel } from "../../hooks/use-quote-line-label";
 import type { BookingValues } from "../../lib/booking-form";
 import { dayWithHandover } from "../../lib/handover";
@@ -73,6 +74,9 @@ export default function ReviewAndBookStep() {
   const { control } = useFormContext<BookingValues>();
   const { listing, quote } = useBooking();
   const labelOf = useQuoteLineLabel();
+  const rateOf = useLineRateLabel(
+    listing ? [...listing.mandatoryExtras, ...listing.optionalExtras] : undefined,
+  );
 
   const day = (date: string) => format.dateTime(dayToDisplay(date), "dayShort");
   /* The same handover the sidebar shows beside these dates: the offer's, else the base's. */
@@ -139,10 +143,21 @@ export default function ReviewAndBookStep() {
           label: t("boatPrice"),
           value: money((base ?? quote.lines[0])?.amount.amountMinor ?? 0, quote.total.currency),
         },
-        ...priced.map((line) => ({
-          label: labelOf(line),
-          value: money(line.amount.amountMinor, line.amount.currency),
-        })),
+        ...priced.map((line) => {
+          const rate = rateOf(line);
+          const total = money(line.amount.amountMinor, line.amount.currency);
+          return {
+            label: labelOf(line),
+            value: rate ? (
+              <span className="flex flex-col">
+                {total}
+                <span className="text-sm leading-[1.3] font-medium text-natural-500">{rate}</span>
+              </span>
+            ) : (
+              total
+            ),
+          };
+        }),
         {
           label: t("totalPrice"),
           value: money(quote.total.amountMinor, quote.total.currency),

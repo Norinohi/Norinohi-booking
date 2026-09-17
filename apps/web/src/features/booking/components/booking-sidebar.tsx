@@ -83,6 +83,7 @@ export default function BookingSidebar({
            fleet at the marina and can be another operator's. */
         checkInTime={quote?.checkInTime ?? listing?.base.checkInTime}
         checkOutTime={quote?.checkOutTime ?? listing?.base.checkOutTime}
+        extraRates={listing ? [...listing.mandatoryExtras, ...listing.optionalExtras] : undefined}
         crewType={crewType}
         crewOptions={crewOptions}
         onCrewChange={setCrew}
