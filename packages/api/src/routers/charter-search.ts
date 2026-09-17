@@ -8,6 +8,7 @@ import {
 } from "@yacht-charter/db/search";
 import type { PriceBasis } from "@yacht-charter/db/search";
 import { readFxSnapshot } from "@yacht-charter/db/fx/rates";
+import { onCatalogRevalidate } from "@yacht-charter/providers/sync/revalidate";
 import { z } from "zod";
 
 import {
@@ -35,6 +36,7 @@ import { CATALOGUE_DEFAULT_BASIS, searchCharterResults } from "../services/chart
 import { getMarketplaceSettings } from "../services/marketplace-settings";
 import { getPopularYachtsConfig } from "../services/popular-yachts-settings";
 import { withParameterExamples } from "./openapi-examples";
+import { compactFacets, createFacetsCache } from "../lib/facets-cache";
 import { presentListingSummary } from "../presenters/listing";
 
 /** A map viewport shows every match at once, so it is not paged like the results list. */
@@ -64,6 +66,9 @@ const DAY_MS = 86_400_000;
 function defaultSeed(): number {
   return Math.floor(Date.now() / DAY_MS);
 }
+
+const facetsCache = createFacetsCache();
+onCatalogRevalidate(facetsCache.clear);
 
 export const charterSearchRouter = {
   results: publicProcedure
@@ -114,11 +119,17 @@ export const charterSearchRouter = {
     })
     .input(partialListingSearchInputSchema)
     .output(facetsSchema)
-    .handler(async ({ context, input }) =>
-      listSearchFacets(context.db, {
-        ...input,
-        priceBasis: input.priceBasis ?? CATALOGUE_DEFAULT_BASIS,
-      }),
+    .handler(({ context, input }) =>
+      /* Zod builds the parsed input in schema order, so its JSON is the same for two clients
+         that sent the fields in a different order. */
+      facetsCache.read(JSON.stringify(input), async () =>
+        compactFacets(
+          await listSearchFacets(context.db, {
+            ...input,
+            priceBasis: input.priceBasis ?? CATALOGUE_DEFAULT_BASIS,
+          }),
+        ),
+      ),
     ),
   popularYachts: publicProcedure
     .route({
