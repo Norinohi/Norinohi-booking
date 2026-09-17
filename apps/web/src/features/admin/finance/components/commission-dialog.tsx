@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  DEFAULT_TRANSACTING_PREFERENCE,
-  PROVIDER_KEYS,
-  providerMeta,
-} from "@yacht-charter/env/providers";
+import { PROVIDER_KEYS } from "@yacht-charter/env/providers";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import {
@@ -34,6 +30,7 @@ import { z } from "zod";
 
 import { useCommissionOperatorOptions } from "../../shared/hooks/use-operator-options";
 import { useCreateCommission, useUpdateCommission } from "../hooks/use-commissions";
+import { COMMISSION_PROVIDERS } from "../lib/providers";
 import type { CommissionRow } from "../types";
 import type { ProviderKey } from "../../shared/types";
 
@@ -46,9 +43,6 @@ import type { ProviderKey } from "../../shared/types";
  *
  * Overlaps are refused by the server rather than here: only it can see the other rates.
  */
-
-/* The mock fixture is not a vendor anybody negotiates a rate with, as on the settings screen. */
-const PROVIDERS = DEFAULT_TRANSACTING_PREFERENCE.filter((key) => !providerMeta(key).fixture);
 
 /* Sentinel for "every operator at this vendor" — an empty Select value shows the placeholder. */
 const ALL_OPERATORS = "all";
@@ -145,7 +139,9 @@ export default function CommissionDialog({ rate, open, onOpenChange }: Commissio
 
   /* A rate saved against the fixture before it was hidden still opens with its own provider. */
   const providerChoices =
-    rate && !PROVIDERS.includes(rate.provider) ? [...PROVIDERS, rate.provider] : PROVIDERS;
+    rate && !COMMISSION_PROVIDERS.includes(rate.provider)
+      ? [...COMMISSION_PROVIDERS, rate.provider]
+      : COMMISSION_PROVIDERS;
 
   /*
    * The operator being edited may not be in the search results, and a Select whose value has no

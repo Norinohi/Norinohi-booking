@@ -1,6 +1,5 @@
 "use client";
 
-import { DEFAULT_TRANSACTING_PREFERENCE } from "@yacht-charter/env/providers";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import {
@@ -28,6 +27,7 @@ import { SITE_NAME } from "@/lib/seo";
 import { useInstant } from "../../shared/hooks/use-instant";
 import { SHORT_DAY } from "../../shared/lib/instant";
 import { useCommissions, useSetCommissionActive } from "../hooks/use-commissions";
+import { COMMISSION_PROVIDERS } from "../lib/providers";
 import { type CommissionRow, type CommissionStatus } from "../types";
 import CommissionDialog from "./commission-dialog";
 
@@ -43,8 +43,6 @@ import CommissionDialog from "./commission-dialog";
  */
 
 const ALL = "all";
-/* Real vendors ahead of the fixture, which is the default transacting order. */
-const PROVIDERS = DEFAULT_TRANSACTING_PREFERENCE;
 const STATUSES: readonly CommissionStatus[] = ["active", "scheduled", "expired", "inactive"];
 
 const STATUS_VARIANTS = {
@@ -74,7 +72,7 @@ export default function CommissionsScreen({ user }: { user: { name: string; emai
 
   const { data, isPending, isError } = useCommissions({
     /* The ALL sentinel is in neither list, so it drops out as `undefined`. */
-    provider: PROVIDERS.find((option) => option === provider),
+    provider: COMMISSION_PROVIDERS.find((option) => option === provider),
     status: STATUSES.find((option) => option === status),
     page,
   });
@@ -160,7 +158,10 @@ export default function CommissionsScreen({ user }: { user: { name: string; emai
                       onValueChange={onFilterChange(setProvider)}
                       options={[
                         { value: ALL, label: t("filters.anyProvider") },
-                        ...PROVIDERS.map((key) => ({ value: key, label: tProviders(key) })),
+                        ...COMMISSION_PROVIDERS.map((key) => ({
+                          value: key,
+                          label: tProviders(key),
+                        })),
                       ]}
                     />
                   </div>
