@@ -1062,7 +1062,14 @@
       }
     },
     "priceLines": {
-      "title": "Price breakdown"
+      "title": "Price breakdown",
+      "labels": {
+        "charterPrice": "Charter price",
+        "charterExtra": "Charter extra",
+        "charterDiscount": "Charter discount",
+        "referralWelcome": "Referral welcome discount",
+        "referralCredit": "Referral credit"
+      }
     },
     "excluded": {
       "chip": "Not real business",

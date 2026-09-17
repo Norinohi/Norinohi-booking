@@ -1,5 +1,6 @@
 "use client";
 
+import { ownLineLabel } from "@yacht-charter/api/lib/own-line-label";
 import { placeLine } from "@yacht-charter/api/lib/place-line";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
@@ -91,6 +92,20 @@ const RELEASED_BY_US = ["CANCELLED", "REFUND_PENDING"];
 const UNCANCELLABLE = ["CONFIRMING", "CANCELLED", "REFUND_PENDING", "REFUNDED"];
 
 /*
+ * Bookings that are over, one way or another: nothing is owed on them and no hold is running.
+ * Money already taken is returned through the refund queue, so an "outstanding" figure or a
+ * hold deadline here only invites someone to chase a customer who has nothing left to pay.
+ */
+const CLOSED = [
+  "CANCELLED",
+  "REFUND_PENDING",
+  "REFUNDED",
+  "QUOTE_EXPIRED",
+  "OPTION_EXPIRED",
+  "PROVIDER_REJECTED",
+];
+
+/*
  * `crewType` is a provider code until the API finds a translation for it, after which it arrives
  * as a display label. Recognising the code is what tells the two apart — a label is printed as
  * it came, a code is mapped. Mirrors `crewKey` in the yachts feature, which is not on its public
@@ -144,6 +159,7 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
   const tProviders = useTranslations("Admin.providers");
   const tCrew = useTranslations("Common.crewTypes");
   const tDetail = useTranslations("Booking.detail");
+  const tLines = useTranslations("Admin.StaffBooking.priceLines.labels");
   const format = useFormatter();
   const instant = useInstant();
   const amount = useAmount();
@@ -158,6 +174,11 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
   const crewLabel = (value: string) => {
     const key = crewKey(value);
     return key ? tCrew(key) : value;
+  };
+
+  const lineLabel = (line: BookingAdminDetail["priceLines"][number]) => {
+    const own = ownLineLabel(line);
+    return own ? tLines(own) : line.label;
   };
 
   const at = (value: string | null) =>
@@ -177,6 +198,8 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
     booking.total.amountMinor - atCheckInMinor - booking.paid.amountMinor,
     0,
   );
+
+  const closed = CLOSED.includes(booking.status);
 
   const providerStillHolds =
     RELEASED_BY_US.includes(booking.status) &&
@@ -234,15 +257,17 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
           <Field label={t("fields.total")}>{amount(booking.total)}</Field>
           <Field label={t("fields.collected")}>
             {amount(booking.paid)}
-            <span className="block text-sm text-natural-500">
-              {t("outstanding", {
-                amount: amount({
-                  amountMinor: outstandingMinor,
-                  currency: booking.total.currency,
-                }),
-              })}
-            </span>
-            {atCheckInMinor > 0 ? (
+            {closed ? null : (
+              <span className="block text-sm text-natural-500">
+                {t("outstanding", {
+                  amount: amount({
+                    amountMinor: outstandingMinor,
+                    currency: booking.total.currency,
+                  }),
+                })}
+              </span>
+            )}
+            {atCheckInMinor > 0 && !closed ? (
               <span className="block text-sm text-natural-500">
                 {t("dueAtCheckIn", {
                   amount: amount({
@@ -257,7 +282,7 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
             <span className="block text-sm text-natural-500">
               {t("createdAt", { at: at(booking.createdAt) })}
             </span>
-            {booking.holdExpiresAt ? (
+            {booking.holdExpiresAt && !closed ? (
               <span className="block text-sm text-natural-500">
                 {t("holdExpiresAt", { at: at(booking.holdExpiresAt) })}
               </span>
@@ -407,7 +432,7 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
         <div className="flex flex-col gap-2 p-5">
           {booking.priceLines.map((line) => (
             <div key={line.code} className="flex items-baseline justify-between gap-4">
-              <span className="text-base text-foreground">{line.label}</span>
+              <span className="text-base text-foreground">{lineLabel(line)}</span>
               <span className="whitespace-nowrap font-medium text-foreground">
                 {amount(line.amount)}
               </span>

@@ -1062,7 +1062,14 @@
       }
     },
     "priceLines": {
-      "title": "Desglose de precio"
+      "title": "Desglose de precio",
+      "labels": {
+        "charterPrice": "Precio del chárter",
+        "charterExtra": "Suplemento del chárter",
+        "charterDiscount": "Descuento del chárter",
+        "referralWelcome": "Descuento de bienvenida por recomendación",
+        "referralCredit": "Crédito por recomendación"
+      }
     },
     "excluded": {
       "chip": "No es negocio real",

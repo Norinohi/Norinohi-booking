@@ -1062,7 +1062,14 @@
       }
     },
     "priceLines": {
-      "title": "Деталізація ціни"
+      "title": "Деталізація ціни",
+      "labels": {
+        "charterPrice": "Ціна чартеру",
+        "charterExtra": "Доплата за чартер",
+        "charterDiscount": "Знижка на чартер",
+        "referralWelcome": "Вітальна знижка за рекомендацією",
+        "referralCredit": "Бонус за рекомендацією"
+      }
     },
     "excluded": {
       "chip": "Не справжня операція",

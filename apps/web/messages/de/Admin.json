@@ -1062,7 +1062,14 @@
       }
     },
     "priceLines": {
-      "title": "Preisaufschlüsselung"
+      "title": "Preisaufschlüsselung",
+      "labels": {
+        "charterPrice": "Charterpreis",
+        "charterExtra": "Charter-Zuschlag",
+        "charterDiscount": "Charter-Rabatt",
+        "referralWelcome": "Willkommensrabatt über Empfehlung",
+        "referralCredit": "Empfehlungsguthaben"
+      }
     },
     "excluded": {
       "chip": "Kein echtes Geschäft",
