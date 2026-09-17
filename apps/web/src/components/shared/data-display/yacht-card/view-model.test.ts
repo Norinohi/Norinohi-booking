@@ -66,14 +66,14 @@ describe("amenities", () => {
 
 describe("yachtSpecs", () => {
   it("omits showers the provider never stated", () => {
-    const labels = yachtSpecs(t, SPECS).map((spec) => spec.label);
+    const labels = yachtSpecs(t, SPECS, "Sailing yacht").map((spec) => spec.label);
 
     expect(labels).not.toContain("Showers");
     expect(labels).toEqual(["Year", "People", "Toilets", "Mainsail type", "Cabins", "Length"]);
   });
 
   it("includes a stated shower count, even zero", () => {
-    const showers = yachtSpecs(t, { ...SPECS, showers: 0 }).find(
+    const showers = yachtSpecs(t, { ...SPECS, showers: 0 }, "Sailing yacht").find(
       (spec) => spec.label === "Showers",
     );
 
@@ -82,10 +82,20 @@ describe("yachtSpecs", () => {
 
   it("labels the sail type, falling back to a batten mainsail", () => {
     const sail = (sailType: string | null) =>
-      yachtSpecs(t, { ...SPECS, sailType }).find((spec) => spec.label === "Mainsail type")?.value;
+      yachtSpecs(t, { ...SPECS, sailType }, "Sailing yacht").find(
+        (spec) => spec.label === "Mainsail type",
+      )?.value;
 
     expect(sail("roller-furling")).toBe("Roller furling");
     expect(sail(null)).toBe("Batten mainsail");
+  });
+
+  it("has no mainsail row for a motor boat the vendor gave no sail type", () => {
+    const labels = yachtSpecs(t, { ...SPECS, sailType: null }, "Motor boat").map(
+      (spec) => spec.label,
+    );
+
+    expect(labels).toEqual(["Year", "People", "Toilets", "Cabins", "Length"]);
   });
 });
 

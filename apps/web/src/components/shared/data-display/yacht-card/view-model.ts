@@ -1,3 +1,4 @@
+import { hasMainsail } from "@yacht-charter/api/lib/mainsail";
 import {
   Anchor,
   Check,
@@ -85,7 +86,11 @@ export type BoatSpecs = {
 
 type YachtCardTranslator = ReturnType<typeof useTranslations<"Common.boatCard">>;
 
-export function yachtSpecs(t: YachtCardTranslator, specs: BoatSpecs): YachtCardSpec[] {
+export function yachtSpecs(
+  t: YachtCardTranslator,
+  specs: BoatSpecs,
+  category: string | null,
+): YachtCardSpec[] {
   return [
     { label: t("specs.year"), value: String(specs.yearBuilt) },
     { label: t("specs.people"), value: String(specs.berths) },
@@ -105,10 +110,14 @@ export function yachtSpecs(t: YachtCardTranslator, specs: BoatSpecs): YachtCardS
             icon: createElement(ShowerHead),
           },
         ]),
-    {
-      label: t("specs.mainsail"),
-      value: specs.sailType ? slugToLabel(specs.sailType) : t("battenMainsail"),
-    },
+    ...(hasMainsail(category, specs.sailType)
+      ? [
+          {
+            label: t("specs.mainsail"),
+            value: specs.sailType ? slugToLabel(specs.sailType) : t("battenMainsail"),
+          },
+        ]
+      : []),
     { label: t("specs.cabins"), value: String(specs.cabins) },
     { label: t("specs.length"), value: t("specs.lengthValue", { length: specs.lengthM }) },
   ];
@@ -262,7 +271,7 @@ export function yachtCardIdentity(
     rating: listing.rating > 0 ? String(listing.rating) : undefined,
     charterType: listing.category ?? "",
     crew: listing.crewType ? crewLabel(tCrew, listing.crewType) : "",
-    specs: yachtSpecs(t, listing.specs),
+    specs: yachtSpecs(t, listing.specs, listing.category),
     amenities: amenityItems(listing.highlightAmenities ?? listing.amenities),
     /*
      * Only where the curated list is present. Falling back to `amenities` here would count the
