@@ -17,7 +17,7 @@ import {
 import { comparablePrice, pricedForDates } from "./pricing-sql";
 import {
   checkinRuleClause,
-  freeAcrossWindow,
+  freeForSearch,
   hasRuleSellableStart,
   hasVendorCharter,
   heldOnlyByOption,
@@ -265,7 +265,7 @@ export function whereClause(
      *
      * Unbounded, this is what offered a September search a November week.
      */
-    const free = sql`((${hasRuleSellableStart(windowNights, range)} and ${freeAcrossWindow(range, windowNights, nights, "set")}) or ${hasVendorCharter(windowNights, range)})`;
+    const free = freeForSearch(range, windowNights, nights);
     /*
      * A temporary booking is occupancy, so the week it covers is not among the free stretches
      * and its boat is not an answer to this search. The toggle is the visitor saying they want

@@ -351,9 +351,6 @@ function sellableFilter(nights: number | SQL): SQL {
 
 /*
  * One free stretch wide enough for the whole charter, on an offer whose rules would sell it.
- *
- * Shared by the filter and by the card column that says a week is only held: the two have to
- * ask the same question, or a card would announce a hold on a boat the filter admitted as free.
  */
 export function freeAcrossWindow(
   range: CandidateRange,
@@ -418,11 +415,27 @@ export function heldOnlyByOption(
 }
 
 /*
+ * The search filter's own answer to "is this boat free for the dates asked", and the only one the
+ * hold column may read: a card is held exactly when the filter let it in through the hold. The
+ * per-offer free-period test alone disagreed with it for a boat admitted on a vendor's short
+ * charter, and every such boat came back held.
+ */
+export function freeForSearch(
+  range: CandidateRange,
+  windowNights: number,
+  nights: number | undefined,
+): SQL {
+  return sql`((${hasRuleSellableStart(windowNights, range)} and ${freeAcrossWindow(range, windowNights, nights, "set")}) or ${hasVendorCharter(windowNights, range)})`;
+}
+
+/*
  * The hold over the searched week, and when the vendor drops it, for the card to count down to.
  *
- * Null unless the hold is the whole story: a boat with a free stretch across those dates is
- * available, whatever else its calendar holds elsewhere. Selected rather than filtered on, so
- * it is computed for the rows a page returns and not for every candidate.
+ * Null unless the hold is the whole story: a boat the filter finds free is available, whatever
+ * else its calendar holds elsewhere. The hold test comes first because the aggregate below answers
+ * a row even over no slots at all, which printed a hold with no deadline on free boats. Selected
+ * rather than filtered on, so it is computed for the rows a page returns and not for every
+ * candidate.
  *
  * The week reopens only once every option over it lapses, so the latest deadline is the one
  * that counts, and a single option without a stated deadline leaves the answer unknown. It is
@@ -441,7 +454,8 @@ export function temporaryHoldColumn(input: ListingSearchInput): SQL {
   const range = candidateRange(window, windowNights, flex);
   const nights = input.checkIn && input.checkOut ? windowNights : input.duration;
   return sql`, case
-    when ${freeAcrossWindow(range, windowNights, nights)} then null
+    when not ${heldOnlyByOption(window, nights, range)} then null
+    when ${freeForSearch(range, windowNights, nights)} then null
     else (
       select json_build_object(
         'expiresAt',
