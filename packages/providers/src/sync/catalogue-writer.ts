@@ -237,7 +237,7 @@ export async function writeCanonicalCatalogue(
   for (const item of catalogue.locations) {
     const regionId = regionIds.get(item.externalRegionId);
     if (!regionId) continue;
-    const id = await ensureLocation(db, regionId, item.name);
+    const id = await ensureLocation(db, regionId, item.name, item.city ?? null);
     if (id) locationIds.set(item.externalId, id);
   }
 
@@ -619,11 +619,17 @@ async function ensureLocation(
   db: Database,
   regionId: string,
   name: string,
+  city: string | null,
 ): Promise<string | null> {
+  // A vendor's town fills an empty `city` and never overwrites one, which may be curated.
   const [created] = await db
     .insert(location)
-    .values({ regionId, name })
-    .onConflictDoNothing({ target: [location.regionId, location.name] })
+    .values({ regionId, name, city })
+    .onConflictDoUpdate({
+      target: [location.regionId, location.name],
+      set: { city: sql`excluded.city` },
+      setWhere: sql`${location.city} is null and excluded.city is not null`,
+    })
     .returning({ id: location.id });
   if (created) return created.id;
 

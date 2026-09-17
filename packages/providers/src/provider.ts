@@ -9,6 +9,7 @@ import type {
   AvailableOffer,
   BookingDraft,
   CanonicalCatalogue,
+  CatalogueProjectionContext,
   CrewListReceipt,
   CrewListSubmission,
   CrewPlace,
@@ -35,7 +36,10 @@ export interface InventoryProvider {
    * company, base and equipment records that arrive in earlier sync batches, so it
    * cannot be done while streaming.
    */
-  projectCatalogue(records: ProviderRecordSet): CanonicalCatalogue;
+  projectCatalogue(
+    records: ProviderRecordSet,
+    context?: CatalogueProjectionContext,
+  ): CanonicalCatalogue;
   searchAvailability(input: AvailabilitySearch): Promise<AvailableOffer[]>;
   getAvailability(input: ListingPeriod): Promise<AvailabilityCalendar>;
   getQuote(input: QuoteRequest): Promise<ProviderQuote>;

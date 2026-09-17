@@ -48,11 +48,11 @@ export const location = pgTable(
       .references(() => region.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
     /*
-     * The town this location is reached from, which no provider models: a NauSYS `location` is
-     * the marina itself, so the name arrives as "Marina Zadar (ex. Tankerkomerc)". Curated, never
-     * written by a sync — the writer inserts locations with `onConflictDoNothing`, so an edit
-     * here survives every later import. Null until someone fills it in, which is what keeps a
-     * wrong town out of a URL.
+     * The town this location is reached from. A NauSYS `location` is the marina itself, so the
+     * name arrives as "Marina Zadar (ex. Tankerkomerc)" with no town, and its city is curated.
+     * Booking Manager states the town on every base, so its sync fills a null city and never
+     * overwrites one: an edit here survives every later import. Null until one of those fills
+     * it, which is what keeps a guessed town out of a URL.
      */
     city: text("city"),
     ...timestamps,

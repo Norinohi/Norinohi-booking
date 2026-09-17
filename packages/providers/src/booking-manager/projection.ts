@@ -2,6 +2,7 @@ import type { z } from "zod";
 
 import type { JsonField } from "../shared/json";
 import { parseBookingManagerDate } from "./dates";
+import { regionFor } from "./geography";
 import { stripHtml } from "../shared/html-text";
 import { decimalStringToMinor } from "../shared/money";
 import { isPlaceholderBuilder } from "../shared/placeholder-builders";
@@ -19,6 +20,7 @@ import {
 import {
   canonicalCatalogueSchema,
   type CanonicalCatalogue,
+  type CatalogueProjectionContext,
   type CanonicalExtra,
   type ProviderRecordSet,
 } from "../types";
@@ -66,29 +68,22 @@ const TEXT_KIND_RULES: { pattern: RegExp; kind: "conditions" | "one_way_note" | 
 
 type TextKind = "description" | "notes" | "conditions" | "one_way_note";
 
-export function projectBookingManagerCatalogue(records: ProviderRecordSet): CanonicalCatalogue {
-  const countries = parseAll(records, "country", restCountrySchema);
-  const sailingAreas = parseAll(records, "location", restSailingAreaSchema);
+export function projectBookingManagerCatalogue(
+  records: ProviderRecordSet,
+  context: CatalogueProjectionContext = { referenceRegions: [] },
+): CanonicalCatalogue {
   const equipment = parseAll(records, "equipment_category", restEquipmentSchema);
   const shipyards = parseAll(records, "builder", restShipyardSchema).filter(
     (item) => !isPlaceholderBuilder(text(item.name) ?? text(item.shortName)),
   );
   const yachtTypes = parseAll(records, "category", restYachtTypeSchema);
   const companies = parseAll(records, "company", restCompanySchema);
-  const bases = parseAll(records, "base", restBaseSchema);
   const yachts = parseAll(records, "yacht", restYachtSchema);
 
-  const countryById = new Map(countries.map((item) => [String(item.id), item]));
-  const sailingAreaNameById = new Map(
-    sailingAreas.map((item) => [String(item.id), text(item.name)]),
-  );
   const knownShipyards = new Set(shipyards.map((item) => String(item.id)));
   const knownEquipment = new Set(equipment.map((item) => String(item.id)));
 
-  const geography = projectGeography(bases, {
-    countryById,
-    sailingAreaNameById,
-  });
+  const geography = projectBookingManagerGeography(records, context);
 
   const categoryIdByKind = new Map(
     yachtTypes
@@ -106,12 +101,7 @@ export function projectBookingManagerCatalogue(records: ProviderRecordSet): Cano
     .filter((item): item is NonNullable<typeof item> => item !== null);
 
   return canonicalCatalogueSchema.parse({
-    countries: countries.map((item) => ({
-      externalId: String(item.id),
-      // ISO-2 first: it is what makes the same country from two providers one row.
-      code: countryCodeOf(item),
-      name: text(item.name) ?? text(item.long) ?? text(item.longName) ?? `Country ${item.id}`,
-    })),
+    countries: geography.countries,
     regions: geography.regions,
     locations: geography.locations,
     bases: geography.bases.map((item) => ({
@@ -176,33 +166,44 @@ type RestYacht = z.infer<typeof restYachtSchema>;
  * Ours is country → region → location → base. The vendor's is world region →
  * country → base, with sailing areas hanging off bases as an unrelated many-to-many
  * and no country of their own. So the chain is rebuilt from the bases outward: a
- * base names its country and its sailing areas, which is enough to place it.
+ * base names its country, its sailing areas, its town and its coordinates.
  *
- * The region is the base's sailing area within its country, and so is the location,
- * because the vendor has nothing finer. The world region is not used at all: it used
- * to name the region, which filed Croatia, Greece and six more under a "Southern
- * Europe" region beside the real Split and Zadar ones, and made catalogue pages of it.
- * A base with no sailing area falls back to its country's name for both, which is
- * what the other vendor's single-region countries look like too.
+ * The region is one the other vendor's boats already sail from in that country,
+ * picked by `regionFor`, so a Split base lands in "Split region" beside
+ * them and one search filter finds both fleets. Only where no such region fits does
+ * the base fall back to its sailing area's own name, then its country's. The world
+ * region is never used: it once named the region, and filed Croatia, Greece and six
+ * more under a "Southern Europe" region with a catalogue page of its own.
  *
- * Migration 0128 moved the locations already written under a world region into these
- * regions in place, so the bases under them keep their ids and the routes attached to
- * them. Change the naming here and that no longer holds: every base is re-created.
+ * The location is the base's town, which the vendor states and our other vendor does
+ * not, so it also fills `location.city`.
+ *
+ * Bases already written somewhere else are moved by `geography:repair-bm`, which
+ * keeps their ids and the routes attached to them. A sync that gets there first
+ * creates new base rows instead and strands those routes.
  */
-function projectGeography(
-  bases: RestBase[],
-  context: {
-    countryById: Map<string, RestCountry>;
-    sailingAreaNameById: Map<string, string | undefined>;
-  },
+export function projectBookingManagerGeography(
+  records: ProviderRecordSet,
+  context: CatalogueProjectionContext,
 ) {
+  const countries = parseAll(records, "country", restCountrySchema);
+  const sailingAreas = parseAll(records, "location", restSailingAreaSchema);
+  const bases = parseAll(records, "base", restBaseSchema);
+
+  const countryById = new Map(countries.map((item) => [String(item.id), item]));
+  const sailingAreaNameById = new Map<string, string>();
+  for (const item of sailingAreas) {
+    const name = text(item.name);
+    if (name !== undefined) sailingAreaNameById.set(String(item.id), name);
+  }
+
   const regions = new Map<
     string,
     { externalId: string; externalCountryId: string; name: string }
   >();
   const locations = new Map<
     string,
-    { externalId: string; externalRegionId: string; name: string }
+    { externalId: string; externalRegionId: string; name: string; city?: string }
   >();
   const projectedBases: {
     externalId: string;
@@ -218,44 +219,67 @@ function projectGeography(
     // NULL. The base is dropped rather than filed under an invented place.
     if (countryId === null) continue;
 
-    const country = context.countryById.get(countryId);
+    const country = countryById.get(countryId);
     const countryName = text(country?.name) ?? text(country?.long) ?? `Country ${countryId}`;
+    const lat = coordinateOf(item.latitude);
+    const lng = coordinateOf(item.longitude);
 
-    // A sailing area spans countries (the Adriatic is Croatian and Montenegrin), so
-    // it is split per country: one canonical region may only sit in one country.
-    const sailingAreaId = (item.sailingAreas ?? [])
-      .map((value) => idOf(value))
-      .find((value): value is string => value !== null && context.sailingAreaNameById.has(value));
-    const placeName =
-      (sailingAreaId === undefined ? undefined : context.sailingAreaNameById.get(sailingAreaId)) ??
+    const sailingAreaNames = (item.sailingAreas ?? [])
+      .map((value) => {
+        const id = idOf(value);
+        return id === null ? undefined : sailingAreaNameById.get(id);
+      })
+      .filter((name): name is string => name !== undefined);
+
+    const regionName =
+      (country === undefined
+        ? undefined
+        : regionFor(
+            {
+              countryCode: countryCodeOf(country),
+              sailingAreas: sailingAreaNames,
+              point: lat === undefined || lng === undefined ? undefined : { lat, lng },
+            },
+            context.referenceRegions,
+          )) ??
+      sailingAreaNames[0] ??
       countryName;
-    const placeKey = sailingAreaId === undefined ? countryId : `${sailingAreaId}:${countryId}`;
+    const city = text(item.city);
+    const locationName = city ?? sailingAreaNames[0] ?? regionName;
 
-    const regionExternalId = `region:${placeKey}`;
+    // Keyed by name within the country: two sailing areas placed into one region are
+    // one region, and a town is one location however many areas list it.
+    const regionExternalId = `region:${countryId}:${regionName}`;
     regions.set(regionExternalId, {
       externalId: regionExternalId,
       externalCountryId: countryId,
-      name: placeName,
+      name: regionName,
     });
 
-    const locationExternalId = `location:${placeKey}`;
+    const locationExternalId = `location:${countryId}:${regionName}:${locationName}`;
     locations.set(locationExternalId, {
       externalId: locationExternalId,
       externalRegionId: regionExternalId,
-      name: placeName,
+      name: locationName,
+      city,
     });
 
     projectedBases.push({
       externalId: String(item.id),
       externalLocationId: locationExternalId,
       name: baseNameOf(item),
-      // Declared as strings in the spec, so they are parsed here rather than trusted.
-      lat: coordinateOf(item.latitude),
-      lng: coordinateOf(item.longitude),
+      lat,
+      lng,
     });
   }
 
   return {
+    countries: countries.map((item) => ({
+      externalId: String(item.id),
+      // ISO-2 first: it is what makes the same country from two providers one row.
+      code: countryCodeOf(item),
+      name: text(item.name) ?? text(item.long) ?? text(item.longName) ?? `Country ${item.id}`,
+    })),
     regions: [...regions.values()],
     locations: [...locations.values()],
     bases: projectedBases,

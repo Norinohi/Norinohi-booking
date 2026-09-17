@@ -13,6 +13,7 @@ import type {
   AvailableOffer,
   BookingDraft,
   CanonicalCatalogue,
+  CatalogueProjectionContext,
   ListingPeriod,
   ProviderCapabilities,
   ProviderExtrasMutation,
@@ -160,8 +161,11 @@ export class BookingManagerInventoryProvider
     });
   }
 
-  projectCatalogue(records: ProviderRecordSet): CanonicalCatalogue {
-    return projectBookingManagerCatalogue(records);
+  projectCatalogue(
+    records: ProviderRecordSet,
+    context?: CatalogueProjectionContext,
+  ): CanonicalCatalogue {
+    return projectBookingManagerCatalogue(records, context);
   }
 
   createAvailabilitySource(options: { resume?: JsonField }): AvailabilitySource {

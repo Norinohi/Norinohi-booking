@@ -278,10 +278,17 @@ const recordSet = (entries: [ProviderResourceType, Payload[]][]): ProviderRecord
 
 /*
  * The vendor files a country under a world region ("Southern Europe") and a base under sailing
- * areas. Only the sailing area is somewhere to sail, and migration 0128 moved the rows already
- * written to exactly these names, so the region and location naming is pinned here.
+ * areas that are coarser than our regions. The base belongs in the region the other vendor's
+ * boats around it already sail from, so both fleets answer one search filter.
  */
 describe("geography", () => {
+  const referenceRegions = [
+    { countryCode: "HR", name: "Split region", points: [{ lat: 43.5089, lng: 16.4392 }] },
+    { countryCode: "HR", name: "Zadar region", points: [{ lat: 44.1194, lng: 15.2314 }] },
+    { countryCode: "HR", name: "Dubrovnik region", points: [{ lat: 42.6697, lng: 18.1246 }] },
+    { countryCode: "ME", name: "Montenegro", points: [{ lat: 42.4347, lng: 18.6961 }] },
+  ];
+
   const geographyOf = (bases: Payload[]) =>
     projectBookingManagerCatalogue(
       recordSet([
@@ -290,6 +297,7 @@ describe("geography", () => {
           [
             { id: 191, name: "Croatia", shortName: "HR", worldRegion: 39 },
             { id: 499, name: "Montenegro", shortName: "ME", worldRegion: 39 },
+            { id: 470, name: "Malta", shortName: "MT", worldRegion: 39 },
           ],
         ],
         ["region", [{ id: 39, name: "Southern Europe" }]],
@@ -298,47 +306,86 @@ describe("geography", () => {
           [
             { id: 3, name: "Split" },
             { id: 9, name: "Dubrovnik / Montenegro" },
+            { id: 44, name: "Malta" },
           ],
         ],
         ["base", bases],
       ]),
+      { referenceRegions },
     );
 
-  it("names the region after the base's sailing area, never the world region", () => {
+  it("places a Split base in our Split region, with its town as the location", () => {
     const { regions, locations, bases } = geographyOf([
-      { id: 1, name: "ACI Marina Split", countryId: 191, sailingAreas: [3] },
+      {
+        id: 1,
+        name: "ACI Marina Split",
+        city: "Split",
+        countryId: 191,
+        latitude: "43.5040",
+        longitude: "16.4300",
+        sailingAreas: [3],
+      },
     ]);
 
     expect(regions).toEqual([
-      { externalId: "region:3:191", externalCountryId: "191", name: "Split" },
+      { externalId: "region:191:Split region", externalCountryId: "191", name: "Split region" },
     ]);
     expect(locations).toEqual([
-      { externalId: "location:3:191", externalRegionId: "region:3:191", name: "Split" },
+      {
+        externalId: "location:191:Split region:Split",
+        externalRegionId: "region:191:Split region",
+        name: "Split",
+        city: "Split",
+      },
     ]);
-    expect(bases[0]?.externalLocationId).toBe("location:3:191");
+    expect(bases[0]?.externalLocationId).toBe("location:191:Split region:Split");
   });
 
-  it("splits a sailing area that crosses a border into one region per country", () => {
+  it("places a base with no sailing area in the nearest region by coordinates", () => {
+    const { regions } = geographyOf([
+      {
+        id: 1,
+        name: "Marina Borik",
+        city: "Zadar",
+        countryId: 191,
+        latitude: "44.1330",
+        longitude: "15.2140",
+        sailingAreas: [],
+      },
+    ]);
+
+    expect(regions.map((item) => item.name)).toEqual(["Zadar region"]);
+  });
+
+  it("splits a sailing area that crosses a border by country", () => {
     const { regions } = geographyOf([
       { id: 1, name: "Port Gruž", countryId: 191, sailingAreas: [9] },
       { id: 2, name: "Porto Montenegro", countryId: 499, sailingAreas: [9] },
     ]);
 
     expect(regions.map((item) => [item.externalCountryId, item.name])).toEqual([
-      ["191", "Dubrovnik / Montenegro"],
-      ["499", "Dubrovnik / Montenegro"],
+      ["191", "Dubrovnik region"],
+      ["499", "Montenegro"],
     ]);
   });
 
-  it("falls back to the country for a base with no sailing area", () => {
-    const { regions, locations } = geographyOf([
-      { id: 1, name: "Marina Punat", countryId: 191, sailingAreas: [] },
+  it("falls back to the sailing area, then the country, where no region of ours fits", () => {
+    const { regions } = geographyOf([
+      { id: 1, name: "Grand Harbour Marina", countryId: 470, sailingAreas: [44] },
+      { id: 2, name: "Somewhere", countryId: 470, sailingAreas: [] },
     ]);
 
-    expect(regions).toEqual([
-      { externalId: "region:191", externalCountryId: "191", name: "Croatia" },
+    expect(regions.map((item) => item.name)).toEqual(["Malta"]);
+  });
+
+  it("never names a region after the world region", () => {
+    const { regions } = geographyOf([
+      { id: 1, name: "ACI Marina Split", countryId: 191, sailingAreas: [3] },
+      { id: 2, name: "Marina Punat", countryId: 191, sailingAreas: [] },
+      { id: 3, name: "Grand Harbour Marina", countryId: 470, sailingAreas: [44] },
     ]);
-    expect(locations[0]?.name).toBe("Croatia");
+
+    expect(regions.map((item) => item.name)).not.toContain("Southern Europe");
   });
 });
 

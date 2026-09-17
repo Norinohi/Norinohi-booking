@@ -1,3 +1,4 @@
+import type { ReferenceRegion } from "@yacht-charter/db/geo/reference-regions";
 import { PROVIDER_KEYS } from "@yacht-charter/env/providers";
 import { z } from "zod";
 
@@ -533,6 +534,8 @@ const canonicalLocationSchema = z.object({
   externalId: z.string(),
   externalRegionId: z.string(),
   name: z.string(),
+  /** The town, where the vendor states one. Fills an empty `location.city`, never replaces one. */
+  city: z.string().optional(),
   translations: canonicalTranslationsSchema,
 });
 
@@ -895,3 +898,12 @@ export const canonicalCatalogueSchema = z.object({
   listings: z.array(canonicalListingSchema),
 });
 export type CanonicalCatalogue = z.infer<typeof canonicalCatalogueSchema>;
+
+/**
+ * What a projection may read about the catalogue beyond its own records. Loaded by the caller,
+ * so `projectCatalogue` itself stays free of I/O.
+ */
+export type CatalogueProjectionContext = {
+  /** Regions other providers' boats sail from, for a provider too coarse to name its own. */
+  referenceRegions: ReferenceRegion[];
+};

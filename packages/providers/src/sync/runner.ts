@@ -20,6 +20,7 @@ import {
 import type { Database } from "../registry";
 import { NotFoundError, ProviderError, toSyncErrorType } from "../shared/errors";
 import type { JsonField, JsonValue } from "../shared/json";
+import { listReferenceRegions } from "@yacht-charter/db/geo/reference-regions";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
 
 import { refreshOfferFlags } from "./offer-flags";
@@ -937,7 +938,9 @@ export async function runCatalogueSyncJob(
   let written: Awaited<ReturnType<typeof writeCanonicalCatalogue>>;
   try {
     const records = await loadProviderRecordSet(db, providerId);
-    const catalogue = provider.projectCatalogue(records);
+    const catalogue = provider.projectCatalogue(records, {
+      referenceRegions: await listReferenceRegions(db, providerId),
+    });
     written = await writeCanonicalCatalogue({
       db,
       providerId,

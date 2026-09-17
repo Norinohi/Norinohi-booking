@@ -1,0 +1,11 @@
+[
+  { "country": "HR", "place": "Istria", "region": "Istra" },
+  { "country": "GR", "place": "South Peloponnese", "region": "Athens area/Saronic/Peloponese" },
+  { "country": "GR", "place": "North East Aegean", "region": "Northern Greece/Aegean" },
+  { "country": "IT", "place": "Toscana", "region": "Tuscany" },
+  { "country": "IT", "place": "Venice Lagoon", "region": "Veneto" },
+  { "country": "ES", "place": "Mallorca", "region": "Balearic Islands" },
+  { "country": "ES", "place": "Ibiza", "region": "Balearic Islands" },
+  { "country": "ES", "place": "Menorca", "region": "Balearic Islands" },
+  { "country": "FR", "place": "Bretagne", "region": "Brittany" }
+]

@@ -18,6 +18,7 @@
  * skipped quietly: those need a real catalogue sync.
  */
 import { db } from "@yacht-charter/db";
+import { listReferenceRegions } from "@yacht-charter/db/geo/reference-regions";
 import { rebuildListingSearchDocsForListings } from "@yacht-charter/db/search/read-model";
 import { provider as providerTable, providerRecord } from "@yacht-charter/db/schema/provider";
 import { and, count, eq, isNull } from "drizzle-orm";
@@ -74,7 +75,9 @@ async function main(): Promise<void> {
   }
 
   const provider = createInventoryProvider({ db }, providerKey);
-  const catalogue = provider.projectCatalogue(records);
+  const catalogue = provider.projectCatalogue(records, {
+    referenceRegions: await listReferenceRegions(db, row.id),
+  });
 
   const summary = await writeCanonicalCatalogue({
     db,
