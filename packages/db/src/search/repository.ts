@@ -118,26 +118,25 @@ async function searchListingsByPage(
   const offset = (page - 1) * pageSize;
   const filters = whereClause(input);
 
-  const [rows, countRows] = await Promise.all([
-    db.execute<SearchRow>(sql`
-      select ${searchColumns}${sellsRequestedPeriodColumn(input)}${temporaryHoldColumn(input)}${pricedForDatesColumn(input)}
-      from ${searchDocs(input)} doc
-      where ${filters}
-      order by ${orderClause(input.sort, input.priceBasis, input)}
-      limit ${pageSize}
-      offset ${offset}
-    `),
-    db.execute<{ totalItems: number }>(sql`
-      select count(*)::integer as "totalItems"
-      from ${searchDocs(input)} doc
-      where ${filters}
-    `),
-  ]);
+  /* The total rides on the page query: a separate count repeated the whole availability filter,
+     which is most of a dated search's cost. */
+  const rows = await db.execute<SearchRow & { totalItems: number }>(sql`
+    select count(*) over ()::integer as "totalItems",
+      ${searchColumns}${sellsRequestedPeriodColumn(input)}${temporaryHoldColumn(input)}${pricedForDatesColumn(input)}
+    from ${searchDocs(input)} doc
+    where ${filters}
+    order by ${orderClause(input.sort, input.priceBasis, input)}
+    limit ${pageSize}
+    offset ${offset}
+  `);
 
-  const totalItems = countRows.rows[0]?.totalItems ?? 0;
+  const totalItems =
+    rows.rows[0]?.totalItems ??
+    (offset === 0 ? 0 : await countMatches(db, searchDocs(input), filters));
+  const pageRows = rows.rows.map(({ totalItems: _total, ...row }) => normalizeSearchRow(row));
   const items = await localizeSearchDocs(
     db,
-    await pricedForNearestCharter(db, input, rows.rows.map(normalizeSearchRow)),
+    await pricedForNearestCharter(db, input, pageRows),
     input.locale,
   );
 
@@ -145,6 +144,20 @@ async function searchListingsByPage(
     items,
     pagination: paginationFor({ page, pageSize, totalItems, itemCount: items.length }),
   };
+}
+
+/** A page past the last one carries no row to read the window count from. */
+async function countMatches(
+  db: NodePgDatabase<typeof schema>,
+  docs: SQL,
+  filters: SQL,
+): Promise<number> {
+  const rows = await db.execute<{ totalItems: number }>(sql`
+    select count(*)::integer as "totalItems"
+    from ${docs} doc
+    where ${filters}
+  `);
+  return rows.rows[0]?.totalItems ?? 0;
 }
 
 /**
