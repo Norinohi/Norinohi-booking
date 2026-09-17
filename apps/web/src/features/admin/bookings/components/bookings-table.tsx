@@ -210,7 +210,7 @@ export default function BookingsTable() {
                       <TableCell className="max-w-52">
                         <div className="flex flex-col">
                           <span className="truncate font-medium text-foreground">
-                            {booking.customerName ?? "—"}
+                            {booking.customerName ?? "-"}
                           </span>
                           {/* The list is where staff pick a booking out of a phone call, and
                               mailing the customer back is often the next move. */}

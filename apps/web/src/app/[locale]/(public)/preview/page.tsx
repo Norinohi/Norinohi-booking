@@ -41,7 +41,7 @@ export default function PreviewPage() {
         <div className="rounded-lg border border-border">
           <EmptyState
             title="No yachts found for your filters"
-            description="Try adjusting your dates, budget, or location — we’ll help you find the perfect match."
+            description="Try adjusting your dates, budget, or location - we’ll help you find the perfect match."
           />
         </div>
         <div className="rounded-lg border border-border">

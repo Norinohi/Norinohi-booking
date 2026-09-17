@@ -8,5 +8,5 @@
   "someUnavailable": "Деякі зі збережених яхт більше недоступні.",
   "toggleFailed": "Не вдалося оновити обране. Спробуйте ще раз.",
   "merged": "{count, plural, one {# збережену яхту} few {# збережені яхти} many {# збережених яхт} other {# збереженої яхти}} додано до вашого акаунта.",
-  "paginationSummary": "Показано {from}–{to} з {total}"
+  "paginationSummary": "Показано {from}-{to} з {total}"
 }

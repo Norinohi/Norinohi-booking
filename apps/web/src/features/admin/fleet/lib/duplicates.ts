@@ -58,7 +58,7 @@ const FIELDS: readonly FieldSpec[] = [
   { key: "location", read: (side) => side.listing?.locationName ?? null, compare: true },
 ];
 
-export const EMPTY_VALUE = "—";
+export const EMPTY_VALUE = "-";
 
 /**
  * Builds both panels' rows in one pass. `format` turns a raw value into display text and is

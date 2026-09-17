@@ -165,7 +165,7 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
   };
 
   const at = (value: string | null) =>
-    value ? instant(value, { dateStyle: "medium", timeStyle: "short" }) : "—";
+    value ? instant(value, { dateStyle: "medium", timeStyle: "short" }) : "-";
   const day = (value: string) => format.dateTime(new Date(value), { dateStyle: "medium" });
 
   /*
@@ -216,7 +216,7 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
 
         <dl className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <Field label={t("fields.customer")}>
-            <span className="block font-medium text-foreground">{booking.customerName ?? "—"}</span>
+            <span className="block font-medium text-foreground">{booking.customerName ?? "-"}</span>
             <a
               href={`mailto:${booking.customerEmail}`}
               className="text-sm text-natural-500 transition-colors hover:text-brand"
@@ -298,7 +298,7 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
             <Field label={t("invoice.amount")}>{amount(booking.invoice.amount)}</Field>
             <Field label={t("invoice.status")}>{tInvoiceStatus(booking.invoice.status)}</Field>
             <Field label={t("invoice.billedTo")}>
-              <span className="block">{booking.invoice.billingName ?? "—"}</span>
+              <span className="block">{booking.invoice.billingName ?? "-"}</span>
               <span className="block text-sm text-natural-500">{booking.invoice.billingEmail}</span>
               {booking.invoice.companyName ? (
                 <span className="block text-sm text-natural-500">

@@ -38,7 +38,7 @@
     "licenseRequired": "Ein gültiger Segelschein oder ein lokales Äquivalent ist erforderlich.",
     "licenseNotRequired": "Mit Crew oder Skipper ist kein Segelschein nötig.",
     "petsAllowedWithConfirmation": "Haustiere sind auf dieser Yacht nach Bestätigung durch die Charterfirma erlaubt.",
-    "petsAskBase": "Die Haustierregelung legt die Charterbasis fest – bitte vor der Buchung nachfragen.",
+    "petsAskBase": "Die Haustierregelung legt die Charterbasis fest - bitte vor der Buchung nachfragen.",
     "marinaInfoText": "{marina} liegt in {location}, {country}. Check-in- und Check-out-Zeiten gibt die Charterbasis an.",
     "paymentMethod": {
       "card": "Karte",

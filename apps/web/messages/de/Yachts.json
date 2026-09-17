@@ -2,7 +2,7 @@
   "heading": "Yachtcharter-Suche",
   "searchByMap": "Auf der Karte suchen",
   "emptyTitle": "Keine Yachten für Ihre Filter gefunden",
-  "emptyDescription": "Passen Sie Termine, Budget oder Ort an – wir helfen Ihnen, die passende Yacht zu finden.",
+  "emptyDescription": "Passen Sie Termine, Budget oder Ort an - wir helfen Ihnen, die passende Yacht zu finden.",
   "searchBar": {
     "location": "Ort",
     "startTyping": "Tippen Sie los",
@@ -25,5 +25,5 @@
     },
     "clearBoatType": "Bootstyp löschen"
   },
-  "paginationSummary": "{from}–{to} von {total}"
+  "paginationSummary": "{from}-{to} von {total}"
 }

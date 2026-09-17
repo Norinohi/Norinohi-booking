@@ -560,7 +560,7 @@
         "reopen": "Reopen"
       },
       "answered": "Answered: {answer}",
-      "empty": "Nothing here — no questions match these filters.",
+      "empty": "Nothing here - no questions match these filters.",
       "error": "We couldn't load the questions."
     },
     "leads": {
@@ -597,7 +597,7 @@
         "close": "Close",
         "reopen": "Reopen"
       },
-      "empty": "Nothing here — no enquiries match these filters.",
+      "empty": "Nothing here - no enquiries match these filters.",
       "error": "We couldn't load the enquiries.",
       "answered": "Answered: {answer}"
     },
@@ -605,7 +605,7 @@
       "title": "Reply to this question",
       "description": "Booking {reference}. Your reply is emailed to the customer.",
       "label": "Your reply",
-      "placeholder": "Answer the question in full — this is what the customer receives.",
+      "placeholder": "Answer the question in full - this is what the customer receives.",
       "close": "Close this question after sending",
       "cancel": "Cancel",
       "send": "Send reply",
@@ -617,7 +617,7 @@
       "description": "Your reply is emailed to {name}.",
       "noMessage": "They left no message.",
       "label": "Your reply",
-      "placeholder": "Answer the enquiry in full — this is what they receive.",
+      "placeholder": "Answer the enquiry in full - this is what they receive.",
       "close": "Close this enquiry after sending",
       "cancel": "Cancel",
       "send": "Send reply",
@@ -679,7 +679,7 @@
       "published": "{count, plural, =0 {No drafts left to publish for {provider}.} one {# draft published for {provider}.} other {# drafts published for {provider}.}}",
       "failed": "Couldn't publish the drafts"
     },
-    "unpriced": "{count, plural, one {# listing has dates but no published rate} other {# listings have dates but no published rate}} — they show as “On request” with an empty calendar.",
+    "unpriced": "{count, plural, one {# listing has dates but no published rate} other {# listings have dates but no published rate}} - they show as “On request” with an empty calendar.",
     "sources": {
       "subtitle": "Which provider each part of this listing is taken from. A pinned group is left alone by the nightly sync.",
       "error": "Couldn't load this listing's providers",
@@ -717,7 +717,7 @@
   },
   "Routes": {
     "title": "Suggested routes",
-    "subtitle": "Hand-authored itineraries. A route belongs to one charter base or one sailing region, and a listing page shows it only where somebody wrote one — nothing here is generated.",
+    "subtitle": "Hand-authored itineraries. A route belongs to one charter base or one sailing region, and a listing page shows it only where somebody wrote one - nothing here is generated.",
     "filters": {
       "country": "Country",
       "allCountries": "All countries",
@@ -844,7 +844,7 @@
         "note": "Note",
         "noteHint": "English is what a language with no note of its own falls back to.",
         "noteFor": "Note ({locale})",
-        "notePlaceholder": "What happens here — the anchorage, the walk, the restaurant.",
+        "notePlaceholder": "What happens here - the anchorage, the walk, the restaurant.",
         "placed": "Pin at {lat}, {lng}. Drag it to move the stop.",
         "unplaced": "No position yet. Search for a place or tap the map to drop the pin.",
         "save": "Save stop",
@@ -875,7 +875,7 @@
     "previewDialog": {
       "title": "Route preview",
       "subtitle": "Exactly as it appears on a yacht at {target}.",
-      "empty": "Add a stop before previewing — there is nothing to draw yet."
+      "empty": "Add a stop before previewing - there is nothing to draw yet."
     },
     "featured": {
       "title": "Routes on the home page",
@@ -976,7 +976,7 @@
       "cancel": "Cancel",
       "confirm": "Record transfer",
       "settling": "Recording…",
-      "settled": "Transfer recorded — booking {reference} is confirmed.",
+      "settled": "Transfer recorded - booking {reference} is confirmed.",
       "rejected": "Transfer recorded, but the operator refused: {reason}. The booking now owes a refund.",
       "failed": "Could not record the transfer."
     },
@@ -1015,7 +1015,7 @@
   },
   "StaffBooking": {
     "back": "Bookings",
-    "staffOnly": "Staff view — this is a customer's booking. Do not share this page.",
+    "staffOnly": "Staff view - this is a customer's booking. Do not share this page.",
     "error": "Could not load this booking.",
     "guestAccount": "Guest account",
     "guests": "{count, plural, one {# guest} other {# guests}}",
@@ -1145,8 +1145,8 @@
       "uk": "UK"
     },
     "state": {
-      "answered": "Answered — on the public page",
-      "unanswered": "No answer yet — hidden from the page",
+      "answered": "Answered - on the public page",
+      "unanswered": "No answer yet - hidden from the page",
       "missing": "No translation"
     },
     "gaps": {
@@ -1205,7 +1205,7 @@
     "dialog": {
       "createTitle": "New FAQ entry",
       "editTitle": "Edit FAQ entry",
-      "description": "One question, all four languages. A language left blank keeps whatever it already had — use Remove this translation to take one off the site.",
+      "description": "One question, all four languages. A language left blank keeps whatever it already had - use Remove this translation to take one off the site.",
       "scope": {
         "label": "Where it appears"
       },
@@ -1237,10 +1237,10 @@
       "saved": "Entry saved.",
       "failed": "Couldn't save the entry",
       "cacheRefreshing": "The public page is cached, so give it a moment to catch up.",
-      "cacheStale": "Saved, but the public page's cache could not be cleared — it may show the old text for a while.",
+      "cacheStale": "Saved, but the public page's cache could not be cleared - it may show the old text for a while.",
       "errors": {
         "listingRequired": "Choose a yacht for this entry",
-        "categoryRequired": "A site-wide entry needs a category — it has no yacht page to sit on",
+        "categoryRequired": "A site-wide entry needs a category - it has no yacht page to sit on",
         "questionRequired": "Write the question in at least one language",
         "answerWithoutQuestion": "This language has an answer but no question",
         "questionTooLong": "Keep the question under 500 characters",

@@ -121,7 +121,7 @@ export function useExtraPrice(options: { exact?: boolean } = {}) {
     const price =
       toMinor == null || toMinor === amountMinor
         ? money(amountMinor, currency)
-        : `${money(amountMinor, currency)}–${money(toMinor, currency)}`;
+        : `${money(amountMinor, currency)}-${money(toMinor, currency)}`;
     // No measure at all is the vendors' way of pricing the whole booking.
     if (measure === null || measure === undefined || measure.trim() === "") {
       return t("booking", { price });

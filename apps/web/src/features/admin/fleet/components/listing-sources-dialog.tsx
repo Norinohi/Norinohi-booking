@@ -229,7 +229,7 @@ function OfferCard({
 }) {
   const t = useTranslations("Admin.Listings.sources");
   const providerLabel = useProviderLabel();
-  const dash = "—";
+  const dash = "-";
 
   const facts: [string, string][] = [
     [t("model"), offer.modelName ?? dash],

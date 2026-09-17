@@ -30,9 +30,9 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
     });
   }
 
-  const range = ([from, to]: Range) => `${format.number(from)}–${format.number(to)}`;
+  const range = ([from, to]: Range) => `${format.number(from)}-${format.number(to)}`;
   const priceRange = ([from, to]: Range) =>
-    `${money(from * 100, priceCurrency)}–${money(to * 100, priceCurrency)}`;
+    `${money(from * 100, priceCurrency)}-${money(to * 100, priceCurrency)}`;
 
   function label(id: ChipId): string {
     switch (id) {

@@ -199,7 +199,7 @@ export default function LeadsTable() {
                         ) : null}
                       </TableCell>
                       <TableCell className="max-w-96">
-                        <p className="line-clamp-2 text-foreground">{lead.message ?? "—"}</p>
+                        <p className="line-clamp-2 text-foreground">{lead.message ?? "-"}</p>
                         {lead.answer ? (
                           <p className="line-clamp-1 text-sm text-natural-500">
                             {t("answered", { answer: lead.answer })}

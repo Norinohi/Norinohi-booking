@@ -13,7 +13,7 @@
       "options": {
         "croatia": {
           "label": "Kroatien",
-          "description": "Ideal für Inselhopping und Segelneulinge. Ruhige Gewässer, kurze Distanzen zwischen den Inseln und eine riesige Routenauswahl — perfekt für Einsteiger und entspannte Törns."
+          "description": "Ideal für Inselhopping und Segelneulinge. Ruhige Gewässer, kurze Distanzen zwischen den Inseln und eine riesige Routenauswahl - perfekt für Einsteiger und entspannte Törns."
         },
         "greece": {
           "label": "Griechenland",
@@ -21,11 +21,11 @@
         },
         "italy": {
           "label": "Italien",
-          "description": "Ideal für Premium-Erlebnisse und Küstenpanoramen. Wunderschöne Küstenrouten, erstklassige Marinas und unvergessliche Ziele wie Amalfi — ideal für eine luxuriösere Reise."
+          "description": "Ideal für Premium-Erlebnisse und Küstenpanoramen. Wunderschöne Küstenrouten, erstklassige Marinas und unvergessliche Ziele wie Amalfi - ideal für eine luxuriösere Reise."
         },
         "spain": {
           "label": "Spanien",
-          "description": "Ideal für Lifestyle und gesellige Stimmung. Tolles Wetter, lebendige Atmosphäre und Ziele wie Ibiza oder Mallorca — perfekt für Spaß, Gruppen und aktive Reisen."
+          "description": "Ideal für Lifestyle und gesellige Stimmung. Tolles Wetter, lebendige Atmosphäre und Ziele wie Ibiza oder Mallorca - perfekt für Spaß, Gruppen und aktive Reisen."
         },
         "notSure": {
           "label": "Noch unsicher"
@@ -37,11 +37,11 @@
       "subtitle": "Die Gruppengröße beeinflusst Yachttyp, Platz und den Gesamtpreis pro Person",
       "options": {
         "twoToFour": {
-          "label": "2–4 Personen",
+          "label": "2-4 Personen",
           "description": "Mehr Privatsphäre, höhere Kosten pro Person"
         },
         "fiveToEight": {
-          "label": "5–8 Personen",
+          "label": "5-8 Personen",
           "description": "Beste Balance aus Komfort und Preis"
         },
         "ninePlus": {
@@ -55,7 +55,7 @@
     },
     "experience": {
       "question": "Haben Sie Segelerfahrung?",
-      "subtitle": "Ein Skipper ist auf jedem Niveau möglich — das hier entscheidet nur, wer steuert.",
+      "subtitle": "Ein Skipper ist auf jedem Niveau möglich - das hier entscheidet nur, wer steuert.",
       "options": {
         "none": {
           "label": "Keine Erfahrung",
@@ -196,7 +196,7 @@
     "options": {
       "call": {
         "title": "Kurzen Anruf buchen",
-        "description": "Wählen Sie eine passende Zeit — ein kurzes Gespräch mit einem Charter-Experten."
+        "description": "Wählen Sie eine passende Zeit - ein kurzes Gespräch mit einem Charter-Experten."
       },
       "message": {
         "title": "Nachricht senden",
@@ -209,7 +209,7 @@
       "cta": "Stattdessen Nachricht senden"
     },
     "submitted": {
-      "title": "Danke — wir melden uns",
+      "title": "Danke - wir melden uns",
       "description": "Einer unserer Charter-Experten meldet sich in Kürze."
     },
     "error": {

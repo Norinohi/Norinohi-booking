@@ -38,7 +38,7 @@
     "licenseRequired": "Valid sailing license or local equivalent required.",
     "licenseNotRequired": "No license is needed when booking with crew or skipper.",
     "petsAllowedWithConfirmation": "Pets are allowed on this yacht with charter company confirmation.",
-    "petsAskBase": "Pet policy is set by the charter base — ask before booking.",
+    "petsAskBase": "Pet policy is set by the charter base - ask before booking.",
     "marinaInfoText": "{marina} is located in {location}, {country}. Check-in and check-out times are provided by the charter base.",
     "paymentMethod": {
       "card": "Card",

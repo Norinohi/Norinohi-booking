@@ -93,7 +93,7 @@
   },
   "chips": {
     "more": "{names} +{count}",
-    "none": "—",
+    "none": "-",
     "any": "будь-який",
     "name": "Пошук: {value}",
     "country": "Країна: {value}",
@@ -115,7 +115,7 @@
     "berths": "Спальні місця: {value}",
     "bathrooms": "Санвузол/душ: {value}",
     "price": "Ціна: {value}",
-    "year": "Рік: {from}–{to}",
+    "year": "Рік: {from}-{to}",
     "underTemporaryBooking": "З утриманими тижнями",
     "depositInsurance": "Страхування застави",
     "petsAllowed": "Можна з тваринами",

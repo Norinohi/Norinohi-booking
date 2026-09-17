@@ -679,7 +679,7 @@
       "published": "{count, plural, =0 {No quedan borradores por publicar de {provider}.} one {# borrador publicado de {provider}.} other {# borradores publicados de {provider}.}}",
       "failed": "No se pudieron publicar los borradores"
     },
-    "unpriced": "{count, plural, one {# anuncio tiene fechas pero ninguna tarifa publicada} other {# anuncios tienen fechas pero ninguna tarifa publicada}} — se muestran como “A petición” con un calendario vacío.",
+    "unpriced": "{count, plural, one {# anuncio tiene fechas pero ninguna tarifa publicada} other {# anuncios tienen fechas pero ninguna tarifa publicada}} - se muestran como “A petición” con un calendario vacío.",
     "sources": {
       "subtitle": "De qué proveedor se toma cada parte de este anuncio. La sincronización nocturna no toca un grupo fijado.",
       "error": "No se pudieron cargar los proveedores de este anuncio",
@@ -1145,8 +1145,8 @@
       "uk": "UK"
     },
     "state": {
-      "answered": "Respondida — visible en la página",
-      "unanswered": "Sin respuesta — oculta en la página",
+      "answered": "Respondida - visible en la página",
+      "unanswered": "Sin respuesta - oculta en la página",
       "missing": "Sin traducción"
     },
     "gaps": {

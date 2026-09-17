@@ -37,11 +37,11 @@
       "subtitle": "El tamaño del grupo influye en el tipo de yate, el espacio y el precio por persona",
       "options": {
         "twoToFour": {
-          "label": "2–4 personas",
+          "label": "2-4 personas",
           "description": "Más privacidad, mayor coste por persona"
         },
         "fiveToEight": {
-          "label": "5–8 personas",
+          "label": "5-8 personas",
           "description": "El mejor equilibrio entre confort y precio"
         },
         "ninePlus": {
@@ -55,7 +55,7 @@
     },
     "experience": {
       "question": "¿Tienes experiencia navegando?",
-      "subtitle": "Se puede añadir patrón con cualquier nivel — esto solo decide quién lleva el timón.",
+      "subtitle": "Se puede añadir patrón con cualquier nivel - esto solo decide quién lleva el timón.",
       "options": {
         "none": {
           "label": "Sin experiencia",
@@ -196,7 +196,7 @@
     "options": {
       "call": {
         "title": "Reservar una llamada rápida",
-        "description": "Elige un horario que te convenga — una breve llamada con un experto en chárter."
+        "description": "Elige un horario que te convenga - una breve llamada con un experto en chárter."
       },
       "message": {
         "title": "Enviar un mensaje",
@@ -209,7 +209,7 @@
       "cta": "Enviar un mensaje en su lugar"
     },
     "submitted": {
-      "title": "Gracias — nos pondremos en contacto",
+      "title": "Gracias - nos pondremos en contacto",
       "description": "Uno de nuestros expertos en chárter te contactará en breve."
     },
     "error": {

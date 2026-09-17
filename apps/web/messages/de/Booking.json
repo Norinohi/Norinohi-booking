@@ -143,14 +143,14 @@
     "browse": "Yachten entdecken",
     "remaining": "Die restlichen {amount} werden beim Check-in bezahlt.",
     "invoiceSent": "Rechnung gesendet",
-    "invoiceHold": "Wir halten Ihre Yacht reserviert, bis Ihre Überweisung über {amount} eingeht — fällig bis {date}.",
+    "invoiceHold": "Wir halten Ihre Yacht reserviert, bis Ihre Überweisung über {amount} eingeht - fällig bis {date}.",
     "invoiceEmailed": "Wir haben Ihnen Rechnung {number} mit den Bankdaten geschickt und bestätigen, sobald die Überweisung eingeht",
     "remainingBy": "Der Restbetrag von {amount} ist bis zum {date} fällig.",
     "emailed": "Wir haben Ihnen die Details per E-Mail gesendet und melden uns erneut, sobald der Anbieter bestätigt",
-    "guestEmailed": "Wir haben Ihnen die Details per E-Mail gesendet – mit einem Link, um ein Passwort festzulegen und diese Buchung in Ihrem Konto zu behalten",
+    "guestEmailed": "Wir haben Ihnen die Details per E-Mail gesendet - mit einem Link, um ein Passwort festzulegen und diese Buchung in Ihrem Konto zu behalten",
     "viewBooking": "Buchung ansehen",
     "summaryTitle": "Buchungsübersicht",
-    "quote": "„Diese Yacht ist ideal für Inselhopping in Kroatien – stabil, geräumig und perfekt für Gruppenreisen. Ihre Route führt über Hvar und Vis, zwei der schönsten Inseln der Adria.“",
+    "quote": "„Diese Yacht ist ideal für Inselhopping in Kroatien - stabil, geräumig und perfekt für Gruppenreisen. Ihre Route führt über Hvar und Vis, zwei der schönsten Inseln der Adria.“",
     "shareTrip": "Reise teilen",
     "downloadReceipt": "Beleg herunterladen",
     "summary": {
@@ -271,7 +271,7 @@
     },
     "received": {
       "title": "Zahlung eingegangen",
-      "body": "Vielen Dank. Für diesen Charter sind noch {outstanding} offen – wir erinnern Sie rechtzeitig vor der Fälligkeit.",
+      "body": "Vielen Dank. Für diesen Charter sind noch {outstanding} offen - wir erinnern Sie rechtzeitig vor der Fälligkeit.",
       "viewBooking": "Buchung ansehen"
     }
   },
@@ -341,7 +341,7 @@
     "settled": "Nichts mehr zu zahlen",
     "viewYacht": "Yachtseite ansehen",
     "supportTitle": "Brauchen Sie Hilfe?",
-    "supportBody": "Fragen zu Ihrem Charter, Änderungen am Zeitraum oder etwas anderes – unser Team antwortet innerhalb eines Werktags.",
+    "supportBody": "Fragen zu Ihrem Charter, Änderungen am Zeitraum oder etwas anderes - unser Team antwortet innerhalb eines Werktags.",
     "contactSupport": "Support kontaktieren",
     "supportSubject": "Buchung {reference}",
     "marinaContact": "Kontakt zur Marina",
@@ -353,11 +353,11 @@
     "requestCancel": "Stornierung anfragen",
     "crewList": {
       "title": "Crewliste",
-      "notice": "Die Charterfirma muss den Behörden vor dem Ablegen eine Liste aller an Bord melden. Füllen Sie sie hier aus, wir leiten sie weiter – was fehlt, fragt die Basis bei der Ankunft am Schalter ab.",
+      "notice": "Die Charterfirma muss den Behörden vor dem Ablegen eine Liste aller an Bord melden. Füllen Sie sie hier aus, wir leiten sie weiter - was fehlt, fragt die Basis bei der Ankunft am Schalter ab.",
       "alsoAsked": "Sie fragt außerdem nach {fields}; das nimmt die Basis bei der Ankunft am Schalter auf.",
       "maxPassengers": "Ihre Liste fasst höchstens {count} Personen.",
       "loading": "Ihre Crewliste wird geladen…",
-      "empty": "Noch niemand hinzugefügt. Ihre Buchung gilt für {guests} Gäste – fügen Sie jede Person an Bord hinzu, einschließlich des Skippers.",
+      "empty": "Noch niemand hinzugefügt. Ihre Buchung gilt für {guests} Gäste - fügen Sie jede Person an Bord hinzu, einschließlich des Skippers.",
       "member": "Crewmitglied {number}",
       "remove": "Crewmitglied {number} entfernen",
       "add": "Crewmitglied hinzufügen",
@@ -384,7 +384,7 @@
       },
       "legend": "Mit * markierte Felder verlangt diese Charterfirma.",
       "sent": "Am {when} an die Charterfirma gesendet.",
-      "notSent": "Noch nicht bei der Charterfirma: {reason} Ihre Angaben sind gespeichert – die Basis nimmt die Liste bei der Ankunft auf.",
+      "notSent": "Noch nicht bei der Charterfirma: {reason} Ihre Angaben sind gespeichert - die Basis nimmt die Liste bei der Ankunft auf.",
       "notSentUnknown": "wir konnten sie nicht erreichen.",
       "savedNotSent": "Gespeichert, aber die Charterfirma hat sie noch nicht",
       "firstName": "Vorname",
@@ -432,7 +432,7 @@
     "title": "Wie können wir helfen?",
     "subtitle": "Schreiben Sie uns eine Nachricht, und wir melden uns innerhalb eines Werktags bei Ihnen.",
     "messageLabel": "Ihre Nachricht",
-    "messagePlaceholder": "Sagen Sie uns, wobei Sie Hilfe brauchen – Zeitraum, Boot, Zahlung, was auch immer.",
+    "messagePlaceholder": "Sagen Sie uns, wobei Sie Hilfe brauchen - Zeitraum, Boot, Zahlung, was auch immer.",
     "required": "Schreiben Sie zuerst eine Nachricht",
     "send": "Nachricht senden",
     "sent": "Nachricht gesendet",
@@ -445,7 +445,7 @@
       "title": "Stornierung anfragen",
       "subtitle": "Senden Sie uns die Anfrage, und wir melden uns mit dem, was Ihre Stornierungsbedingungen zulassen.",
       "messageLabel": "Warum möchten Sie stornieren?",
-      "messagePlaceholder": "Alles, was uns hilft – geänderte Pläne, Termine, Wetter, eine Erkrankung.",
+      "messagePlaceholder": "Alles, was uns hilft - geänderte Pläne, Termine, Wetter, eine Erkrankung.",
       "template": "Ich möchte die Buchung {reference} ({dates}) stornieren.\n\nGrund: ",
       "send": "Stornierungsanfrage senden",
       "sentTitle": "Stornierung angefragt",
@@ -455,5 +455,5 @@
   "booked": "Gebucht",
   "consentRequired": "Bitte bestätigen Sie beide Kästchen oben, um die Buchung abzuschließen.",
   "saveAndContinue": "Speichern & weiter",
-  "extrasSkipped": "Werfen Sie zuerst einen Blick auf die optionalen Extras – und bestätigen Sie dann."
+  "extrasSkipped": "Werfen Sie zuerst einen Blick auf die optionalen Extras - und bestätigen Sie dann."
 }

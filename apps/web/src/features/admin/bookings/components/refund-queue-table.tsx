@@ -110,12 +110,12 @@ export default function RefundQueueTable() {
                 : data.items.map((booking) => (
                     <TableRow key={booking.id}>
                       <TableCell className="whitespace-nowrap">
-                        {booking.cancelledAt ? at(booking.cancelledAt) : "—"}
+                        {booking.cancelledAt ? at(booking.cancelledAt) : "-"}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium text-foreground">
-                            {booking.customerName ?? "—"}
+                            {booking.customerName ?? "-"}
                           </span>
                           <a
                             href={`mailto:${booking.customerEmail}`}

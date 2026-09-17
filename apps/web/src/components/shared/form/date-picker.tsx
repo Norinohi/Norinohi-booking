@@ -130,7 +130,7 @@ export default function DatePicker({
    */
   function rangeLabel(from: Date, to: Date): string {
     const yearless = dateFormat === "dayShort" && from.getFullYear() === to.getFullYear();
-    return `${day(from, yearless ? "dayCompact" : dateFormat)} – ${day(to)}`;
+    return `${day(from, yearless ? "dayCompact" : dateFormat)} - ${day(to)}`;
   }
 
   const label =

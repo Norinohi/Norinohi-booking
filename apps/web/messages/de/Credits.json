@@ -9,7 +9,7 @@
     "title": "Guthabenverlauf",
     "expires": "Verfällt am {date}",
     "emptyTitle": "Noch kein Guthaben",
-    "emptyDescription": "Laden Sie Freunde ein – Sie erhalten Guthaben, sobald diese ihre Reise abgeschlossen haben.",
+    "emptyDescription": "Laden Sie Freunde ein - Sie erhalten Guthaben, sobald diese ihre Reise abgeschlossen haben.",
     "kind": {
       "referral_reward": "Empfehlungsprämie",
       "booking_redemption": "Auf Buchung angerechnet",

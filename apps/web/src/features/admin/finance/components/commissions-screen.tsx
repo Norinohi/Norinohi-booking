@@ -103,7 +103,7 @@ export default function CommissionsScreen({ user }: { user: { name: string; emai
      printing an empty dash the reader has to interpret. */
   const windowLabel = (rate: CommissionRow) => {
     const day = (value: string) => format.dateTime(new Date(value), "dayShort");
-    if (rate.startsAt && rate.endsAt) return `${day(rate.startsAt)} – ${day(rate.endsAt)}`;
+    if (rate.startsAt && rate.endsAt) return `${day(rate.startsAt)} - ${day(rate.endsAt)}`;
     if (rate.startsAt) return t("fromDate", { date: day(rate.startsAt) });
     if (rate.endsAt) return t("untilDate", { date: day(rate.endsAt) });
     return t("openEnded");

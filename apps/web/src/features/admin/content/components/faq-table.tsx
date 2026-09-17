@@ -374,7 +374,7 @@ export default function FaqTable() {
                                   <Chip
                                     key={code}
                                     variant={STATE_VARIANTS[state]}
-                                    title={`${t(`locales.${code}`)} — ${t(`state.${state}`)}`}
+                                    title={`${t(`locales.${code}`)} - ${t(`state.${state}`)}`}
                                   >
                                     <Icon />
                                     {t(`localeCodes.${code}`)}

@@ -93,7 +93,7 @@
   },
   "chips": {
     "more": "{names} +{count}",
-    "none": "—",
+    "none": "-",
     "any": "beliebig",
     "name": "Suche: {value}",
     "country": "Land: {value}",
@@ -115,7 +115,7 @@
     "berths": "Kojen: {value}",
     "bathrooms": "Toilette/Dusche: {value}",
     "price": "Preis: {value}",
-    "year": "Baujahr: {from}–{to}",
+    "year": "Baujahr: {from}-{to}",
     "underTemporaryBooking": "Reservierte Wochen einbezogen",
     "depositInsurance": "Kautionsversicherung",
     "petsAllowed": "Haustiere erlaubt",

@@ -34,8 +34,8 @@ const BUDGETS = [
 
 /** The planner's guest counts, so both turn a per-person budget into the same yacht price. */
 const GROUP_SIZES = [
-  { value: "2-4", label: "2–4", guests: 4, minBerths: 4 },
-  { value: "5-8", label: "5–8", guests: 8, minBerths: 8 },
+  { value: "2-4", label: "2-4", guests: 4, minBerths: 4 },
+  { value: "5-8", label: "5-8", guests: 8, minBerths: 8 },
   { value: "9-plus", label: "9+", guests: 10, minBerths: 9 },
 ] as const;
 const NEUTRAL_GUESTS = 6;
@@ -87,7 +87,7 @@ function BudgetFinderForm({
     label:
       max === null
         ? t("options.budgetFrom", { from: money(min * 100, "EUR") })
-        : `${money(min * 100, "EUR")} – ${money(max * 100, "EUR")}`,
+        : `${money(min * 100, "EUR")} - ${money(max * 100, "EUR")}`,
   }));
   const peopleOptions = [
     ...GROUP_SIZES.map(({ value, label }) => ({ value, label })),

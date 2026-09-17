@@ -13,7 +13,7 @@
       "options": {
         "croatia": {
           "label": "Croatia",
-          "description": "Best for island hopping & first-time sailing. Calm waters, short distances between islands, and a huge variety of routes — perfect for beginners and relaxed trips."
+          "description": "Best for island hopping & first-time sailing. Calm waters, short distances between islands, and a huge variety of routes - perfect for beginners and relaxed trips."
         },
         "greece": {
           "label": "Greece",
@@ -21,11 +21,11 @@
         },
         "italy": {
           "label": "Italy",
-          "description": "Best for premium experiences & coastline views. Beautiful coastal routes, high-end marinas, and unforgettable destinations like Amalfi — ideal for a more luxurious trip."
+          "description": "Best for premium experiences & coastline views. Beautiful coastal routes, high-end marinas, and unforgettable destinations like Amalfi - ideal for a more luxurious trip."
         },
         "spain": {
           "label": "Spain",
-          "description": "Best for lifestyle & social vibes. Great weather, vibrant atmosphere, and destinations like Ibiza or Mallorca — perfect for fun, groups, and active trips."
+          "description": "Best for lifestyle & social vibes. Great weather, vibrant atmosphere, and destinations like Ibiza or Mallorca - perfect for fun, groups, and active trips."
         },
         "notSure": {
           "label": "Not sure"
@@ -37,11 +37,11 @@
       "subtitle": "Group size affects yacht type, space, and total price per person",
       "options": {
         "twoToFour": {
-          "label": "2–4 people",
+          "label": "2-4 people",
           "description": "More privacy, higher cost per person"
         },
         "fiveToEight": {
-          "label": "5–8 people",
+          "label": "5-8 people",
           "description": "Best balance of comfort and price"
         },
         "ninePlus": {
@@ -55,7 +55,7 @@
     },
     "experience": {
       "question": "Do you have sailing experience?",
-      "subtitle": "A skipper can be added at any level — this only decides who steers.",
+      "subtitle": "A skipper can be added at any level - this only decides who steers.",
       "options": {
         "none": {
           "label": "No experience",
@@ -196,7 +196,7 @@
     "options": {
       "call": {
         "title": "Book a quick call",
-        "description": "Pick a time that works for you — a short call with a charter expert."
+        "description": "Pick a time that works for you - a short call with a charter expert."
       },
       "message": {
         "title": "Send a message",
@@ -209,7 +209,7 @@
       "cta": "Send a message instead"
     },
     "submitted": {
-      "title": "Thanks — we'll be in touch",
+      "title": "Thanks - we'll be in touch",
       "description": "One of our charter experts will follow up shortly."
     },
     "error": {

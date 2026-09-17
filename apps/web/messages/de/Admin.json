@@ -560,7 +560,7 @@
         "reopen": "Wieder öffnen"
       },
       "answered": "Beantwortet: {answer}",
-      "empty": "Nichts hier — keine Fragen entsprechen diesen Filtern.",
+      "empty": "Nichts hier - keine Fragen entsprechen diesen Filtern.",
       "error": "Die Fragen konnten nicht geladen werden."
     },
     "leads": {
@@ -597,7 +597,7 @@
         "close": "Schließen",
         "reopen": "Wieder öffnen"
       },
-      "empty": "Nichts hier — keine Anfragen entsprechen diesen Filtern.",
+      "empty": "Nichts hier - keine Anfragen entsprechen diesen Filtern.",
       "error": "Die Anfragen konnten nicht geladen werden.",
       "answered": "Beantwortet: {answer}"
     },
@@ -605,7 +605,7 @@
       "title": "Auf diese Frage antworten",
       "description": "Buchung {reference}. Ihre Antwort wird dem Kunden per E-Mail zugestellt.",
       "label": "Ihre Antwort",
-      "placeholder": "Beantworten Sie die Frage vollständig — genau das erhält der Kunde.",
+      "placeholder": "Beantworten Sie die Frage vollständig - genau das erhält der Kunde.",
       "close": "Diese Frage nach dem Senden schließen",
       "cancel": "Abbrechen",
       "send": "Antwort senden",
@@ -617,7 +617,7 @@
       "description": "Ihre Antwort wird per E-Mail an {name} gesendet.",
       "noMessage": "Es wurde keine Nachricht hinterlassen.",
       "label": "Ihre Antwort",
-      "placeholder": "Beantworten Sie die Anfrage vollständig — genau das wird zugestellt.",
+      "placeholder": "Beantworten Sie die Anfrage vollständig - genau das wird zugestellt.",
       "close": "Diese Anfrage nach dem Senden schließen",
       "cancel": "Abbrechen",
       "send": "Antwort senden",
@@ -679,7 +679,7 @@
       "published": "{count, plural, =0 {Keine Entwürfe mehr für {provider} zu veröffentlichen.} one {# Entwurf für {provider} veröffentlicht.} other {# Entwürfe für {provider} veröffentlicht.}}",
       "failed": "Die Entwürfe konnten nicht veröffentlicht werden"
     },
-    "unpriced": "{count, plural, one {# Inserat hat Termine, aber keinen veröffentlichten Preis} other {# Inserate haben Termine, aber keinen veröffentlichten Preis}} — sie werden als „Auf Anfrage“ mit leerem Kalender angezeigt.",
+    "unpriced": "{count, plural, one {# Inserat hat Termine, aber keinen veröffentlichten Preis} other {# Inserate haben Termine, aber keinen veröffentlichten Preis}} - sie werden als „Auf Anfrage“ mit leerem Kalender angezeigt.",
     "sources": {
       "subtitle": "Von welchem Anbieter jeder Teil dieses Inserats stammt. Eine fixierte Gruppe lässt die nächtliche Synchronisation unangetastet.",
       "error": "Anbieter dieses Inserats konnten nicht geladen werden",
@@ -717,7 +717,7 @@
   },
   "Routes": {
     "title": "Routenvorschläge",
-    "subtitle": "Von Hand geschriebene Routen. Eine Route gehört zu einer Charterbasis oder einem Segelrevier, und eine Inseratseite zeigt sie nur dort, wo jemand eine geschrieben hat — hier wird nichts generiert.",
+    "subtitle": "Von Hand geschriebene Routen. Eine Route gehört zu einer Charterbasis oder einem Segelrevier, und eine Inseratseite zeigt sie nur dort, wo jemand eine geschrieben hat - hier wird nichts generiert.",
     "filters": {
       "country": "Land",
       "allCountries": "Alle Länder",
@@ -844,7 +844,7 @@
         "note": "Notiz",
         "noteHint": "Englisch greift dort, wo eine Sprache keine eigene Notiz hat.",
         "noteFor": "Notiz ({locale})",
-        "notePlaceholder": "Was hier passiert — die Ankerbucht, der Spaziergang, das Restaurant.",
+        "notePlaceholder": "Was hier passiert - die Ankerbucht, der Spaziergang, das Restaurant.",
         "placed": "Pin bei {lat}, {lng}. Ziehen Sie ihn, um den Stopp zu verschieben.",
         "unplaced": "Noch keine Position. Suchen Sie einen Ort oder tippen Sie auf die Karte, um den Pin zu setzen.",
         "save": "Stopp speichern",
@@ -875,7 +875,7 @@
     "previewDialog": {
       "title": "Routenvorschau",
       "subtitle": "Genau so, wie sie bei einer Yacht in {target} erscheint.",
-      "empty": "Fügen Sie einen Stopp hinzu, bevor Sie eine Vorschau ansehen — es gibt noch nichts zu zeichnen."
+      "empty": "Fügen Sie einen Stopp hinzu, bevor Sie eine Vorschau ansehen - es gibt noch nichts zu zeichnen."
     },
     "featured": {
       "title": "Routen auf der Startseite",
@@ -976,7 +976,7 @@
       "cancel": "Abbrechen",
       "confirm": "Überweisung erfassen",
       "settling": "Wird erfasst…",
-      "settled": "Überweisung erfasst — Buchung {reference} ist bestätigt.",
+      "settled": "Überweisung erfasst - Buchung {reference} ist bestätigt.",
       "rejected": "Überweisung erfasst, aber der Betreiber hat abgelehnt: {reason}. Für die Buchung ist nun eine Erstattung fällig.",
       "failed": "Die Überweisung konnte nicht erfasst werden."
     },
@@ -1015,7 +1015,7 @@
   },
   "StaffBooking": {
     "back": "Buchungen",
-    "staffOnly": "Mitarbeiteransicht — dies ist die Buchung eines Kunden. Teilen Sie diese Seite nicht.",
+    "staffOnly": "Mitarbeiteransicht - dies ist die Buchung eines Kunden. Teilen Sie diese Seite nicht.",
     "error": "Diese Buchung konnte nicht geladen werden.",
     "guestAccount": "Gastkonto",
     "guests": "{count, plural, one {# Gast} other {# Gäste}}",
@@ -1145,8 +1145,8 @@
       "uk": "UK"
     },
     "state": {
-      "answered": "Beantwortet — auf der öffentlichen Seite",
-      "unanswered": "Noch ohne Antwort — auf der Seite ausgeblendet",
+      "answered": "Beantwortet - auf der öffentlichen Seite",
+      "unanswered": "Noch ohne Antwort - auf der Seite ausgeblendet",
       "missing": "Keine Übersetzung"
     },
     "gaps": {
@@ -1205,7 +1205,7 @@
     "dialog": {
       "createTitle": "Neuer FAQ-Eintrag",
       "editTitle": "FAQ-Eintrag bearbeiten",
-      "description": "Eine Frage, alle vier Sprachen. Eine leer gelassene Sprache behält, was sie hatte — mit „Diese Übersetzung entfernen“ nehmen Sie eine von der Website.",
+      "description": "Eine Frage, alle vier Sprachen. Eine leer gelassene Sprache behält, was sie hatte - mit „Diese Übersetzung entfernen“ nehmen Sie eine von der Website.",
       "scope": {
         "label": "Wo der Eintrag erscheint"
       },
@@ -1237,10 +1237,10 @@
       "saved": "Eintrag gespeichert.",
       "failed": "Eintrag konnte nicht gespeichert werden",
       "cacheRefreshing": "Die öffentliche Seite wird zwischengespeichert; geben Sie ihr einen Moment.",
-      "cacheStale": "Gespeichert, aber der Cache der öffentlichen Seite ließ sich nicht leeren — sie zeigt womöglich noch eine Weile den alten Text.",
+      "cacheStale": "Gespeichert, aber der Cache der öffentlichen Seite ließ sich nicht leeren - sie zeigt womöglich noch eine Weile den alten Text.",
       "errors": {
         "listingRequired": "Wählen Sie eine Yacht für diesen Eintrag",
-        "categoryRequired": "Ein seitenweiter Eintrag braucht eine Kategorie — er hat keine Yachtseite, auf der er stehen könnte",
+        "categoryRequired": "Ein seitenweiter Eintrag braucht eine Kategorie - er hat keine Yachtseite, auf der er stehen könnte",
         "questionRequired": "Schreiben Sie die Frage in mindestens einer Sprache",
         "answerWithoutQuestion": "Diese Sprache hat eine Antwort, aber keine Frage",
         "questionTooLong": "Die Frage darf höchstens 500 Zeichen haben",
@@ -1395,7 +1395,7 @@
     "nameSearch": {
       "legend": "Freitextsuche",
       "toggle": "Freitextfeld in der Suchleiste anzeigen",
-      "hint": "Eine Testhilfe, kein Teil des Designs. Eingeschaltet erhält die Yachtsuche ein Feld, das Name, Modell, Werft, Charterfirma oder Basis eines Bootes abgleicht — Wort für Wort und in beliebiger Reihenfolge."
+      "hint": "Eine Testhilfe, kein Teil des Designs. Eingeschaltet erhält die Yachtsuche ein Feld, das Name, Modell, Werft, Charterfirma oder Basis eines Bootes abgleicht - Wort für Wort und in beliebiger Reihenfolge."
     },
     "save": "Anderungen speichern",
     "saving": "Wird gespeichert...",

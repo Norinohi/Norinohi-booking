@@ -93,7 +93,7 @@
   },
   "chips": {
     "more": "{names} +{count}",
-    "none": "—",
+    "none": "-",
     "any": "any",
     "name": "Search: {value}",
     "country": "Country: {value}",
@@ -115,7 +115,7 @@
     "berths": "Berths: {value}",
     "bathrooms": "Toilet/shower: {value}",
     "price": "Price: {value}",
-    "year": "Year: {from}–{to}",
+    "year": "Year: {from}-{to}",
     "underTemporaryBooking": "Held weeks included",
     "depositInsurance": "Deposit insurance",
     "petsAllowed": "Pets allowed",

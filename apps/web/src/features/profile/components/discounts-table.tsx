@@ -53,10 +53,10 @@ export default function DiscountsTable({ onEdit }: DiscountsTableProps) {
     discount.type === "percentage"
       ? discount.valuePct !== null
         ? format.number(discount.valuePct / 100, { style: "percent", maximumFractionDigits: 2 })
-        : "—"
+        : "-"
       : discount.value !== null
         ? formatMoney(discount.value.amountMinor, discount.value.currency)
-        : "—";
+        : "-";
 
   /* Beyond two names the narrow cell reads better as a count. */
   const appliesTo = (discount: Discount) => {

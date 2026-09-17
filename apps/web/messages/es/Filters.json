@@ -93,7 +93,7 @@
   },
   "chips": {
     "more": "{names} +{count}",
-    "none": "—",
+    "none": "-",
     "any": "cualquiera",
     "name": "Búsqueda: {value}",
     "country": "País: {value}",
@@ -115,7 +115,7 @@
     "berths": "Literas: {value}",
     "bathrooms": "Aseo/ducha: {value}",
     "price": "Precio: {value}",
-    "year": "Año: {from}–{to}",
+    "year": "Año: {from}-{to}",
     "underTemporaryBooking": "Con semanas retenidas",
     "depositInsurance": "Seguro de fianza",
     "petsAllowed": "Se admiten mascotas",

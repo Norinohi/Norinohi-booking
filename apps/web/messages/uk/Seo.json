@@ -24,7 +24,7 @@
   },
   "Booking": {
     "title": "Бронювання яхти",
-    "description": "Заверши бронювання чартеру — дані гостей, додаткові опції та безпечна оплата."
+    "description": "Заверши бронювання чартеру - дані гостей, додаткові опції та безпечна оплата."
   },
   "BookingConfirmation": {
     "title": "Бронювання підтверджено",
@@ -131,14 +131,14 @@
     "description": "Усі акаунти на платформі, для персоналу."
   },
   "CatalogPage": {
-    "country": "{place} — оренда яхт",
-    "geo": "{place}, {country} — оренда яхт",
-    "marina": "{place} — оренда яхт",
+    "country": "{place} - оренда яхт",
+    "geo": "{place}, {country} - оренда яхт",
+    "marina": "{place} - оренда яхт",
     "type": "{type} в оренду",
     "typeCountry": "{type} в оренду, {place}",
     "typeGeo": "{type} в оренду, {place}, {country}",
     "typeMarina": "{type} в оренду, {place}",
-    "builder": "{brand} — оренда яхт",
+    "builder": "{brand} - оренда яхт",
     "model": "{model} в оренду",
     "intro": "Доступно {count, plural, one {# човен} few {# човни} other {# човнів}}, від {price} за тиждень.",
     "introNoPrice": "Доступно {count, plural, one {# човен} few {# човни} other {# човнів}}.",

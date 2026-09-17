@@ -24,7 +24,7 @@
   },
   "EarnCta": {
     "heading": "Earn With Your Yacht",
-    "description": "List your yacht on our platform and start receiving bookings from travelers worldwide. We handle visibility, demand, and tools — you stay in control of your schedule and pricing.",
+    "description": "List your yacht on our platform and start receiving bookings from travelers worldwide. We handle visibility, demand, and tools - you stay in control of your schedule and pricing.",
     "cta": "List Your Yacht",
     "dialog": {
       "title": "Send a request",
@@ -78,12 +78,12 @@
   "HowItWorks": {
     "heading": "How It Works",
     "intro": "Booking a yacht is easier than you think.",
-    "introSecondLine": "We guide you from choosing a destination to stepping on board — no experience needed.",
+    "introSecondLine": "We guide you from choosing a destination to stepping on board - no experience needed.",
     "cta": "Find Yachts",
     "steps": {
       "destination": {
         "title": "Choose destination",
-        "description": "Explore over 1,200 sailing destinations worldwide. From Croatia to the Caribbean — pick the place that fits your trip."
+        "description": "Explore over 1,200 sailing destinations worldwide. From Croatia to the Caribbean - pick the place that fits your trip."
       },
       "yacht": {
         "title": "Select your yacht",
@@ -164,11 +164,11 @@
         "location": "France"
       },
       "carter": {
-        "quote": "The price transparency was the biggest surprise. We could see the full cost upfront and split it between friends — super convenient.",
+        "quote": "The price transparency was the biggest surprise. We could see the full cost upfront and split it between friends - super convenient.",
         "location": "United Kingdom"
       },
       "rossi": {
-        "quote": "We compared a few yachts and found the perfect one for our group. The route suggestions were really helpful — we didn't have to plan anything.",
+        "quote": "We compared a few yachts and found the perfect one for our group. The route suggestions were really helpful - we didn't have to plan anything.",
         "location": "Italy"
       },
       "kowalska": {

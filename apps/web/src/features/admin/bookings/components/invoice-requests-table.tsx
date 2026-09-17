@@ -142,7 +142,7 @@ export default function InvoiceRequestsTable() {
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium text-foreground">
-                            {invoice.billingName ?? invoice.guestName ?? "—"}
+                            {invoice.billingName ?? invoice.guestName ?? "-"}
                           </span>
                           <a
                             href={`mailto:${invoice.billingEmail}`}
@@ -192,7 +192,7 @@ export default function InvoiceRequestsTable() {
                           <span className="text-sm text-natural-500">
                             {invoice.settledAt
                               ? t("settledAt", { date: at(invoice.settledAt) })
-                              : "—"}
+                              : "-"}
                           </span>
                         )}
                       </TableCell>

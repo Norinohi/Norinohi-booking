@@ -24,7 +24,7 @@
   },
   "EarnCta": {
     "heading": "Verdienen Sie mit Ihrer Yacht",
-    "description": "Listen Sie Ihre Yacht auf unserer Plattform und erhalten Sie Buchungen von Reisenden aus aller Welt. Wir sorgen für Sichtbarkeit, Nachfrage und Tools – Sie behalten die Kontrolle über Termine und Preise.",
+    "description": "Listen Sie Ihre Yacht auf unserer Plattform und erhalten Sie Buchungen von Reisenden aus aller Welt. Wir sorgen für Sichtbarkeit, Nachfrage und Tools - Sie behalten die Kontrolle über Termine und Preise.",
     "cta": "Yacht inserieren",
     "dialog": {
       "title": "Anfrage senden",
@@ -78,12 +78,12 @@
   "HowItWorks": {
     "heading": "So funktioniert's",
     "intro": "Eine Yacht zu buchen ist einfacher, als Sie denken.",
-    "introSecondLine": "Wir begleiten Sie von der Wahl des Reiseziels bis an Bord – ganz ohne Vorkenntnisse.",
+    "introSecondLine": "Wir begleiten Sie von der Wahl des Reiseziels bis an Bord - ganz ohne Vorkenntnisse.",
     "cta": "Yachten finden",
     "steps": {
       "destination": {
         "title": "Reiseziel wählen",
-        "description": "Entdecken Sie über 1.200 Segelreviere weltweit. Von Kroatien bis zur Karibik – wählen Sie den Ort, der zu Ihrer Reise passt."
+        "description": "Entdecken Sie über 1.200 Segelreviere weltweit. Von Kroatien bis zur Karibik - wählen Sie den Ort, der zu Ihrer Reise passt."
       },
       "yacht": {
         "title": "Yacht auswählen",
@@ -106,7 +106,7 @@
     "steps": {
       "preferences": {
         "title": "Wünsche angeben",
-        "description": "Nennen Sie Ihre Wunschziele – von den türkisfarbenen Küsten Palawans bis zu den historischen Häfen Vallettas."
+        "description": "Nennen Sie Ihre Wunschziele - von den türkisfarbenen Küsten Palawans bis zu den historischen Häfen Vallettas."
       },
       "recommendation": {
         "title": "Empfehlung erhalten",
@@ -160,15 +160,15 @@
         "location": "Deutschland"
       },
       "martin": {
-        "quote": "Ich hatte keine Segelerfahrung, aber über die Plattform war es leicht, einen Skipper zu finden und die ganze Reise zu planen. Es fühlte sich an wie ein normaler Urlaub – nur besser.",
+        "quote": "Ich hatte keine Segelerfahrung, aber über die Plattform war es leicht, einen Skipper zu finden und die ganze Reise zu planen. Es fühlte sich an wie ein normaler Urlaub - nur besser.",
         "location": "Frankreich"
       },
       "carter": {
-        "quote": "Die Preistransparenz war die größte Überraschung. Wir konnten die Gesamtkosten vorab sehen und unter Freunden aufteilen – super praktisch.",
+        "quote": "Die Preistransparenz war die größte Überraschung. Wir konnten die Gesamtkosten vorab sehen und unter Freunden aufteilen - super praktisch.",
         "location": "Vereinigtes Königreich"
       },
       "rossi": {
-        "quote": "Wir haben ein paar Yachten verglichen und die perfekte für unsere Gruppe gefunden. Die Routenvorschläge waren wirklich hilfreich – wir mussten nichts selbst planen.",
+        "quote": "Wir haben ein paar Yachten verglichen und die perfekte für unsere Gruppe gefunden. Die Routenvorschläge waren wirklich hilfreich - wir mussten nichts selbst planen.",
         "location": "Italien"
       },
       "kowalska": {
