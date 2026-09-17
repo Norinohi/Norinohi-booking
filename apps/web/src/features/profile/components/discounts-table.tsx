@@ -66,10 +66,10 @@ export default function DiscountsTable({ onEdit }: DiscountsTableProps) {
     if (discount.targets.length === 0) return t("applies.nothing");
 
     const named = discount.targets.map((target) => {
-      const seeded = CATEGORY_TARGET_OPTIONS.find(
+      const listed = CATEGORY_TARGET_OPTIONS.find(
         (option) => target.targetType === "category" && option.id === target.targetId,
       );
-      if (seeded) return t(`applies.${seeded.key}`);
+      if (listed) return t(`applies.${listed.key}`);
       /* A target whose row has since been deleted keeps its id, which is what tracks it down. */
       return (
         target.targetLabel ??

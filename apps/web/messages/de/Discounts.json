@@ -35,7 +35,6 @@
     "allSailboats": "Alle Segelboote",
     "specific": "Bestimmte Yachten",
     "allSailingYachts": "Alle Segelyachten",
-    "allLuxuryYachts": "Alle Luxusyachten",
     "nothing": "Nichts",
     "missing": "{type, select, listing {Gelöschte Yacht} category {Gelöschte Kategorie} operator {Gelöschter Betreiber} region {Gelöschte Region} other {Gelöschtes Ziel}} ({id})",
     "more": "{first} +{count} weitere"

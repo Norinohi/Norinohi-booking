@@ -15,6 +15,7 @@ import type {
   discountUpdateInputSchema,
 } from "../contracts/admin";
 import { writeAuditLog } from "./audit";
+import { categoryGroupSql } from "./discount-targets";
 import { paginationFor } from "./pagination";
 import { ConflictError, InternalError, NotFoundError } from "../errors";
 
@@ -270,7 +271,7 @@ async function resolveTargetLabels(
     region: idsOfType(targets, "region"),
   };
 
-  const [listings, categories, operators, regions] = await Promise.all([
+  const [listings, categories, categoryGroups, operators, regions] = await Promise.all([
     byType.listing.length > 0
       ? db
           .select({ id: listing.id, label: listing.title })
@@ -282,6 +283,12 @@ async function resolveTargetLabels(
           .select({ id: yachtCategory.id, label: yachtCategory.name })
           .from(yachtCategory)
           .where(inArray(yachtCategory.id, byType.category))
+      : [],
+    byType.category.length > 0
+      ? db
+          .selectDistinct({ id: categoryGroupSql, label: categoryGroupSql })
+          .from(yachtCategory)
+          .where(inArray(categoryGroupSql, byType.category))
       : [],
     byType.operator.length > 0
       ? db
@@ -298,7 +305,9 @@ async function resolveTargetLabels(
   ]);
 
   return new Map(
-    [...listings, ...categories, ...operators, ...regions].map((row) => [row.id, row.label]),
+    [...listings, ...categories, ...categoryGroups, ...operators, ...regions].flatMap((row) =>
+      row.id === null || row.label === null ? [] : [[row.id, row.label]],
+    ),
   );
 }
 
@@ -334,17 +343,30 @@ async function assertTargetsExist(
     if (target.targetType === "all" || !target.targetId) continue;
     const targetId = target.targetId;
 
-    const exists = async (table: typeof listing | typeof yachtCategory, label: string) => {
-      const [row] = await db
-        .select({ id: table.id })
-        .from(table)
-        .where(eq(table.id, targetId))
-        .limit(1);
-      if (!row) throw new NotFoundError({ message: `Unknown ${label} ${targetId}` });
+    const ensureFound = (label: string) => (rows: { id: string }[]) => {
+      if (rows.length === 0) throw new NotFoundError({ message: `Unknown ${label} ${targetId}` });
     };
 
-    if (target.targetType === "listing") checks.push(exists(listing, "listing"));
-    if (target.targetType === "category") checks.push(exists(yachtCategory, "category"));
+    if (target.targetType === "listing") {
+      checks.push(
+        db
+          .select({ id: listing.id })
+          .from(listing)
+          .where(eq(listing.id, targetId))
+          .limit(1)
+          .then(ensureFound("listing")),
+      );
+    }
+    if (target.targetType === "category") {
+      checks.push(
+        db
+          .select({ id: yachtCategory.id })
+          .from(yachtCategory)
+          .where(or(eq(categoryGroupSql, targetId), eq(yachtCategory.id, targetId)))
+          .limit(1)
+          .then(ensureFound("category")),
+      );
+    }
   }
 
   await Promise.all(checks);

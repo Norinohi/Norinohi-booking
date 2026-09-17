@@ -29,13 +29,12 @@
   "applies": {
     "allYachts": "All yachts",
     "allCatamarans": "All Catamarans",
-    "allGullets": "All Guller",
+    "allGullets": "All Gulets",
     "allMotorboats": "All Motorboats",
     "allMotorYachts": "All Motor yachts",
     "allSailboats": "All Sailboat",
     "specific": "Specific Yachts",
     "allSailingYachts": "All Sailing yachts",
-    "allLuxuryYachts": "All Luxury yachts",
     "nothing": "Nothing",
     "missing": "{type, select, listing {Deleted yacht} category {Deleted category} operator {Deleted operator} region {Deleted region} other {Deleted target}} ({id})",
     "more": "{first} +{count} more"

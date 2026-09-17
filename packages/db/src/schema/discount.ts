@@ -30,8 +30,9 @@ export const discount = pgTable(
   (t) => [index("discount_active_idx").on(t.active), index("discount_code_idx").on(t.code)],
 );
 
-// `all` carries a null targetId; other types point at a listing, operator, region
-// or yacht_category id.
+// `all` carries a null targetId; other types point at a listing, operator or region id.
+// A category target names a category group (yacht_category.canonical_name, or the name
+// where none is set), since one group spans a row per vendor; a yacht_category id still matches.
 export const discountTarget = pgTable(
   "discount_target",
   {

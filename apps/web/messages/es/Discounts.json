@@ -35,7 +35,6 @@
     "allSailboats": "Todos los veleros",
     "specific": "Yates específicos",
     "allSailingYachts": "Todos los yates de vela",
-    "allLuxuryYachts": "Todos los yates de lujo",
     "nothing": "Nada",
     "missing": "{type, select, listing {Yate eliminado} category {Categoría eliminada} operator {Operador eliminado} region {Región eliminada} other {Destino eliminado}} ({id})",
     "more": "{first} y {count} más"

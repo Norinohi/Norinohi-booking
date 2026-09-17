@@ -50,7 +50,7 @@ const DISCOUNT_TYPES = ["percentage", "fixed_amount"] as const;
 
 type AppliesToOption = "allYachts" | CategoryTargetKey | "specific";
 
-/** "All yachts", the seeded category targets, then the specific-yachts picker toggle. */
+/** "All yachts", the category groups, then the specific-yachts picker toggle. */
 const APPLIES_TO_OPTIONS: AppliesToOption[] = [
   "allYachts",
   ...CATEGORY_TARGET_OPTIONS.map((option) => option.key),
@@ -113,7 +113,7 @@ function toValues(discount: Discount | null | undefined): Values {
     if (target.targetType === "all") {
       if (!appliesTo.includes("allYachts")) appliesTo.push("allYachts");
     } else if (target.targetType === "category") {
-      /* Unknown category ids (not in the seeded set) have no checkbox — skip them. */
+      /* A category no checkbox names (an id written before targets named groups) is skipped. */
       const option = CATEGORY_TARGET_OPTIONS.find((entry) => entry.id === target.targetId);
       if (option && !appliesTo.includes(option.key)) appliesTo.push(option.key);
     } else if (target.targetType === "listing" && target.targetId) {
