@@ -228,7 +228,7 @@ function ResultsColumn({ locked }: { locked?: LockedFilters }) {
   const t = useTranslations("Yachts");
   useRememberSearch();
   const { filters, defaults, applyFilters } = useApplyFilters(locked);
-  const { sort, setSort, page, setPage, firstPage } = useResultOrder();
+  const { sort, setSort, page, setPage } = useResultOrder();
   const priceBasis = usePriceBasis();
 
   const { toCard } = useListingCards();
@@ -255,9 +255,11 @@ function ResultsColumn({ locked }: { locked?: LockedFilters }) {
         priceBasis={priceBasis.option}
         onPriceBasisChange={(next) => {
           /* The order and the price filter both read the basis, so page 3 of one is not page 3
-             of the other. */
+             of the other. A moved price slider is cleared rather than carried: its euros named
+             the other figure, and the obligatory extras differ per boat, so no conversion keeps
+             the same boats in. */
           void priceBasis.setOption(next);
-          firstPage();
+          applyFilters(clearFilterKeys(filters, ["price"], defaults));
         }}
       />
 

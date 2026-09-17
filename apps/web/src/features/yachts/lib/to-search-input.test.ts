@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { clearFilterKeys } from "@/components/shared/form/filters/lib/chips";
 import { DEFAULT_FILTERS, type FiltersState } from "@/components/shared/form/filters/lib/state";
 
 import { toSearchInput } from "./to-search-input";
@@ -82,5 +83,52 @@ describe("toSearchInput", () => {
     expect(input.country).toEqual(["croatia"]);
     expect(input).not.toHaveProperty("crew");
     expect(input.priceBasis).toBe("all_in");
+  });
+});
+
+/* The price facets answer per basis, so the slider's limits move when the visitor switches it. */
+describe("toSearchInput across a price basis switch", () => {
+  const BOAT_DEFAULTS: FiltersState = { ...DEFAULTS, price: [130, 13_538] };
+  const CHARTER_DEFAULTS: FiltersState = { ...DEFAULTS, price: [150, 16_129] };
+  const PRICE_KEYS = ["minPriceMinor", "maxPriceMinor"];
+
+  it("sends no price bounds for an untouched slider under either basis", () => {
+    const boat = toSearchInput(BOAT_DEFAULTS, BOAT_DEFAULTS, OPTS);
+    const charter = toSearchInput(CHARTER_DEFAULTS, CHARTER_DEFAULTS, {
+      ...OPTS,
+      priceBasis: "all_in",
+    });
+
+    for (const key of PRICE_KEYS) {
+      expect(boat).not.toHaveProperty(key);
+      expect(charter).not.toHaveProperty(key);
+    }
+    expect(charter).toEqual({ ...boat, priceBasis: "all_in" });
+  });
+
+  it("would narrow the charter search with the boat basis's full range, which is why a switch clears it", () => {
+    const stale = toSearchInput(
+      { ...CHARTER_DEFAULTS, price: BOAT_DEFAULTS.price },
+      CHARTER_DEFAULTS,
+      {
+        ...OPTS,
+        priceBasis: "all_in",
+      },
+    );
+
+    expect(stale.maxPriceMinor).toBe(1_353_800);
+  });
+
+  it("drops a moved slider on the switch, so the new basis sends no bounds", () => {
+    const moved: FiltersState = { ...BOAT_DEFAULTS, price: [400, 900] };
+    const cleared = clearFilterKeys(moved, ["price"], BOAT_DEFAULTS);
+    const afterSwitch = { ...cleared, price: CHARTER_DEFAULTS.price };
+
+    expect(cleared.price).toEqual(BOAT_DEFAULTS.price);
+    for (const key of PRICE_KEYS) {
+      expect(
+        toSearchInput(afterSwitch, CHARTER_DEFAULTS, { ...OPTS, priceBasis: "all_in" }),
+      ).not.toHaveProperty(key);
+    }
   });
 });
