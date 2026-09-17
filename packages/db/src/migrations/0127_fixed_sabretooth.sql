@@ -1,0 +1,2 @@
+CREATE INDEX "availability_slot_taken_idx" ON "availability_slot" USING btree ("listing_offer_id","start_date","end_date") WHERE status <> 'available';--> statement-breakpoint
+CREATE INDEX "availability_slot_priced_length_idx" ON "availability_slot" USING btree ("listing_offer_id",(end_date - start_date),"start_date","end_date") WHERE availability_confirmed and status = 'available' and price_minor is not null;

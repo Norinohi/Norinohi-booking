@@ -51,7 +51,7 @@ export function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
   const nights = nightsBetween(window);
   return sql`, (
     ${rulesSellWindow(sql`doc.listing_id`, window)}
-    or ${hasVendorCharter(nights, { earliestStart: window.checkIn, latestStart: window.checkIn, earliestEnd: window.checkOut, latestEnd: window.checkOut })}
+    or exists (${vendorCharters(nights, { earliestStart: window.checkIn, latestStart: window.checkIn, earliestEnd: window.checkOut, latestEnd: window.checkOut }, "row")})
   ) as "sellsRequestedPeriod"${nearestSellableColumns(window, nights, candidateRange(window, nights, FLEXIBILITY_DAYS[input.dateFlexibility ?? "on-day"]))}`;
 }
 
@@ -111,13 +111,55 @@ export function rulesSellWindow(
  * also has to fall inside the rule's own season, which is when that rule governs it.
  */
 function sellableStarts(nights: number | SQL, range: CandidateRange): SQL {
-  /* The range starts at the shared floor; a vendor needing longer notice starts later. */
-  const notice = providerLeadDaysSql(sql`(select code from provider where id = o.provider_id)`);
-  const opens = sql`greatest(free.start_date, ${range.earliestStart}::date, rule.season_start, current_date + ${notice})`;
+  return sql`
+    ${ruleStarts(nights, range, "row")}
+
+    union all
+
+    /*
+     * And every charter of this length the vendor itself priced as free, whatever our copy of its
+     * rules says, as the projection and rangeStatus both take it; see vendorCharterClause.
+     */
+    select o.listing_id, slot.start_date, slot.end_date, o.id, true
+    from listing_offer o
+    join provider p on p.id = o.provider_id
+    join availability_slot slot on slot.listing_offer_id = o.id
+    where o.listing_id = doc.listing_id
+      and o.status = 'active'
+      and ${vendorCharterClause(nights, range, providerLeadDaysSql(sql`p.code`))}
+  `;
+}
+
+/* The starts the check-in rules derive from the free stretches. */
+function ruleStarts(nights: number | SQL, range: CandidateRange, scope: ListingScope): SQL {
+  return sql`
+    select o.listing_id, c.start_date, free.end_date, o.id as offer_id, false as vendor
+    from listing_offer o
+    join provider p on p.id = o.provider_id
+    join listing_free_period free on free.listing_offer_id = o.id
+    ${ruleStartSources(nights, range)}
+    where ${ofListing(scope)}
+      and o.status = 'active'
+      and ${ruleStartConditions(nights, range)}
+  `;
+}
+
+/* The same starts on offer `o` of provider `p` alone, for walking the offers one at a time. */
+function ruleStartsOfOffer(nights: number, range: CandidateRange): SQL {
   return sql`
     select c.start_date, free.end_date, o.id as offer_id, false as vendor
-    from listing_offer o
-    join listing_free_period free on free.listing_offer_id = o.id
+    from listing_free_period free
+    ${ruleStartSources(nights, range)}
+    where free.listing_offer_id = o.id
+      and ${ruleStartConditions(nights, range)}
+  `;
+}
+
+function ruleStartSources(nights: number | SQL, range: CandidateRange): SQL {
+  /* The range starts at the shared floor; a vendor needing longer notice starts later. */
+  const notice = providerLeadDaysSql(sql`p.code`);
+  const opens = sql`greatest(free.start_date, ${range.earliestStart}::date, rule.season_start, current_date + ${notice})`;
+  return sql`
     left join listing_checkin_rule rule on rule.listing_offer_id = o.id
     cross join lateral (
       select (case
@@ -128,9 +170,12 @@ function sellableStarts(nights: number | SQL, range: CandidateRange): SQL {
         else ${opens}
       end)::date as start_date
     ) c
-    where o.listing_id = doc.listing_id
-      and o.status = 'active'
-      and free.end_date >= ${range.earliestStart}::date
+  `;
+}
+
+function ruleStartConditions(nights: number | SQL, range: CandidateRange): SQL {
+  return sql`
+      free.end_date >= ${range.earliestStart}::date + ${nights}::integer
       and free.start_date <= ${range.latestStart}::date
       and (rule.season_end is null or c.start_date <= rule.season_end)
       and (rule.min_nights is null or rule.min_nights <= ${nights})
@@ -140,20 +185,18 @@ function sellableStarts(nights: number | SQL, range: CandidateRange): SQL {
         or rule.checkout_weekday is null
         or mod(${nights} - rule.checkout_weekday + rule.checkin_weekday + 70, 7) = 0
       )
-
-    union all
-
-    /*
-     * And every charter of this length the vendor itself priced as free, whatever our copy of its
-     * rules says, as the projection and rangeStatus both take it; see vendorCharterClause.
-     */
-    select slot.start_date, slot.end_date, o.id, true
-    from listing_offer o
-    join availability_slot slot on slot.listing_offer_id = o.id
-    where o.listing_id = doc.listing_id
-      and o.status = 'active'
-      and ${vendorCharterClause(nights, range, notice)}
   `;
+}
+
+/*
+ * Which listings a charter subquery answers for. A card column asks about the row in hand, and
+ * runs only for the rows a page returns. A filter asks about every listing at once and tests
+ * membership: correlated, the same subquery re-ran for each of eighteen thousand documents.
+ */
+type ListingScope = "row" | "set";
+
+function ofListing(scope: ListingScope): SQL {
+  return scope === "row" ? sql`o.listing_id = doc.listing_id` : sql`true`;
 }
 
 /*
@@ -170,6 +213,8 @@ function vendorCharterClause(nights: number | SQL, range: CandidateRange, notice
         and slot.status = 'available'
         and slot.price_minor is not null
         and slot.end_date - slot.start_date = ${nights}::integer
+        /* Repeated outside the greatest, where an index on the start can bound the scan by it. */
+        and slot.start_date >= ${range.earliestStart}::date
         and slot.start_date >= greatest(${range.earliestStart}::date, current_date + ${notice})
         and slot.start_date <= ${range.latestStart}::date
         and not exists (
@@ -184,15 +229,51 @@ function vendorCharterClause(nights: number | SQL, range: CandidateRange, notice
 
 /* Whether any offer of the listing holds such a charter, for the filters. */
 export function hasVendorCharter(nights: number, range: CandidateRange): SQL {
-  const notice = providerLeadDaysSql(sql`(select code from provider where id = o.provider_id)`);
-  return sql`exists (
-    select 1
+  const listings = isWide(range)
+    ? everyOfferWith(sql`
+        select 1
+        from availability_slot slot
+        where slot.listing_offer_id = o.id
+          and ${vendorCharterClause(nights, range, providerLeadDaysSql(sql`p.code`))}`)
+    : vendorCharters(nights, range, "set");
+  return sql`doc.listing_id in (${listings})`;
+}
+
+/*
+ * How many days of starts make reading every candidate in the range dearer than walking the
+ * offers and stopping at each one's first. A year of vendor-priced weeks is 380,000 slots, each
+ * checked for a booking over it, for 17,000 listings that nearly all have one in the first weeks;
+ * a single check-in day is a few thousand slots, cheaper than eighteen thousand offer probes.
+ */
+const WIDE_RANGE_DAYS = 31;
+
+function isWide(range: CandidateRange): boolean {
+  return (
+    nightsBetween({ checkIn: range.earliestStart, checkOut: range.latestStart }) > WIDE_RANGE_DAYS
+  );
+}
+
+/* The listings with an active offer `o`, of provider `p`, for which `charter` finds a row. */
+function everyOfferWith(charter: SQL): SQL {
+  return sql`
+    select o.listing_id
     from listing_offer o
+    join provider p on p.id = o.provider_id
+    cross join lateral (${charter} limit 1) found
+    where o.status = 'active'
+  `;
+}
+
+function vendorCharters(nights: number, range: CandidateRange, scope: ListingScope): SQL {
+  return sql`
+    select o.listing_id
+    from listing_offer o
+    join provider p on p.id = o.provider_id
     join availability_slot slot on slot.listing_offer_id = o.id
-    where o.listing_id = doc.listing_id
+    where ${ofListing(scope)}
       and o.status = 'active'
-      and ${vendorCharterClause(nights, range, notice)}
-  )`;
+      and ${vendorCharterClause(nights, range, providerLeadDaysSql(sql`p.code`))}
+  `;
 }
 
 /*
@@ -225,19 +306,21 @@ export function freeAcrossWindow(
   range: CandidateRange,
   windowNights: number,
   nights: number | undefined,
+  scope: ListingScope = "row",
 ): SQL {
-  return sql`exists (
-    select 1
+  const offers = sql`
+    select o.listing_id
     from listing_offer o
     join listing_free_period free
       on free.listing_offer_id = o.id
      and free.start_date <= ${range.latestStart}
      and free.end_date >= ${range.earliestEnd}
      and free.end_date - free.start_date >= ${windowNights}
-    where o.listing_id = doc.listing_id
+    where ${ofListing(scope)}
       and o.status = 'active'
       and ${nights ? checkinRuleClause(nights, range) : sql`true`}
-  )`;
+  `;
+  return scope === "row" ? sql`exists (${offers})` : sql`doc.listing_id in (${offers})`;
 }
 
 /* Every slot overlapping the charter the visitor named, of one status or all the others. */
@@ -319,17 +402,26 @@ export function temporaryHoldColumn(input: ListingSearchInput): SQL {
 }
 
 /*
- * Whether anything sellable falls inside the horizon. `exists` rather than the `min` below,
- * because this runs for every document the other filters admit and can stop at the first hit;
- * the `min` only has to run for the rows a page actually returns.
+ * Whether the rules sell anything inside the horizon, as the set of listings they do rather than
+ * the nearest start below, which only has to run for the rows a page actually returns.
+ *
+ * Without the vendor's own charters, which `sellableStarts` also yields: every filter ORs
+ * `hasVendorCharter` over the same length and range beside this, and carrying them here too
+ * computed that set twice per query.
  */
-export function hasSellableStart(nights: number, range: CandidateRange): SQL {
-  return sql`exists (
-    select 1
-    from (${sellableStarts(nights, range)}) c
-    where c.start_date <= ${range.latestStart}::date
-      and ${sellableFilter(nights)}
-  )`;
+export function hasRuleSellableStart(nights: number, range: CandidateRange): SQL {
+  const listings = isWide(range)
+    ? everyOfferWith(sql`
+        select 1
+        from (${ruleStartsOfOffer(nights, range)}) c
+        where c.start_date <= ${range.latestStart}::date
+          and ${sellableFilter(nights)}`)
+    : sql`
+        select c.listing_id
+        from (${ruleStarts(nights, range, "set")}) c
+        where c.start_date <= ${range.latestStart}::date
+          and ${sellableFilter(nights)}`;
+  return sql`doc.listing_id in (${listings})`;
 }
 
 function nearestSellableColumns(
@@ -418,12 +510,16 @@ export function nextCharterAfterLapseColumns(): SQL {
  * stretches one by one costs a correlated scan per rule and tripled the unfiltered browse to
  * a second, to admit seven listings whose relaxed season lands in a booked gap.
  */
-export function checkinRuleClause(nights: number, range: CandidateRange | undefined): SQL {
+export function checkinRuleClause(
+  nights: number,
+  range: CandidateRange | undefined,
+  listing: SQL = sql`doc`,
+): SQL {
   const season = range
     ? sql`and (rule.season_start is null or rule.season_start <= ${range.latestStart}::date)
               and (rule.season_end is null or rule.season_end >= ${range.earliestStart}::date)`
-    : sql`and (rule.season_end is null or rule.season_end >= greatest(doc.available_from, current_date))
-              and (rule.season_start is null or rule.season_start <= doc.available_to)`;
+    : sql`and (rule.season_end is null or rule.season_end >= greatest(${listing}.available_from, current_date))
+              and (rule.season_start is null or rule.season_start <= ${listing}.available_to)`;
 
   return sql`(
           not exists (

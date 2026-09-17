@@ -16,7 +16,7 @@ import { comparablePrice, pricedForDates } from "./pricing-sql";
 import {
   checkinRuleClause,
   freeAcrossWindow,
-  hasSellableStart,
+  hasRuleSellableStart,
   hasVendorCharter,
   heldOnlyByOption,
 } from "./sellable-starts";
@@ -263,7 +263,7 @@ export function whereClause(
      *
      * Unbounded, this is what offered a September search a November week.
      */
-    const free = sql`((${hasSellableStart(windowNights, range)} and ${freeAcrossWindow(range, windowNights, nights)}) or ${hasVendorCharter(windowNights, range)})`;
+    const free = sql`((${hasRuleSellableStart(windowNights, range)} and ${freeAcrossWindow(range, windowNights, nights, "set")}) or ${hasVendorCharter(windowNights, range)})`;
     /*
      * A temporary booking is occupancy, so the week it covers is not among the free stretches
      * and its boat is not an answer to this search. The toggle is the visitor saying they want
@@ -302,12 +302,16 @@ export function whereClause(
      * May is not an answer to "three days" when the boat is Saturday to Saturday from here on.
      */
     const range = undatedRange(nights);
-    const ruled = sql`exists (
-      select 1
+    /*
+     * The stored document supplies the span the season is pinned to. An undated search reads
+     * the documents as stored, so it is the row `doc` stands for.
+     */
+    const ruled = sql`doc.listing_id in (
+      select o.listing_id
       from listing_offer o
-      where o.listing_id = doc.listing_id
-        and o.status = 'active'
-        and ${checkinRuleClause(nights, undefined)}
+      join listing_search_doc stored on stored.listing_id = o.listing_id
+      where o.status = 'active'
+        and ${checkinRuleClause(nights, undefined, sql`stored`)}
     )`;
     /*
      * And a charter of that length the boat actually has free within the horizon, found the
@@ -322,7 +326,7 @@ export function whereClause(
       (${ruled} and (
         (doc.bookable_from >= ${range.earliestStart}::date
           and doc.bookable_to - doc.bookable_from = ${nights})
-        or ${hasSellableStart(nights, range)}
+        or ${hasRuleSellableStart(nights, range)}
       ))
       or ${hasVendorCharter(nights, range)}
     )`);
