@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { QueryClient } from "@tanstack/react-query";
+import { getLocale } from "next-intl/server";
 
 import {
   routeListQueryOptions,
@@ -10,8 +11,9 @@ import {
 } from "./queries";
 
 /** Server prefetch for /routes — the first page of the whole route library, drafts included. */
-export function prefetchRoutes(queryClient: QueryClient) {
-  return queryClient.prefetchQuery(routeListQueryOptions({ page: 1 }));
+export async function prefetchRoutes(queryClient: QueryClient) {
+  const locale = await getLocale();
+  return queryClient.prefetchQuery(routeListQueryOptions({ locale, page: 1 }));
 }
 
 /** Server prefetch for /faq — the site-wide list, every category, which is how the screen opens. */

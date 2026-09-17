@@ -38,6 +38,7 @@ export const routeListQueryOptions = (input: {
   kind?: RouteKind;
   countryId?: string;
   active?: boolean;
+  locale: string;
   page: number;
   pageSize?: number;
 }) =>

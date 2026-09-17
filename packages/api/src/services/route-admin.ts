@@ -18,7 +18,9 @@ import {
   type RouteTargetRow,
 } from "@yacht-charter/db/routes/library";
 import { suggestedRoute, suggestedRouteStop } from "@yacht-charter/db/schema/route";
-import { asc, eq, isNotNull } from "drizzle-orm";
+import { baseLabel, facetTranslator } from "@yacht-charter/db/search/localize";
+import type { FacetMediaKind, FacetTranslator } from "@yacht-charter/db/search";
+import { asc, eq, inArray, isNotNull } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database } from "../context";
@@ -64,10 +66,19 @@ type TargetRow = RouteTargetRow;
  * itself, so a base and its location routinely carry the same string ("ACI Marina Trogir"), and
  * a label saying it twice reads as a rendering fault.
  */
-function targetLabel(row: TargetRow): string {
+function targetLabel(row: TargetRow, translate?: FacetTranslator): string {
+  const as = (kind: FacetMediaKind, value: string | null) =>
+    value !== null && translate ? translate(kind, value) : value;
   const parts = row.baseName
-    ? [row.baseName, row.locationName, row.baseRegionName, row.baseCountryName]
-    : [row.regionName, row.regionCountryName];
+    ? [
+        translate && row.locationName
+          ? baseLabel(translate, row.baseName, row.locationName)
+          : row.baseName,
+        as("location", row.locationName),
+        as("region", row.baseRegionName),
+        as("country", row.baseCountryName),
+      ]
+    : [as("region", row.regionName), as("country", row.regionCountryName)];
 
   const named: string[] = [];
   for (const part of parts) {
@@ -77,13 +88,18 @@ function targetLabel(row: TargetRow): string {
   return named.length > 0 ? named.join(" · ") : "Unknown target";
 }
 
-function toRoute(row: TargetRow, stops: Stop[], translations: Translation[] = []): Route {
+function toRoute(
+  row: TargetRow,
+  stops: Stop[],
+  translations: Translation[] = [],
+  translate?: FacetTranslator,
+): Route {
   const present = new Set(translations.map((entry) => entry.locale));
   return {
     id: row.route.id,
     baseId: row.route.baseId,
     regionId: row.route.regionId,
-    targetLabel: targetLabel(row),
+    targetLabel: targetLabel(row, translate),
     targetPoint:
       row.baseLat !== null && row.baseLng !== null ? { lat: row.baseLat, lng: row.baseLng } : null,
     title: row.route.title,
@@ -198,14 +214,15 @@ export async function listRoutes(db: Database, input: ListInput): Promise<ListRe
   });
 
   const routeIds = rows.map((row) => row.route.id);
-  const [stops, translations] = await Promise.all([
+  const [stops, translations, translate] = await Promise.all([
     stopsByRoute(db, routeIds),
     translationsByRoute(db, routeIds),
+    facetTranslator(db, input.locale),
   ]);
 
   return {
     items: rows.map((row) =>
-      toRoute(row, stops.get(row.route.id) ?? [], translations.get(row.route.id) ?? []),
+      toRoute(row, stops.get(row.route.id) ?? [], translations.get(row.route.id) ?? [], translate),
     ),
     pagination,
   };
@@ -402,12 +419,31 @@ export async function reorderFeaturedRoutes(
         .where(eq(suggestedRoute.id, id));
     }
 
+    const beforeIds = before.routes.map((route) => route.id);
+    const changed = [
+      ...input.ids.filter((id) => !beforeIds.includes(id)),
+      ...beforeIds.filter((id) => !input.ids.includes(id)),
+    ];
+    const titles = new Map(before.routes.map((route) => [route.id, route.title]));
+    const unseen = input.ids.filter((id) => !titles.has(id));
+    if (unseen.length > 0) {
+      const rows = await tx
+        .select({ id: suggestedRoute.id, title: suggestedRoute.title })
+        .from(suggestedRoute)
+        .where(inArray(suggestedRoute.id, unseen));
+      for (const row of rows) titles.set(row.id, row.title);
+    }
+    const named = (ids: string[]) => ids.map((id) => ({ id, title: titles.get(id) ?? null }));
+
+    /* The list has no id of its own, so an entry that features or unfeatures one route is filed
+       under that route, which is what the audit's ID filter searches. */
     await writeAuditLog(tx, {
       actorUserId,
       action: "update",
       entityType: "suggested_route_featured",
-      before: before.routes.map((route) => route.id),
-      after: input.ids,
+      entityId: changed.length === 1 ? changed[0] : undefined,
+      before: named(beforeIds),
+      after: named(input.ids),
     });
   });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 
 import {
   createRouteMutationOptions,
@@ -40,7 +41,7 @@ export function useRoutes(input: {
   active?: boolean;
   page: number;
 }) {
-  return useQuery(routeListQueryOptions(input));
+  return useQuery(routeListQueryOptions({ ...input, locale: useLocale() }));
 }
 
 /** The routes the home page shows, in the order it shows them. */
