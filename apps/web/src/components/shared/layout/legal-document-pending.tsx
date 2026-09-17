@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { useTranslations } from "next-intl";
 
