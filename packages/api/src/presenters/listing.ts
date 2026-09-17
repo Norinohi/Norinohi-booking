@@ -4,6 +4,7 @@ import {
   MIN_LEAD_DAYS,
   normalizedFilterValue,
 } from "@yacht-charter/db/search";
+import { BASE_CURRENCY } from "../lib/display-currency";
 import type {
   ListingDetail,
   ListingSearchDoc,
@@ -109,6 +110,17 @@ function priceSourceOf(
   if (doc.priceFromMinor === null || doc.priceFromMinor <= 0) return null;
   if (doc.priceIsFrom || !pricesItsCharter) return "season-minimum";
   return doc.priceSource ?? "vendor";
+}
+
+/* `comparablePrice` in the search SQL, for the figure the card shows. */
+function comparablePriceOf(
+  doc: ListingSearchDoc,
+  amountMinor: number | null,
+  showsRate: boolean,
+): { amountMinor: number; currency: string } | null {
+  if (amountMinor === null || (doc.currency ?? BASE_CURRENCY) === BASE_CURRENCY) return null;
+  const converted = (showsRate ? doc.basePriceFromMinorEur : null) ?? doc.priceFromMinorEur;
+  return converted === null ? null : { amountMinor: converted, currency: BASE_CURRENCY };
 }
 
 /**
@@ -246,6 +258,11 @@ export function presentListingSummary(
       normalizedFilterValue,
     ).map((key) => amenityLabel.get(key) ?? key),
     priceFrom: amountMinor === null ? null : { amountMinor, currency },
+    comparablePriceFrom: comparablePriceOf(
+      doc,
+      amountMinor,
+      basis === "base" && baseMinor !== null,
+    ),
     /*
      * Both figures, whatever the headline is, so a card can disclose the difference and a
      * detail page can break it down without a second read.

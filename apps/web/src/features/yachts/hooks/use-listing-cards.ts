@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 
+import { useDisplayCurrency } from "@/components/layout/currency-provider";
 import { useMoney } from "@/hooks/use-money";
 
 import { type CharterPeriod, type ResultListing, toYachtCard } from "../lib/to-yacht-card";
@@ -13,6 +14,7 @@ export function useListingCards() {
   const tBadge = useTranslations("Common.boatCard.badges");
   const formatMoney = useMoney();
   const { basis } = usePriceBasis();
+  const { display } = useDisplayCurrency();
 
   /*
    * `period` is the charter the result is about, which only a dated search has. The card used
@@ -20,7 +22,7 @@ export function useListingCards() {
    * 14-night October search still read "July 7 - July 14". No period, no dates.
    */
   function toCard(listing: ResultListing, period?: CharterPeriod) {
-    return toYachtCard(t, tCrew, tBadge, formatMoney, listing, period, basis);
+    return toYachtCard(t, tCrew, tBadge, formatMoney, listing, period, basis, display === null);
   }
 
   return { toCard };

@@ -52,6 +52,12 @@ export function toYachtCard(
   period?: CharterPeriod,
   /** Which price `priceFrom` is. Inferred from the listing's two prices when not given. */
   basis?: "base" | "all_in",
+  /**
+   * Whether prices stay in the currency each vendor published, so a card in another currency
+   * than the comparison one adds that figure. Off where the visitor's display currency converts
+   * every card already.
+   */
+  publishedCurrencies = false,
 ): YachtCardData & { id: string } {
   const hold = listing.availability.temporaryHold;
   /* An undated search still sends a period, both ends null; that is no period at all. */
@@ -71,8 +77,6 @@ export function toYachtCard(
     label: availabilityLabel(tBadge, status),
     tone: AVAILABILITY_TONE[status],
   };
-  /* The currency the provider published in, which the per-person figure is a share of. */
-  const currency = listing.priceFrom?.currency ?? listing.priceDetails.securityDeposit?.currency;
 
   const identity = yachtCardIdentity(t, tCrew, tBadge, listing);
 
@@ -135,15 +139,7 @@ export function toYachtCard(
      * so it is already on the card and the sequence still reads as one. These were rare until
      * the lead-time floor let a one-night charter reach a card at all.
      */
-    perNight:
-      listing.priceFrom && listing.priceDetails.periodDays > 1
-        ? t("perNight", {
-            price: formatMoney(
-              Math.round(listing.priceFrom.amountMinor / listing.priceDetails.periodDays),
-              currency,
-            ),
-          })
-        : undefined,
+    perNight: perNightLine(t, formatMoney, listing, publishedCurrencies),
     note: listing.priceDetails.securityDeposit
       ? {
           label: t("securityDeposit", {
@@ -156,6 +152,31 @@ export function toYachtCard(
         }
       : null,
   };
+}
+
+/*
+ * The per-night figure, and beside a price in another currency its EUR equivalent: the price
+ * sorts compare every card in EUR, so "4,700 USD" before "4,076 EUR" is in order only once the
+ * card says what it was ordered by.
+ */
+function perNightLine(
+  t: CardTranslator,
+  formatMoney: MoneyFormatter,
+  listing: ResultListing,
+  publishedCurrencies: boolean,
+): string | undefined {
+  const nights = listing.priceDetails.periodDays;
+  if (!listing.priceFrom || nights <= 1) return undefined;
+  const price = formatMoney(
+    Math.round(listing.priceFrom.amountMinor / nights),
+    listing.priceFrom.currency,
+  );
+  const comparable = publishedCurrencies ? listing.comparablePriceFrom : null;
+  if (!comparable) return t("perNight", { price });
+  return t("perNightWithEquivalent", {
+    price,
+    equivalent: formatMoney(Math.round(comparable.amountMinor / nights), comparable.currency),
+  });
 }
 
 /**

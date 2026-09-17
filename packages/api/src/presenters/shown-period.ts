@@ -71,6 +71,7 @@ function withoutPrice<T extends ReturnType<typeof presentListingSummary>>(listin
   return {
     ...listing,
     priceFrom: null,
+    comparablePriceFrom: null,
     allInPriceFrom: null,
     basePriceFrom: null,
     listPriceFrom: null,

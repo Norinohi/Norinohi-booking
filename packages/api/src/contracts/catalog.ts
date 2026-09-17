@@ -231,6 +231,12 @@ export const listingSummarySchema = z.object({
   /* Null when the listing has no usable price. The UI quotes on request rather than a number. */
   priceFrom: moneySchema.nullable(),
   /**
+   * `priceFrom` in EUR, the figure the price sorts and filter compare on, where it is published in
+   * another currency and a fresh rate converts it. Null for a EUR price and wherever `priceFrom`
+   * is. Lets a card that shows the published currency say what it was ordered by.
+   */
+  comparablePriceFrom: moneySchema.nullable(),
+  /**
    * The two figures behind the headline, always both filled where a price exists.
    *
    * `priceFrom` is one of these, chosen by a marketplace setting: the all-in total the guest
