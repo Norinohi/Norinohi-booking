@@ -1,4 +1,3 @@
-import type { ProviderKey } from "@yacht-charter/env/providers";
 import { sql, type SQL } from "drizzle-orm";
 
 import { toBaseMinorSql } from "../fx/rates";
@@ -9,38 +8,112 @@ import { providerLeadDaysSql } from "./lead-time";
 import { pricedMoney } from "./money-sql";
 import { operatorConfirms, providerRank, sellableActiveOffer } from "./offer-sql";
 import { rulesSellWindow } from "./sellable-starts";
+import type { PeriodPriceSource } from "./types";
+import { HALF_OPEN_RATE_PROVIDER, WEEKLY_RATE_NIGHTS } from "./weekly-estimate";
 
 /*
- * The one charter length a published weekly rate prices. `quotePreview` in packages/api borrows a
- * band for a week and for nothing else, and the projection's own measurement is why: prorated into
- * three nights a band read 3,450 against a vendor quote of 1,621. No daily list is synced.
+ * The one charter length a published weekly rate prices outright. Any other length is only an
+ * estimate from it (`price-list-estimate`): prorated into three nights a band read 3,450 against a
+ * vendor quote of 1,621, which is why the card captions that figure as an estimate.
  */
-export const LIST_RATE_NIGHTS = 7;
-
-/*
- * Booking Manager rows are one priced week, `[check-in, check-out)`, so the row ending on the
- * searched check-in is the week before it. NauSYS bands end on their last check-in day, so there
- * the same row does cover it.
- */
-const HALF_OPEN_RATE_PROVIDER: ProviderKey = "booking_manager";
+export const LIST_RATE_NIGHTS = WEEKLY_RATE_NIGHTS;
 
 /**
- * The operator's published rate for exactly the week starting on `checkIn`, the week the card
- * names, as one `listing_period_price`-shaped row with `price_source = 'price-list'`, or no row.
+ * The operator's price list for exactly the charter starting on `checkIn`, the charter the card
+ * names, as one `listing_period_price`-shaped row, or no row.
  *
- * Only where a vendor has not priced the week itself; the caller tries that first. The rate is the
- * band covering the check-in day, cheapest first where lists overlap, as the price writer reads
- * them. The offer has to be able to sell the week:
- * free across it, past its vendor's notice, not refused or taken, and within the listing's rules.
+ * A week reads the rate of the band covering the check-in day (`price_source = 'price-list'`).
+ * Any other length is estimated per night (`price_source = 'price-list-estimate'`): see
+ * `priceListEstimate`.
  *
- * Totalled by the same fee, crew and money laterals as the projection's season minimum, and offers
- * compete on the document's order, so the figure is what the card would show had the list rate
+ * Only where a vendor has not priced the charter itself; the caller tries that first. Where lists
+ * overlap the cheapest band counts, as the price writer reads them. The offer has to be able to
+ * sell the charter: free across it, past its vendor's notice, not refused or taken, and within the
+ * listing's rules.
+ *
+ * Totalled by the same fee, crew and money laterals as the projection, for this many nights, and
+ * offers compete on the document's order, so the figure is what the card would show had the rate
  * been its stored price. It is a pre-discount number with no strike-through behind it.
  */
 export function listRatePeriodPrice(listingId: SQL, checkIn: SQL, nights: number): SQL | undefined {
-  if (nights !== LIST_RATE_NIGHTS) return undefined;
+  if (!Number.isInteger(nights) || nights < 1) return undefined;
+  return nights === LIST_RATE_NIGHTS
+    ? listPricedCharter(listingId, checkIn, nights, weekRate(checkIn), "price-list")
+    : listPricedCharter(
+        listingId,
+        checkIn,
+        nights,
+        priceListEstimate(checkIn, nights),
+        "price-list-estimate",
+      );
+}
 
-  const checkOut = sql`(${checkIn} + ${LIST_RATE_NIGHTS}::integer)`;
+/* The band covering the check-in day, as the `rate` lateral. */
+function weekRate(checkIn: SQL): SQL {
+  return sql`
+      cross join lateral (
+        select price.price_minor, price.currency
+        from listing_price_period price
+        where price.listing_offer_id = o.id
+          and price.kind = 'weekly'
+          and price.price_minor > 0
+          and price.start_date <= ${checkIn}
+          and (
+            price.end_date > ${checkIn}
+            or (price.end_date = ${checkIn} and p.code <> ${HALF_OPEN_RATE_PROVIDER})
+          )
+        order by price.price_minor
+        limit 1
+      ) rate`;
+}
+
+/*
+ * `estimateFromWeeklyRates` in `weekly-estimate.ts`, as the `rate` lateral: each night takes the
+ * cheapest band covering it, and the weekly rates summed over the nights are divided by seven and
+ * rounded once. No row unless every night is covered, in one currency.
+ *
+ * The bands overlapping the charter are read in one index scan and matched to the nights in
+ * memory, rather than one lookup per night.
+ */
+function priceListEstimate(checkIn: SQL, nights: number): SQL {
+  const checkOut = sql`(${checkIn} + ${nights}::integer)`;
+  return sql`
+      cross join lateral (
+        select
+          round(sum(night.price_minor)::numeric / ${WEEKLY_RATE_NIGHTS}::integer)::integer
+            as price_minor,
+          min(night.currency) as currency
+        from (
+          select distinct on (n.night) n.night, band.price_minor, band.currency
+          from (
+            select price.start_date, price.end_date, price.price_minor, price.currency
+            from listing_price_period price
+            where price.listing_offer_id = o.id
+              and price.kind = 'weekly'
+              and price.price_minor > 0
+              and price.start_date < ${checkOut}
+              and price.end_date >= ${checkIn}
+          ) band
+          join generate_series(0, ${nights - 1}::integer) as n(night)
+            on band.start_date <= ${checkIn} + n.night
+            and (
+              band.end_date > ${checkIn} + n.night
+              or (band.end_date = ${checkIn} + n.night and p.code <> ${HALF_OPEN_RATE_PROVIDER})
+            )
+          order by n.night, band.price_minor
+        ) night
+        having count(*) = ${nights}::integer and count(distinct night.currency) = 1
+      ) rate`;
+}
+
+function listPricedCharter(
+  listingId: SQL,
+  checkIn: SQL,
+  nights: number,
+  rate: SQL,
+  source: PeriodPriceSource,
+): SQL {
+  const checkOut = sql`(${checkIn} + ${nights}::integer)`;
 
   return sql`
     select
@@ -54,7 +127,7 @@ export function listRatePeriodPrice(listingId: SQL, checkIn: SQL, nights: number
       candidate.base_minor,
       candidate.base_minor_eur,
       candidate.list_all_in_minor,
-      'price-list'::text as price_source
+      ${source}::text as price_source
     from (
       select
         o.listing_id,
@@ -73,20 +146,7 @@ export function listRatePeriodPrice(listingId: SQL, checkIn: SQL, nights: number
         ${providerRank()} as provider_rank
       from listing_offer o
       join provider p on p.id = o.provider_id
-      cross join lateral (
-        select price.price_minor, price.currency
-        from listing_price_period price
-        where price.listing_offer_id = o.id
-          and price.kind = 'weekly'
-          and price.price_minor > 0
-          and price.start_date <= ${checkIn}
-          and (
-            price.end_date > ${checkIn}
-            or (price.end_date = ${checkIn} and p.code <> ${HALF_OPEN_RATE_PROVIDER})
-          )
-        order by price.price_minor
-        limit 1
-      ) rate
+      ${rate}
       cross join lateral (
         select
           null::integer as price_minor,
@@ -97,8 +157,8 @@ export function listRatePeriodPrice(listingId: SQL, checkIn: SQL, nights: number
       cross join lateral (
         select rate.currency as price_currency, rate.price_minor as base_minor
       ) chosen
-      ${unavoidableFees(sql`${LIST_RATE_NIGHTS}::integer`)}
-      ${unavoidableCrew(sql`${LIST_RATE_NIGHTS}::integer`)}
+      ${unavoidableFees(sql`${nights}::integer`)}
+      ${unavoidableCrew(sql`${nights}::integer`)}
       ${pricedMoney()}
       where o.listing_id = ${listingId}
         and ${sellableActiveOffer()}
@@ -126,7 +186,7 @@ export function listRatePeriodPrice(listingId: SQL, checkIn: SQL, nights: number
             and refused.end_date <= ${checkOut}
             and refused.updated_at > now() - make_interval(days => ${REFUSAL_TRUST_DAYS})
         )
-        and ${rulesSellWindow(listingId, checkIn, LIST_RATE_NIGHTS)}
+        and ${rulesSellWindow(listingId, checkIn, nights)}
     ) candidate
     where candidate.all_in_minor is not null and candidate.currency is not null
     order by

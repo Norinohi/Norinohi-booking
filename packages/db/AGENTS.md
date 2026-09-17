@@ -71,7 +71,10 @@ typed inserts; do not load `seed.ts`, which assumes an empty database with fixed
 and slider that read it. `list-rate.db.test.ts` pins the fallback for a dated week no vendor
 priced: the operator's weekly list rate for that exact week (`list-rate-sql.ts`,
 `price_source = 'price-list'`), ranked behind vendor prices and ahead of unpriced cards, and read
-by the same sort, filter, slider and map pin. `shown-period-price.db.test.ts` pins a flexible
+by the same sort, filter, slider and map pin. `price-list-estimate.db.test.ts` pins the fallback
+for a dated charter of any other length: an estimate from that list, a seventh of the rate covering
+each night (`price_source = 'price-list-estimate'`, the SQL twin of `estimateFromWeeklyRates` in
+`weekly-estimate.ts`), ranked behind list rates and read the same way. `shown-period-price.db.test.ts` pins a flexible
 search pricing the nearby week a card is moved onto instead of the dates asked for
 (`shownCharterStart`, the SQL twin of `periodFor` in packages/api), ranked after prices for those
 dates and read by the same sort, filter, slider and map pin. `nearest-priced-week.db.test.ts` pins the rebuild replacing a season
@@ -113,6 +116,12 @@ Anything spatial goes in `src/geo/`, pure where it can be:
 - `bounds.ts` - `boundingBox` and `boundingBoxSql`, a cheap `lat`/`lng` prefilter that may keep
   points outside the radius but never drops one inside it (handles the antimeridian and poles).
 - `nearest-marinas.ts` - `listNearestBases`, bounding box, then exact distance, then order.
+- `reference-regions.ts` - `listReferenceRegions`, the regions other providers' offers sail from
+  with their base coordinates, which Booking Manager's projection places its bases into.
+- `relocate-bases.ts` - `relocateBases` moves existing base rows to a new placement keeping their
+  ids (merging into a same-named base at the destination), `pruneEmptyGeography` deletes the
+  bases, locations and regions nothing references. Used by `geography:repair-bm` in
+  packages/providers; `geo/relocate-bases.db.test.ts` pins both.
 
 A new route or map query belongs in one of these folders; `search/` is for the listing catalogue.
 `geo/nearest-marinas.db.test.ts` pins the ordering, the `maxKm` cut and the listing counts.

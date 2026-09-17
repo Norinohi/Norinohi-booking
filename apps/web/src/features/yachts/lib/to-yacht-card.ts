@@ -176,19 +176,25 @@ function priceCaption(
 ): string {
   if (!listing.priceFrom) return "";
   const listRate = listing.priceSource === "price-list";
+  const estimate = listing.priceSource === "price-list-estimate";
   if (!listing.priceIsFrom && otherDates?.checkIn && otherDates.checkOut) {
     const dates = { from: dayToDisplay(otherDates.checkIn), to: dayToDisplay(otherDates.checkOut) };
     if (isBoatPrice(listing, basis)) {
+      if (estimate) return t("boatPriceListEstimateForPeriod", dates);
       return t(listRate ? "boatPriceListRateForPeriod" : "boatPriceForPeriod", dates);
     }
+    if (estimate) return t("priceListEstimateForPeriod", dates);
     return t(listRate ? "priceListRateForPeriod" : "priceForPeriod", dates);
   }
+  const nights = { nights: listing.priceDetails.periodDays };
   if (isBoatPrice(listing, basis)) {
     if (listing.priceIsFrom) return t("boatPriceIndicative");
+    if (estimate) return t("boatPriceListEstimate", nights);
     if (listRate) return t("boatPriceListRate");
     return t("boatPriceFor", { days: listing.priceDetails.periodDays });
   }
   if (listing.priceIsFrom) return t("priceIndicative");
+  if (estimate) return t("priceListEstimate", nights);
   if (listRate) return t("priceListRate");
   return t("priceFor", { days: listing.priceDetails.periodDays });
 }

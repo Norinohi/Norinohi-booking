@@ -96,6 +96,24 @@ describe("pricedForShownPeriod", () => {
     expect(card.priceSource).toBe("price-list");
   });
 
+  it("keeps an estimate from the list for a charter of another length", () => {
+    const card = pricedForShownPeriod(
+      doc({
+        ...priced,
+        bookableTo: "2099-06-09",
+        pricedForDates: true,
+        priceSource: "price-list-estimate",
+      }),
+      { checkIn: "2099-06-06", checkOut: "2099-06-09" },
+      "base",
+      ranks,
+    );
+    expect(card.priceFrom).not.toBeNull();
+    expect(card.priceIsFrom).toBe(false);
+    expect(card.priceSource).toBe("price-list-estimate");
+    expect(card.priceDetails.periodDays).toBe(3);
+  });
+
   it("names the vendor behind a week it priced itself", () => {
     const card = pricedForShownPeriod(
       doc({ ...priced, pricedForDates: true, priceSource: "vendor" }),

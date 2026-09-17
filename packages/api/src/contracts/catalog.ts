@@ -251,9 +251,12 @@ export const listingSummarySchema = z.object({
    * - `vendor`: the vendor's own price for the charter beside it, which the quote will match.
    * - `price-list`: on a dated search nobody quoted, the operator's published weekly rate for that
    *   exact week. Before the discounts both vendors sell at, so the quote is usually lower.
+   * - `price-list-estimate`: on a dated search of any length but a week that nobody quoted, an
+   *   estimate from the operator's weekly list: a seventh of the rate covering each night, summed.
+   *   Before discounts, and the quote can differ further than from a week's list rate.
    * - `season-minimum`: the cheapest week of the season, the figure `priceIsFrom` marks.
    */
-  priceSource: z.enum(["vendor", "price-list", "season-minimum"]).nullable(),
+  priceSource: z.enum(["vendor", "price-list", "price-list-estimate", "season-minimum"]).nullable(),
   /**
    * The same charter before the operator's own discount, to be rendered struck through beside
    * `priceFrom`. Null unless there is a discount the vendor's own figures account for, which is

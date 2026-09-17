@@ -237,6 +237,12 @@ describe("presentListingSummary price source", () => {
     );
   });
 
+  it("keeps a dated estimate from the list as one", () => {
+    expect(
+      presentListingSummary(doc({ ...week, priceSource: "price-list-estimate" })).priceSource,
+    ).toBe("price-list-estimate");
+  });
+
   it("has no source without a price", () => {
     expect(presentListingSummary(doc({ ...week, priceFromMinor: null })).priceSource).toBeNull();
   });

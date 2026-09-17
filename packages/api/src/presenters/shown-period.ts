@@ -13,10 +13,10 @@ import {
  * `priceFrom` is the figure for one exact charter. A dated search already reads the charter the card
  * names, the dates asked for or the nearby week a flexible search moves the card onto, where a vendor
  * priced it (`listing_period_price`) and, for a week nobody quoted, the operator's published rate
- * for that week (`priceSource = 'price-list'`, a pre-discount figure the card says it is). What
- * reaches here with other dates beside it is a listing neither priced for them, and nothing here
- * can reprice that charter: no arithmetic turns one week into another or into a charter of another
- * length.
+ * for that week (`priceSource = 'price-list'`, a pre-discount figure the card says it is), or for
+ * a charter of another length an estimate from that list (`priceSource = 'price-list-estimate'`),
+ * which the card captions as one. What reaches here with other dates beside it is a listing none
+ * of them priced, and nothing here reprices that charter from another one's figure.
  *
  * So such a card says "on request". It used to keep the other week's figure and caption it with
  * that week, which still printed a price beside the dates asked for: My Affair Dufour 412 GL read

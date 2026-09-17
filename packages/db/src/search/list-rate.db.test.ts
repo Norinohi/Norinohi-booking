@@ -143,7 +143,7 @@ describe("a dated week priced from the operator's list", () => {
     expect(lapsed).toMatchObject({ priceSource: null, pricedForDates: false });
   });
 
-  it("borrows a weekly rate for a week only", async () => {
+  it("estimates no other length that the rules refuse or no rate covers", async () => {
     const shorter = await bySlug({ ...dated, duration: 6 });
     expect(shorter.size).toBeGreaterThan(0);
     for (const item of shorter.values()) {

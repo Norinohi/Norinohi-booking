@@ -4,7 +4,12 @@ import {
   MIN_LEAD_DAYS,
   normalizedFilterValue,
 } from "@yacht-charter/db/search";
-import type { ListingDetail, ListingSearchDoc, PriceBasis } from "@yacht-charter/db/search";
+import type {
+  ListingDetail,
+  ListingSearchDoc,
+  PeriodPriceSource,
+  PriceBasis,
+} from "@yacht-charter/db/search";
 
 /* Shared so the no-ranks path allocates nothing per card. */
 const EMPTY_AMENITY_RANKS: ReadonlyMap<string, number> = new Map();
@@ -100,10 +105,10 @@ export function pricedPeriodDays(doc: ListingSearchDoc): number {
 function priceSourceOf(
   doc: ListingSearchDoc,
   pricesItsCharter: boolean,
-): "vendor" | "price-list" | "season-minimum" | null {
+): PeriodPriceSource | "season-minimum" | null {
   if (doc.priceFromMinor === null || doc.priceFromMinor <= 0) return null;
   if (doc.priceIsFrom || !pricesItsCharter) return "season-minimum";
-  return doc.priceSource === "price-list" ? "price-list" : "vendor";
+  return doc.priceSource ?? "vendor";
 }
 
 /**

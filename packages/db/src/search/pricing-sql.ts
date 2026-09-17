@@ -6,7 +6,7 @@ import { MIN_LEAD_DAYS } from "./lead-time";
 import { listRatePeriodPrice } from "./list-rate-sql";
 import { PERIOD_PRICE_COLUMNS } from "./period-prices";
 import { shownCharterStart } from "./sellable-starts";
-import type { ListingSearchDoc, ListingSearchInput, PriceBasis } from "./types";
+import type { ListingSearchDoc, ListingSearchInput, PeriodPriceSource, PriceBasis } from "./types";
 
 const NULL_PRICE_ASC = 2_147_483_647;
 
@@ -39,9 +39,10 @@ export const NULL_YEAR_DESC = 0;
  *
  * That charter is the dates asked for, or on a flexible search the nearest one the listing sells
  * instead (`shownCharterStart`). The vendor's own price for it wins; failing that, the operator's
- * published rate for that exact week (`listRatePeriodPrice`). `price_source` says which, and a
- * listing neither prices reads its document as stored, which is the price of that listing's own
- * week. An undated search reads every document as stored.
+ * published rate for that exact week, or for any other length an estimate from that list
+ * (`listRatePeriodPrice`). `price_source` says which, and a listing none of them prices reads its
+ * document as stored, which is the price of that listing's own week. An undated search reads every
+ * document as stored.
  *
  * The inner alias is `doc` because the charter lookups are written against it.
  */
@@ -211,9 +212,11 @@ export function priceDescSortValueOf(
 export const recommendedSortValue = sql`case when doc.price_is_from then doc.rating else doc.rating + 10 end`;
 
 /* Each clears the 0..5 rating range, so a tier is settled before the stars are read. */
-const VENDOR_PRICED_RANK = 20;
-const LIST_PRICED_RANK = 10;
-const ASKED_DATES_RANK = 20;
+const VENDOR_PRICED_RANK = 30;
+const LIST_PRICED_RANK = 20;
+const ESTIMATE_PRICED_RANK = 10;
+/* Clears the widest gap between two sources plus the rating range. */
+const ASKED_DATES_RANK = 30;
 
 /**
  * `recommendedSortValue` for a search that may name dates.
@@ -224,21 +227,31 @@ const ASKED_DATES_RANK = 20;
  * for that week sat further down.
  *
  * The vendor's price for the week outranks the operator's list rate for it, because the quote will
- * match the first and both vendors sell below the second. Either for the dates asked for outranks
- * either for the nearby week a flexible search moved the card onto: both are priced, but only the
- * first is the trip as described.
+ * match the first and both vendors sell below the second, and the list rate for a week outranks an
+ * estimate from it for another length, which the quote can miss further still. Any of them for the
+ * dates asked for outranks any for the nearby charter a flexible search moved the card onto: both
+ * are priced, but only the first is the trip as described.
  */
 export function recommendedSortValueFor(input: ListingSearchInput): SQL {
   return availabilityWindowFor(input)
     ? sql`case
         when doc.price_source is null then doc.rating
         else doc.rating
-          + case doc.price_source when 'vendor' then ${VENDOR_PRICED_RANK}::integer
-              else ${LIST_PRICED_RANK}::integer end
+          + case doc.price_source
+              when 'vendor' then ${VENDOR_PRICED_RANK}::integer
+              when 'price-list' then ${LIST_PRICED_RANK}::integer
+              else ${ESTIMATE_PRICED_RANK}::integer
+            end
           + case when doc.priced_for_nearby_dates then 0 else ${ASKED_DATES_RANK}::integer end
       end`
     : recommendedSortValue;
 }
+
+const SOURCE_RANK = {
+  vendor: VENDOR_PRICED_RANK,
+  "price-list": LIST_PRICED_RANK,
+  "price-list-estimate": ESTIMATE_PRICED_RANK,
+} satisfies Record<PeriodPriceSource, number>;
 
 /** `recommendedSortValueFor` in the units the keyset cursor compares. */
 export function recommendedSortValueOf(
@@ -248,10 +261,8 @@ export function recommendedSortValueOf(
   >,
 ): number {
   if (item.pricedForDates === undefined) return (item.priceIsFrom ? 0 : 10) + Number(item.rating);
-  if (item.priceSource !== "vendor" && item.priceSource !== "price-list") {
-    return Number(item.rating);
-  }
-  const source = item.priceSource === "vendor" ? VENDOR_PRICED_RANK : LIST_PRICED_RANK;
+  if (item.priceSource === null || item.priceSource === undefined) return Number(item.rating);
+  const source = SOURCE_RANK[item.priceSource];
   return source + (item.pricedForNearbyDates ? 0 : ASKED_DATES_RANK) + Number(item.rating);
 }
 

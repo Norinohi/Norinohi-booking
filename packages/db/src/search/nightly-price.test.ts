@@ -196,6 +196,56 @@ describe("recommendedSortValueOf", () => {
     expect(list).toBeGreaterThan(none);
   });
 
+  it("ranks a list rate above an estimate from the list, and an estimate above no price", () => {
+    const list = recommendedSortValueOf({
+      ...rated,
+      rating: "0.00",
+      pricedForDates: true,
+      priceSource: "price-list",
+    });
+    const estimate = recommendedSortValueOf({
+      ...rated,
+      rating: "5.00",
+      pricedForDates: true,
+      priceSource: "price-list-estimate",
+    });
+    const none = recommendedSortValueOf({
+      ...rated,
+      rating: "5.00",
+      pricedForDates: false,
+      priceSource: null,
+    });
+    expect(list).toBeGreaterThan(estimate);
+    expect(estimate).toBeGreaterThan(none);
+  });
+
+  it("ranks any price for the dates asked for above any for the nearby charter shown", () => {
+    const estimateAsked = recommendedSortValueOf({
+      ...rated,
+      rating: "0.00",
+      pricedForDates: true,
+      pricedForNearbyDates: false,
+      priceSource: "price-list-estimate",
+    });
+    const vendorNearby = recommendedSortValueOf({
+      ...rated,
+      rating: "5.00",
+      pricedForDates: true,
+      pricedForNearbyDates: true,
+      priceSource: "vendor",
+    });
+    const estimateNearby = recommendedSortValueOf({
+      ...rated,
+      rating: "5.00",
+      pricedForDates: true,
+      pricedForNearbyDates: true,
+      priceSource: "price-list-estimate",
+    });
+    const none = recommendedSortValueOf({ ...rated, rating: "5.00", pricedForDates: false });
+    expect(estimateAsked).toBeGreaterThan(vendorNearby);
+    expect(estimateNearby).toBeGreaterThan(none);
+  });
+
   it("ranks a price for the dates asked for above one for the nearby week shown instead", () => {
     const listAsked = recommendedSortValueOf({
       ...rated,
