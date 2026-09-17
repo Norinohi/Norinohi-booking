@@ -376,13 +376,25 @@ describe("cron routes and the outbox", () => {
       .mockRejectedValueOnce(new Error("Resend refused the invitation"));
     await enqueueOutbox(test.db, "account_invitation", userId);
 
-    expect(await drainOutbox(test.db)).toMatchObject({ retrying: 1 });
+    /*
+     * Due from the database clock, which in CI runs ahead of the runner's, so the cutoff leads it.
+     * Earlier cases leave their own messages pending, hence only this subject's row is asserted.
+     */
+    const dueCutoff = new Date(Date.now() + 60_000);
+    const drained = await drainOutbox(test.db, dueCutoff);
+    expect(drained.retrying).toBeGreaterThanOrEqual(1);
     reset.mockRestore();
 
     const rows = await test.db
       .select()
       .from(auditLog)
-      .where(and(eq(auditLog.action, "error"), eq(auditLog.entityType, "outbox_message")));
+      .where(
+        and(
+          eq(auditLog.action, "error"),
+          eq(auditLog.entityType, "outbox_message"),
+          sql`${auditLog.metadata}->'context'->>'subjectId' = ${userId}`,
+        ),
+      );
     expect(rows).toEqual([
       expect.objectContaining({
         entityId: expect.any(String),
