@@ -120,6 +120,24 @@ describe("projectNausysCatalogue", () => {
     });
   });
 
+  it("reads a builder the vendor calls Unknown as no builder at all", () => {
+    const builders = recorded.builder.map((item) =>
+      item.id === 1 ? { ...item, name: "Unknown" } : item,
+    );
+    const catalogue = projectNausysCatalogue(fixtureRecords(recorded.yacht, { builder: builders }));
+    expect(catalogue.builders.map((item) => item.name)).not.toContain("Unknown");
+    expect(catalogue.builders).toHaveLength(builders.length - 1);
+    expect(catalogue.models.filter((model) => model.externalBuilderId === "1")).toEqual([]);
+    expect(catalogue.listings.map((listing) => listing.externalBuilderId)).toEqual([
+      "53",
+      undefined,
+      "55",
+      "104554",
+      "201",
+      undefined,
+    ]);
+  });
+
   it("falls back from a missing EN text to the next locale the vendor sent", () => {
     // Every recorded name carries textEN, so the gap is made rather than found.
     const [first, ...rest] = payloadsSchema.parse(structuredClone(locations.locations));

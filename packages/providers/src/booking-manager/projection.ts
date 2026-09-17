@@ -4,6 +4,7 @@ import type { JsonField } from "../shared/json";
 import { parseBookingManagerDate } from "./dates";
 import { stripHtml } from "../shared/html-text";
 import { decimalStringToMinor } from "../shared/money";
+import { isPlaceholderBuilder } from "../shared/placeholder-builders";
 import { mergeYachtTitle } from "../shared/yacht-title";
 import {
   currencyOf,
@@ -28,7 +29,6 @@ import {
   restEquipmentSchema,
   restSailingAreaSchema,
   restShipyardSchema,
-  restWorldRegionSchema,
   restYachtSchema,
   restYachtTypeSchema,
 } from "./endpoints";
@@ -68,19 +68,17 @@ type TextKind = "description" | "notes" | "conditions" | "one_way_note";
 
 export function projectBookingManagerCatalogue(records: ProviderRecordSet): CanonicalCatalogue {
   const countries = parseAll(records, "country", restCountrySchema);
-  const worldRegions = parseAll(records, "region", restWorldRegionSchema);
   const sailingAreas = parseAll(records, "location", restSailingAreaSchema);
   const equipment = parseAll(records, "equipment_category", restEquipmentSchema);
-  const shipyards = parseAll(records, "builder", restShipyardSchema);
+  const shipyards = parseAll(records, "builder", restShipyardSchema).filter(
+    (item) => !isPlaceholderBuilder(text(item.name) ?? text(item.shortName)),
+  );
   const yachtTypes = parseAll(records, "category", restYachtTypeSchema);
   const companies = parseAll(records, "company", restCompanySchema);
   const bases = parseAll(records, "base", restBaseSchema);
   const yachts = parseAll(records, "yacht", restYachtSchema);
 
   const countryById = new Map(countries.map((item) => [String(item.id), item]));
-  const worldRegionNameById = new Map(
-    worldRegions.map((item) => [String(item.id), text(item.name)]),
-  );
   const sailingAreaNameById = new Map(
     sailingAreas.map((item) => [String(item.id), text(item.name)]),
   );
@@ -89,7 +87,6 @@ export function projectBookingManagerCatalogue(records: ProviderRecordSet): Cano
 
   const geography = projectGeography(bases, {
     countryById,
-    worldRegionNameById,
     sailingAreaNameById,
   });
 
@@ -181,17 +178,21 @@ type RestYacht = z.infer<typeof restYachtSchema>;
  * and no country of their own. So the chain is rebuilt from the bases outward: a
  * base names its country and its sailing areas, which is enough to place it.
  *
- * A country therefore gets exactly one region, named after its world region. That
- * loses the vendor's grouping of countries under a world region, which our model
- * has no room for anyway, and it keeps `region.country_id` (NOT NULL) satisfiable.
- * Regions and locations are emitted only where a base actually needs them, so an
- * unvisited country does not leave an empty branch behind.
+ * The region is the base's sailing area within its country, and so is the location,
+ * because the vendor has nothing finer. The world region is not used at all: it used
+ * to name the region, which filed Croatia, Greece and six more under a "Southern
+ * Europe" region beside the real Split and Zadar ones, and made catalogue pages of it.
+ * A base with no sailing area falls back to its country's name for both, which is
+ * what the other vendor's single-region countries look like too.
+ *
+ * Migration 0128 moved the locations already written under a world region into these
+ * regions in place, so the bases under them keep their ids and the routes attached to
+ * them. Change the naming here and that no longer holds: every base is re-created.
  */
 function projectGeography(
   bases: RestBase[],
   context: {
     countryById: Map<string, RestCountry>;
-    worldRegionNameById: Map<string, string | undefined>;
     sailingAreaNameById: Map<string, string | undefined>;
   },
 ) {
@@ -219,33 +220,29 @@ function projectGeography(
 
     const country = context.countryById.get(countryId);
     const countryName = text(country?.name) ?? text(country?.long) ?? `Country ${countryId}`;
-    const regionExternalId = `region:${countryId}`;
-    const worldRegionId = idOf(country?.worldRegion);
-    regions.set(regionExternalId, {
-      externalId: regionExternalId,
-      externalCountryId: countryId,
-      name:
-        (worldRegionId === null ? undefined : context.worldRegionNameById.get(worldRegionId)) ??
-        countryName,
-    });
 
     // A sailing area spans countries (the Adriatic is Croatian and Montenegrin), so
-    // it is split per country: one canonical location may only sit in one region.
+    // it is split per country: one canonical region may only sit in one country.
     const sailingAreaId = (item.sailingAreas ?? [])
       .map((value) => idOf(value))
       .find((value): value is string => value !== null && context.sailingAreaNameById.has(value));
+    const placeName =
+      (sailingAreaId === undefined ? undefined : context.sailingAreaNameById.get(sailingAreaId)) ??
+      countryName;
+    const placeKey = sailingAreaId === undefined ? countryId : `${sailingAreaId}:${countryId}`;
 
-    const locationExternalId =
-      sailingAreaId === undefined
-        ? `location:${countryId}`
-        : `location:${sailingAreaId}:${countryId}`;
+    const regionExternalId = `region:${placeKey}`;
+    regions.set(regionExternalId, {
+      externalId: regionExternalId,
+      externalCountryId: countryId,
+      name: placeName,
+    });
+
+    const locationExternalId = `location:${placeKey}`;
     locations.set(locationExternalId, {
       externalId: locationExternalId,
       externalRegionId: regionExternalId,
-      name:
-        (sailingAreaId === undefined
-          ? undefined
-          : context.sailingAreaNameById.get(sailingAreaId)) ?? countryName,
+      name: placeName,
     });
 
     projectedBases.push({

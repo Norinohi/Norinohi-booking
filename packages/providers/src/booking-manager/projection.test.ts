@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { JsonValue } from "../shared/json";
-import type { ProviderRecordSet } from "../types";
+import type { ProviderRecordSet, ProviderResourceType } from "../types";
 import { projectBookingManagerCatalogue } from "./projection";
 
 function records(countries: unknown[]): ProviderRecordSet {
@@ -262,5 +262,110 @@ describe("check-in rules", () => {
     expect(rulesOf({ defaultCheckInDay: -1, minimumCharterDuration: 5 })).toEqual([
       { checkinWeekday: undefined, checkoutWeekday: undefined, minNights: 5, maxNights: undefined },
     ]);
+  });
+});
+
+type Payload = { id: number } & Record<string, JsonValue>;
+
+/** Keyed by vendor id, which is how the ingest files every record. */
+const recordSet = (entries: [ProviderResourceType, Payload[]][]): ProviderRecordSet =>
+  new Map(
+    entries.map(([resourceType, payloads]) => [
+      resourceType,
+      payloads.map((payload) => ({ externalId: String(payload.id), payload })),
+    ]),
+  );
+
+/*
+ * The vendor files a country under a world region ("Southern Europe") and a base under sailing
+ * areas. Only the sailing area is somewhere to sail, and migration 0128 moved the rows already
+ * written to exactly these names, so the region and location naming is pinned here.
+ */
+describe("geography", () => {
+  const geographyOf = (bases: Payload[]) =>
+    projectBookingManagerCatalogue(
+      recordSet([
+        [
+          "country",
+          [
+            { id: 191, name: "Croatia", shortName: "HR", worldRegion: 39 },
+            { id: 499, name: "Montenegro", shortName: "ME", worldRegion: 39 },
+          ],
+        ],
+        ["region", [{ id: 39, name: "Southern Europe" }]],
+        [
+          "location",
+          [
+            { id: 3, name: "Split" },
+            { id: 9, name: "Dubrovnik / Montenegro" },
+          ],
+        ],
+        ["base", bases],
+      ]),
+    );
+
+  it("names the region after the base's sailing area, never the world region", () => {
+    const { regions, locations, bases } = geographyOf([
+      { id: 1, name: "ACI Marina Split", countryId: 191, sailingAreas: [3] },
+    ]);
+
+    expect(regions).toEqual([
+      { externalId: "region:3:191", externalCountryId: "191", name: "Split" },
+    ]);
+    expect(locations).toEqual([
+      { externalId: "location:3:191", externalRegionId: "region:3:191", name: "Split" },
+    ]);
+    expect(bases[0]?.externalLocationId).toBe("location:3:191");
+  });
+
+  it("splits a sailing area that crosses a border into one region per country", () => {
+    const { regions } = geographyOf([
+      { id: 1, name: "Port Gruž", countryId: 191, sailingAreas: [9] },
+      { id: 2, name: "Porto Montenegro", countryId: 499, sailingAreas: [9] },
+    ]);
+
+    expect(regions.map((item) => [item.externalCountryId, item.name])).toEqual([
+      ["191", "Dubrovnik / Montenegro"],
+      ["499", "Dubrovnik / Montenegro"],
+    ]);
+  });
+
+  it("falls back to the country for a base with no sailing area", () => {
+    const { regions, locations } = geographyOf([
+      { id: 1, name: "Marina Punat", countryId: 191, sailingAreas: [] },
+    ]);
+
+    expect(regions).toEqual([
+      { externalId: "region:191", externalCountryId: "191", name: "Croatia" },
+    ]);
+    expect(locations[0]?.name).toBe("Croatia");
+  });
+});
+
+describe("placeholder shipyards", () => {
+  it("leaves a yacht filed under a shipyard called Unknown without a builder", () => {
+    const yacht = { companyId: 225, homeBaseId: 7 };
+    const catalogue = projectBookingManagerCatalogue(
+      recordSet([
+        [
+          "builder",
+          [
+            { id: 1, name: "Unknown" },
+            { id: 2, name: "Bavaria" },
+          ],
+        ],
+        [
+          "yacht",
+          [
+            { ...yacht, id: 5001, name: "Nobody", model: "One-off", shipyardId: 1 },
+            { ...yacht, id: 5002, name: "Zaffiro", model: "Cruiser 46", shipyardId: 2 },
+          ],
+        ],
+      ]),
+    );
+
+    expect(catalogue.builders.map((item) => item.name)).toEqual(["Bavaria"]);
+    expect(catalogue.listings.map((item) => item.externalBuilderId)).toEqual([undefined, "2"]);
+    expect(catalogue.models.map((item) => item.externalBuilderId)).toEqual([undefined, "2"]);
   });
 });
