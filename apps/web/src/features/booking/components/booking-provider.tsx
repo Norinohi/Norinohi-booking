@@ -74,6 +74,9 @@ type BookingContextValue = {
   /** The held booking, set by `createHold` at Confirm; the payment step and confirmation key on it. */
   bookingId: string | null;
   setBookingId: (id: string | null) => void;
+  /** When the provider releases the option `createHold` took; null where none was held. */
+  holdExpiresAt: string | null;
+  setHoldExpiresAt: (at: string | null) => void;
 };
 
 const BookingContext = createContext<BookingContextValue | null>(null);
@@ -96,6 +99,7 @@ export function BookingProvider({
   const listingId = listing?.id ?? "";
   const { quote, quoteFor, load, repriceWith, isPending } = useQuote(listingId);
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
 
   const searchedPeriod = useSearchedPeriod();
   const { offers, constraintsLoaded, suggestedPeriod, refusePeriod } = useOfferConstraints(
@@ -169,6 +173,8 @@ export function BookingProvider({
     applyCredit,
     bookingId,
     setBookingId,
+    holdExpiresAt,
+    setHoldExpiresAt,
   };
 
   return <BookingContext.Provider value={value}>{children}</BookingContext.Provider>;

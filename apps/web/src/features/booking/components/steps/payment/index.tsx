@@ -34,6 +34,7 @@ import { useBooking } from "../../booking-provider";
 import { PaymentTargetProvider } from "../../payment-target";
 import AskQuestion from "./ask-question";
 import CardPayButton from "./card-pay-button";
+import { HoldExpiredLink, HoldNotice, useHoldRemaining } from "./hold-clock";
 import PayByCard from "./pay-by-card";
 import RequestInvoice from "./request-invoice";
 
@@ -49,7 +50,8 @@ const TABS: PaymentMethod[] = ["card", "invoice", "question"];
  * when they press pay.
  */
 export default function PaymentStep() {
-  const { quote } = useBooking();
+  const { quote, slug, holdExpiresAt } = useBooking();
+  const holdLeft = useHoldRemaining(holdExpiresAt);
   const locale = useLocale();
   const stripe = stripeLoader();
   const dueNowMinor = quote?.deposit.amountMinor ?? 0;
@@ -78,13 +80,28 @@ export default function PaymentStep() {
     [dueNowMinor, currency, locale],
   );
 
+  const hold =
+    holdExpiresAt && holdLeft ? (
+      <HoldNotice expiresAt={holdExpiresAt} remaining={holdLeft} />
+    ) : null;
+
+  /* Every way to pay goes: the vendor has released the option, so there is nothing left to pay for. */
+  if (holdLeft?.expired) {
+    return (
+      <div className="flex flex-col items-start gap-4 p-5">
+        {hold}
+        <HoldExpiredLink slug={slug} />
+      </div>
+    );
+  }
+
   /* Elements rejects a zero amount, so an unpriced quote falls back to the disabled panel. */
-  if (!stripe || dueNowMinor <= 0) return <PaymentMethods cardEnabled={false} />;
+  if (!stripe || dueNowMinor <= 0) return <PaymentMethods cardEnabled={false} hold={hold} />;
 
   return (
     <Elements stripe={stripe} options={options}>
       <CheckoutPaymentTarget>
-        <PaymentMethods cardEnabled />
+        <PaymentMethods cardEnabled hold={hold} />
       </CheckoutPaymentTarget>
     </Elements>
   );
@@ -116,7 +133,7 @@ function CheckoutPaymentTarget({ children }: { children: ReactNode }) {
   return <PaymentTargetProvider value={target}>{children}</PaymentTargetProvider>;
 }
 
-function PaymentMethods({ cardEnabled }: { cardEnabled: boolean }) {
+function PaymentMethods({ cardEnabled, hold }: { cardEnabled: boolean; hold: ReactNode }) {
   const t = useTranslations("Booking.payment");
   const router = useRouter();
   const params = useParams<{ id: string }>();
@@ -216,6 +233,7 @@ function PaymentMethods({ cardEnabled }: { cardEnabled: boolean }) {
     <>
       <div className="flex flex-col gap-4 p-5">
         <h3 className="py-2 text-xl leading-[1.3] font-bold text-foreground">{t("heading")}</h3>
+        {hold}
 
         <Tabs
           variant="segmented"

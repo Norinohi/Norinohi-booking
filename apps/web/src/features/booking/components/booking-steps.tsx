@@ -93,6 +93,7 @@ export default function BookingSteps() {
     extras,
     bookingId,
     setBookingId,
+    setHoldExpiresAt,
     setExtras,
     requestedExtras,
     setRequestedExtras,
@@ -296,6 +297,7 @@ export default function BookingSteps() {
          restore and is the customer's own data, so it goes. */
       forgetGuestDraft(slug);
       setBookingId(hold.bookingId);
+      setHoldExpiresAt(hold.holdExpiresAt);
       setCompleted((prev) => new Set(prev).add("reviewAndBook"));
       setOpen("payment");
     } catch (error) {

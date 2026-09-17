@@ -129,6 +129,12 @@
       "label": "Your Question or Request",
       "placeholder": "Send a request before booking (e.g. license check, special requirements)",
       "cta": "Send Request"
+    },
+    "hold": {
+      "until": "Held for you until {until} ({left} left). Pay before then, or the operator releases the yacht.",
+      "expiredTitle": "The hold on this yacht has expired",
+      "expiredBody": "The operator held these dates until {until}. This booking can no longer be paid for: go back to the yacht and book the dates again.",
+      "backToYacht": "Back to the yacht"
     }
   },
   "confirmation": {

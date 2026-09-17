@@ -129,6 +129,12 @@
       "label": "Tu pregunta o solicitud",
       "placeholder": "Envía una solicitud antes de reservar (p. ej. verificación de licencia, requisitos especiales)",
       "cta": "Enviar solicitud"
+    },
+    "hold": {
+      "until": "Reservado para usted hasta {until} (quedan {left}). Pague antes de esa hora o el operador liberará el yate.",
+      "expiredTitle": "La reserva de este yate ha caducado",
+      "expiredBody": "El operador reservó estas fechas hasta {until}. Esta reserva ya no se puede pagar: vuelva al yate y reserve las fechas de nuevo.",
+      "backToYacht": "Volver al yate"
     }
   },
   "confirmation": {

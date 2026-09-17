@@ -129,6 +129,12 @@
       "label": "Ihre Frage oder Anfrage",
       "placeholder": "Senden Sie vor der Buchung eine Anfrage (z. B. Führerscheinprüfung, besondere Anforderungen)",
       "cta": "Anfrage senden"
+    },
+    "hold": {
+      "until": "Für Sie reserviert bis {until} (noch {left}). Bitte zahlen Sie vorher, sonst gibt der Vercharterer die Yacht wieder frei.",
+      "expiredTitle": "Die Reservierung dieser Yacht ist abgelaufen",
+      "expiredBody": "Der Vercharterer hat diese Termine bis {until} reserviert. Diese Buchung kann nicht mehr bezahlt werden: Kehren Sie zur Yacht zurück und buchen Sie die Termine erneut.",
+      "backToYacht": "Zurück zur Yacht"
     }
   },
   "confirmation": {
