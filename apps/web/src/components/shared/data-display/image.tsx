@@ -8,6 +8,8 @@ import NextImage, { type ImageLoaderProps } from "next/image";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
+import { srcsetSafeUrl } from "@/lib/image-url";
+
 type ImageSrc = ComponentProps<typeof NextImage>["src"];
 
 const srcUrlSchema = z.string();
@@ -21,7 +23,7 @@ function bunnyLoader({ src, width, quality }: ImageLoaderProps): string {
 }
 
 function remoteLoader(props: ImageLoaderProps): string {
-  return isBunnyUrl(props.src) ? bunnyLoader(props) : props.src;
+  return isBunnyUrl(props.src) ? bunnyLoader(props) : srcsetSafeUrl(props.src);
 }
 
 function isBunnyUrl(src: string): boolean {
