@@ -22,10 +22,6 @@ function bunnyLoader({ src, width, quality }: ImageLoaderProps): string {
   return url.toString();
 }
 
-function remoteLoader(props: ImageLoaderProps): string {
-  return isBunnyUrl(props.src) ? bunnyLoader(props) : srcsetSafeUrl(props.src);
-}
-
 function isBunnyUrl(src: string): boolean {
   const base = env.NEXT_PUBLIC_BUNNY_CDN_BASE_URL;
   return base ? src.startsWith(base.replace(/\/+$/, "")) : false;
@@ -67,6 +63,13 @@ export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) 
   }
 
   const dynamic = !isLocal(src);
+  /*
+   * Only Bunny resizes on request. A vendor's photo is one fixed file, so it is rendered as that
+   * file rather than through a loader that ignores the width: Next warns about such a loader on
+   * every image, and its srcset only repeated the same URL at each width anyway.
+   */
+  const resizable = dynamic && isBunnyUrl(String(src));
+  const fixedRemote = dynamic && !resizable;
   const overlay = dynamic && rest.fill === true;
   const ref = useRef<HTMLImageElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -129,13 +132,13 @@ export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) 
     <>
       <NextImage
         ref={ref}
-        src={src}
-        loader={dynamic ? remoteLoader : undefined}
+        src={fixedRemote ? srcsetSafeUrl(String(src)) : src}
+        loader={resizable ? bunnyLoader : undefined}
         onLoad={handleLoad}
         onError={handleError}
         className={className}
         {...rest}
-        unoptimized={rest.unoptimized || cdnFailed}
+        unoptimized={rest.unoptimized || cdnFailed || fixedRemote}
       />
       {overlay ? (
         <div
