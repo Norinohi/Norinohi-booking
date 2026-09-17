@@ -73,6 +73,7 @@ export const bookingSummarySchema = z.object({
       showers: z.number().int().nullable(),
       yearBuilt: z.number().int(),
       sailType: z.string().nullable(),
+      hasMainsail: z.boolean(),
     }),
     /** The full list — the card takes the first three itself. */
     amenities: z.array(z.string()),

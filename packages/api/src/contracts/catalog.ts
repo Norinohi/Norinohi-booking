@@ -167,6 +167,8 @@ export const listingSummarySchema = z.object({
     showers: z.number().int().nullable(),
     yearBuilt: z.number().int(),
     sailType: z.string().nullable(),
+    /* Decided on the English category group, since `category` arrives translated. */
+    hasMainsail: z.boolean(),
   }),
   policies: z.object({
     depositInsuranceIncluded: z.boolean(),

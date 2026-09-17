@@ -27,6 +27,7 @@ import { and, count, desc, eq, gte, inArray, lte, notInArray, sql } from "drizzl
 import type { z } from "zod";
 
 import type { Database, DatabaseExecutor } from "../context";
+import { hasMainsail } from "@yacht-charter/db/search/mainsail";
 import { localizeSnapshot } from "../presenters/booking-snapshot";
 import { badgesFor } from "../presenters/listing";
 import type {
@@ -1137,8 +1138,13 @@ function presentSummary(
   const snapshot = localizeSnapshot(row.commercialSnapshot, translate);
   const paidMinor = money?.paidMinor ?? 0;
   const snapshotSpecs = snapshot.specs;
+  /* Read off the frozen snapshot, whose category is still the English group. */
+  const mainsail = hasMainsail(
+    row.commercialSnapshot.category,
+    row.commercialSnapshot.specs?.sailType ?? null,
+  );
   const specs = snapshotSpecs
-    ? { ...snapshotSpecs, showers: snapshotSpecs.showers ?? null }
+    ? { ...snapshotSpecs, showers: snapshotSpecs.showers ?? null, hasMainsail: mainsail }
     : {
         lengthM: 0,
         cabins: 0,
@@ -1147,6 +1153,7 @@ function presentSummary(
         showers: null,
         yearBuilt: 0,
         sailType: null,
+        hasMainsail: mainsail,
       };
 
   return {

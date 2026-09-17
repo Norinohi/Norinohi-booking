@@ -119,6 +119,7 @@ export async function localizeSearchDocs<T extends ListingSearchDoc>(
     /* Kept beside the translated labels because curated rank, the amenity headings and the
        equipment filter are all keyed on the English value. See `amenityKeys` on the doc. */
     amenityKeys: doc.amenities,
+    categoryKey: doc.category,
   }));
 }
 

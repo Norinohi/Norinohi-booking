@@ -168,6 +168,8 @@ export type ListingSearchDoc = {
    * reads this.
    */
   amenityKeys?: string[];
+  /** `category` in its stored English group name, set only where `category` was translated. */
+  categoryKey?: string | null;
   priceFromMinor: number | null;
   /**
    * Whether `priceFromMinor` prices the advertised charter or starts from the season. See the

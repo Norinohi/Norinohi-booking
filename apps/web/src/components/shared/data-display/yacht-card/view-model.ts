@@ -1,4 +1,3 @@
-import { hasMainsail } from "@yacht-charter/api/lib/mainsail";
 import {
   Anchor,
   Check,
@@ -82,15 +81,12 @@ export type BoatSpecs = {
   showers: number | null;
   yearBuilt: number;
   sailType: string | null;
+  hasMainsail: boolean;
 };
 
 type YachtCardTranslator = ReturnType<typeof useTranslations<"Common.boatCard">>;
 
-export function yachtSpecs(
-  t: YachtCardTranslator,
-  specs: BoatSpecs,
-  category: string | null,
-): YachtCardSpec[] {
+export function yachtSpecs(t: YachtCardTranslator, specs: BoatSpecs): YachtCardSpec[] {
   return [
     { label: t("specs.year"), value: String(specs.yearBuilt) },
     { label: t("specs.people"), value: String(specs.berths) },
@@ -110,7 +106,7 @@ export function yachtSpecs(
             icon: createElement(ShowerHead),
           },
         ]),
-    ...(hasMainsail(category, specs.sailType)
+    ...(specs.hasMainsail
       ? [
           {
             label: t("specs.mainsail"),
@@ -271,7 +267,7 @@ export function yachtCardIdentity(
     rating: listing.rating > 0 ? String(listing.rating) : undefined,
     charterType: listing.category ?? "",
     crew: listing.crewType ? crewLabel(tCrew, listing.crewType) : "",
-    specs: yachtSpecs(t, listing.specs, listing.category),
+    specs: yachtSpecs(t, listing.specs),
     amenities: amenityItems(listing.highlightAmenities ?? listing.amenities),
     /*
      * Only where the curated list is present. Falling back to `amenities` here would count the

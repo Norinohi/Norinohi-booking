@@ -11,7 +11,7 @@ import { foldFeeVariants, isSelectableExtra, pricedItem } from "./extras";
 import { valueForLabel } from "./filters";
 import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs } from "./localize";
 import { normalizedKeySql } from "./normalize";
-import { hasMainsail } from "./mainsail";
+import { docHasMainsail } from "./mainsail";
 import { placeLine, placeLineExcept } from "./place-line";
 import { comparablePrice, recommendedSortValue } from "./pricing-sql";
 import { nextCharterAfterLapseColumns } from "./sellable-starts";
@@ -605,7 +605,7 @@ function overviewFor(
       ? []
       : [{ code: "showers", label: "Showers", value: String(listing.showers) }]),
     { code: "length", label: "Length", value: metresValue(listing.lengthM) },
-    ...(hasMainsail(listing.category, listing.sailType)
+    ...(docHasMainsail(listing)
       ? [{ code: "mainsail", label: "Type of mainsail", value: listing.sailType }]
       : []),
     { code: "draught", label: "Draught", value: metresValue(info?.draftM) },

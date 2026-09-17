@@ -4,6 +4,7 @@ import {
   MIN_LEAD_DAYS,
   normalizedFilterValue,
 } from "@yacht-charter/db/search";
+import { docHasMainsail } from "@yacht-charter/db/search/mainsail";
 import { BASE_CURRENCY } from "../lib/display-currency";
 import type {
   ListingDetail,
@@ -212,6 +213,7 @@ export function presentListingSummary(
       showers: doc.showers,
       yearBuilt: doc.yearBuilt ?? 0,
       sailType: doc.sailType,
+      hasMainsail: docHasMainsail(doc),
     },
     policies: {
       depositInsuranceIncluded: doc.depositInsuranceIncluded,
