@@ -120,7 +120,7 @@ describe("a dated charter of another length estimated from the weekly list", () 
   it("estimates six nights at six sevenths of the week, with fees scaled to six nights", async () => {
     const card = (await bySlug(sixNights)).get("estimated");
     expect(card).toMatchObject({
-      priceSource: "price-list-estimate",
+      priceSource: "price-list-estimate-from",
       pricedForDates: true,
       priceIsFrom: false,
       basePriceFromMinor: 600_000,
@@ -132,6 +132,26 @@ describe("a dated charter of another length estimated from the weekly list", () 
     });
   });
 
+  it("adds Booking Manager's short-charter premium under a week", async () => {
+    /* Six nights at 150,000, plus 3% */
+    expect((await bySlug(sixNights)).get("crossing")).toMatchObject({
+      priceSource: "price-list-estimate",
+      basePriceFromMinor: 927_000,
+    });
+    /* Four nights at 150,000, plus 10% */
+    expect((await bySlug({ ...sixNights, duration: 4 })).get("crossing")).toMatchObject({
+      priceSource: "price-list-estimate",
+      basePriceFromMinor: 660_000,
+    });
+  });
+
+  it("estimates nothing under four nights, leaving the card on request", async () => {
+    const cards = await bySlug({ ...sixNights, duration: 3 });
+    expect(cards.get("estimated")?.priceSource ?? null).toBeNull();
+    expect(cards.get("crossing")?.priceSource ?? null).toBeNull();
+    expect(cards.get("estimated")?.pricedForDates).toBe(false);
+  });
+
   it("sums a charter crossing into another row night by night", async () => {
     const cards = await bySlug({ ...sixNights, duration: 10 });
     /* Seven nights at 150,000 and three at 200,000 */
@@ -141,6 +161,7 @@ describe("a dated charter of another length estimated from the weekly list", () 
       bookableTo: shiftIso(CHECK_IN, 10),
     });
     expect(cards.get("estimated")).toMatchObject({
+      priceSource: "price-list-estimate-before-discounts",
       basePriceFromMinor: 1_000_000,
       priceFromMinor: 1_020_000,
     });
@@ -204,7 +225,7 @@ describe("a dated charter of another length estimated from the weekly list", () 
     expect(filtered.items.map((item) => item.slug).sort()).toEqual(["estimated", "quoted"]);
 
     const facets = await listSearchFacets(test.db, sixNights);
-    expect(facets.priceRange).toMatchObject({ minMinor: 450_000, maxMinor: 900_000 });
+    expect(facets.priceRange).toMatchObject({ minMinor: 450_000, maxMinor: 927_000 });
 
     const [marina] = await listMapMarinas(test.db, { ...sixNights, minPriceMinor: 500_000 });
     expect(marina?.priceFromMinor).toBe(600_000);

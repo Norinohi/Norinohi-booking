@@ -72,9 +72,11 @@ and slider that read it. `list-rate.db.test.ts` pins the fallback for a dated we
 priced: the operator's weekly list rate for that exact week (`list-rate-sql.ts`,
 `price_source = 'price-list'`), ranked behind vendor prices and ahead of unpriced cards, and read
 by the same sort, filter, slider and map pin. `price-list-estimate.db.test.ts` pins the fallback
-for a dated charter of any other length: an estimate from that list, a seventh of the rate covering
-each night (`price_source = 'price-list-estimate'`, the SQL twin of `estimateFromWeeklyRates` in
-`weekly-estimate.ts`), ranked behind list rates and read the same way. `shown-period-price.db.test.ts` pins a flexible
+for a dated charter of any other length from four nights: an estimate from that list, a seventh of
+the rate covering each night with Booking Manager's short-charter premium under a week
+(`price_source` `price-list-estimate`, `-from` or `-before-discounts` by provider and length, the SQL
+twin of `estimateFromWeeklyRates` in `weekly-estimate.ts`, which holds the thresholds and premiums),
+ranked behind list rates and read the same way; three nights or fewer stay on request. `shown-period-price.db.test.ts` pins a flexible
 search pricing the nearby week a card is moved onto instead of the dates asked for
 (`shownCharterStart`, the SQL twin of `periodFor` in packages/api), ranked after prices for those
 dates and read by the same sort, filter, slider and map pin. `nearest-priced-week.db.test.ts` pins the rebuild replacing a season

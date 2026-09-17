@@ -1,3 +1,4 @@
+import { PROVIDER_KEYS, type ProviderKey } from "@yacht-charter/env/providers";
 import { sql, type SQL } from "drizzle-orm";
 
 import { toBaseMinorSql } from "../fx/rates";
@@ -8,8 +9,13 @@ import { providerLeadDaysSql } from "./lead-time";
 import { pricedMoney } from "./money-sql";
 import { operatorConfirms, providerRank, sellableActiveOffer } from "./offer-sql";
 import { rulesSellWindow } from "./sellable-starts";
-import type { PeriodPriceSource } from "./types";
-import { HALF_OPEN_RATE_PROVIDER, WEEKLY_RATE_NIGHTS } from "./weekly-estimate";
+import {
+  HALF_OPEN_RATE_PROVIDER,
+  MIN_ESTIMATED_NIGHTS,
+  priceListEstimateSource,
+  shortCharterPremiumPercent,
+  WEEKLY_RATE_NIGHTS,
+} from "./weekly-estimate";
 
 /*
  * The one charter length a published weekly rate prices outright. Any other length is only an
@@ -23,8 +29,8 @@ export const LIST_RATE_NIGHTS = WEEKLY_RATE_NIGHTS;
  * names, as one `listing_period_price`-shaped row, or no row.
  *
  * A week reads the rate of the band covering the check-in day (`price_source = 'price-list'`).
- * Any other length is estimated per night (`price_source = 'price-list-estimate'`): see
- * `priceListEstimate`.
+ * Any other length from `MIN_ESTIMATED_NIGHTS` is estimated per night, with a `price_source` from
+ * `priceListEstimateSource`: see `priceListEstimate`. Shorter charters get no row.
  *
  * Only where a vendor has not priced the charter itself; the caller tries that first. Where lists
  * overlap the cheapest band counts, as the price writer reads them. The offer has to be able to
@@ -36,16 +42,32 @@ export const LIST_RATE_NIGHTS = WEEKLY_RATE_NIGHTS;
  * been its stored price. It is a pre-discount number with no strike-through behind it.
  */
 export function listRatePeriodPrice(listingId: SQL, checkIn: SQL, nights: number): SQL | undefined {
-  if (!Number.isInteger(nights) || nights < 1) return undefined;
-  return nights === LIST_RATE_NIGHTS
-    ? listPricedCharter(listingId, checkIn, nights, weekRate(checkIn), "price-list")
-    : listPricedCharter(
-        listingId,
-        checkIn,
-        nights,
-        priceListEstimate(checkIn, nights),
-        "price-list-estimate",
-      );
+  if (!Number.isInteger(nights)) return undefined;
+  if (nights === LIST_RATE_NIGHTS) {
+    return listPricedCharter(listingId, checkIn, nights, weekRate(checkIn), sql`'price-list'`);
+  }
+  if (nights < MIN_ESTIMATED_NIGHTS) return undefined;
+  return listPricedCharter(
+    listingId,
+    checkIn,
+    nights,
+    priceListEstimate(checkIn, nights),
+    byProvider(nights, priceListEstimateSource, "price-list-estimate"),
+  );
+}
+
+/* A per-provider value for this length as a `case` over `p.code`, listing only the exceptions. */
+function byProvider<T extends string | number>(
+  nights: number,
+  valueOf: (provider: ProviderKey, nights: number) => T,
+  fallback: T,
+): SQL {
+  const cases = PROVIDER_KEYS.filter((provider) => valueOf(provider, nights) !== fallback).map(
+    (provider) => sql`when ${provider} then ${valueOf(provider, nights)}`,
+  );
+  return cases.length === 0
+    ? sql`${fallback}`
+    : sql`case p.code ${sql.join(cases, sql` `)} else ${fallback} end`;
 }
 
 /* The band covering the check-in day, as the `rate` lateral. */
@@ -70,7 +92,8 @@ function weekRate(checkIn: SQL): SQL {
 /*
  * `estimateFromWeeklyRates` in `weekly-estimate.ts`, as the `rate` lateral: each night takes the
  * cheapest band covering it, and the weekly rates summed over the nights are divided by seven and
- * rounded once. No row unless every night is covered, in one currency.
+ * scaled by the provider's short-charter premium and rounded once. No row unless every night is
+ * covered, in one currency.
  *
  * The bands overlapping the charter are read in one index scan and matched to the nights in
  * memory, rather than one lookup per night.
@@ -80,8 +103,11 @@ function priceListEstimate(checkIn: SQL, nights: number): SQL {
   return sql`
       cross join lateral (
         select
-          round(sum(night.price_minor)::numeric / ${WEEKLY_RATE_NIGHTS}::integer)::integer
-            as price_minor,
+          round(
+            sum(night.price_minor)::numeric
+              * (${byProvider(nights, shortCharterPremiumPercent, 100)})::integer
+              / ${WEEKLY_RATE_NIGHTS * 100}::integer
+          )::integer as price_minor,
           min(night.currency) as currency
         from (
           select distinct on (n.night) n.night, band.price_minor, band.currency
@@ -111,7 +137,7 @@ function listPricedCharter(
   checkIn: SQL,
   nights: number,
   rate: SQL,
-  source: PeriodPriceSource,
+  source: SQL,
 ): SQL {
   const checkOut = sql`(${checkIn} + ${nights}::integer)`;
 
@@ -127,7 +153,7 @@ function listPricedCharter(
       candidate.base_minor,
       candidate.base_minor_eur,
       candidate.list_all_in_minor,
-      ${source}::text as price_source
+      candidate.price_source
     from (
       select
         o.listing_id,
@@ -142,6 +168,7 @@ function listPricedCharter(
         ${toBaseMinorSql(sql`chosen.base_minor`, sql`money.price_currency`, sql`fx.rate`)}
           as base_minor_eur,
         null::integer as list_all_in_minor,
+        (${source})::text as price_source,
         ${operatorConfirms()} as operator_confirms,
         ${providerRank()} as provider_rank
       from listing_offer o

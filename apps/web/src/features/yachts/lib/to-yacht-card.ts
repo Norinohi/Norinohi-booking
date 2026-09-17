@@ -175,29 +175,68 @@ function priceCaption(
   otherDates: CharterPeriod | null,
 ): string {
   if (!listing.priceFrom) return "";
-  const listRate = listing.priceSource === "price-list";
-  const estimate = listing.priceSource === "price-list-estimate";
+  const boat = isBoatPrice(listing, basis);
+  const listCaption = isListPriceSource(listing.priceSource)
+    ? LIST_CAPTIONS[listing.priceSource]
+    : null;
   if (!listing.priceIsFrom && otherDates?.checkIn && otherDates.checkOut) {
     const dates = { from: dayToDisplay(otherDates.checkIn), to: dayToDisplay(otherDates.checkOut) };
-    if (isBoatPrice(listing, basis)) {
-      if (estimate) return t("boatPriceListEstimateForPeriod", dates);
-      return t(listRate ? "boatPriceListRateForPeriod" : "boatPriceForPeriod", dates);
-    }
-    if (estimate) return t("priceListEstimateForPeriod", dates);
-    return t(listRate ? "priceListRateForPeriod" : "priceForPeriod", dates);
+    if (listCaption) return listCaption.forPeriod(t, boat, dates);
+    return t(boat ? "boatPriceForPeriod" : "priceForPeriod", dates);
   }
-  const nights = { nights: listing.priceDetails.periodDays };
-  if (isBoatPrice(listing, basis)) {
-    if (listing.priceIsFrom) return t("boatPriceIndicative");
-    if (estimate) return t("boatPriceListEstimate", nights);
-    if (listRate) return t("boatPriceListRate");
-    return t("boatPriceFor", { days: listing.priceDetails.periodDays });
+  if (listing.priceIsFrom) return t(boat ? "boatPriceIndicative" : "priceIndicative");
+  if (listCaption) {
+    return listCaption.forNights(t, boat, listing.priceDetails.periodDays);
   }
-  if (listing.priceIsFrom) return t("priceIndicative");
-  if (estimate) return t("priceListEstimate", nights);
-  if (listRate) return t("priceListRate");
-  return t("priceFor", { days: listing.priceDetails.periodDays });
+  return t(boat ? "boatPriceFor" : "priceFor", { days: listing.priceDetails.periodDays });
 }
+
+type PriceSource = NonNullable<ResultListing["priceSource"]>;
+type ListPriceSource = Exclude<PriceSource, "vendor" | "season-minimum">;
+type CaptionDates = { from: Date; to: Date };
+
+interface ListCaption {
+  forNights(t: CardTranslator, boat: boolean, nights: number): string;
+  forPeriod(t: CardTranslator, boat: boolean, dates: CaptionDates): string;
+}
+
+function isListPriceSource(source: ResultListing["priceSource"]): source is ListPriceSource {
+  return source !== null && source !== "vendor" && source !== "season-minimum";
+}
+
+/*
+ * A figure from the operator's list, captioned by what the quote can do to it: a week's list rate
+ * and a NauSYS estimate beyond a week can only come down, a NauSYS estimate under a week is a
+ * starting price, and a Booking Manager estimate can move either way.
+ */
+const LIST_CAPTIONS = {
+  "price-list": {
+    forNights: (t, boat) => t(boat ? "boatPriceListRateMayBeLower" : "priceListRateMayBeLower"),
+    forPeriod: (t, boat, dates) =>
+      t(boat ? "boatPriceListRateMayBeLowerForPeriod" : "priceListRateMayBeLowerForPeriod", dates),
+  },
+  "price-list-estimate": {
+    forNights: (t, boat, nights) =>
+      t(boat ? "boatPriceListEstimate" : "priceListEstimate", { nights }),
+    forPeriod: (t, boat, dates) =>
+      t(boat ? "boatPriceListEstimateForPeriod" : "priceListEstimateForPeriod", dates),
+  },
+  "price-list-estimate-from": {
+    forNights: (t, boat, nights) =>
+      t(boat ? "boatPriceListEstimateFrom" : "priceListEstimateFrom", { nights }),
+    forPeriod: (t, boat, dates) =>
+      t(boat ? "boatPriceListEstimateFromForPeriod" : "priceListEstimateFromForPeriod", dates),
+  },
+  "price-list-estimate-before-discounts": {
+    forNights: (t, boat, nights) =>
+      t(boat ? "boatPriceListEstimateMayBeLower" : "priceListEstimateMayBeLower", { nights }),
+    forPeriod: (t, boat, dates) =>
+      t(
+        boat ? "boatPriceListEstimateMayBeLowerForPeriod" : "priceListEstimateMayBeLowerForPeriod",
+        dates,
+      ),
+  },
+} satisfies Record<ListPriceSource, ListCaption>;
 
 /*
  * A boat with no obligatory pack costs the same either way, so it keeps the basis it was asked

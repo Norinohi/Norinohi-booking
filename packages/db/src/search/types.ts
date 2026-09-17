@@ -226,8 +226,8 @@ export type ListingSearchDoc = {
   /*
    * Who priced those dates: the vendor itself, the operator's published list rate for that week,
    * which is before the discounts both vendors sell at, or for a charter of any other length an
-   * estimate from that list, a seventh of the weekly rate per night. Null on a dated search where
-   * none did; absent wherever `pricedForDates` is.
+   * estimate from that list, a seventh of the weekly rate per night, sourced by how the card may
+   * caption it (`priceListEstimateSource`). Null on a dated search where none did; absent wherever `pricedForDates` is.
    */
   priceSource?: PeriodPriceSource | null;
   /*
@@ -244,7 +244,12 @@ export type ListingSearchDoc = {
   nearestCheckOut: string | null;
 };
 
-export type PeriodPriceSource = "vendor" | "price-list" | "price-list-estimate";
+export type PeriodPriceSource =
+  | "vendor"
+  | "price-list"
+  | "price-list-estimate"
+  | "price-list-estimate-from"
+  | "price-list-estimate-before-discounts";
 
 export type ListingSearchResult = {
   items: ListingSearchDoc[];

@@ -251,6 +251,8 @@ const SOURCE_RANK = {
   vendor: VENDOR_PRICED_RANK,
   "price-list": LIST_PRICED_RANK,
   "price-list-estimate": ESTIMATE_PRICED_RANK,
+  "price-list-estimate-from": ESTIMATE_PRICED_RANK,
+  "price-list-estimate-before-discounts": ESTIMATE_PRICED_RANK,
 } satisfies Record<PeriodPriceSource, number>;
 
 /** `recommendedSortValueFor` in the units the keyset cursor compares. */

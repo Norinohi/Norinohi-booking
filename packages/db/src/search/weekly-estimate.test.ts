@@ -1,15 +1,28 @@
 import { describe, expect, it } from "vitest";
 
-import { estimateFromWeeklyRates, rateRowEndsExclusive } from "./weekly-estimate";
+import {
+  estimateFromWeeklyRates,
+  priceListEstimateSource,
+  rateRowEndsExclusive,
+  shortCharterPremiumPercent,
+} from "./weekly-estimate";
 
-/* NauSYS bands name their last check-in day; Booking Manager rows are half-open weeks. */
-const nausys = { endExclusive: false };
-const bookingManager = { endExclusive: true };
+const nausys = "nausys";
+const bookingManager = "booking_manager";
 
 describe("estimateFromWeeklyRates", () => {
-  it("prices a short charter at a seventh of the weekly rate per night", () => {
-    const rows = [{ startDate: "2026-09-19", endDate: "2026-09-25", priceMinor: 700_000 }];
-    expect(estimateFromWeeklyRates(rows, "2026-09-23", 3, nausys)).toBe(300_000);
+  it("prices a NauSYS charter at a seventh of the weekly rate per night", () => {
+    const rows = [{ startDate: "2026-09-19", endDate: "2026-09-30", priceMinor: 700_000 }];
+    expect(estimateFromWeeklyRates(rows, "2026-09-23", 5, nausys)).toBe(500_000);
+  });
+
+  it("adds Booking Manager's short-charter premium from four to six nights only", () => {
+    const rows = [{ startDate: "2026-09-01", endDate: "2026-10-31", priceMinor: 700_000 }];
+    expect(estimateFromWeeklyRates(rows, "2026-09-23", 4, bookingManager)).toBe(440_000);
+    expect(estimateFromWeeklyRates(rows, "2026-09-23", 5, bookingManager)).toBe(525_000);
+    expect(estimateFromWeeklyRates(rows, "2026-09-23", 6, bookingManager)).toBe(618_000);
+    expect(estimateFromWeeklyRates(rows, "2026-09-23", 7, bookingManager)).toBe(700_000);
+    expect(estimateFromWeeklyRates(rows, "2026-09-23", 10, bookingManager)).toBe(1_000_000);
   });
 
   it("rounds the summed weekly rates once, to a whole minor unit", () => {
@@ -18,6 +31,8 @@ describe("estimateFromWeeklyRates", () => {
     expect(estimateFromWeeklyRates(rows, "2026-09-23", 6, nausys)).toBe(85_715);
     /* 4 x 100,001 / 7 = 57,143.43, where rounding each night first would give 57,144 */
     expect(estimateFromWeeklyRates(rows, "2026-09-23", 4, nausys)).toBe(57_143);
+    /* 4 x 100,001 x 1.10 / 7 = 62,857.77 */
+    expect(estimateFromWeeklyRates(rows, "2026-09-23", 4, bookingManager)).toBe(62_858);
   });
 
   it("sums each night by the row covering it when a charter crosses rows", () => {
@@ -34,16 +49,18 @@ describe("estimateFromWeeklyRates", () => {
       { startDate: "2026-10-03", endDate: "2026-10-09", priceMinor: 700_000 },
       { startDate: "2026-10-10", endDate: "2026-10-16", priceMinor: 1_400_000 },
     ];
-    expect(estimateFromWeeklyRates(rows, "2026-10-08", 3, nausys)).toBe(400_000);
-    expect(estimateFromWeeklyRates(rows, "2026-10-08", 3, bookingManager)).toBeNull();
+    /* Two nights at 100,000 and two at 200,000 */
+    expect(estimateFromWeeklyRates(rows, "2026-10-08", 4, nausys)).toBe(600_000);
+    expect(estimateFromWeeklyRates(rows, "2026-10-08", 4, bookingManager)).toBeNull();
   });
 
   it("takes the cheapest row where rows overlap a night", () => {
     const rows = [
       { startDate: "2026-10-01", endDate: "2026-10-31", priceMinor: 1_400_000 },
-      { startDate: "2026-10-05", endDate: "2026-10-06", priceMinor: 700_000 },
+      { startDate: "2026-10-05", endDate: "2026-10-07", priceMinor: 700_000 },
     ];
-    expect(estimateFromWeeklyRates(rows, "2026-10-05", 2, bookingManager)).toBe(300_000);
+    /* The band ends on its last night, so three nights at 100,000 and one at 200,000 */
+    expect(estimateFromWeeklyRates(rows, "2026-10-05", 4, nausys)).toBe(500_000);
   });
 
   it("gives no estimate where a night has no row, or rows mix currencies", () => {
@@ -57,17 +74,32 @@ describe("estimateFromWeeklyRates", () => {
     expect(estimateFromWeeklyRates(mixed, "2026-10-02", 4, nausys)).toBeNull();
   });
 
-  it("ignores rows with no price and lengths below a night", () => {
-    const rows = [{ startDate: "2026-10-01", endDate: "2026-10-09", priceMinor: 0 }];
-    expect(estimateFromWeeklyRates(rows, "2026-10-02", 2, nausys)).toBeNull();
-    expect(
-      estimateFromWeeklyRates(
-        [{ startDate: "2026-10-01", endDate: "2026-10-09", priceMinor: 700_000 }],
-        "2026-10-02",
-        0,
-        nausys,
-      ),
-    ).toBeNull();
+  it("ignores rows with no price, and estimates nothing under four nights", () => {
+    const zero = [{ startDate: "2026-10-01", endDate: "2026-10-09", priceMinor: 0 }];
+    expect(estimateFromWeeklyRates(zero, "2026-10-02", 4, nausys)).toBeNull();
+
+    const rows = [{ startDate: "2026-10-01", endDate: "2026-10-31", priceMinor: 700_000 }];
+    for (const nights of [0, 1, 2, 3]) {
+      expect(estimateFromWeeklyRates(rows, "2026-10-02", nights, nausys)).toBeNull();
+      expect(estimateFromWeeklyRates(rows, "2026-10-02", nights, bookingManager)).toBeNull();
+    }
+  });
+});
+
+describe("shortCharterPremiumPercent", () => {
+  it("is Booking Manager's premium under a week and nothing anywhere else", () => {
+    expect(shortCharterPremiumPercent("booking_manager", 4)).toBe(110);
+    expect(shortCharterPremiumPercent("booking_manager", 8)).toBe(100);
+    expect(shortCharterPremiumPercent("nausys", 4)).toBe(100);
+  });
+});
+
+describe("priceListEstimateSource", () => {
+  it("captions NauSYS short charters as a starting price and longer ones as before discounts", () => {
+    expect(priceListEstimateSource("nausys", 6)).toBe("price-list-estimate-from");
+    expect(priceListEstimateSource("nausys", 10)).toBe("price-list-estimate-before-discounts");
+    expect(priceListEstimateSource("booking_manager", 5)).toBe("price-list-estimate");
+    expect(priceListEstimateSource("booking_manager", 10)).toBe("price-list-estimate");
   });
 });
 
