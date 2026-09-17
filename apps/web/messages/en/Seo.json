@@ -169,5 +169,19 @@
   "Contact": {
     "title": "Contact",
     "description": "Talk to a charter expert about your next trip."
+  },
+  "Legal": {
+    "terms": {
+      "title": "Terms & Conditions",
+      "description": "The terms and rental agreement for charters booked on YachtSkanner."
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "description": "How YachtSkanner handles your personal data."
+    },
+    "cancellation": {
+      "title": "Cancellation Policy",
+      "description": "What happens when a charter booked on YachtSkanner is cancelled."
+    }
   }
 }

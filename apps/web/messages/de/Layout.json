@@ -113,5 +113,12 @@
       "save": "Auswahl speichern",
       "acceptAll": "Alle akzeptieren"
     }
+  },
+  "Legal": {
+    "terms": "Allgemeine Geschäftsbedingungen",
+    "privacy": "Datenschutzerklärung",
+    "cancellation": "Stornierungsbedingungen",
+    "pending": "Dieses Dokument wird gerade erstellt und hier in Kürze veröffentlicht. Wenn Sie bis dahin Fragen dazu haben, hilft Ihnen unser Support-Team gern weiter.",
+    "contact": "Support kontaktieren"
   }
 }

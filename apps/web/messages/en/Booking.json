@@ -23,8 +23,8 @@
     },
     "totalPrice": "Total Price",
     "dueNow": "Due now",
-    "terms": "I agree to the <b>Terms & Conditions and the Rental Agreement</b>.",
-    "cancellation": "I accept the <b>Cancellation Policy</b>.",
+    "terms": "I agree to the <link>Terms & Conditions and the Rental Agreement</link>.",
+    "cancellation": "I accept the <link>Cancellation Policy</link>.",
     "operatorTerms": "Operator's terms, including the cancellation policy"
   },
   "extras": {

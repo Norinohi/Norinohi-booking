@@ -169,5 +169,19 @@
   "Contact": {
     "title": "Contacto",
     "description": "Habla con un experto en chárter sobre tu próximo viaje."
+  },
+  "Legal": {
+    "terms": {
+      "title": "Términos y condiciones",
+      "description": "Los términos y el contrato de alquiler de los chárteres reservados en YachtSkanner."
+    },
+    "privacy": {
+      "title": "Política de privacidad",
+      "description": "Cómo trata YachtSkanner sus datos personales."
+    },
+    "cancellation": {
+      "title": "Política de cancelación",
+      "description": "Qué ocurre cuando se cancela un chárter reservado en YachtSkanner."
+    }
   }
 }

@@ -23,8 +23,8 @@
     },
     "totalPrice": "Gesamtpreis",
     "dueNow": "Jetzt fällig",
-    "terms": "Ich akzeptiere die <b>AGB und den Chartervertrag</b>.",
-    "cancellation": "Ich akzeptiere die <b>Stornierungsbedingungen</b>.",
+    "terms": "Ich akzeptiere die <link>AGB und den Chartervertrag</link>.",
+    "cancellation": "Ich akzeptiere die <link>Stornierungsbedingungen</link>.",
     "operatorTerms": "Bedingungen des Anbieters, einschliesslich Stornierungsbedingungen"
   },
   "extras": {

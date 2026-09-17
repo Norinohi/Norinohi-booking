@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 
 import { useExactMoney } from "@/hooks/use-money";
+import { Link } from "@/i18n/navigation";
 import { dayToDisplay } from "@/lib/date";
 
 import { useQuoteLineLabel } from "../../hooks/use-quote-line-label";
@@ -15,6 +16,9 @@ import { useBooking } from "../booking-provider";
 import { ScheduleBreakdown } from "../summary/payment-schedule";
 
 const CONSENTS = ["terms", "cancellation"] as const;
+
+/* A new tab, so reading the document does not throw away the booking form behind it. */
+const CONSENT_DOCUMENTS = { terms: "/terms", cancellation: "/cancellation-policy" } as const;
 
 /** Payment-schedule `kind` to the message that names it. Mirrors the yacht page's own map. */
 const SCHEDULE_LABEL = {
@@ -212,7 +216,18 @@ export default function ReviewAndBookStep() {
                     aria-invalid={fieldState.error ? true : undefined}
                   />
                   <span className="min-w-0 flex-1 text-base leading-[1.4] text-foreground">
-                    {t.rich(consent, { b: (chunks) => <b className="font-bold">{chunks}</b> })}
+                    {t.rich(consent, {
+                      link: (chunks) => (
+                        <Link
+                          href={CONSENT_DOCUMENTS[consent]}
+                          target="_blank"
+                          rel="noopener"
+                          className="font-bold text-brand underline underline-offset-2"
+                        >
+                          {chunks}
+                        </Link>
+                      ),
+                    })}
                   </span>
                 </label>
                 {fieldState.error ? (

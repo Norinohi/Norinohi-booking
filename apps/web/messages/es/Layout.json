@@ -113,5 +113,12 @@
       "save": "Guardar mi elección",
       "acceptAll": "Aceptar todas"
     }
+  },
+  "Legal": {
+    "terms": "Términos y condiciones",
+    "privacy": "Política de privacidad",
+    "cancellation": "Política de cancelación",
+    "pending": "Este documento se está preparando y se publicará aquí en breve. Si mientras tanto tiene alguna pregunta, nuestro equipo de soporte le ayudará con gusto.",
+    "contact": "Contactar con soporte"
   }
 }

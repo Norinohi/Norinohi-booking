@@ -169,5 +169,19 @@
   "Contact": {
     "title": "Kontakt",
     "description": "Sprechen Sie mit einem Charter-Experten über Ihre nächste Reise."
+  },
+  "Legal": {
+    "terms": {
+      "title": "Allgemeine Geschäftsbedingungen",
+      "description": "Die Bedingungen und der Chartervertrag für Buchungen über YachtSkanner."
+    },
+    "privacy": {
+      "title": "Datenschutzerklärung",
+      "description": "Wie YachtSkanner mit Ihren personenbezogenen Daten umgeht."
+    },
+    "cancellation": {
+      "title": "Stornierungsbedingungen",
+      "description": "Was passiert, wenn ein über YachtSkanner gebuchter Charter storniert wird."
+    }
   }
 }

@@ -65,10 +65,15 @@ const COLUMNS = [
   },
 ] as const;
 
-const SOCIALS = [
-  { label: "Instagram", Icon: InstagramIcon },
-  { label: "YouTube", Icon: YoutubeIcon },
+/*
+ * The accounts are not known yet. An icon pointing at "#" reads as a broken link, so each one
+ * renders only once it has a real address: fill in `href` to bring it back.
+ */
+const SOCIALS: { label: string; Icon: typeof InstagramIcon; href: string | null }[] = [
+  { label: "Instagram", Icon: InstagramIcon, href: null },
+  { label: "YouTube", Icon: YoutubeIcon, href: null },
 ];
+const LIVE_SOCIALS = SOCIALS.flatMap(({ href, ...social }) => (href ? [{ ...social, href }] : []));
 
 export default function Footer({ year }: { year: number }) {
   const t = useTranslations("Layout.Footer");
@@ -92,18 +97,20 @@ export default function Footer({ year }: { year: number }) {
                 {t("description")}
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              {SOCIALS.map(({ label, Icon }) => (
-                <a
-                  key={label}
-                  href="#"
-                  aria-label={label}
-                  className="cursor-pointer text-white transition-opacity hover:opacity-70"
-                >
-                  <Icon className="size-6" />
-                </a>
-              ))}
-            </div>
+            {LIVE_SOCIALS.length > 0 ? (
+              <div className="flex items-center gap-4">
+                {LIVE_SOCIALS.map(({ label, Icon, href }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    aria-label={label}
+                    className="cursor-pointer text-white transition-opacity hover:opacity-70"
+                  >
+                    <Icon className="size-6" />
+                  </a>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           {/* Link columns */}
@@ -136,12 +143,12 @@ export default function Footer({ year }: { year: number }) {
         {/* Legal bar */}
         <div className="flex flex-col items-center gap-4 text-sm leading-[1.3] tracking-[0.04em] text-natural-100 uppercase xl:flex-row xl:justify-between">
           <div className="flex gap-4">
-            <a href="#" className="cursor-pointer transition-colors hover:text-white">
+            <Link href="/privacy" className="cursor-pointer transition-colors hover:text-white">
               {t("privacy")}
-            </a>
-            <a href="#" className="cursor-pointer transition-colors hover:text-white">
+            </Link>
+            <Link href="/terms" className="cursor-pointer transition-colors hover:text-white">
               {t("terms")}
-            </a>
+            </Link>
             <CookiePreferencesLink className="cursor-pointer uppercase transition-colors hover:text-white" />
           </div>
           <span className="max-w-full">{t("copyright", { year })}</span>
