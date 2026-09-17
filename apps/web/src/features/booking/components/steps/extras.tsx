@@ -8,7 +8,7 @@ import { Controller, useFormContext } from "react-hook-form";
 
 import { useExtraPrice } from "@/hooks/use-extra-price";
 import { extraPriceKind } from "@/lib/extra-price-kind";
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 
 import type { BookingValues } from "../../lib/booking-form";
 import { useBooking } from "../booking-provider";
@@ -46,7 +46,7 @@ function ExtraRow({
   settledAtBase?: boolean;
 }) {
   const tExtras = useTranslations("Common.extras");
-  const money = useMoney();
+  const money = useExactMoney();
   const extraPrice = useExtraPrice();
   const kind = extraPriceKind(item, offered);
   /* Whether it is settled at the base is the offer's answer where there is one; the two
@@ -93,7 +93,7 @@ function ExtraRow({
 export default function ExtrasStep() {
   const t = useTranslations("Booking.extras");
   const tExtras = useTranslations("Common.extras");
-  const money = useMoney();
+  const money = useExactMoney();
   const { control } = useFormContext<BookingValues>();
   const { listing, quote, selectExtras, requestedExtras, requestExtras } = useBooking();
 

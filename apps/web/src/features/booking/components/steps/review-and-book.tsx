@@ -6,7 +6,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 import { dayToDisplay } from "@/lib/date";
 
 import { useQuoteLineLabel } from "../../hooks/use-quote-line-label";
@@ -63,7 +63,7 @@ export default function ReviewAndBookStep() {
   const t = useTranslations("Booking.review");
   const tCard = useTranslations("Common.boatCard");
   const tCrew = useTranslations("Common.crewTypes");
-  const money = useMoney();
+  const money = useExactMoney();
   const format = useFormatter();
   const { control } = useFormContext<BookingValues>();
   const { listing, quote } = useBooking();

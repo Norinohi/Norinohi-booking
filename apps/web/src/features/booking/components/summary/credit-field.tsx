@@ -4,7 +4,7 @@ import { Button } from "@yacht-charter/ui/components/actions/button";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useTranslations } from "next-intl";
 
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 
 import type { Quote } from "../../api/queries";
 
@@ -22,7 +22,7 @@ export interface CreditFieldProps {
  */
 export function CreditField({ offer, applied, pending, onApply }: CreditFieldProps) {
   const t = useTranslations("YachtDetail.sidebar.credit");
-  const money = useMoney();
+  const money = useExactMoney();
 
   return (
     <div className="flex w-full items-center gap-2 p-4">

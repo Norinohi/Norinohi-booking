@@ -5,7 +5,7 @@ import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 
 import type { Quote } from "../../api/queries";
 
@@ -26,7 +26,7 @@ export interface PromoFieldProps {
  */
 export function PromoField({ applied, rejected, pending, currency, onApply }: PromoFieldProps) {
   const t = useTranslations("YachtDetail.sidebar.promo");
-  const money = useMoney();
+  const money = useExactMoney();
   const [code, setCode] = useState("");
 
   if (applied) {

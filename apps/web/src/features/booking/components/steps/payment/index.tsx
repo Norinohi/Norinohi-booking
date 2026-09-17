@@ -13,7 +13,8 @@ import { type Path, useFormContext, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { useDisplayCurrency } from "@/components/layout/currency-provider";
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
+import { exactFractionDigits } from "@/lib/money-fraction";
 
 import {
   askQuestionMutationOptions,
@@ -137,13 +138,20 @@ function PaymentMethods({ cardEnabled, hold }: { cardEnabled: boolean; hold: Rea
   const t = useTranslations("Booking.payment");
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const money = useMoney();
+  const money = useExactMoney();
   const format = useFormatter();
   const { display } = useDisplayCurrency();
 
   /* Unconverted on purpose: this is the vendor's own figure in the vendor's own currency. */
-  const formatCharge = (amount: number, currency: string) =>
-    format.number(amount, { style: "currency", currency, maximumFractionDigits: 0 });
+  const formatCharge = (amountMinor: number, currency: string) => {
+    const digits = exactFractionDigits(amountMinor);
+    return format.number(amountMinor / 100, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    });
+  };
   const { control, trigger, getValues, setValue } = useFormContext<BookingValues>();
   const { quote, bookingId } = useBooking();
   /* Undefined for a signed-in customer, whose session cookie authorises these calls instead. */
@@ -173,7 +181,7 @@ function PaymentMethods({ cardEnabled, hold }: { cardEnabled: boolean; hold: Rea
     quote && display && display !== quote.deposit.currency
       ? t("chargedIn", {
           currency: quote.deposit.currency,
-          amount: formatCharge(quote.deposit.amountMinor / 100, quote.deposit.currency),
+          amount: formatCharge(quote.deposit.amountMinor, quote.deposit.currency),
         })
       : null;
   const pending = requestInvoice.isPending || askQuestion.isPending;

@@ -10,7 +10,7 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { CircleCheckBig, Info } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 
 import type { Quote } from "../../api/queries";
 
@@ -24,7 +24,7 @@ export interface PriceHeadlineProps {
 export function PriceHeadline({ quote, repricing, depositWhenInsured }: PriceHeadlineProps) {
   const t = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");
-  const money = useMoney();
+  const money = useExactMoney();
 
   const base = quote.lines.find((line) => line.kind === "base");
   const discounts = quote.lines.filter((line) => line.kind === "discount");

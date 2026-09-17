@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from "react";
 import { Image } from "@/components/shared/data-display/image";
 import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 import { GROUP, POP, RISE } from "@/lib/motion";
 
 import {
@@ -139,7 +139,7 @@ export default function BookingConfirmationScreen() {
   const t = useTranslations("Booking.confirmation");
   const tCrew = useTranslations("Common.crewTypes");
   const locale = useLocale();
-  const money = useMoney();
+  const money = useExactMoney();
   const format = useFormatter();
   const [{ bookingId, method }] = useQueryStates(confirmationParsers);
   const [downloading, setDownloading] = useState(false);

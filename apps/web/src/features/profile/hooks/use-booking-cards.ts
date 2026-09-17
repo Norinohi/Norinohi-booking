@@ -8,7 +8,7 @@ import {
   bookingMarina,
   yachtCardIdentity,
 } from "@/components/shared/data-display/yacht-card/view-model";
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 
 import type { BookingSummary } from "../types";
 
@@ -37,7 +37,7 @@ export function useBookingCards() {
   const t = useTranslations("Common.boatCard");
   const tCrew = useTranslations("Common.crewTypes");
   const tBadge = useTranslations("Common.boatCard.badges");
-  const formatMoney = useMoney();
+  const formatMoney = useExactMoney();
 
   function toBookingCard(booking: BookingSummary): YachtCardData {
     return {

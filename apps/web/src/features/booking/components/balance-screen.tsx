@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 
 import { Form } from "@yacht-charter/ui/components/form/form";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@yacht-charter/ui/components/navigation/tabs";
@@ -75,7 +75,7 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
   const t = useTranslations("Booking.balance");
   const locale = useLocale();
   const tPayment = useTranslations("Booking.payment");
-  const money = useMoney();
+  const money = useExactMoney();
   const format = useFormatter();
   const [{ paidBefore }] = useQueryStates(settledParsers);
   const settling = paidBefore !== null;
@@ -329,7 +329,7 @@ function BalancePayment({
 }) {
   const t = useTranslations("Booking.balance");
   const locale = useLocale();
-  const money = useMoney();
+  const money = useExactMoney();
   const stripe = stripeLoader();
   const payBalance = useMutation(payBalanceMutationOptions());
 
@@ -390,7 +390,7 @@ function BalanceInvoice({
   currency: string;
 }) {
   const t = useTranslations("Booking.payment");
-  const money = useMoney();
+  const money = useExactMoney();
   const router = useRouter();
   const requestInvoice = useMutation(requestInvoiceMutationOptions());
   const refineInvoice = useInvoiceRefinement();

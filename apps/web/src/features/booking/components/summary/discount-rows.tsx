@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 
 import type { QuoteLine } from "../../api/queries";
 import { useQuoteLineLabel } from "../../hooks/use-quote-line-label";
@@ -20,7 +20,7 @@ export interface DiscountRowsProps {
  */
 export function DiscountRows({ lines }: DiscountRowsProps) {
   const t = useTranslations("YachtDetail");
-  const money = useMoney();
+  const money = useExactMoney();
   const labelOf = useQuoteLineLabel();
 
   return (

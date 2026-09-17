@@ -5,7 +5,7 @@ import type { DateRange } from "@yacht-charter/ui/components/form/calendar";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { useLocale, useTranslations } from "next-intl";
 
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 import { useRouter } from "@/i18n/navigation";
 import { useQueryStates } from "nuqs";
 
@@ -36,7 +36,7 @@ const CANCELLED_STATUSES = new Set(["CANCELLED", "REFUND_PENDING", "REFUNDED"]);
 export default function BookingsScreen({ user }: { user: { name: string; email: string } }) {
   const t = useTranslations("Bookings");
   const locale = useLocale();
-  const formatMoney = useMoney();
+  const formatMoney = useExactMoney();
   const router = useRouter();
   const { toBookingCard } = useBookingCards();
   const [{ from, to, page }, setParams] = useQueryStates(bookingSearchParsers);

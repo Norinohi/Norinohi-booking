@@ -28,7 +28,7 @@ import Loader from "@/components/shared/feedback/loader";
 import SplitPanels from "@/components/shared/layout/split-panels";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import CancelBookingDialog from "@/components/shared/overlay/cancel-booking-dialog";
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 import { authClient } from "@/lib/auth-client";
 import { crewLabel } from "@/lib/crew-label";
 import {
@@ -206,7 +206,7 @@ function Charter({
   const tCancel = useTranslations("Bookings.cancel");
   const tBalance = useTranslations("Booking.balance");
   const tCrew = useTranslations("Common.crewTypes");
-  const money = useMoney();
+  const money = useExactMoney();
   const format = useFormatter();
   const [cancelOpen, setCancelOpen] = useState(false);
 
@@ -370,7 +370,7 @@ function Charter({
 
 function Payments({ booking }: { booking: BookingDetail }) {
   const t = useTranslations("Booking.detail");
-  const money = useMoney();
+  const money = useExactMoney();
 
   return (
     <Panel>
@@ -411,7 +411,7 @@ function Payments({ booking }: { booking: BookingDetail }) {
  */
 function PriceAside({ booking }: { booking: BookingDetail }) {
   const t = useTranslations("Booking.detail");
-  const money = useMoney();
+  const money = useExactMoney();
   const outstanding = booking.outstanding.amountMinor;
   /*
    * The base collects this on the day and we never charge it, so it is in the total and in

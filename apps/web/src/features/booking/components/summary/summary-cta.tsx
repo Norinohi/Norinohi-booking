@@ -4,7 +4,7 @@ import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { useTranslations } from "next-intl";
 
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 import type { AppPathname } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 
@@ -31,7 +31,7 @@ export function SummaryCta({
 }: SummaryCtaProps) {
   const t = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");
-  const money = useMoney();
+  const money = useExactMoney();
   /* Never hand Pay Now a live link over a stale amount. */
   const payNowReady = payNowHref !== undefined && !repricing;
 

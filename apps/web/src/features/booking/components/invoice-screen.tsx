@@ -10,7 +10,7 @@ import { type ReactNode, useEffect, useState } from "react";
 
 import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 
 import { bookingInvoiceQueryOptions, type InvoiceDocument } from "../api/queries";
 import { guestAccessFor } from "../lib/guest-access";
@@ -220,7 +220,7 @@ function CharterSummary({ invoice }: { invoice: InvoiceDocument }) {
 
 function Lines({ invoice }: { invoice: InvoiceDocument }) {
   const t = useTranslations("Booking.invoice");
-  const money = useMoney();
+  const money = useExactMoney();
 
   return (
     <table className="w-full border-collapse text-sm">
@@ -248,7 +248,7 @@ function Lines({ invoice }: { invoice: InvoiceDocument }) {
 
 function Totals({ invoice }: { invoice: InvoiceDocument }) {
   const t = useTranslations("Booking.invoice");
-  const money = useMoney();
+  const money = useExactMoney();
 
   return (
     <div className="flex flex-col gap-2 self-end text-sm md:w-80">
@@ -307,7 +307,7 @@ function TotalRow({
 
 function PaymentInstructions({ invoice }: { invoice: InvoiceDocument }) {
   const t = useTranslations("Booking.invoice");
-  const money = useMoney();
+  const money = useExactMoney();
 
   const rows = [
     { label: t("payment.beneficiary"), value: invoice.seller.legalName },

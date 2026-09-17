@@ -10,7 +10,7 @@ import { Calendar, Info } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
 
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 import { dayToDisplay } from "@/lib/date";
 
 import type { Quote, QuoteLine } from "../../api/queries";
@@ -44,7 +44,7 @@ export interface ScheduleBreakdownProps {
 export function ScheduleBreakdown({ entry, lines }: ScheduleBreakdownProps) {
   const t = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");
-  const money = useMoney();
+  const money = useExactMoney();
   const labelOf = useQuoteLineLabel();
   const [open, setOpen] = useState(false);
 
@@ -106,7 +106,7 @@ export interface PaymentScheduleProps {
 export function PaymentSchedule({ entries, lines }: PaymentScheduleProps) {
   const t = useTranslations("YachtDetail");
   const format = useFormatter();
-  const money = useMoney();
+  const money = useExactMoney();
 
   const when = (entry: Quote["paymentSchedule"][number]) => {
     if (!entry.dueAt) return t("sidebar.payNow");

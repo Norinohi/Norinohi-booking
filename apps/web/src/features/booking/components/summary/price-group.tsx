@@ -9,7 +9,7 @@ import {
 import { ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 
 import type { QuoteLine } from "../../api/queries";
 
@@ -35,7 +35,7 @@ export interface PriceGroupProps {
 export function PriceGroup({ labelKey, lines }: PriceGroupProps) {
   const t = useTranslations("YachtDetail");
   const tExtras = useTranslations("Common.extras");
-  const money = useMoney();
+  const money = useExactMoney();
 
   return (
     <Accordion defaultValue={[labelKey]}>
