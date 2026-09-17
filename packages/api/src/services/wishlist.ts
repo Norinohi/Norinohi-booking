@@ -1,6 +1,6 @@
 import { wishlist, wishlistItem } from "@yacht-charter/db/schema/account";
 import { listing } from "@yacht-charter/db/schema/listing";
-import { listListingsByIds } from "@yacht-charter/db/search";
+import { listListingsByIds, localizeSearchDocs, type PriceBasis } from "@yacht-charter/db/search";
 import { and, count, desc, eq, inArray } from "drizzle-orm";
 import type { z } from "zod";
 
@@ -13,6 +13,8 @@ import type {
   wishlistToggleSchema,
 } from "../contracts/wishlist";
 import { presentListingSummary } from "../presenters/listing";
+import { getAmenityRanks } from "./amenity-ranks";
+import { CATALOGUE_DEFAULT_BASIS } from "./charter-search";
 import { paginationFor } from "./pagination";
 import { InternalError, NotFoundError } from "../errors";
 type ListInput = z.infer<typeof wishlistListInputSchema>;
@@ -50,14 +52,15 @@ export async function listWishlist(
   ]);
 
   const savedAtById = new Map(rows.map((row) => [row.listingId, row.savedAt.toISOString()]));
-  const docs = await listListingsByIds(
+  const listings = await presentSavedListings(
     db,
     rows.map((row) => row.listingId),
+    input,
   );
 
-  const items = docs.map((doc) => ({
-    listing: presentListingSummary(doc),
-    savedAt: savedAtById.get(doc.listingId) ?? new Date(0).toISOString(),
+  const items = listings.map((listing) => ({
+    listing,
+    savedAt: savedAtById.get(listing.id) ?? new Date(0).toISOString(),
   }));
 
   return {
@@ -71,6 +74,28 @@ export async function listWishlist(
       itemCount: items.length,
     }),
   };
+}
+
+/**
+ * Saved listings as the catalogue's own cards, for the signed-in wishlist and the guest one.
+ *
+ * Priced, ranked and labelled the way a search result is. The wishlist used to present the
+ * all-in figure while the card captioned it "Boat price" as search does, so My Affair read
+ * EUR 1,433 there against EUR 1,113 in search, the gap being exactly its obligatory extras,
+ * with the line naming them missing.
+ */
+export async function presentSavedListings(
+  db: Database,
+  listingIds: readonly string[],
+  options: { priceBasis?: PriceBasis; locale?: string },
+) {
+  const [docs, amenityRanks] = await Promise.all([
+    listListingsByIds(db, listingIds),
+    getAmenityRanks(db),
+  ]);
+  const localized = await localizeSearchDocs(db, docs, options.locale);
+  const basis = options.priceBasis ?? CATALOGUE_DEFAULT_BASIS;
+  return localized.map((doc) => presentListingSummary(doc, basis, amenityRanks));
 }
 
 export async function listWishlistIds(db: Database, userId: string): Promise<IdsResult> {

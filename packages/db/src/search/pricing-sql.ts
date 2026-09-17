@@ -169,6 +169,28 @@ export function priceDescSortValueOf(
 export const recommendedSortValue = sql`case when doc.price_is_from then doc.rating else doc.rating + 10 end`;
 
 /**
+ * `recommendedSortValue` for a search that may name dates.
+ *
+ * On a dated search the price that counts is the one for those dates. A listing priced only for
+ * another week shows "on request" beside them, so ranking it with the priced ones filled the first
+ * page of a November search with cards that had no price while the six boats a vendor had priced
+ * for that week sat further down.
+ */
+export function recommendedSortValueFor(input: ListingSearchInput): SQL {
+  return availabilityWindowFor(input)
+    ? sql`case when doc.priced_for_dates then doc.rating + 10 else doc.rating end`
+    : recommendedSortValue;
+}
+
+/** `recommendedSortValueFor` in the units the keyset cursor compares. */
+export function recommendedSortValueOf(
+  item: Pick<ListingSearchDoc, "priceIsFrom" | "pricedForDates" | "rating">,
+): number {
+  const pricedHere = item.pricedForDates ?? !item.priceIsFrom;
+  return (pricedHere ? 10 : 0) + Number(item.rating);
+}
+
+/**
  * The charter length assumed where the row names no sellable one.
  *
  * A week, matching `WEEKLY_RATE_DAYS` in the API's listing presenter, which falls back the same

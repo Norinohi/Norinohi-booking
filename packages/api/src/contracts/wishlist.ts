@@ -1,12 +1,12 @@
 import { z } from "zod";
 
-import { listingSummarySchema } from "./catalog";
+import { listingSummarySchema, savedListingCardInputSchema } from "./catalog";
 import { paginatedSchema, paginationInputDefault, paginationInputSchema } from "./primitives";
 
 const DEFAULT_PAGE_SIZE = 10;
 
-export const wishlistListInputSchema = z
-  .object(paginationInputSchema({ maxPageSize: 48, defaultPageSize: DEFAULT_PAGE_SIZE }))
+export const wishlistListInputSchema = savedListingCardInputSchema
+  .extend(paginationInputSchema({ maxPageSize: 48, defaultPageSize: DEFAULT_PAGE_SIZE }))
   .default(paginationInputDefault(DEFAULT_PAGE_SIZE));
 
 export const wishlistEntrySchema = z.object({

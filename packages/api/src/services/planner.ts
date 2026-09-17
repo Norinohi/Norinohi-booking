@@ -147,10 +147,20 @@ function resolveBrief(answers: PlannerAnswers, destination: Destination): TripBr
   };
 }
 
+type SearchFilters = Parameters<typeof searchListings>[1];
+
 /**
- * Most specific first, widening a step at a time: drop the budget, then the
- * category the vibe implied, then the group and crew filters entirely. A visitor
- * always gets a boat rather than an empty result.
+ * Most specific first, widening a step at a time, and the budget held longest.
+ *
+ * The budget used to be the first thing dropped, so a crewed-sailing-yacht brief with nothing
+ * under EUR 2,400 went straight to the whole fleet in recommended order: a EUR 300-600 a head
+ * brief was answered with a EUR 5,600 Moody 54, and "similar" ran to EUR 12,320 a head. Now the
+ * vibe's category goes first, keeping the budget.
+ *
+ * Where nothing the group can sail fits the budget, the budget goes before the group and crew
+ * do, and the cheapest such yacht is the one recommended: the closest to what the visitor said
+ * they would spend. Keeping the budget by dropping the crew instead would hand a party with no
+ * licence a bareboat beside a panel that says they need a skipper.
  */
 async function findMatches(
   db: Database,
@@ -158,37 +168,44 @@ async function findMatches(
   locale: string | undefined,
 ): Promise<{
   result: Awaited<ReturnType<typeof searchListings>>;
-  filters: Parameters<typeof searchListings>[1];
+  filters: SearchFilters;
 } | null> {
-  const baseFilters = {
+  const broad = {
     locale,
     country: [brief.destination.country],
-    crew: brief.crew,
-    guests: brief.group?.guests,
-    minBerths: brief.group?.minBerths,
     duration: brief.durationDays,
     currency: CURRENCY,
+    /* The figure the per-person share and the card are read off, so the cap compares the same one. */
+    priceBasis: "all_in" as const,
     sort: "recommended" as const,
     pageSize: 24,
     page: 1,
   };
+  const grouped = {
+    ...broad,
+    crew: brief.crew,
+    guests: brief.group?.guests,
+    minBerths: brief.group?.minBerths,
+  };
+  const specific = { ...grouped, category: brief.category ?? undefined };
 
-  const attempts: Parameters<typeof searchListings>[1][] = [
-    {
-      ...baseFilters,
-      category: brief.category ?? undefined,
-      maxPriceMinor: brief.maxPriceMinor ?? undefined,
-    },
-    { ...baseFilters, category: brief.category ?? undefined },
-    { ...baseFilters },
-    {
-      country: [brief.destination.country],
-      locale,
-      duration: brief.durationDays,
-      currency: CURRENCY,
-      pageSize: 24,
-    },
-  ];
+  const ceiling = brief.maxPriceMinor;
+  const affordable = (filters: SearchFilters) => ({
+    ...filters,
+    maxPriceMinor: ceiling ?? undefined,
+  });
+  const cheapestFirst = (filters: SearchFilters) => ({ ...filters, sort: "price-asc" as const });
+  const attempts: SearchFilters[] =
+    ceiling === null
+      ? [specific, grouped, broad]
+      : [
+          affordable(specific),
+          affordable(grouped),
+          cheapestFirst(specific),
+          cheapestFirst(grouped),
+          affordable(broad),
+          cheapestFirst(broad),
+        ];
 
   for (const attempt of attempts) {
     const result = await searchListings(db, attempt);

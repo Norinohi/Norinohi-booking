@@ -199,16 +199,22 @@ export const charterSearchRouter = {
       operationId: "suggestCharterSearchDestinations",
       summary: "Suggest destinations and bases",
       description:
-        "Returns autocomplete suggestions for destination-style search input. Suggestions are sourced from countries, regions, locations, and bases in the search read model.",
+        "Returns autocomplete suggestions for destination-style search input: countries, regions, cities and bases in the search read model, one per filter value, broadest first. Labels follow locale, and the query also matches the localized label.",
       tags: ["Charter Search"],
       successDescription: "Autocomplete suggestions matching the query.",
       spec: withParameterExamples({
         query: "Split",
       }),
     })
-    .input(z.object({ query: z.string().default("") }))
+    .input(
+      z.object({
+        query: z.string().default(""),
+        /* Mirrors apps/web/src/i18n/config.ts. Labels follow it, and a query matches them too. */
+        locale: z.string().min(2).max(10).default("en"),
+      }),
+    )
     .output(z.array(suggestionSchema))
-    .handler(({ context, input }) => listSearchSuggestions(context.db, input.query)),
+    .handler(({ context, input }) => listSearchSuggestions(context.db, input.query, input.locale)),
   catalogPages: publicProcedure
     .route({
       method: "GET",

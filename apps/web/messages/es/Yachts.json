@@ -16,7 +16,13 @@
     "popularBoatTypes": "Tipos de barco populares",
     "allBoatTypes": "Todos los tipos de barco",
     "clearLocation": "Borrar destino",
-    "freeText": "Nombre, modelo o empresa"
+    "freeText": "Nombre, modelo o empresa",
+    "kinds": {
+      "country": "País",
+      "region": "Zona de navegación",
+      "city": "Ciudad",
+      "base": "Marina"
+    }
   },
   "paginationSummary": "Mostrando {from}-{to} de {total}"
 }

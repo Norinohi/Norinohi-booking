@@ -82,7 +82,7 @@ function withDestination(current: FiltersState, next: Suggestion | null): Filter
       return { ...cleared, country: [next.value] };
     case "region":
       return { ...cleared, sailingArea: [next.value] };
-    case "location":
+    case "city":
       return { ...cleared, city: [next.value] };
     case "base":
       return { ...cleared, marina: [next.value] };

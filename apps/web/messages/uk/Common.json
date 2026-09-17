@@ -60,7 +60,6 @@
     "boatPriceFor": "Ціна яхти · {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
     "boatPriceIndicative": "Ціна яхти · базова, можливі доплати",
     "priceForPeriod": "Ціна чартеру · за {from, date, dayCompact} - {to, date, dayCompact}",
-    "boatPriceForPeriod": "Ціна яхти · за {from, date, dayCompact} - {to, date, dayCompact}",
     "priceFromLabel": "Від",
     "plusObligatory": "плюс {amount} обов'язкових доплат",
     "approximatePrice": "прибл.",

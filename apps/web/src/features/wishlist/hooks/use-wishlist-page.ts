@@ -1,7 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 import { useSyncExternalStore } from "react";
+
+import { usePriceBasis } from "@/components/shared/form/filters";
 
 import {
   listingsByIdsQueryOptions,
@@ -31,7 +34,14 @@ export type WishlistPageState = {
 export function useWishlistPage(page: number): WishlistPageState {
   const { mode, isReady } = useWishlist();
 
-  const listQuery = useQuery({ ...wishlistListQueryOptions(page), enabled: mode === "user" });
+  const locale = useLocale();
+  const { explicit } = usePriceBasis();
+  const card = explicit ? { locale, priceBasis: explicit } : { locale };
+
+  const listQuery = useQuery({
+    ...wishlistListQueryOptions(page, card),
+    enabled: mode === "user",
+  });
 
   const localIds = useSyncExternalStore(
     localWishlist.subscribe,
@@ -42,7 +52,7 @@ export function useWishlistPage(page: number): WishlistPageState {
   const pageIds = mode === "guest" ? localIds.slice(start, start + WISHLIST_PAGE_SIZE) : [];
 
   const guestQuery = useQuery({
-    ...listingsByIdsQueryOptions(pageIds),
+    ...listingsByIdsQueryOptions(pageIds, card),
     enabled: mode === "guest" && pageIds.length > 0,
   });
 

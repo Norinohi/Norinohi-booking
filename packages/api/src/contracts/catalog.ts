@@ -246,14 +246,6 @@ export const listingSummarySchema = z.object({
    */
   priceIsFrom: z.boolean(),
   /**
-   * The charter `priceFrom` was quoted for, where that is not the one the card shows.
-   *
-   * A dated search reads the vendor's price for the dates asked for. Where no vendor priced
-   * those dates the card still carries this listing's price for another week, and names that
-   * week rather than passing the figure off as a seasonal minimum. Null everywhere else.
-   */
-  pricedPeriod: z.object({ checkIn: z.string(), checkOut: z.string() }).nullable(),
-  /**
    * The same charter before the operator's own discount, to be rendered struck through beside
    * `priceFrom`. Null unless there is a discount the vendor's own figures account for, which is
    * the ordinary case.
@@ -282,7 +274,13 @@ export const recordListingViewInputSchema = z.object({
   viewer: z.string().min(8).max(128),
 });
 
-export const listingsByIdsInputSchema = z.object({
+/* How a saved listing's card is priced and labelled, with the same defaults as the search results. */
+export const savedListingCardInputSchema = z.object({
+  priceBasis: z.enum(["base", "all_in"]).optional(),
+  locale: z.string().min(2).max(10).optional(),
+});
+
+export const listingsByIdsInputSchema = savedListingCardInputSchema.extend({
   /* Mirrors wishlistMergeInputSchema's cap — this is the guest wishlist's hydration path. */
   listingIds: z.array(z.string().min(1)).max(50),
 });
@@ -612,7 +610,8 @@ export const suggestionSchema = z.object({
   label: z.string(),
   /* The filter value behind the label, identical to the matching facet option's. */
   value: z.string(),
-  kind: z.enum(["country", "region", "location", "base"]),
+  /* The search filter `value` goes into: `sailingArea` for a region, `marina` for a base. */
+  kind: z.enum(["country", "region", "city", "base"]),
   /* Set on the curated countries the empty field opens with, so the list can head them. */
   popular: z.boolean().optional(),
 });

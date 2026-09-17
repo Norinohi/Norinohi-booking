@@ -9,9 +9,9 @@ import { wishlistIdsQueryOptions, wishlistListQueryOptions } from "./queries";
  * so prefetching for a guest dehydrates an UNAUTHORIZED error that the global
  * QueryCache.onError toasts on hydration.
  */
-export function prefetchWishlist(queryClient: QueryClient) {
+export function prefetchWishlist(queryClient: QueryClient, locale: string) {
   return Promise.all([
     queryClient.prefetchQuery(wishlistIdsQueryOptions()),
-    queryClient.prefetchQuery(wishlistListQueryOptions(1)),
+    queryClient.prefetchQuery(wishlistListQueryOptions(1, { locale })),
   ]);
 }

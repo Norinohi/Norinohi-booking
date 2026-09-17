@@ -36,8 +36,9 @@ export default async function WishlistPage() {
     return <WishlistScreen />;
   }
 
+  const locale = await getLocale();
   return (
-    <Hydrated prefetch={prefetchWishlist}>
+    <Hydrated prefetch={(queryClient) => prefetchWishlist(queryClient, locale)}>
       <WishlistScreen />
     </Hydrated>
   );

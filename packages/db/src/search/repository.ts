@@ -9,9 +9,8 @@ import {
   type DecodedSearchCursor,
   type SearchCursor,
 } from "./cursor";
-import { valueForLabel, whereClause } from "./filters";
+import { whereClause } from "./filters";
 import { localizeSearchDocs } from "./localize";
-import { normalizedKeySql as normalizedSql } from "./normalize";
 import {
   liftedForDates,
   NULL_YEAR_DESC,
@@ -21,7 +20,8 @@ import {
   priceDescSortValueOf,
   pricedForDates,
   pricedForDatesColumn,
-  recommendedSortValue,
+  recommendedSortValueFor,
+  recommendedSortValueOf,
   searchDocs,
   yearDescSortValue,
 } from "./pricing-sql";
@@ -32,7 +32,6 @@ import type {
   ListingSearchInput,
   ListingSearchPagination,
   ListingSearchResult,
-  ListingSuggestion,
   PriceBasis,
   SearchSort,
 } from "./types";
@@ -69,6 +68,7 @@ export {
 } from "./pricing-sql";
 export { nextCharterAfterLapseColumns } from "./sellable-starts";
 export { listShortCharterPeriods } from "./short-charters";
+export { listSearchSuggestions } from "./suggestions";
 
 const DEFAULT_LIMIT = 12;
 const MAX_LIMIT = 500;
@@ -147,73 +147,6 @@ async function searchListingsByPage(
   };
 }
 
-/*
- * How many countries the empty typeahead offers. Eight rather than the five it used to show,
- * because that is the length of the curated list it now leads with.
- */
-const POPULAR_SUGGESTION_LIMIT = 8;
-
-export async function listSearchSuggestions(
-  db: NodePgDatabase<typeof schema>,
-  query: string,
-): Promise<ListingSuggestion[]> {
-  /*
-   * Empty field: seed the typeahead with the popular countries so the user has somewhere to
-   * start, instead of an alphabetical slice that means nothing.
-   *
-   * Curated order first, then the most-stocked, and the fallback is the point of the join being
-   * a left one: until somebody opens the admin screen no country carries a rank, and this
-   * answers exactly what it always did. Grouped off listing_search_doc either way, so a curated
-   * country with nothing in stock is not offered.
-   */
-  if (query.trim() === "") {
-    const popular = await db.execute<Omit<ListingSuggestion, "value">>(sql`
-      select
-        doc.country as label,
-        'country' as kind,
-        bool_or(media.popular_rank is not null) as popular
-      from listing_search_doc doc
-      left join facet_media media
-        on media.kind = 'country'
-        and ${normalizedSql(sql`media.value`)} = ${normalizedSql(sql`doc.country`)}
-        and media.popular_rank is not null
-      where doc.country is not null
-      group by doc.country
-      order by min(media.popular_rank) asc nulls last, count(*) desc, doc.country asc
-      limit ${POPULAR_SUGGESTION_LIMIT}
-    `);
-    return popular.rows.map(withFilterValue);
-  }
-
-  const pattern = `%${query}%`;
-  const rows = await db.execute<Omit<ListingSuggestion, "value">>(sql`
-    select distinct label, kind
-    from (
-      select doc.country as label, 'country' as kind from listing_search_doc doc
-      union all
-      select doc.region as label, 'region' as kind from listing_search_doc doc
-      union all
-      select doc.location as label, 'location' as kind from listing_search_doc doc
-      union all
-      select doc.base_name as label, 'base' as kind from listing_search_doc doc
-    ) suggestions
-    where label ilike ${pattern}
-    order by label asc
-    limit 10
-  `);
-
-  return rows.rows.map(withFilterValue);
-}
-
-/*
- * Derived here rather than selected in SQL because it has to be the *same* derivation the facet
- * options use -- a suggestion whose value did not match its facet option would set a filter the
- * panel could not show as ticked.
- */
-function withFilterValue(row: Omit<ListingSuggestion, "value">): ListingSuggestion {
-  return { ...row, value: valueForLabel(row.label) };
-}
-
 /**
  * Hydrates card-ready docs for an explicit id set (wishlist, bookings). Returns them
  * in the caller's `listingIds` order, and silently drops ids with no search doc —
@@ -256,7 +189,7 @@ function cursorClause(
     case "rating":
       return sql`(doc.rating, doc.listing_id) < (${Number(cursor.value)}, ${cursor.listingId})`;
     case "recommended":
-      return sql`(${recommendedSortValue}, doc.listing_id) < (${Number(cursor.value)}, ${cursor.listingId})`;
+      return sql`(${recommendedSortValueFor(input)}, doc.listing_id) < (${Number(cursor.value)}, ${cursor.listingId})`;
     case "newest":
       return sql`(${yearDescSortValue}, doc.listing_id) < (${Number(cursor.value)}, ${cursor.listingId})`;
   }
@@ -275,7 +208,7 @@ function orderClause(
     case "rating":
       return sql`doc.rating desc, doc.listing_id desc`;
     case "recommended":
-      return sql`${recommendedSortValue} desc, doc.listing_id desc`;
+      return sql`${recommendedSortValueFor(input)} desc, doc.listing_id desc`;
     case "newest":
       return sql`${yearDescSortValue} desc, doc.listing_id desc`;
   }
@@ -312,11 +245,7 @@ function cursorFor(
     case "rating":
       return { value: item.rating, listingId: item.listingId };
     case "recommended":
-      /* The same expression as `recommendedSortValue`, in the units the cursor compares. */
-      return {
-        value: (item.priceIsFrom ? 0 : 10) + Number(item.rating),
-        listingId: item.listingId,
-      };
+      return { value: recommendedSortValueOf(item), listingId: item.listingId };
   }
 }
 

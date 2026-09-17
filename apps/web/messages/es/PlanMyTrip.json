@@ -121,7 +121,7 @@
       "perPersonWeek": "por persona/semana",
       "options": {
         "low": {
-          "label": "€300–600"
+          "label": "€300-600"
         },
         "mid": {
           "label": "€600-1000"

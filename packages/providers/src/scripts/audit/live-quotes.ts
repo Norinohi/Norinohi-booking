@@ -55,7 +55,6 @@ const searchSchema = z.object({
         slug: z.string(),
         basePriceFrom: moneySchema.nullable(),
         priceIsFrom: z.boolean(),
-        pricedPeriod: periodSchema.nullable(),
         availability: z.object({ bookablePeriod: periodSchema.nullable() }),
       }),
     }),
@@ -192,7 +191,7 @@ async function audit(scenario: string, card: Card): Promise<Result> {
     .filter((line) => line.kind === "discount")
     .reduce((sum, line) => sum + line.amount.amountMinor, 0);
   const quoteBase = listBase === undefined ? undefined : listBase + discounts;
-  const claimsOwnPrice = listing.basePriceFrom && !listing.priceIsFrom && !listing.pricedPeriod;
+  const claimsOwnPrice = listing.basePriceFrom && !listing.priceIsFrom;
   if (!claimsOwnPrice || quoteBase === undefined || !listing.basePriceFrom) {
     return {
       ...base,

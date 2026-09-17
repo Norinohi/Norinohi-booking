@@ -29,7 +29,7 @@ export const wishlistRouter = {
       operationId: "listWishlistItems",
       summary: "List saved wishlist items",
       description:
-        "Returns the authenticated user's saved listings as card-ready summaries, newest save first, with numbered pagination. Listings that are no longer published are omitted from the page but still counted in the totals.",
+        "Returns the authenticated user's saved listings as card-ready summaries, newest save first, with numbered pagination. Cards are priced on priceBasis (the boat alone by default) and labelled in locale, exactly as the search results are. Listings that are no longer published are omitted from the page but still counted in the totals.",
       tags: ["Wishlist"],
       successDescription: "A page of saved listings with pagination metadata.",
       spec: withJsonBodyExample({ page: 1, pageSize: 10 }),

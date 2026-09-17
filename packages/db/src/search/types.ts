@@ -487,7 +487,8 @@ export type ListingSuggestion = {
    * ticked in the filter panel are the same selection rather than two spellings of it.
    */
   value: string;
-  kind: "country" | "region" | "location" | "base";
+  /* Named for the search filter the value goes into: `city` is the town, not the vendor's location. */
+  kind: "country" | "region" | "city" | "base";
   /**
    * Whether this row came from the curated popular list rather than from matching what was
    * typed. Only the empty field produces them, so a typeahead result is never marked.

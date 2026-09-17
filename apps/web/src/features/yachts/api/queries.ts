@@ -16,9 +16,9 @@ export type Suggestion = Awaited<
  * Destination typeahead behind the search bar's Location field. Fires on the empty query too, where
  * the server answers with the most-stocked countries as default suggestions.
  */
-export const suggestionsQueryOptions = (query: string) =>
+export const suggestionsQueryOptions = (query: string, locale: string) =>
   orpc.charterSearch.suggestions.queryOptions({
-    input: { query },
+    input: { query, locale },
     staleTime: 5 * 60 * 1000,
     // Keep the current list on screen while the next query loads, so switching queries never flashes
     // the "no matches" empty state between the old and new results.

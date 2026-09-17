@@ -19,6 +19,7 @@ import {
   region,
 } from "../schema";
 import { createTestDatabase, type TestDatabase } from "../test-support/database";
+import { encodeSearchCursor } from "./cursor";
 import { rebuildListingSearchDocs } from "./read-model";
 import { listSearchFacets, searchListings } from "./repository";
 
@@ -315,6 +316,28 @@ describe("a dated search", () => {
   it("ranks prices for the dates first when dearest comes first too", async () => {
     const result = await searchListings(test.db, { ...dated, sort: "price-desc" });
     expect(result.items.map((item) => item.slug)).toEqual(["alpha", "charlie", "bravo"]);
+  });
+
+  it("recommends a price for the dates ahead of another week's price", async () => {
+    const result = await searchListings(test.db, { ...dated, sort: "recommended" });
+    expect(result.items.map((item) => item.slug)).toEqual(["alpha", "charlie", "bravo"]);
+  });
+
+  it("pages the recommended order by cursor without skipping or repeating", async () => {
+    const slugs: string[] = [];
+    /* Above every recommended value, so the first page starts at the top of the order. */
+    let cursor: string | undefined = encodeSearchCursor({ value: 100, listingId: "~" });
+    do {
+      const page = await searchListings(test.db, {
+        ...dated,
+        sort: "recommended",
+        limit: 1,
+        cursor,
+      });
+      slugs.push(...page.items.map((item) => item.slug));
+      cursor = page.nextCursor;
+    } while (cursor);
+    expect(slugs).toEqual(["alpha", "charlie", "bravo"]);
   });
 
   it("filters on prices for the dates, not on another week's", async () => {

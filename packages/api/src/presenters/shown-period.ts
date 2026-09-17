@@ -8,17 +8,18 @@ import {
 } from "./listing";
 
 /*
- * The card, with its price captioned for the charter the card actually names.
+ * The card, with a price only where the price is for the charter the card names.
  *
- * `priceFrom` is the vendor's confirmed figure for one exact week. A dated search already reads
- * the week asked for where a vendor priced it (`listing_period_price`), so what reaches here with
- * other dates beside it is a listing nobody priced for them, and nothing here can reprice
- * another week: the published rate list is the pre-discount number both vendors sell below, and
- * no arithmetic turns a week into a charter of another length.
+ * `priceFrom` is the vendor's confirmed figure for one exact charter. A dated search already reads
+ * the charter asked for where a vendor priced it (`listing_period_price`), so what reaches here
+ * with other dates beside it is a listing nobody priced for them, and nothing here can reprice
+ * that charter: the published rate list is the pre-discount number both vendors sell below, and
+ * no arithmetic turns one week into another or into a charter of another length.
  *
- * So the figure keeps its own week and the card names it. It used to be relabelled a seasonal
- * minimum, which it is not: Kepi Lagoon 52 read EUR 7,500 "seasonal minimum" beside 17-24
- * October, a week its vendor sold for EUR 6,000.
+ * So such a card says "on request". It used to keep the other week's figure and caption it with
+ * that week, which still printed a price beside the dates asked for: My Affair Dufour 412 GL read
+ * "Boat price, for 17 Oct - 24 Oct, EUR 1,113" under a 7-14 November search. Before that the
+ * figure was relabelled a seasonal minimum, which it is not either.
  */
 export function pricedForShownPeriod(
   item: ListingSearchDoc,
@@ -28,14 +29,15 @@ export function pricedForShownPeriod(
 ) {
   const listing = presentListingSummary(item, basis, amenityRanks);
   if (shown.checkIn === null || shown.checkOut === null) return listing;
-  const shownNights = nightsBetween(shown.checkIn, shown.checkOut);
 
   /*
    * A season floor is a week's rate, so it can stand beside a week and nothing shorter. Beside
    * three nights it read as their price; the card says "on request" instead.
    */
   if (listing.priceIsFrom) {
-    return shownNights === WEEKLY_RATE_DAYS ? listing : withoutPrice(listing);
+    return nightsBetween(shown.checkIn, shown.checkOut) === WEEKLY_RATE_DAYS
+      ? listing
+      : withoutPrice(listing);
   }
 
   /*
@@ -49,18 +51,8 @@ export function pricedForShownPeriod(
    * start matched, so the guard passed, and the figure was 38% of the charter named above it.
    */
   const priced = bookablePeriodOf(item);
-  if (priced && priced.checkIn === shown.checkIn && priced.checkOut === shown.checkOut) {
-    return listing;
-  }
-
-  if (!priced) return { ...listing, priceIsFrom: true };
-  /*
-   * Another week of the same length is still worth naming. A charter of another length is not:
-   * a "3 days" card beside a week's price, captioned with that week, answered a question nobody
-   * asked, and the sweep prices the short charter itself where it can.
-   */
-  return nightsBetween(priced.checkIn, priced.checkOut) === shownNights
-    ? { ...listing, pricedPeriod: priced }
+  return priced && priced.checkIn === shown.checkIn && priced.checkOut === shown.checkOut
+    ? listing
     : withoutPrice(listing);
 }
 
@@ -72,6 +64,5 @@ function withoutPrice<T extends ReturnType<typeof presentListingSummary>>(listin
     allInPriceFrom: null,
     basePriceFrom: null,
     listPriceFrom: null,
-    pricedPeriod: null,
   };
 }

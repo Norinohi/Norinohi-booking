@@ -16,7 +16,13 @@
     "popularBoatTypes": "Beliebte Bootstypen",
     "allBoatTypes": "Alle Bootstypen",
     "clearLocation": "Ort löschen",
-    "freeText": "Name, Modell oder Firma"
+    "freeText": "Name, Modell oder Firma",
+    "kinds": {
+      "country": "Land",
+      "region": "Segelrevier",
+      "city": "Stadt",
+      "base": "Marina"
+    }
   },
   "paginationSummary": "{from}–{to} von {total}"
 }

@@ -20,7 +20,7 @@ import { buildConsultationHref } from "../lib/build-consultation-href";
 import type { PlannerAnswers } from "../lib/search-params";
 import { toRecommendedTile } from "../lib/to-recommended-tile";
 
-/** No dedicated Spain photo exists yet — falls back to Greece, same as the backend's default. */
+/** No dedicated Spain photo exists yet, so it falls back to Greece, same as the backend's default. */
 const DEFAULT_DESTINATION_IMAGE = "/assets/home/destinations/greece.webp";
 const DESTINATION_IMAGES = new Map<string, string>([
   ["Croatia", "/assets/home/destinations/croatia.webp"],
@@ -36,7 +36,7 @@ const YACHT_TYPE_KEYS = new Map<string, "sailing" | "catamaran" | "gulet" | "mot
   ["Luxury yacht", "luxury"],
 ]);
 
-/** Result — "Your perfect yacht trip" (Figma node 959:344654), backed by `planner.recommend`. */
+/** Result: "Your perfect yacht trip" (Figma node 959:344654), backed by `planner.recommend`. */
 interface ResultScreenProps {
   answers: PlannerAnswers;
 }
@@ -86,7 +86,7 @@ export function ResultScreen({ answers }: ResultScreenProps) {
   const formatRange = (range: typeof perPerson) =>
     range.min.amountMinor === range.max.amountMinor
       ? formatMoney(range.min.amountMinor, range.min.currency)
-      : `${formatMoney(range.min.amountMinor, range.min.currency)} – ${formatMoney(range.max.amountMinor, range.max.currency)}`;
+      : `${formatMoney(range.min.amountMinor, range.min.currency)} - ${formatMoney(range.max.amountMinor, range.max.currency)}`;
 
   const stats = [
     { label: t("labels.yachtType"), value: yachtTypeLabel },
@@ -176,7 +176,10 @@ export function ResultScreen({ answers }: ResultScreenProps) {
     boatType: category ? [category] : [],
     crew,
     duration: String(durationDays),
-    ...(maxPriceMinor === null ? null : { price: [0, Math.round(maxPriceMinor / 100)] as const }),
+    /* The planner caps the whole charter, extras included, so the search has to bound that figure. */
+    ...(maxPriceMinor === null
+      ? null
+      : { price: [0, Math.round(maxPriceMinor / 100)] as const, pricing: "charter" as const }),
   });
 
   return (
@@ -208,7 +211,7 @@ export function ResultScreen({ answers }: ResultScreenProps) {
         variants={RISE}
         className="flex flex-col overflow-hidden rounded-2xl bg-brand-50 lg:flex-row"
       >
-        {/* Left — darkened destination photo with the recommended boat card floating on top.
+        {/* Left: darkened destination photo with the recommended boat card floating on top.
             Below xl the photo takes half the row; the fixed Figma width only applies once
             there is room for the summary beside it. */}
         <div className="relative flex items-center justify-center overflow-hidden p-6 lg:w-1/2 lg:shrink xl:w-163">
@@ -234,7 +237,7 @@ export function ResultScreen({ answers }: ResultScreenProps) {
           )}
         </div>
 
-        {/* Right — trip summary */}
+        {/* Right: trip summary */}
         <div className="flex min-w-0 flex-1 flex-col gap-6 p-6 md:p-8">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">

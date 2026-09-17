@@ -16,7 +16,13 @@
     "popularBoatTypes": "Популярні судна",
     "allBoatTypes": "Усі судна",
     "clearLocation": "Очистити напрямок",
-    "freeText": "Назва, модель або компанія"
+    "freeText": "Назва, модель або компанія",
+    "kinds": {
+      "country": "Країна",
+      "region": "Регіон",
+      "city": "Місто",
+      "base": "Марина"
+    }
   },
   "paginationSummary": "Показано {from}–{to} з {total}"
 }
