@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { isClosedBooking } from "@yacht-charter/api/lib/closed-booking";
 import type { DateRange } from "@yacht-charter/ui/components/form/calendar";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { useLocale, useTranslations } from "next-intl";
@@ -112,7 +113,7 @@ export default function BookingsScreen({ user }: { user: { name: string; email: 
                          `balanceDue`, which counts the extras the base collects at the marina and
                          we must never offer to take. */
                       payBalanceHref={
-                        booking.payableNow.amountMinor > 0
+                        booking.payableNow.amountMinor > 0 && !isClosedBooking(booking.status)
                           ? `/bookings/${booking.id}/pay`
                           : undefined
                       }

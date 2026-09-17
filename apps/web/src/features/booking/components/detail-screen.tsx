@@ -1,5 +1,6 @@
 "use client";
 
+import { isClosedBooking } from "@yacht-charter/api/lib/closed-booking";
 import { ownLineLabel } from "@yacht-charter/api/lib/own-line-label";
 import { placeLine } from "@yacht-charter/api/lib/place-line";
 import { Button } from "@yacht-charter/ui/components/actions/button";
@@ -434,6 +435,7 @@ function PriceAside({ booking }: { booking: BookingDetail }) {
    * €1,296 paid, and then "nothing left to pay". Naming it is what makes the column add up.
    */
   const atCheckIn = booking.dueAtCheckIn.amountMinor;
+  const closed = isClosedBooking(booking.status);
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5">
@@ -465,14 +467,16 @@ function PriceAside({ booking }: { booking: BookingDetail }) {
           label={t("paid")}
           value={money(booking.paidTotal.amountMinor, booking.paidTotal.currency)}
         />
-        {atCheckIn > 0 ? (
+        {atCheckIn > 0 && !closed ? (
           <Row label={t("dueAtCheckIn")} value={money(atCheckIn, booking.total.currency)} />
         ) : null}
-        <Row
-          label={outstanding > 0 ? t("outstanding") : t("settled")}
-          value={money(outstanding, booking.total.currency)}
-          emphasis
-        />
+        {closed ? null : (
+          <Row
+            label={outstanding > 0 ? t("outstanding") : t("settled")}
+            value={money(outstanding, booking.total.currency)}
+            emphasis
+          />
+        )}
       </dl>
     </div>
   );

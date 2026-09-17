@@ -1,5 +1,6 @@
 "use client";
 
+import { isClosedBooking } from "@yacht-charter/api/lib/closed-booking";
 import { ownLineLabel } from "@yacht-charter/api/lib/own-line-label";
 import { placeLine } from "@yacht-charter/api/lib/place-line";
 import { Button } from "@yacht-charter/ui/components/actions/button";
@@ -92,20 +93,6 @@ const RELEASED_BY_US = ["CANCELLED", "REFUND_PENDING"];
 const UNCANCELLABLE = ["CONFIRMING", "CANCELLED", "REFUND_PENDING", "REFUNDED"];
 
 /*
- * Bookings that are over, one way or another: nothing is owed on them and no hold is running.
- * Money already taken is returned through the refund queue, so an "outstanding" figure or a
- * hold deadline here only invites someone to chase a customer who has nothing left to pay.
- */
-const CLOSED = [
-  "CANCELLED",
-  "REFUND_PENDING",
-  "REFUNDED",
-  "QUOTE_EXPIRED",
-  "OPTION_EXPIRED",
-  "PROVIDER_REJECTED",
-];
-
-/*
  * `crewType` is a provider code until the API finds a translation for it, after which it arrives
  * as a display label. Recognising the code is what tells the two apart — a label is printed as
  * it came, a code is mapped. Mirrors `crewKey` in the yachts feature, which is not on its public
@@ -195,7 +182,7 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
     0,
   );
 
-  const closed = CLOSED.includes(booking.status);
+  const closed = isClosedBooking(booking.status);
 
   const providerStillHolds =
     RELEASED_BY_US.includes(booking.status) &&
