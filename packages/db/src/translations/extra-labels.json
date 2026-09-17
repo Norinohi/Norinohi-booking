@@ -46283,5 +46283,300 @@
     "de": "WLAN unbegrenzt",
     "es": "Wi-Fi ilimitado",
     "uk": "Безлімітний Wi-Fi"
+  },
+  "Charter pack (end cleaning, bed linen, towels,  starter kit, outboard fuel 5l, 2 bottles of gas, transit log)": {
+    "de": "Charterpaket (Endreinigung, Bettwäsche, Handtücher, Starterset, 5 l Treibstoff für den Außenborder, 2 Gasflaschen, Transitlog)",
+    "es": "Pack de chárter (limpieza final, ropa de cama, toallas, kit de bienvenida, 5 l de combustible para el fueraborda, 2 bombonas de gas, transit log)",
+    "uk": "Чартерний пакет (фінальне прибирання, постільна білизна, рушники, стартовий набір, 5 л пального для підвісного мотора, 2 газові балони, transit log)"
+  },
+  "Charter pack multi weeks (end cleaning, bed linen, towels,  starter kit, outboard fuel 5l, 2 bottles of gas, transit log)": {
+    "de": "Charterpaket für mehrere Wochen (Endreinigung, Bettwäsche, Handtücher, Starterset, 5 l Treibstoff für den Außenborder, 2 Gasflaschen, Transitlog)",
+    "es": "Pack de chárter para varias semanas (limpieza final, ropa de cama, toallas, kit de bienvenida, 5 l de combustible para el fueraborda, 2 bombonas de gas, transit log)",
+    "uk": "Чартерний пакет на кілька тижнів (фінальне прибирання, постільна білизна, рушники, стартовий набір, 5 л пального для підвісного мотора, 2 газові балони, transit log)"
+  },
+  "Charter Pack (includes end cleaning, bed linen and bathroom towels, gas bottle, fuel for the outboard, mooring fee for the first and last night in the marina)": {
+    "de": "Charterpaket (inkl. Endreinigung, Bettwäsche und Badetücher, Gasflasche, Treibstoff für den Außenborder, Liegegebühr für die erste und letzte Nacht in der Marina)",
+    "es": "Pack de chárter (incluye limpieza final, ropa de cama y toallas de baño, bombona de gas, combustible para el fueraborda, amarre de la primera y la última noche en la marina)",
+    "uk": "Чартерний пакет (фінальне прибирання, постільна білизна і банні рушники, газовий балон, пальне для підвісного мотора, стоянка першої та останньої ночі в марині)"
+  },
+  "Charter pack S/Y (final cleaning, boat permits, berth for the first and last day in home marina, dinghy, bedding, towels, gas for cooking, WiFi unlimited)": {
+    "de": "Charterpaket Segelyacht (Endreinigung, Bootsgenehmigungen, Liegeplatz am ersten und letzten Tag in der Heimatmarina, Dingi, Bettwäsche, Handtücher, Kochgas, unbegrenztes WLAN)",
+    "es": "Pack de chárter velero (limpieza final, permisos del barco, amarre el primer y el último día en la marina base, auxiliar, ropa de cama, toallas, gas para cocinar, wifi ilimitado)",
+    "uk": "Чартерний пакет для вітрильної яхти (фінальне прибирання, дозволи для судна, стоянка першого та останнього дня в базовій марині, тузик, постільна білизна, рушники, газ для готування, безлімітний Wi-Fi)"
+  },
+  "Standard charter pack (End cleaning, full water tanks, 2 gas bottles, mooring fees first & last night at our base) Linen/towels not included": {
+    "de": "Standard-Charterpaket (Endreinigung, volle Wassertanks, 2 Gasflaschen, Liegegebühren für die erste und letzte Nacht an unserer Basis), Bettwäsche/Handtücher nicht inbegriffen",
+    "es": "Pack de chárter estándar (limpieza final, depósitos de agua llenos, 2 bombonas de gas, amarre de la primera y la última noche en nuestra base), ropa de cama y toallas no incluidas",
+    "uk": "Стандартний чартерний пакет (фінальне прибирання, повні баки води, 2 газові балони, стоянка першої та останньої ночі на нашій базі), білизна й рушники не входять"
+  },
+  "Charter Pack cata up to 44ft. (Cleaning + Sanification + Bed Linen + First Gas Bottle)": {
+    "de": "Charterpaket Katamaran bis 44 ft (Reinigung + Desinfektion + Bettwäsche + erste Gasflasche)",
+    "es": "Pack de chárter catamarán hasta 44 pies (limpieza + desinfección + ropa de cama + primera bombona de gas)",
+    "uk": "Чартерний пакет для катамарана до 44 футів (прибирання + дезінфекція + постільна білизна + перший газовий балон)"
+  },
+  "Charter Pack 3cab (Cleaning + Sanification + Bed Linen + First Gas Bottle)": {
+    "de": "Charterpaket 3 Kabinen (Reinigung + Desinfektion + Bettwäsche + erste Gasflasche)",
+    "es": "Pack de chárter 3 camarotes (limpieza + desinfección + ropa de cama + primera bombona de gas)",
+    "uk": "Чартерний пакет, 3 каюти (прибирання + дезінфекція + постільна білизна + перший газовий балон)"
+  },
+  "Charter Pack 4cab (Cleaning + Sanification + Bed Linen + First Gas Bottle)": {
+    "de": "Charterpaket 4 Kabinen (Reinigung + Desinfektion + Bettwäsche + erste Gasflasche)",
+    "es": "Pack de chárter 4 camarotes (limpieza + desinfección + ropa de cama + primera bombona de gas)",
+    "uk": "Чартерний пакет, 4 каюти (прибирання + дезінфекція + постільна білизна + перший газовий балон)"
+  },
+  "Charter package (transit log, final cleaning, Wi-Fi, outboard motor, bed linen, towels, 2 gas cylinders)": {
+    "de": "Charterpaket (Transitlog, Endreinigung, WLAN, Außenbordmotor, Bettwäsche, Handtücher, 2 Gasflaschen)",
+    "es": "Pack de chárter (transit log, limpieza final, wifi, motor fueraborda, ropa de cama, toallas, 2 bombonas de gas)",
+    "uk": "Чартерний пакет (transit log, фінальне прибирання, Wi-Fi, підвісний мотор, постільна білизна, рушники, 2 газові балони)"
+  },
+  "Charter pack (briefing and consumables : gas bottles, batteries, water, gazoline for tender)": {
+    "de": "Charterpaket (Einweisung und Verbrauchsmaterial: Gasflaschen, Batterien, Wasser, Benzin für das Beiboot)",
+    "es": "Pack de chárter (briefing y consumibles: bombonas de gas, baterías, agua, gasolina para la auxiliar)",
+    "uk": "Чартерний пакет (інструктаж і витратні матеріали: газові балони, батареї, вода, бензин для тузика)"
+  },
+  "CharterPack Caribbean (Cleaning + Bedlinen + Towels + First Gas bottle)": {
+    "de": "Charterpaket Karibik (Reinigung + Bettwäsche + Handtücher + erste Gasflasche)",
+    "es": "Pack de chárter Caribe (limpieza + ropa de cama + toallas + primera bombona de gas)",
+    "uk": "Чартерний пакет Кариби (прибирання + постільна білизна + рушники + перший газовий балон)"
+  },
+  "Included in the price (Standard): Dinghy with outboard, bed linen, towels, beach towels, end cleaning & flippers (no masks & snorkels)": {
+    "de": "Im Preis inbegriffen (Standard): Dingi mit Außenborder, Bettwäsche, Handtücher, Strandtücher, Endreinigung und Flossen (keine Masken und Schnorchel)",
+    "es": "Incluido en el precio (estándar): auxiliar con fueraborda, ropa de cama, toallas, toallas de playa, limpieza final y aletas (sin máscaras ni tubos)",
+    "uk": "Входить у ціну (стандарт): тузик із підвісним мотором, постільна білизна, рушники, пляжні рушники, фінальне прибирання та ласти (без масок і трубок)"
+  },
+  "Included in the price (Standard): Dinghy with outboard, bed linen, towels, end cleaning and flippers (no masks & snorkels)": {
+    "de": "Im Preis inbegriffen (Standard): Dingi mit Außenborder, Bettwäsche, Handtücher, Endreinigung und Flossen (keine Masken und Schnorchel)",
+    "es": "Incluido en el precio (estándar): auxiliar con fueraborda, ropa de cama, toallas, limpieza final y aletas (sin máscaras ni tubos)",
+    "uk": "Входить у ціну (стандарт): тузик із підвісним мотором, постільна білизна, рушники, фінальне прибирання та ласти (без масок і трубок)"
+  },
+  "Included: Outboard engine, bed linen - towels per person/week (up to 2 weeks)": {
+    "de": "Inbegriffen: Außenbordmotor, Bettwäsche und Handtücher pro Person/Woche (bis zu 2 Wochen)",
+    "es": "Incluido: motor fueraborda, ropa de cama y toallas por persona/semana (hasta 2 semanas)",
+    "uk": "Включено: підвісний мотор, постільна білизна та рушники на особу/тиждень (до 2 тижнів)"
+  },
+  "FREE: Outboard Engine, Bed linen, towels, blankets, one set /cabin/week": {
+    "de": "KOSTENLOS: Außenbordmotor, Bettwäsche, Handtücher, Decken, ein Satz pro Kabine/Woche",
+    "es": "GRATIS: motor fueraborda, ropa de cama, toallas, mantas, un juego por camarote/semana",
+    "uk": "БЕЗКОШТОВНО: підвісний мотор, постільна білизна, рушники, ковдри, один комплект на каюту/тиждень"
+  },
+  "Service pack - includes OB, Transit Log, Bed Linen, Towels, Spare Full Gas Bottle & Cleaning": {
+    "de": "Servicepaket mit Außenborder, Transitlog, Bettwäsche, Handtüchern, voller Reserve-Gasflasche und Reinigung",
+    "es": "Pack de servicio: fueraborda, transit log, ropa de cama, toallas, bombona de gas de repuesto llena y limpieza",
+    "uk": "Сервісний пакет: підвісний мотор, transit log, постільна білизна, рушники, запасний повний газовий балон і прибирання"
+  },
+  "Service Pack (includes final cleaning, gas bottle, bed linen 1 set/person)": {
+    "de": "Servicepaket (Endreinigung, Gasflasche, Bettwäsche 1 Satz/Person)",
+    "es": "Pack de servicio (limpieza final, bombona de gas, ropa de cama 1 juego/persona)",
+    "uk": "Сервісний пакет (фінальне прибирання, газовий балон, постільна білизна 1 комплект/особа)"
+  },
+  "Starter Pack 3 Cab (Bed linen in each cabin, 1 Gas Bottle, Final cleaning)": {
+    "de": "Starterpaket 3 Kabinen (Bettwäsche in jeder Kabine, 1 Gasflasche, Endreinigung)",
+    "es": "Pack de inicio 3 camarotes (ropa de cama en cada camarote, 1 bombona de gas, limpieza final)",
+    "uk": "Стартовий пакет, 3 каюти (постільна білизна в кожній каюті, 1 газовий балон, фінальне прибирання)"
+  },
+  "Starter Pack 4 Cab (Bed linen in each cabin, 1 Gas Bottle, Final cleaning)": {
+    "de": "Starterpaket 4 Kabinen (Bettwäsche in jeder Kabine, 1 Gasflasche, Endreinigung)",
+    "es": "Pack de inicio 4 camarotes (ropa de cama en cada camarote, 1 bombona de gas, limpieza final)",
+    "uk": "Стартовий пакет, 4 каюти (постільна білизна в кожній каюті, 1 газовий балон, фінальне прибирання)"
+  },
+  "Starter Pack 5 Cab (Bed linen in each cabin, 1 Gas Bottle, Final cleaning)": {
+    "de": "Starterpaket 5 Kabinen (Bettwäsche in jeder Kabine, 1 Gasflasche, Endreinigung)",
+    "es": "Pack de inicio 5 camarotes (ropa de cama en cada camarote, 1 bombona de gas, limpieza final)",
+    "uk": "Стартовий пакет, 5 кают (постільна білизна в кожній каюті, 1 газовий балон, фінальне прибирання)"
+  },
+  "Comfort Pack 38/39/40/42 (final cleaning, bed linen and towels, unlimited Wi-Fi)": {
+    "de": "Komfortpaket 38/39/40/42 (Endreinigung, Bettwäsche und Handtücher, unbegrenztes WLAN)",
+    "es": "Pack confort 38/39/40/42 (limpieza final, ropa de cama y toallas, wifi ilimitado)",
+    "uk": "Пакет комфорту 38/39/40/42 (фінальне прибирання, постільна білизна й рушники, безлімітний Wi-Fi)"
+  },
+  "Comfort Pack 43/44/45/46 (final cleaning, bed linen and towels, unlimited Wi-Fi)": {
+    "de": "Komfortpaket 43/44/45/46 (Endreinigung, Bettwäsche und Handtücher, unbegrenztes WLAN)",
+    "es": "Pack confort 43/44/45/46 (limpieza final, ropa de cama y toallas, wifi ilimitado)",
+    "uk": "Пакет комфорту 43/44/45/46 (фінальне прибирання, постільна білизна й рушники, безлімітний Wi-Fi)"
+  },
+  "Comfort Pack (full set of sheets, bath towels, final cleaning, tender fuel, second gas bottle)": {
+    "de": "Komfortpaket (kompletter Satz Bettwäsche, Badetücher, Endreinigung, Treibstoff für das Beiboot, zweite Gasflasche)",
+    "es": "Pack confort (juego completo de sábanas, toallas de baño, limpieza final, combustible para la auxiliar, segunda bombona de gas)",
+    "uk": "Пакет комфорту (повний комплект білизни, банні рушники, фінальне прибирання, пальне для тузика, другий газовий балон)"
+  },
+  "Welcome kit ( hand soap, toilet paper, 2 bottles of water, shower gel, and dishwashing detergent)": {
+    "de": "Willkommensset (Handseife, Toilettenpapier, 2 Flaschen Wasser, Duschgel und Spülmittel)",
+    "es": "Kit de bienvenida (jabón de manos, papel higiénico, 2 botellas de agua, gel de ducha y lavavajillas)",
+    "uk": "Вітальний набір (мило для рук, туалетний папір, 2 пляшки води, гель для душу та засіб для миття посуду)"
+  },
+  "Bicycle (adult) - four weeks": {
+    "de": "Fahrrad (Erwachsene) - vier Wochen",
+    "es": "Bicicleta (adulto) - cuatro semanas",
+    "uk": "Велосипед (дорослий) - чотири тижні"
+  },
+  "Bicycle (adult) - three weeks": {
+    "de": "Fahrrad (Erwachsene) - drei Wochen",
+    "es": "Bicicleta (adulto) - tres semanas",
+    "uk": "Велосипед (дорослий) - три тижні"
+  },
+  "Cruising tax": {
+    "de": "Kreuzfahrtsteuer",
+    "es": "Tasa de navegación",
+    "uk": "Круїзний податок"
+  },
+  "Skipper (crew provisions not included)": {
+    "de": "Skipper (Verpflegung der Crew nicht inbegriffen)",
+    "es": "Patrón (manutención de la tripulación no incluida)",
+    "uk": "Шкіпер (харчування екіпажу не входить)"
+  },
+  "Skipper from 45 to 55ft": {
+    "de": "Skipper für 45 bis 55 ft",
+    "es": "Patrón de 45 a 55 pies",
+    "uk": "Шкіпер для яхт від 45 до 55 футів"
+  },
+  "Code zero": {
+    "de": "Code Zero",
+    "es": "Code zero",
+    "uk": "Code zero"
+  },
+  "Blister": {
+    "de": "Blister",
+    "es": "Blister",
+    "uk": "Блістер"
+  },
+  "One pet on board": {
+    "de": "Ein Haustier an Bord",
+    "es": "Una mascota a bordo",
+    "uk": "Один домашній улюбленець на борту"
+  },
+  "Two pets on board": {
+    "de": "Zwei Haustiere an Bord",
+    "es": "Dos mascotas a bordo",
+    "uk": "Двоє домашніх улюбленців на борту"
+  },
+  "Three pets on board": {
+    "de": "Drei Haustiere an Bord",
+    "es": "Tres mascotas a bordo",
+    "uk": "Троє домашніх улюбленців на борту"
+  },
+  "Starlink": {
+    "de": "Starlink",
+    "es": "Starlink",
+    "uk": "Starlink"
+  },
+  "INTERNET PACK Wi-Fi router for Internet aboard (on GSM coverage up to 10GB/week)": {
+    "de": "INTERNETPAKET WLAN-Router für Internet an Bord (bei GSM-Abdeckung bis 10 GB/Woche)",
+    "es": "PACK DE INTERNET router wifi para internet a bordo (con cobertura GSM hasta 10 GB/semana)",
+    "uk": "ІНТЕРНЕТ-ПАКЕТ Wi-Fi роутер для інтернету на борту (у зоні покриття GSM до 10 ГБ/тиждень)"
+  },
+  "Wi-Fi 40GB 4G LTE": {
+    "de": "WLAN 40 GB 4G LTE",
+    "es": "Wifi 40 GB 4G LTE",
+    "uk": "Wi-Fi 40 ГБ 4G LTE"
+  },
+  "Internet 5GB": {
+    "de": "Internet 5 GB",
+    "es": "Internet 5 GB",
+    "uk": "Інтернет 5 ГБ"
+  },
+  "1 x SUP": {
+    "de": "1 x SUP-Board",
+    "es": "1 x tabla de SUP",
+    "uk": "1 x SUP-дошка"
+  },
+  "2 x SUP": {
+    "de": "2 x SUP-Boards",
+    "es": "2 x tablas de SUP",
+    "uk": "2 x SUP-дошки"
+  },
+  "2 SUP": {
+    "de": "2 SUP-Boards",
+    "es": "2 tablas de SUP",
+    "uk": "2 SUP-дошки"
+  },
+  "SUP- BVI": {
+    "de": "SUP-Board - BVI",
+    "es": "Tabla de SUP - BVI",
+    "uk": "SUP-дошка - BVI"
+  },
+  "SUP- Dubrovnik": {
+    "de": "SUP-Board - Dubrovnik",
+    "es": "Tabla de SUP - Dubrovnik",
+    "uk": "SUP-дошка - Дубровник"
+  },
+  "SUP- Bahamas": {
+    "de": "SUP-Board - Bahamas",
+    "es": "Tabla de SUP - Bahamas",
+    "uk": "SUP-дошка - Багами"
+  },
+  "WIFI - Road Town": {
+    "de": "WLAN - Road Town",
+    "es": "Wifi - Road Town",
+    "uk": "Wi-Fi - Road Town"
+  },
+  "WIFI - BVI": {
+    "de": "WLAN - BVI",
+    "es": "Wifi - BVI",
+    "uk": "Wi-Fi - BVI"
+  },
+  "WIFI - Dubrovnik": {
+    "de": "WLAN - Dubrovnik",
+    "es": "Wifi - Dubrovnik",
+    "uk": "Wi-Fi - Дубровник"
+  },
+  "WIFI - Corfu": {
+    "de": "WLAN - Korfu",
+    "es": "Wifi - Corfú",
+    "uk": "Wi-Fi - Корфу"
+  },
+  "Premium return on Saturday (08:00)": {
+    "de": "Premium-Rückgabe am Samstag (08:00)",
+    "es": "Devolución premium el sábado (08:00)",
+    "uk": "Преміальне повернення в суботу (08:00)"
+  },
+  "Net Installation": {
+    "de": "Montage des Sicherheitsnetzes",
+    "es": "Instalación de la red de seguridad",
+    "uk": "Встановлення захисної сітки"
+  },
+  "Scooter": {
+    "de": "Roller",
+    "es": "Patinete",
+    "uk": "Самокат"
+  },
+  "Electric scooter (order in advance due to limited quantity of equipment)": {
+    "de": "E-Scooter (wegen begrenzter Stückzahl im Voraus bestellen)",
+    "es": "Patinete eléctrico (reservar con antelación, unidades limitadas)",
+    "uk": "Електросамокат (замовляйте заздалегідь, кількість обмежена)"
+  },
+  "Crew change (if no cleaning is requested and the skipper stays the same)": {
+    "de": "Crewwechsel (ohne Reinigung, der Skipper bleibt derselbe)",
+    "es": "Cambio de tripulación (sin limpieza y con el mismo patrón)",
+    "uk": "Зміна екіпажу (без прибирання, шкіпер той самий)"
+  },
+  "New crew list at crew change (without cleaning & without fresh bed linen)": {
+    "de": "Neue Crewliste beim Crewwechsel (ohne Reinigung und ohne frische Bettwäsche)",
+    "es": "Nueva lista de tripulación en el cambio de tripulación (sin limpieza ni ropa de cama limpia)",
+    "uk": "Новий список екіпажу при зміні екіпажу (без прибирання і без свіжої постільної білизни)"
+  },
+  "Hostess (food not included, separate toilet needs to be provided or shared)": {
+    "de": "Hostess (Verpflegung nicht inbegriffen, eigene oder gemeinsame Toilette erforderlich)",
+    "es": "Azafata (comida no incluida, se necesita un aseo propio o compartido)",
+    "uk": "Хостес (харчування не входить, потрібен окремий або спільний туалет)"
+  },
+  "Early Check-in at 13:00-14:00-ON REQUEST sailboats 40-46ft, catamarans up to 41ft": {
+    "de": "Früher Check-in um 13:00-14:00, AUF ANFRAGE, Segelyachten 40-46 ft, Katamarane bis 41 ft",
+    "es": "Check-in anticipado a las 13:00-14:00, BAJO PETICIÓN, veleros de 40-46 pies, catamaranes hasta 41 pies",
+    "uk": "Ранній check-in о 13:00-14:00, ЗА ЗАПИТОМ, вітрильні яхти 40-46 футів, катамарани до 41 фута"
+  },
+  "Late Check-out Saturday till 10:00-ON REQUEST sailboats 40-46ft, catamarans up to 41ft": {
+    "de": "Später Check-out am Samstag bis 10:00, AUF ANFRAGE, Segelyachten 40-46 ft, Katamarane bis 41 ft",
+    "es": "Check-out tardío el sábado hasta las 10:00, BAJO PETICIÓN, veleros de 40-46 pies, catamaranes hasta 41 pies",
+    "uk": "Пізній check-out у суботу до 10:00, ЗА ЗАПИТОМ, вітрильні яхти 40-46 футів, катамарани до 41 фута"
+  },
+  "FW CABIN CONVERSION (IF POSSIBLE)": {
+    "de": "UMBAU DER VORSCHIFFSKABINE (WENN MÖGLICH)",
+    "es": "CONVERSIÓN DEL CAMAROTE DE PROA (SI ES POSIBLE)",
+    "uk": "ПЕРЕОБЛАДНАННЯ НОСОВОЇ КАЮТИ (ЗА МОЖЛИВОСТІ)"
+  },
+  "Sail refreshment": {
+    "de": "Segelauffrischung",
+    "es": "Curso de refresco de navegación",
+    "uk": "Курс відновлення навичок керування яхтою"
   }
 }
