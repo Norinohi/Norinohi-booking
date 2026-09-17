@@ -4,10 +4,10 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 
 /*
- * A bare connection string defaults node-postgres to a 10-connection pool. That undersizes facet
- * aggregation: listSearchFacets alone fans out to 11-18 queries via Promise.all per call (see
- * packages/db/src/search/repository.ts), so one request can already want more connections than
- * the default pool holds — and the catalog prerender fires many such requests concurrently.
+ * A bare connection string defaults node-postgres to a 10-connection pool. That undersized facet
+ * aggregation when listSearchFacets fanned out to 11-18 queries per call, so one request could
+ * want more connections than the default pool held. It now holds two (packages/db/src/search/
+ * facets.ts), but the catalog prerender still fires many search requests concurrently.
  * Under-provisioning doesn't fail loudly, it just queues internally, which is part of why the
  * ~3,900-page prod prerender is slower than its query cost alone would suggest.
  */

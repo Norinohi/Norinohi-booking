@@ -103,100 +103,126 @@ const DEFAULT_LENGTH_UNITS: ListingFacetOption[] = [
   { value: "m", label: "m" },
 ];
 
+/*
+ * The filters a facet can leave out of its own counts, so that choosing a country still lists
+ * the other countries. Every other filter narrows every facet alike, availability included, so
+ * `candidate` applies those once per call; these ride along as one boolean column each, and a
+ * facet ANDs back the ones it does not ignore. Evaluated per facet instead, the full where clause
+ * ran eleven times, and on a dated search each run repeated the availability scan.
+ */
+const FACET_OWN_FILTERS = [
+  "destination",
+  "query",
+  "category",
+  "country",
+  "sailingArea",
+  "charterCompany",
+  "marina",
+  "boatType",
+  "model",
+  "crew",
+  "mainsailType",
+  "equipment",
+  "yearFrom",
+  "yearTo",
+] as const satisfies readonly FacetFilterKey[];
+
+type FacetOwnFilter = (typeof FACET_OWN_FILTERS)[number];
+
+/* The filters that read the searchable text or explode the amenities, per row. */
+const COSTLY_FILTERS: ReadonlySet<FacetOwnFilter> = new Set(["query", "equipment"]);
+
+type OptionFacet = {
+  expression: SQL;
+  ignored: readonly FacetOwnFilter[];
+  /* The facet_media kind that decorates the options, where one does. */
+  kind: FacetMediaKind | null;
+};
+
+const OPTION_FACET_NAMES = [
+  "countries",
+  "sailingAreas",
+  "charterCompanies",
+  "marinas",
+  "boatTypes",
+  "models",
+  "crews",
+  "mainsailTypes",
+  "years",
+] as const;
+
+type OptionFacetName = (typeof OPTION_FACET_NAMES)[number];
+
+const OPTION_FACETS = {
+  countries: { expression: sql`doc.country`, ignored: ["country", "destination"], kind: "country" },
+  sailingAreas: {
+    expression: sql`doc.region`,
+    ignored: ["sailingArea", "destination"],
+    kind: "region",
+  },
+  charterCompanies: { expression: sql`doc.operator`, ignored: ["charterCompany"], kind: null },
+  marinas: { expression: sql`doc.base_name`, ignored: ["marina", "destination"], kind: "marina" },
+  boatTypes: { expression: sql`doc.category`, ignored: ["boatType", "category"], kind: "category" },
+  models: {
+    expression: sql`coalesce(doc.model, doc.builder)`,
+    ignored: ["model", "query"],
+    kind: "model",
+  },
+  crews: { expression: sql`doc.crew_type`, ignored: ["crew"], kind: "crew" },
+  mainsailTypes: { expression: sql`doc.sail_type`, ignored: ["mainsailType"], kind: "sail_type" },
+  /* `nullif` for the same reason the range filters it: a year of zero is "not stated", and it
+     was being offered as a selectable build year in the dropdown. */
+  years: {
+    expression: sql`nullif(doc.year_built, 0)::text`,
+    ignored: ["yearFrom", "yearTo"],
+    kind: null,
+  },
+} satisfies Record<OptionFacetName, OptionFacet>;
+
+const EQUIPMENT_KIND: FacetMediaKind = "equipment";
+const EQUIPMENT_IGNORED: readonly FacetOwnFilter[] = ["equipment"];
+
+type RangeRow = {
+  minLength: AggregateBound;
+  maxLength: AggregateBound;
+  minCabins: number | null;
+  maxCabins: number | null;
+  minBerths: number | null;
+  maxBerths: number | null;
+  minBathrooms: number | null;
+  maxBathrooms: number | null;
+  minMinor: number | null;
+  maxMinor: number | null;
+  minYear: number | null;
+  maxYear: number | null;
+  minRating: AggregateBound;
+  maxRating: AggregateBound;
+  hasDepositInsurance: boolean | null;
+  hasPetsAllowed: boolean | null;
+  hasBestValue: boolean | null;
+};
+
+/* Each column arrives parsed from json: the option lists as arrays, the ranges as one object. */
+type FacetQueryRow = { [name in OptionFacetName | "equipment"]: FacetOptionRow[] } & {
+  ranges: RangeRow | null;
+};
+
 export async function listSearchFacets(
   db: NodePgDatabase<typeof schema>,
   input: ListingSearchInput = {},
 ): Promise<ListingFacets> {
-  const [
-    countries,
-    sailingAreas,
-    charterCompanies,
-    marinas,
-    boatTypes,
-    models,
-    crews,
-    mainsailTypes,
-    equipment,
-    years,
-    rangeRows,
-  ] = await Promise.all([
-    listFacetOptions(db, input, sql`doc.country`, ["country", "destination"], "country"),
-    listFacetOptions(db, input, sql`doc.region`, ["sailingArea", "destination"], "region"),
-    listFacetOptions(db, input, sql`doc.operator`, ["charterCompany"]),
-    listFacetOptions(db, input, sql`doc.base_name`, ["marina", "destination"], "marina"),
-    listFacetOptions(db, input, sql`doc.category`, ["boatType", "category"], "category"),
-    listFacetOptions(db, input, sql`coalesce(doc.model, doc.builder)`, ["model", "query"], "model"),
-    listFacetOptions(db, input, sql`doc.crew_type`, ["crew"], "crew"),
-    listFacetOptions(db, input, sql`doc.sail_type`, ["mainsailType"], "sail_type"),
-    listEquipmentFacetOptions(db, input),
-    /* `nullif` for the same reason the range filters it: a year of zero is "not stated", and it
-       was being offered as a selectable build year in the dropdown. */
-    listFacetOptions(db, input, sql`nullif(doc.year_built, 0)::text`, ["yearFrom", "yearTo"]),
-    db.execute<{
-      minLength: string | null;
-      maxLength: string | null;
-      minCabins: number | null;
-      maxCabins: number | null;
-      minBerths: number | null;
-      maxBerths: number | null;
-      minBathrooms: number | null;
-      maxBathrooms: number | null;
-      minMinor: number | null;
-      maxMinor: number | null;
-      minYear: number | null;
-      maxYear: number | null;
-      minRating: string | null;
-      maxRating: string | null;
-      hasDepositInsurance: boolean | null;
-      hasPetsAllowed: boolean | null;
-      hasBestValue: boolean | null;
-      currency: string | null;
-    }>(sql`
-      select
-        min(doc.length_m) as "minLength",
-        /* Capped rather than maxed -- see LENGTH_CAP_PERCENTILE. Zero is how a vendor writes a
-           length it does not know, so it is left out of the ordering the same way an unknown
-           build year is left out of the year range below. */
-        percentile_disc(${LENGTH_CAP_PERCENTILE}::double precision) within group (order by doc.length_m)
-          filter (where doc.length_m > 0) as "maxLength",
-        min(doc.cabins) as "minCabins",
-        max(doc.cabins) as "maxCabins",
-        min(doc.berths) as "minBerths",
-        max(doc.berths) as "maxBerths",
-        min(doc.heads) as "minBathrooms",
-        max(doc.heads) as "maxBathrooms",
-        /* Filtered the same way the cap below is, and for the reason stated there: a
-           non-positive figure is a vendor saying "no price", never "free". Two listings publish
-           a zero charter rate beside real fees, and an unfiltered minimum put a EUR 0 end on
-           the slider the moment the catalogue started comparing rates. */
-        min(${comparablePrice(input.priceBasis)}) filter (
-          where ${comparablePrice(input.priceBasis)} > 0 and ${pricedForDates(input)}
-        ) as "minMinor",
-        /* Capped rather than maxed -- see PRICE_CAP_PERCENTILE. A non-positive figure is a
-           vendor saying "no price", never "free", so it is left out of the ordering. */
-        percentile_disc(${PRICE_CAP_PERCENTILE}::double precision) within group (
-          order by ${comparablePrice(input.priceBasis)}
-        ) filter (
-          where ${comparablePrice(input.priceBasis)} > 0 and ${pricedForDates(input)}
-        ) as "maxMinor",
-        /* Zero is how a vendor writes a build year it does not know, and it reached the range as
-           a real one: the age slider then offered "up to 2026 years old". Filtered rather than
-           coalesced, because a fleet where nobody stated a year has no range to show.
-           Capped rather than minned on the old end -- see OLDEST_YEAR_PERCENTILE. */
-        percentile_disc(${OLDEST_YEAR_PERCENTILE}::double precision) within group (
-          order by doc.year_built
-        ) filter (where doc.year_built > 0) as "minYear",
-        max(doc.year_built) filter (where doc.year_built > 0) as "maxYear",
-        min(doc.rating) as "minRating",
-        max(doc.rating) as "maxRating",
-        bool_or(doc.deposit_insurance_included) as "hasDepositInsurance",
-        bool_or(doc.pets_allowed) as "hasPetsAllowed",
-        bool_or(doc.best_value) as "hasBestValue"
-      from ${searchDocs(input)} doc
-      where ${whereClause(input)}
-    `),
+  const [result, media] = await Promise.all([
+    db.execute<FacetQueryRow>(facetQuery(input)),
+    readFacetMedia(db, input.locale),
   ]);
-  const row = rangeRows.rows[0];
+  const facets = result.rows[0];
+  const decorate = (name: OptionFacetName) =>
+    decorateFacetOptions(facets?.[name] ?? [], media, OPTION_FACETS[name].kind);
+
+  const countries = decorate("countries");
+  const boatTypes = decorate("boatTypes");
+  const equipment = decorateFacetOptions(facets?.equipment ?? [], media, EQUIPMENT_KIND);
+  const row = facets?.ranges;
   /*
    * The bounds are read off price_from_minor_eur, so the slider is in that currency whatever
    * the fleet publishes in. Taking the label from min(doc.currency) instead put a euro sign on
@@ -213,7 +239,7 @@ export async function listSearchFacets(
    * entries to pick a build year from, and the two controls over one constraint disagreed
    * about where it started.
    */
-  const yearsInRange = years
+  const yearsInRange = decorate("years")
     .filter((option) => Number(option.value) >= yearRange.min)
     /* Newest first: the current year is the one people reach for, and the facet read hands them
        back in ascending order, which buried it at the bottom of a twenty-odd entry list. */
@@ -225,15 +251,15 @@ export async function listSearchFacets(
     amenities: labelsFromOptions(equipment),
     options: {
       countries,
-      sailingAreas,
-      charterCompanies,
-      marinas,
+      sailingAreas: decorate("sailingAreas"),
+      charterCompanies: decorate("charterCompanies"),
+      marinas: decorate("marinas"),
       durations: DEFAULT_DURATIONS,
       dateFlexibility: DEFAULT_DATE_FLEXIBILITY,
       boatTypes,
-      models,
-      crews,
-      mainsailTypes,
+      models: decorate("models"),
+      crews: decorate("crews"),
+      mainsailTypes: decorate("mainsailTypes"),
       equipment,
       lengthUnits: DEFAULT_LENGTH_UNITS,
       years: [{ value: "any", label: "Any year" }, ...yearsInRange],
@@ -310,83 +336,292 @@ const facetPriceColumns = (input: ListingSearchInput): SQL => {
       ${FX_BASE_CURRENCY}::text as currency`;
 };
 
-async function listFacetOptions(
-  db: NodePgDatabase<typeof schema>,
-  input: ListingSearchInput,
-  expression: SQL,
-  ignored: readonly FacetFilterKey[],
-  kind?: FacetMediaKind,
-): Promise<ListingFacetOption[]> {
-  const rows = await db.execute<FacetOptionRow>(sql`
+/*
+ * One statement for every facet: `candidate` is the search narrowed by everything no facet
+ * ignores, and each facet aggregates over it. json_agg keeps it one row, which is what lets the
+ * lists and the ranges share the CTE instead of each re-running the search.
+ */
+function facetQuery(input: ListingSearchInput): SQL {
+  const optionColumns = OPTION_FACET_NAMES.map(
+    (name) => sql`${optionRowsJson(input, name)} as ${sql.identifier(name)}`,
+  );
+  const optionKeys = OPTION_FACET_NAMES.map((name) =>
+    foldedKeys(
+      name,
+      sql`select distinct ${OPTION_FACETS[name].expression} as value from candidate doc`,
+    ),
+  );
+  const flagsFor = (keys: readonly FacetOwnFilter[]) =>
+    sql.join(
+      keys.map((key) => sql`${onlyFilter(input, key)} as ${filterColumn(key)}`),
+      sql`, `,
+    );
+  const cheap = FACET_OWN_FILTERS.filter((key) => !COSTLY_FILTERS.has(key));
+  const costly = FACET_OWN_FILTERS.filter((key) => COSTLY_FILTERS.has(key));
+
+  const cheapOnly: FlagColumn = (key) =>
+    COSTLY_FILTERS.has(key) ? sql`true` : sql`own.${filterColumn(key)}`;
+  const everyFlag: FlagColumn = (key) =>
+    sql`${COSTLY_FILTERS.has(key) ? sql`costly` : sql`own`}.${filterColumn(key)}`;
+
+  /*
+   * `offset 0` keeps each set of flags a subquery, so a flag is computed once rather than at
+   * every use. The costly ones are asked only of rows the cheap ones leave able to reach a facet:
+   * computed for every row, they turned a search narrowed to a few hundred boats into seconds.
+   */
+  return sql`
+    with candidate as materialized (
+      select ${candidateColumns(input)}, own.*, costly.*
+      from ${searchDocs(input)} doc
+      cross join lateral (select ${flagsFor(cheap)} offset 0) own
+      cross join lateral (
+        select ${flagsFor(costly)} where ${reachesAFacet(cheapOnly)} offset 0
+      ) costly
+      where ${whereClause(input, FACET_OWN_FILTERS)} and ${reachesAFacet(everyFlag)}
+    ),
+    ${sql.join([...optionKeys, equipmentKeys()], sql`, `)}
     select
-      ${modalLabel(expression)} as label,
-      count(*)::integer as count,${facetPriceColumns(input)}
-    from ${searchDocs(input)} doc
-    where ${whereClause(input, ignored)}
-      and ${expression} is not null
-    group by ${normalizedSql(expression)}
-    order by label asc
-  `);
-
-  return decorateFacetOptions(db, rows.rows, kind, input.locale);
-}
-
-async function listEquipmentFacetOptions(
-  db: NodePgDatabase<typeof schema>,
-  input: ListingSearchInput,
-): Promise<ListingFacetOption[]> {
-  const rows = await db.execute<FacetOptionRow>(sql`
-    select
-      ${modalLabel(sql`amenity.value`)} as label,
-      count(distinct doc.listing_id)::integer as count,${facetPriceColumns(input)}
-    from ${searchDocs(input)} doc
-    cross join lateral jsonb_array_elements_text(doc.amenities) amenity(value)
-    where ${whereClause(input, ["equipment"])}
-      and amenity.value is not null
-    group by ${normalizedSql(sql`amenity.value`)}
-    order by label asc
-  `);
-
-  return decorateFacetOptions(db, rows.rows, "equipment", input.locale);
+      ${sql.join(optionColumns, sql`, `)},
+      ${equipmentRowsJson(input)} as equipment,
+      (select row_to_json(ranges) from (${rangeSelect(input)}) ranges) as ranges
+  `;
 }
 
 /*
- * Attaches facet_media copy to grouped facet rows.
- *
- * One extra query per decorated group rather than a join per facet query: the media
- * table is small, and joining inside the grouped query would force the normalization
- * expression into the group key.
+ * The columns the aggregates below read, and no more. With `doc.*` the set carried the searchable
+ * text and the operator's terms, outgrew work_mem, and every facet read it back from disk.
+ * `priced_for_dates` exists only on a dated read (see `searchDocs`).
  */
-async function decorateFacetOptions(
-  db: NodePgDatabase<typeof schema>,
-  rows: FacetOptionRow[],
-  kind?: FacetMediaKind,
-  locale?: string,
-): Promise<ListingFacetOption[]> {
-  const options = rows.map((row) => ({
-    value: valueForLabel(row.label),
-    label: row.label,
-    count: row.count,
-    priceFromMinor: row.priceFromMinor,
-    pricePerPersonWeekMinor: row.pricePerPersonWeekMinor,
-    currency: row.currency,
-  }));
+const CANDIDATE_COLUMNS = [
+  "listing_id",
+  "country",
+  "region",
+  "operator",
+  "base_name",
+  "category",
+  "model",
+  "builder",
+  "crew_type",
+  "sail_type",
+  "year_built",
+  "amenities",
+  "length_m",
+  "cabins",
+  "berths",
+  "heads",
+  "rating",
+  "deposit_insurance_included",
+  "pets_allowed",
+  "best_value",
+  "currency",
+  "price_from_minor",
+  "price_from_minor_eur",
+  "base_price_from_minor",
+  "base_price_from_minor_eur",
+  "max_guests",
+  "price_is_from",
+  "bookable_from",
+  "bookable_to",
+];
 
-  if (!kind || options.length === 0) return options;
+function candidateColumns(input: ListingSearchInput): SQL {
+  const columns = CANDIDATE_COLUMNS.map((name) => sql`doc.${sql.identifier(name)}`);
+  if (availabilityWindowFor(input)) columns.push(sql`doc.priced_for_dates`);
+  return sql.join(columns, sql`, `);
+}
 
-  const media = await db.execute<{
-    key: string;
-    imageUrl: string | null;
-    hoverImageUrl: string | null;
-    gridUsesHoverImage: boolean;
-    cloudinaryId: string | null;
-    label: string | null;
-    description: string | null;
-    popularRank: number | null;
-    featuredRank: number | null;
-    filterVisible: boolean;
-  }>(sql`
+function filterColumn(key: FacetOwnFilter): SQL {
+  return sql`${sql.identifier(`filter_${key}`)}`;
+}
+
+/* `whereClause` over an input carrying one filter and nothing else, dates included. */
+function onlyFilter<K extends FacetOwnFilter>(input: ListingSearchInput, key: K): SQL {
+  const picked: ListingSearchInput = {};
+  picked[key] = input[key];
+  return whereClause(picked);
+}
+
+type FlagColumn = (key: FacetOwnFilter) => SQL;
+
+const candidateFlag: FlagColumn = (key) => sql`doc.${filterColumn(key)}`;
+
+function candidateFilters(ignored: readonly FacetOwnFilter[] = [], flag = candidateFlag): SQL {
+  const skip = new Set<FacetFilterKey>(ignored);
+  const applied = FACET_OWN_FILTERS.filter((key) => !skip.has(key));
+  return sql.join([sql`true`, ...applied.map(flag)], sql` and `);
+}
+
+/* A row failing filters that no single facet ignores together reaches no facet, so it is dropped. */
+function reachesAFacet(flag: FlagColumn): SQL {
+  const ignoredSets = [
+    ...OPTION_FACET_NAMES.map((name) => OPTION_FACETS[name].ignored),
+    EQUIPMENT_IGNORED,
+  ];
+  return sql`(${sql.join(
+    ignoredSets.map((ignored) => sql`(${candidateFilters(ignored, flag)})`),
+    sql` or `,
+  )})`;
+}
+
+function optionRowsJson(input: ListingSearchInput, name: OptionFacetName): SQL {
+  const { expression, ignored } = OPTION_FACETS[name];
+  return jsonRows(sql`
     select
+      ${modalLabel(expression)} as label,
+      count(*)::integer as count,${facetPriceColumns(input)}
+    from candidate doc
+    cross join ${foldedKeysName(name)} folded
+    where ${candidateFilters(ignored)}
+      and ${expression} is not null
+    group by ${foldedKey(expression)}
+  `);
+}
+
+function foldedKeysName(name: OptionFacetName | "equipment"): SQL {
+  return sql`${sql.identifier(`${name}_key`)}`;
+}
+
+/*
+ * Every distinct spelling a facet groups, mapped to its `normalizedSql` fold.
+ *
+ * Grouping on the fold directly ran the regular expression once per row per facet, and sorted the
+ * folded text under the database collation. Folding each spelling once and looking the key up
+ * groups the same rows for half the cost; `collate "C"` is safe on the group key because a
+ * deterministic collation treats two strings as equal only when their bytes are.
+ */
+function foldedKeys(
+  name: OptionFacetName | "equipment",
+  values: SQL,
+  restriction = sql`true`,
+): SQL {
+  return sql`${foldedKeysName(name)} as materialized (
+    select coalesce(jsonb_object_agg(spelling.value, ${normalizedSql(sql`spelling.value`)}), '{}') as keys
+    from (${values}) spelling
+    where spelling.value is not null and ${restriction}
+  )`;
+}
+
+function foldedKey(value: SQL): SQL {
+  return sql`(folded.keys ->> ${value}) collate "C"`;
+}
+
+/*
+ * The equipment spellings, cut to the curated allowlist when there is one.
+ *
+ * The catalogue spells ~800 amenities and the allowlist keeps ~50, so grouping every exploded row
+ * (400k of them) was mostly spent on groups `decorateFacetOptions` then threw away. The JS cut
+ * still runs and stays the authority; this only removes groups it would have removed.
+ */
+function equipmentKeys(): SQL {
+  const visible = sql`from facet_media media
+    where media.kind = ${EQUIPMENT_KIND} and media.filter_visible`;
+
+  return foldedKeys(
+    "equipment",
+    sql`select distinct jsonb_array_elements_text(doc.amenities) as value from candidate doc`,
+    sql`(
+      not exists (select 1 ${visible})
+      or ${normalizedSql(sql`spelling.value`)} in (select ${normalizedSql(sql`media.value`)} ${visible})
+    )`,
+  );
+}
+
+function equipmentRowsJson(input: ListingSearchInput): SQL {
+  return jsonRows(sql`
+    select
+      ${modalLabel(sql`amenity.value`)} as label,
+      count(distinct doc.listing_id collate "C")::integer as count,${facetPriceColumns(input)}
+    from candidate doc
+    cross join ${foldedKeysName("equipment")} folded
+    cross join lateral jsonb_array_elements_text(doc.amenities) amenity(value)
+    where ${candidateFilters(EQUIPMENT_IGNORED)}
+      and folded.keys ? amenity.value
+    group by ${foldedKey(sql`amenity.value`)}
+  `);
+}
+
+function jsonRows(rows: SQL): SQL {
+  return sql`(select coalesce(json_agg(facet order by facet.label), '[]'::json) from (${rows}) facet)`;
+}
+
+function rangeSelect(input: ListingSearchInput): SQL {
+  return sql`
+    select
+      min(doc.length_m) as "minLength",
+      /* Capped rather than maxed -- see LENGTH_CAP_PERCENTILE. Zero is how a vendor writes a
+         length it does not know, so it is left out of the ordering the same way an unknown
+         build year is left out of the year range below. */
+      percentile_disc(${LENGTH_CAP_PERCENTILE}::double precision) within group (order by doc.length_m)
+        filter (where doc.length_m > 0) as "maxLength",
+      min(doc.cabins) as "minCabins",
+      max(doc.cabins) as "maxCabins",
+      min(doc.berths) as "minBerths",
+      max(doc.berths) as "maxBerths",
+      min(doc.heads) as "minBathrooms",
+      max(doc.heads) as "maxBathrooms",
+      /* Filtered the same way the cap below is, and for the reason stated there: a
+         non-positive figure is a vendor saying "no price", never "free". Two listings publish
+         a zero charter rate beside real fees, and an unfiltered minimum put a EUR 0 end on
+         the slider the moment the catalogue started comparing rates. */
+      min(${comparablePrice(input.priceBasis)}) filter (
+        where ${comparablePrice(input.priceBasis)} > 0 and ${pricedForDates(input)}
+      ) as "minMinor",
+      /* Capped rather than maxed -- see PRICE_CAP_PERCENTILE. A non-positive figure is a
+         vendor saying "no price", never "free", so it is left out of the ordering. */
+      percentile_disc(${PRICE_CAP_PERCENTILE}::double precision) within group (
+        order by ${comparablePrice(input.priceBasis)}
+      ) filter (
+        where ${comparablePrice(input.priceBasis)} > 0 and ${pricedForDates(input)}
+      ) as "maxMinor",
+      /* Zero is how a vendor writes a build year it does not know, and it reached the range as
+         a real one: the age slider then offered "up to 2026 years old". Filtered rather than
+         coalesced, because a fleet where nobody stated a year has no range to show.
+         Capped rather than minned on the old end -- see OLDEST_YEAR_PERCENTILE. */
+      percentile_disc(${OLDEST_YEAR_PERCENTILE}::double precision) within group (
+        order by doc.year_built
+      ) filter (where doc.year_built > 0) as "minYear",
+      max(doc.year_built) filter (where doc.year_built > 0) as "maxYear",
+      min(doc.rating) as "minRating",
+      max(doc.rating) as "maxRating",
+      bool_or(doc.deposit_insurance_included) as "hasDepositInsurance",
+      bool_or(doc.pets_allowed) as "hasPetsAllowed",
+      bool_or(doc.best_value) as "hasBestValue"
+    from candidate doc
+    where ${candidateFilters()}
+  `;
+}
+
+type FacetMediaRow = {
+  kind: FacetMediaKind;
+  key: string;
+  imageUrl: string | null;
+  hoverImageUrl: string | null;
+  gridUsesHoverImage: boolean;
+  cloudinaryId: string | null;
+  label: string | null;
+  description: string | null;
+  popularRank: number | null;
+  featuredRank: number | null;
+  filterVisible: boolean;
+};
+
+/*
+ * The facet_media copy for every decorated kind, read once.
+ *
+ * Kept out of the facet statement rather than joined into each group: joining inside the grouped
+ * query would force the normalization expression into the group key, and the table is small.
+ */
+async function readFacetMedia(
+  db: NodePgDatabase<typeof schema>,
+  locale?: string,
+): Promise<Map<FacetMediaKind, FacetMediaRow[]>> {
+  const kinds = [
+    ...Object.values(OPTION_FACETS).flatMap((facet) => facet.kind ?? []),
+    EQUIPMENT_KIND,
+  ];
+  const media = await db.execute<FacetMediaRow>(sql`
+    select
+      media.kind,
       ${normalizedSql(sql`media.value`)} as key,
       media.image_url as "imageUrl",
       media.hover_image_url as "hoverImageUrl",
@@ -401,24 +636,52 @@ async function decorateFacetOptions(
     left join facet_media_translation translation
       on translation.facet_media_id = media.id
       and translation.locale = ${locale ?? DEFAULT_LOCALE}
-    where media.kind = ${kind}
+    where media.kind in (${sql.join(
+      kinds.map((kind) => sql`${kind}`),
+      sql`, `,
+    )})
   `);
-  const byKey = new Map(media.rows.map((row) => [row.key, row]));
+
+  const byKind = new Map<FacetMediaKind, FacetMediaRow[]>();
+  for (const row of media.rows) {
+    const rows = byKind.get(row.kind) ?? [];
+    rows.push(row);
+    byKind.set(row.kind, rows);
+  }
+  return byKind;
+}
+
+/* Attaches facet_media copy to grouped facet rows. */
+function decorateFacetOptions(
+  rows: FacetOptionRow[],
+  mediaByKind: Map<FacetMediaKind, FacetMediaRow[]>,
+  kind: FacetMediaKind | null,
+): ListingFacetOption[] {
+  const options = rows.map((row) => ({
+    value: valueForLabel(row.label),
+    label: row.label,
+    count: row.count,
+    priceFromMinor: row.priceFromMinor,
+    pricePerPersonWeekMinor: row.pricePerPersonWeekMinor,
+    currency: row.currency,
+  }));
+
+  if (!kind || options.length === 0) return options;
+
+  const media = mediaByKind.get(kind) ?? [];
+  const byKey = new Map(media.map((row) => [row.key, row]));
 
   /*
    * The curated allowlist, when the kind has one.
    *
-   * Applied here rather than in each facet query because this is the one place that already
-   * holds both halves -- the grouped options and the facet_media rows -- so restricting the
-   * list costs nothing more than it already spends. Counts are computed before the cut, which
-   * is what we want: a removed option was never a filter anyone applied, so nothing it counted
-   * moves anywhere else.
+   * Counts are computed before the cut, which is what we want: a removed option was never a
+   * filter anyone applied, so nothing it counted moves anywhere else.
    *
    * An empty allowlist means the kind is uncurated and every option stands. That is the state
    * eight of the nine kinds are in, and the state a fresh database starts in, so the check is
    * against the marked rows rather than against a flag somewhere else.
    */
-  const allowed = new Set(media.rows.filter((row) => row.filterVisible).map((row) => row.key));
+  const allowed = new Set(media.filter((row) => row.filterVisible).map((row) => row.key));
   const visible =
     allowed.size === 0
       ? options

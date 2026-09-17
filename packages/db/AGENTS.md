@@ -80,6 +80,12 @@ swept price of the charter it names.
 `count(*) over ()` instead of a second query, for undated, dated, lone check-in and length
 searches, including a page past the last one, where no row carries it and a plain count runs.
 Shared seeding for these lives in `src/test-support/search-fixture.ts`.
+`src/search/facets.db.test.ts` pins which filters each facet list ignores (a country still lists
+the other countries), that a boat failing two lists' filters reaches none of them, and the
+equipment allowlist. `listSearchFacets` answers in one statement: the search is filtered once into
+a `candidate` CTE carrying one boolean per facet-owned filter, and each list aggregates over it, so
+a new facet or filter key has to be added to `FACET_OWN_FILTERS` / `OPTION_FACETS` there rather
+than given its own query.
 `src/search/catalogue-countries.db.test.ts` pins `listCatalogueCountries` (boats per country, with
 the ISO code the planner builds its flag from) and the `country` and `region` filters on
 `listPopularRoutes`.
