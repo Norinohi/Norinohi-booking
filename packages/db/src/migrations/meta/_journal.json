@@ -911,6 +911,13 @@
       "when": 1789638574570,
       "tag": "0129_quote_handover_times",
       "breakpoints": true
+    },
+    {
+      "idx": 130,
+      "version": "7",
+      "when": 1789646897233,
+      "tag": "0130_discount_category_targets_to_groups",
+      "breakpoints": true
     }
   ]
 }
