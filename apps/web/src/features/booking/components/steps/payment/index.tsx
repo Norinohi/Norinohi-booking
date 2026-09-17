@@ -31,6 +31,7 @@ import {
   PAYMENT_METHOD_ORDER,
   stripeLoader,
 } from "../../../lib/stripe";
+import { useHoldDeadline } from "../../../hooks/use-hold-deadline";
 import { useBooking } from "../../booking-provider";
 import { PaymentTargetProvider } from "../../payment-target";
 import AskQuestion from "./ask-question";
@@ -51,7 +52,8 @@ const TABS: PaymentMethod[] = ["card", "invoice", "question"];
  * when they press pay.
  */
 export default function PaymentStep() {
-  const { quote, slug, holdExpiresAt } = useBooking();
+  const { quote, slug, bookingId } = useBooking();
+  const holdExpiresAt = useHoldDeadline(bookingId);
   const holdLeft = useHoldRemaining(holdExpiresAt);
   const locale = useLocale();
   const stripe = stripeLoader();

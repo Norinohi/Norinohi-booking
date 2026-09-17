@@ -37,7 +37,9 @@ import {
 } from "@/components/shared/data-display/yacht-card/view-model";
 
 import { type BookingDetail, bookingDetailQueryOptions } from "../api/queries";
+import { pendingHoldDeadline } from "../lib/hold-clock";
 import CrewListPanel from "./crew-list-panel";
+import { HoldNotice, useHoldRemaining } from "./steps/payment/hold-clock";
 
 /* Which statuses read as "this charter is happening" versus a problem worth colouring. */
 const SETTLED_STATUSES = new Set(["CONFIRMED"]);
@@ -219,6 +221,9 @@ function Charter({
    */
   const payable = booking.payableNow.amountMinor;
   const showPay = payable > 0;
+  /* Unpaid and held: how long the operator keeps the dates is the reason to press Pay now. */
+  const holdDeadline = showPay ? pendingHoldDeadline(booking) : null;
+  const holdLeft = useHoldRemaining(holdDeadline);
   /*
    * The invoice document only exists for a booking that asked to pay by transfer, and it is an
    * instruction to send money — so a charter that is off no longer offers it.
@@ -284,6 +289,10 @@ function Charter({
         ) : null}
       </dl>
 
+      {holdDeadline && holdLeft ? (
+        <HoldNotice expiresAt={holdDeadline} remaining={holdLeft} />
+      ) : null}
+
       {expired ? (
         <Notification variant="warning">
           <span className="flex flex-col gap-2">
@@ -295,7 +304,7 @@ function Charter({
 
       {expired || showPay || hasTransfer || showCancel || showRequestCancel ? (
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          {showPay ? (
+          {showPay && !holdLeft?.expired ? (
             <Button
               variant="brand"
               className="h-13 sm:min-w-56"

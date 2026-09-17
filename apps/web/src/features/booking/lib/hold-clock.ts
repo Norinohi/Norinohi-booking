@@ -1,3 +1,5 @@
+import { canPay } from "./checkout-status";
+
 const MINUTE = 60_000;
 
 export type HoldRemaining = { expired: true } | { expired: false; hours: number; minutes: number };
@@ -14,4 +16,18 @@ export function holdRemaining(expiresAt: string, now: number): HoldRemaining {
   if (!(ms > 0)) return { expired: true };
   const totalMinutes = Math.ceil(ms / MINUTE);
   return { expired: false, hours: Math.floor(totalMinutes / 60), minutes: totalMinutes % 60 };
+}
+
+/**
+ * The provider deadline worth counting down on a booking record, or null.
+ *
+ * Read off the booking rather than the `createHold` response, so a reload or another device
+ * shows the same clock. Only while the booking can still be paid for: once it is confirmed,
+ * cancelled or failed, `holdExpiresAt` is history and a countdown to it would be noise.
+ */
+export function pendingHoldDeadline(booking: {
+  status: Parameters<typeof canPay>[0];
+  holdExpiresAt: string | null;
+}): string | null {
+  return canPay(booking.status) ? booking.holdExpiresAt : null;
 }

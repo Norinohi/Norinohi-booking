@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { holdRemaining } from "./hold-clock";
+import { holdRemaining, pendingHoldDeadline } from "./hold-clock";
 
 const expiresAt = "2026-09-19T21:44:00.000Z";
 const at = (iso: string) => Date.parse(iso);
@@ -29,5 +29,26 @@ describe("holdRemaining", () => {
 
   it("treats an unparseable deadline as expired rather than open-ended", () => {
     expect(holdRemaining("not a date", at(expiresAt))).toEqual({ expired: true });
+  });
+});
+
+describe("pendingHoldDeadline", () => {
+  it("counts down an option the customer can still pay for", () => {
+    expect(pendingHoldDeadline({ status: "OPTION_HELD", holdExpiresAt: expiresAt })).toBe(
+      expiresAt,
+    );
+    expect(pendingHoldDeadline({ status: "PAYMENT_PENDING", holdExpiresAt: expiresAt })).toBe(
+      expiresAt,
+    );
+  });
+
+  it("has nothing to count once the booking is past payment", () => {
+    for (const status of ["CONFIRMED", "CANCELLED", "OPTION_EXPIRED", "CONFIRMING"] as const) {
+      expect(pendingHoldDeadline({ status, holdExpiresAt: expiresAt })).toBeNull();
+    }
+  });
+
+  it("stays null where the provider granted no option", () => {
+    expect(pendingHoldDeadline({ status: "QUOTED", holdExpiresAt: null })).toBeNull();
   });
 });
