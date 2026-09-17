@@ -79,6 +79,7 @@
     "viewDetails": "Ver detalles",
     "imageAlt": "{name} amarrado en {marina}",
     "openGallery": "Abrir la galería de fotos",
+    "priceHintLabel": "Sobre este precio",
     "priceFor": "Precio del chárter · {days, plural, one {# día} other {# días}}",
     "priceIndicative": "Precio del chárter · tarifa base, puede haber suplementos",
     "boatPriceFor": "Precio del barco · {days, plural, one {# día} other {# días}}",

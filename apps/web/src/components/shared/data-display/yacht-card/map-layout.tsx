@@ -13,6 +13,7 @@ import {
   YachtCardRating,
   YachtCardTags,
 } from "./parts";
+import { YachtCardPriceLabel } from "./price-label";
 import type { YachtCardData } from "./types";
 
 const LAYOUT = {
@@ -64,6 +65,7 @@ export default function MapLayout({
   charterType,
   crew,
   priceLabel,
+  priceHint,
   price,
   listPrice,
   perNight,
@@ -120,9 +122,11 @@ export default function MapLayout({
         <div className="flex flex-col gap-1.5">
           <div className={cn("flex w-full gap-1.5", style.priceRow)}>
             <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <span className="text-sm font-medium leading-[1.3] text-natural-500">
-                {priceLabel}
-              </span>
+              <YachtCardPriceLabel
+                label={priceLabel}
+                hint={priceHint}
+                className="text-sm font-medium leading-[1.3] text-natural-500"
+              />
               <YachtCardAmount
                 price={price}
                 listPrice={listPrice}

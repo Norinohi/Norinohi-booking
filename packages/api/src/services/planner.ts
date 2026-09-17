@@ -59,6 +59,7 @@ const BUDGETS = {
   "300-600": { min: 30_000, max: 60_000 },
   "600-1000": { min: 60_000, max: 100_000 },
   "1000-1200": { min: 100_000, max: 120_000 },
+  "1200-2000": { min: 120_000, max: 200_000 },
   "2000-plus": { min: 200_000, max: null },
 } satisfies Record<AnsweredKey<"budget">, { min: number; max: number | null }>;
 

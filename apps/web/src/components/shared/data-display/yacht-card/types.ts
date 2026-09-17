@@ -84,6 +84,8 @@ export type YachtCardData = {
    */
   hold?: { expiresAt: string | null };
   priceLabel: string;
+  /** What qualifies an estimated or list price, behind an info icon beside the label. */
+  priceHint?: string;
   price: string;
   /**
    * The same charter before the operator's discount, struck through beside the price. Absent

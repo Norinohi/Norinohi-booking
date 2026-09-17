@@ -22,7 +22,7 @@ describe("catalogPageSiblings", () => {
     page("marina", ["croatia", "trogir", "aci-marina-trogir"], 133),
     page("marina", ["croatia", "zadar", "marina-zadar"], 92),
     page("marina", ["greece", "lavrio", "lavrion"], 300),
-    page("type-marina", ["catamaran", "croatia", "kastela", "marina-kastela"], 40),
+    page("type-geo", ["catamaran", "croatia", "kastela"], 40),
   ];
 
   it("links the other marinas in the country when the town has no second one", () => {

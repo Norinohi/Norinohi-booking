@@ -122,7 +122,7 @@ export function toYachtCard(
     datesNote: period?.periodIsAlternative ? t("datesAlternative") : undefined,
     /* Says what the badge above it leaves out: how long the other customer's hold has left. */
     hold: hold ?? undefined,
-    priceLabel: priceCaption(t, listing, basis, captionPeriod),
+    ...priceCaption(t, listing, basis, captionPeriod),
     price: yachtCardPrice(t, listing, formatMoney),
     listPrice: yachtCardListPrice(listing, formatMoney),
     /* Only ever present where the headline is the charter rate, which is what makes the line
@@ -205,23 +205,44 @@ function priceCaption(
   listing: ResultListing,
   basis: "base" | "all_in" | undefined,
   otherDates: CharterPeriod | null,
-): string {
-  if (!listing.priceFrom) return "";
+): PriceCaption {
+  if (!listing.priceFrom) return { priceLabel: "" };
   const boat = isBoatPrice(listing, basis);
   const listCaption = isListPriceSource(listing.priceSource)
     ? LIST_CAPTIONS[listing.priceSource]
     : null;
   if (!listing.priceIsFrom && otherDates?.checkIn && otherDates.checkOut) {
     const dates = { from: dayToDisplay(otherDates.checkIn), to: dayToDisplay(otherDates.checkOut) };
-    if (listCaption) return listCaption.forPeriod(t, boat, dates);
-    return t(boat ? "boatPriceForPeriod" : "priceForPeriod", dates);
+    if (listCaption) return withHint(listCaption.forPeriod(t, boat, dates));
+    return { priceLabel: t(boat ? "boatPriceForPeriod" : "priceForPeriod", dates) };
   }
-  if (listing.priceIsFrom) return t(boat ? "boatPriceIndicative" : "priceIndicative");
+  if (listing.priceIsFrom) {
+    return { priceLabel: t(boat ? "boatPriceIndicative" : "priceIndicative") };
+  }
   if (listCaption) {
-    return listCaption.forNights(t, boat, listing.priceDetails.periodDays);
+    return withHint(listCaption.forNights(t, boat, listing.priceDetails.periodDays));
   }
-  return t(boat ? "boatPriceFor" : "priceFor", { days: listing.priceDetails.periodDays });
+  return {
+    priceLabel: t(boat ? "boatPriceFor" : "priceFor", { days: listing.priceDetails.periodDays }),
+  };
 }
+
+/*
+ * A list-price caption runs to four lines in the narrow price column, so only its name stays on
+ * the card and the qualifiers after " · " move into a tooltip. Every locale writes that separator.
+ */
+function withHint(caption: string): PriceCaption {
+  const at = caption.indexOf(" · ");
+  if (at === -1) return { priceLabel: caption };
+  const hint = caption.slice(at + 3);
+  return {
+    priceLabel: caption.slice(0, at),
+    priceHint: hint.charAt(0).toUpperCase() + hint.slice(1),
+  };
+}
+
+/** The card's price caption, and the qualifiers moved out of it into a tooltip. */
+type PriceCaption = Pick<YachtCardData, "priceLabel" | "priceHint">;
 
 type PriceSource = NonNullable<ResultListing["priceSource"]>;
 type ListPriceSource = Exclude<PriceSource, "vendor" | "season-minimum">;

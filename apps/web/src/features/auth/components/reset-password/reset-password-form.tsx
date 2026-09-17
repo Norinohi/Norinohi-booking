@@ -11,8 +11,9 @@ import {
   FormMessage,
 } from "@yacht-charter/ui/components/form/form";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
@@ -20,6 +21,8 @@ import z from "zod";
 import { usePasswordToggleLabels } from "@/hooks/use-password-toggle-labels";
 import { useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
+
+import { passwordResetTargetQueryOptions } from "../../api/queries";
 
 /*
  * ResetPasswordForm — the /reset-password screen. Reads the single-use token that Better
@@ -30,6 +33,11 @@ import { authClient } from "@/lib/auth-client";
  * `firstPassword` (?welcome=1 on the link) means the account was provisioned by guest checkout
  * and has never had a password. Same token, same request — only the wording changes, because
  * "reset" describes something this visitor never did.
+ *
+ * The token, not the session, picks the account. A visitor already signed in as someone else
+ * (staff opening a guest's invitation) is told so up front, and on success stays put with a
+ * choice instead of going to /login, which would bounce them straight back into the session
+ * they already hold.
  */
 
 function useResetSchema() {
@@ -65,6 +73,16 @@ export default function ResetPasswordForm({
   const router = useRouter();
   const schema = useResetSchema();
   const passwordToggle = usePasswordToggleLabels();
+  const tOther = useTranslations("Auth.ResetPassword.otherAccount");
+  const { data: session } = authClient.useSession();
+  const { data: target } = useQuery({
+    ...passwordResetTargetQueryOptions(token ?? ""),
+    enabled: Boolean(token) && !error,
+  });
+  const current = session?.user;
+  const otherAccount =
+    current && target && current.id !== target.userId ? { current, target } : null;
+  const [doneFor, setDoneFor] = useState<typeof otherAccount>(null);
 
   // Read through both namespaces rather than switching the one passed to useTranslations:
   // the two are different literal types, and a union namespace does not survive the
@@ -101,11 +119,18 @@ export default function ResetPasswordForm({
 
   const invalid = !token || Boolean(error);
 
+  const switchAccount = () =>
+    authClient.signOut({ fetchOptions: { onSuccess: () => router.push("/login") } });
+
   const onSubmit = async ({ newPassword }: Values) => {
     if (!token) return;
     const { error: resetError } = await authClient.resetPassword({ newPassword, token });
     if (resetError) {
       toast.error(resetError.message ?? resetError.statusText);
+      return;
+    }
+    if (otherAccount) {
+      setDoneFor(otherAccount);
       return;
     }
     toast.success(copy.success);
@@ -126,7 +151,35 @@ export default function ResetPasswordForm({
             </h2>
           </div>
 
-          {invalid ? (
+          {doneFor ? (
+            <div className="flex flex-col gap-4 p-5 text-center">
+              <p className="text-base font-semibold text-foreground">{tOther("doneTitle")}</p>
+              <p className="text-base text-natural-400">
+                {tOther("doneBody", {
+                  target: doneFor.target.email,
+                  current: doneFor.current.email,
+                })}
+              </p>
+              <Button
+                type="button"
+                variant="brand"
+                size="md"
+                className="w-full"
+                onClick={switchAccount}
+              >
+                {tOther("switch")}
+              </Button>
+              <Button
+                type="button"
+                variant="neutral"
+                size="md"
+                className="w-full"
+                onClick={() => router.push("/")}
+              >
+                {tOther("stay")}
+              </Button>
+            </div>
+          ) : invalid ? (
             <div className="flex flex-col gap-4 p-5 text-center">
               <p className="text-base text-natural-400">{t("invalid.body")}</p>
               <Button
@@ -146,6 +199,17 @@ export default function ResetPasswordForm({
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="flex flex-col gap-4 p-5"
               >
+                {otherAccount ? (
+                  <p
+                    role="status"
+                    className="rounded-lg bg-natural-50 p-3 text-sm leading-[1.4] text-foreground wrap-break-word"
+                  >
+                    {tOther("notice", {
+                      current: otherAccount.current.email,
+                      target: otherAccount.target.email,
+                    })}
+                  </p>
+                ) : null}
                 <FormField
                   control={form.control}
                   name="newPassword"

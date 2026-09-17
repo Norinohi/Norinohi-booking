@@ -137,7 +137,6 @@
     "type": "{type} Charter",
     "typeCountry": "{type} Charter in {place}",
     "typeGeo": "{type} Charter in {place}, {country}",
-    "typeMarina": "{type} Charter at {place}",
     "builder": "{brand} Yacht Charter",
     "model": "{model} Charter",
     "intro": "{count, plural, one {# boat} other {# boats}} available, from {price} per week.",

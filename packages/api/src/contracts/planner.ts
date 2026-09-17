@@ -18,7 +18,7 @@ export const plannerAnswersSchema = z
     experience: z.enum(["none", "some", "licensed"]).optional(),
     vibe: z.enum(["adventure", "relax", "family", "luxury", "party"]).optional(),
     duration: z.enum(["7", "14", "21", "21-plus"]).optional(),
-    budget: z.enum(["300-600", "600-1000", "1000-1200", "2000-plus"]).optional(),
+    budget: z.enum(["300-600", "600-1000", "1000-1200", "1200-2000", "2000-plus"]).optional(),
   })
   .default({});
 

@@ -79,6 +79,7 @@
     "viewDetails": "Детальніше",
     "imageAlt": "{name} біля причалу {marina}",
     "openGallery": "Відкрити галерею фото",
+    "priceHintLabel": "Про цю ціну",
     "priceFor": "Ціна чартеру · {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
     "priceIndicative": "Ціна чартеру · базова, можливі доплати",
     "boatPriceFor": "Ціна яхти · {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}",

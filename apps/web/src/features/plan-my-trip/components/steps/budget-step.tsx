@@ -8,7 +8,7 @@ import { StepLegend } from "../step-legend";
 
 /*
  * Step 6 — "What budget feels comfortable?" (Figma node 959:344345, 3 breakpoints). Single-select
- * grid of four price tiers; every card shares the same "per person/week" description. 2-up on md+
+ * grid of five price tiers; every card shares the same "per person/week" description. 2-up on md+
  * and stacked below. `id` is the value stored in the URL.
  */
 interface BudgetStepProps {
@@ -24,6 +24,7 @@ export function BudgetStep({ value, onChange }: BudgetStepProps) {
     { id: "300-600", label: t("options.low.label"), description: perWeek },
     { id: "600-1000", label: t("options.mid.label"), description: perWeek },
     { id: "1000-1200", label: t("options.high.label"), description: perWeek },
+    { id: "1200-2000", label: t("options.upper.label"), description: perWeek },
     { id: "2000-plus", label: t("options.premium.label"), description: perWeek },
   ];
 

@@ -10,8 +10,6 @@ type CatalogPageTranslator = ReturnType<typeof useTranslations<"Seo.CatalogPage"
 /** How many sibling links a page carries. Enough to spread crawl depth, few enough to read. */
 const SIBLING_LIMIT = 8;
 
-const MARINA_KINDS = new Set<CatalogPage["kind"]>(["marina", "type-marina"]);
-
 /*
  * How many catalog pages the build prerenders, counted across both roots and before the locale
  * multiplies them. Prerendering the whole enumeration dominated the web deploy: every page costs
@@ -66,7 +64,7 @@ export function findCatalogPage(
  * is the place and which is the type without carrying named fields through the contract.
  */
 export function catalogPageHeading(t: CatalogPageTranslator, page: CatalogPage): string {
-  const [first = "", second = "", third = "", fourth = ""] = page.labels;
+  const [first = "", second = "", third = ""] = page.labels;
 
   switch (page.kind) {
     case "country":
@@ -81,8 +79,6 @@ export function catalogPageHeading(t: CatalogPageTranslator, page: CatalogPage):
       return t("typeCountry", { type: first, place: second });
     case "type-geo":
       return t("typeGeo", { type: first, place: third, country: second });
-    case "type-marina":
-      return t("typeMarina", { type: first, place: fourth });
     case "builder":
       return t("builder", { brand: first });
     case "model":
@@ -111,7 +107,7 @@ export function catalogPageSiblings(pages: CatalogPage[], page: CatalogPage): Ca
     other.segments.slice(0, -dropped).join("/") === page.segments.slice(0, -dropped).join("/");
 
   const siblings = pages.filter((other) => levelOf(other) && sharesPrefix(other, 1)).sort(byCount);
-  if (!MARINA_KINDS.has(page.kind) || siblings.length >= SIBLING_LIMIT) {
+  if (page.kind !== "marina" || siblings.length >= SIBLING_LIMIT) {
     return siblings.slice(0, SIBLING_LIMIT);
   }
 

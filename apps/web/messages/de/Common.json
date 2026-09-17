@@ -79,6 +79,7 @@
     "viewDetails": "Details ansehen",
     "imageAlt": "{name} vor Anker in {marina}",
     "openGallery": "Fotogalerie öffnen",
+    "priceHintLabel": "Zu diesem Preis",
     "priceFor": "Charterpreis · {days, plural, one {# Tag} other {# Tage}}",
     "priceIndicative": "Charterpreis · Grundpreis, Zuschläge möglich",
     "boatPriceFor": "Yachtpreis · {days, plural, one {# Tag} other {# Tage}}",

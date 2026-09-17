@@ -31,6 +31,13 @@ import { valueForLabel } from "./repository";
  */
 export const DEFAULT_CATALOG_PAGE_THRESHOLD = 8;
 
+/*
+ * The combinations that multiply fastest (a marina, a boat type in a town, a shipyard model) need
+ * more boats behind them. At eight they were most of the catalogue, and mostly thin. Builders stay
+ * on the default, so the seed fixture still gives the shipyard root its pages.
+ */
+export const NARROW_CATALOG_PAGE_THRESHOLD = 25;
+
 export type CatalogPageRoot = "yacht-charter" | "shipyard";
 
 export type CatalogPageKind =
@@ -40,7 +47,6 @@ export type CatalogPageKind =
   | "type"
   | "type-country"
   | "type-geo"
-  | "type-marina"
   | "builder"
   | "model";
 
@@ -141,10 +147,13 @@ export function isPlaceholderBuilder(name: string): boolean {
 
 export async function listCatalogPages(
   db: NodePgDatabase<typeof schema>,
-  options: { threshold?: number; locale?: string } = {},
+  options: { threshold?: number; narrowThreshold?: number; locale?: string } = {},
 ): Promise<CatalogPage[]> {
   const threshold = options.threshold ?? DEFAULT_CATALOG_PAGE_THRESHOLD;
+  const narrowThreshold =
+    options.narrowThreshold ?? options.threshold ?? NARROW_CATALOG_PAGE_THRESHOLD;
   const of = (columns: string[]) => group(db, columns, threshold);
+  const ofNarrow = (columns: string[]) => group(db, columns, narrowThreshold);
 
   /*
    * Labels are translated, slugs and filter values are not. A URL is a stable identifier and the
@@ -166,21 +175,19 @@ export async function listCatalogPages(
     typeCountries,
     typeRegions,
     typeCities,
-    typeMarinas,
     builders,
     models,
   ] = await Promise.all([
     of(["country"]),
     of(["country", "region"]),
     of(["country", "city"]),
-    of(["country", "city", "base_name"]),
+    ofNarrow(["country", "city", "base_name"]),
     of(["category"]),
     of(["category", "country"]),
     of(["category", "country", "region"]),
-    of(["category", "country", "city"]),
-    of(["category", "country", "city", "base_name"]),
+    ofNarrow(["category", "country", "city"]),
     of(["builder"]),
-    of(["builder", "model_canonical"]),
+    ofNarrow(["builder", "model_canonical"]),
   ]);
   /*
    * Booking Manager used to file each country under its world region, which made "Southern
@@ -307,26 +314,6 @@ export async function listCatalogPages(
       segments: [toSlug(category), toSlug(country), toSlug(city)],
       filters: { category: v(category), country: v(country), city: v(city) },
       labels: [label("category", category), label("country", country), city],
-      count: Number(row.count),
-    });
-  }
-
-  for (const row of typeMarinas) {
-    const category = str(row, "category");
-    const country = str(row, "country");
-    const city = str(row, "city");
-    const marina = str(row, "base_name");
-    push({
-      root: "yacht-charter",
-      kind: "type-marina",
-      segments: [toSlug(category), toSlug(country), toSlug(city), toSlug(marina)],
-      filters: { category: v(category), country: v(country), city: v(city), marina: v(marina) },
-      labels: [
-        label("category", category),
-        label("country", country),
-        city,
-        label("marina", marina),
-      ],
       count: Number(row.count),
     });
   }

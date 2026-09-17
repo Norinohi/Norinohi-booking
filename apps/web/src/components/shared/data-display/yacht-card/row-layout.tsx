@@ -6,6 +6,7 @@ import { MarinaPopover } from "@/components/shared/overlay/marina-popover";
 
 import CardNote from "../card-note";
 import HoldCountdown from "../hold-countdown";
+import { YachtCardPriceLabel } from "./price-label";
 import {
   STAT_TONE,
   YachtCardAmenities,
@@ -140,6 +141,7 @@ function Action({
   hold,
   end,
   priceLabel,
+  priceHint,
   price,
   listPrice,
   priceExtras,
@@ -185,14 +187,14 @@ function Action({
 
       <div className="flex flex-col items-center justify-center gap-1 md:items-start xl:flex-1">
         <div className="flex flex-col items-center gap-1 md:items-start">
-          <span
+          <YachtCardPriceLabel
+            label={priceLabel}
+            hint={priceHint}
             className={cn(
               "text-center text-sm font-medium leading-[1.3] text-natural-500 md:order-1 md:text-left",
               priceLabelLeads ? "order-1" : "order-2",
             )}
-          >
-            {priceLabel}
-          </span>
+          />
           {/* The struck figure is dropped on a card whose price slot holds words: there is
               nothing for a discount to be a discount from. */}
           <YachtCardAmount

@@ -137,7 +137,6 @@
     "type": "{type} в оренду",
     "typeCountry": "{type} в оренду, {place}",
     "typeGeo": "{type} в оренду, {place}, {country}",
-    "typeMarina": "{type} в оренду, {place}",
     "builder": "{brand} - оренда яхт",
     "model": "{model} в оренду",
     "intro": "Доступно {count, plural, one {# човен} few {# човни} other {# човнів}}, від {price} за тиждень.",

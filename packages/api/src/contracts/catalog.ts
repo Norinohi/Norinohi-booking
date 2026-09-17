@@ -423,7 +423,6 @@ export const catalogPageSchema = z.object({
     "type",
     "type-country",
     "type-geo",
-    "type-marina",
     "builder",
     "model",
   ]),

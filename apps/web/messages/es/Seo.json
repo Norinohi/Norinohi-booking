@@ -137,7 +137,6 @@
     "type": "Alquiler de {type}",
     "typeCountry": "Alquiler de {type} en {place}",
     "typeGeo": "Alquiler de {type} en {place}, {country}",
-    "typeMarina": "Alquiler de {type} en {place}",
     "builder": "Alquiler de yates {brand}",
     "model": "Alquiler de {model}",
     "intro": "{count, plural, one {# barco disponible} other {# barcos disponibles}}, desde {price} por semana.",
