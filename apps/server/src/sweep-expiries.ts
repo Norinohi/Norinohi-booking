@@ -34,6 +34,8 @@ const metrics = {
   syncRunsReaped: result.syncRunsReaped,
   staleConfirmations: result.staleConfirmations.length,
   releaseFailures: result.releaseFailures.length,
+  /* Each of these also has its own provider row, filed under the booking id listed here. */
+  releaseFailedBookingIds: result.releaseFailures.map((failure) => failure.bookingId).join(", "),
 };
 
 if (result.releaseFailures.length > 0) {
