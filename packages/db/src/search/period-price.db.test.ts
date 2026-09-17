@@ -10,6 +10,7 @@ import {
   listingFreePeriod,
   listingOffer,
   listingPricePeriod,
+  listingRefusedPeriod,
   listingSource,
   location,
   operator,
@@ -29,8 +30,10 @@ import { listSearchFacets, searchListings } from "./repository";
  * the slider. Three listings cover the three things a dated card can be showing:
  *
  *   alpha   priced by two vendors, each winning a different week; one week taken
- *   bravo   priced for the first week only, and cheaper than anything alpha has
- *   charlie never priced by a vendor, only a published seasonal rate
+ *   bravo   priced for the first week only, cheaper than anything alpha has, and the searched
+ *           week refused, so nothing prices that week for it
+ *   charlie never priced by a vendor, only a published seasonal rate, which prices the searched
+ *           week from the operator's list
  */
 
 const DAY = 86_400_000;
@@ -151,6 +154,12 @@ beforeAll(async () => {
     priced("off_alpha_ns", "lst_alpha", W2, W3, { price: 580_000, extras: 400_000 }),
     priced("off_bravo", "lst_bravo", W1, W2, { price: 300_000, extras: 50_000 }),
   ]);
+  await db.insert(listingRefusedPeriod).values({
+    listingId: "lst_bravo",
+    listingOfferId: "off_bravo",
+    startDate: W2,
+    endDate: W3,
+  });
 
   /* The cook a full-crew charter is sold with, which the confirmed extras total does not carry. */
   await db.insert(providerExtraCatalogue).values({
@@ -292,22 +301,39 @@ describe("a dated search", () => {
       slug: item.slug,
       base: item.basePriceFromMinor,
       pricedForDates: item.pricedForDates,
+      priceSource: item.priceSource,
       priceIsFrom: item.priceIsFrom,
       bookableFrom: item.bookableFrom,
     }));
 
-  it("prices the dates asked for, and keeps other weeks and floors as what they are", async () => {
+  it("prices the dates asked for, and keeps another week's price as what it is", async () => {
     const result = await searchListings(test.db, { ...dated, sort: "price-asc" });
 
     expect(summary(result.items)).toEqual([
-      { slug: "alpha", base: 580_000, pricedForDates: true, priceIsFrom: false, bookableFrom: W2 },
-      /* Cheaper than alpha, but for another week, so it ranks behind every price for these dates. */
-      { slug: "bravo", base: 300_000, pricedForDates: false, priceIsFrom: false, bookableFrom: W1 },
+      /* The list rate for the searched week sorts on the figure its card shows. */
       {
         slug: "charlie",
         base: 400_000,
+        pricedForDates: true,
+        priceSource: "price-list",
+        priceIsFrom: false,
+        bookableFrom: W2,
+      },
+      {
+        slug: "alpha",
+        base: 580_000,
+        pricedForDates: true,
+        priceSource: "vendor",
+        priceIsFrom: false,
+        bookableFrom: W2,
+      },
+      /* Cheaper than both, but for another week, so it ranks behind every price for these dates. */
+      {
+        slug: "bravo",
+        base: 300_000,
         pricedForDates: false,
-        priceIsFrom: true,
+        priceSource: null,
+        priceIsFrom: false,
         bookableFrom: W1,
       },
     ]);
@@ -318,7 +344,7 @@ describe("a dated search", () => {
     expect(result.items.map((item) => item.slug)).toEqual(["alpha", "charlie", "bravo"]);
   });
 
-  it("recommends a price for the dates ahead of another week's price", async () => {
+  it("recommends the vendor's price, then the list rate, then another week's price", async () => {
     const result = await searchListings(test.db, { ...dated, sort: "recommended" });
     expect(result.items.map((item) => item.slug)).toEqual(["alpha", "charlie", "bravo"]);
   });
@@ -342,12 +368,12 @@ describe("a dated search", () => {
 
   it("filters on prices for the dates, not on another week's", async () => {
     const result = await searchListings(test.db, { ...dated, maxPriceMinor: 700_000 });
-    expect(result.items.map((item) => item.slug)).toEqual(["alpha"]);
+    expect(result.items.map((item) => item.slug)).toEqual(["alpha", "charlie"]);
   });
 
   it("bounds the price slider by prices for the dates", async () => {
     const facets = await listSearchFacets(test.db, dated);
-    expect(facets.priceRange).toMatchObject({ minMinor: 580_000, maxMinor: 580_000 });
+    expect(facets.priceRange).toMatchObject({ minMinor: 400_000, maxMinor: 580_000 });
   });
 
   it("leaves an undated search on each listing's own week", async () => {
@@ -362,6 +388,7 @@ describe("a dated search", () => {
         slug: "bravo",
         base: 300_000,
         pricedForDates: undefined,
+        priceSource: undefined,
         priceIsFrom: false,
         bookableFrom: W1,
       },
@@ -369,6 +396,7 @@ describe("a dated search", () => {
         slug: "alpha",
         base: 637_500,
         pricedForDates: undefined,
+        priceSource: undefined,
         priceIsFrom: false,
         bookableFrom: W1,
       },
@@ -376,6 +404,7 @@ describe("a dated search", () => {
         slug: "charlie",
         base: 400_000,
         pricedForDates: undefined,
+        priceSource: undefined,
         priceIsFrom: true,
         bookableFrom: W1,
       },

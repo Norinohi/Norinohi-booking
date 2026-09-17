@@ -10,11 +10,12 @@ import {
 /*
  * The card, with a price only where the price is for the charter the card names.
  *
- * `priceFrom` is the vendor's confirmed figure for one exact charter. A dated search already reads
- * the charter asked for where a vendor priced it (`listing_period_price`), so what reaches here
- * with other dates beside it is a listing nobody priced for them, and nothing here can reprice
- * that charter: the published rate list is the pre-discount number both vendors sell below, and
- * no arithmetic turns one week into another or into a charter of another length.
+ * `priceFrom` is the figure for one exact charter. A dated search already reads the charter asked
+ * for where a vendor priced it (`listing_period_price`) and, for a week nobody quoted, the
+ * operator's published rate for that week (`priceSource = 'price-list'`, a pre-discount figure the
+ * card says it is). What reaches here with other dates beside it is a listing neither priced for
+ * them, and nothing here can reprice that charter: no arithmetic turns one week into another or
+ * into a charter of another length.
  *
  * So such a card says "on request". It used to keep the other week's figure and caption it with
  * that week, which still printed a price beside the dates asked for: My Affair Dufour 412 GL read
@@ -29,6 +30,13 @@ export function pricedForShownPeriod(
 ) {
   const listing = presentListingSummary(item, basis, amenityRanks);
   if (shown.checkIn === null || shown.checkOut === null) return listing;
+
+  /*
+   * A dated search already swapped in every price there is for its dates, the vendor's or the
+   * operator's list rate for that week, so a row it could not price holds only another week's
+   * figure or a season floor, and neither names these dates.
+   */
+  if (item.pricedForDates === false) return withoutPrice(listing);
 
   /*
    * A season floor is a week's rate, so it can stand beside a week and nothing shorter. Beside
@@ -64,5 +72,6 @@ function withoutPrice<T extends ReturnType<typeof presentListingSummary>>(listin
     allInPriceFrom: null,
     basePriceFrom: null,
     listPriceFrom: null,
+    priceSource: null,
   };
 }

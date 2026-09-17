@@ -50,17 +50,33 @@ export function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
 
   const nights = nightsBetween(window);
   return sql`, (
+    ${rulesSellWindow(sql`doc.listing_id`, window)}
+    or ${hasVendorCharter(nights, { earliestStart: window.checkIn, latestStart: window.checkIn, earliestEnd: window.checkOut, latestEnd: window.checkOut })}
+  ) as "sellsRequestedPeriod"${nearestSellableColumns(window, nights, candidateRange(window, nights, FLEXIBILITY_DAYS[input.dateFlexibility ?? "on-day"]))}`;
+}
+
+/*
+ * Whether the check-in rules of the listing's active offers admit exactly this charter, reading
+ * no rule at all as no refusal. Shared with the price-list rate in `list-rate-sql.ts`, so a card
+ * the rules move onto other dates is never priced from the list for the dates it no longer shows.
+ */
+export function rulesSellWindow(
+  listingId: SQL,
+  window: { checkIn: string; checkOut: string },
+): SQL {
+  const nights = nightsBetween(window);
+  return sql`(
     not exists (
       select 1
       from listing_offer o
       join listing_checkin_rule rule on rule.listing_offer_id = o.id
-      where o.listing_id = doc.listing_id and o.status = 'active'
+      where o.listing_id = ${listingId} and o.status = 'active'
     )
     or exists (
       select 1
       from listing_offer o
       join listing_checkin_rule rule on rule.listing_offer_id = o.id
-      where o.listing_id = doc.listing_id
+      where o.listing_id = ${listingId}
         and o.status = 'active'
         and (rule.season_start is null or rule.season_start <= ${window.checkIn}::date)
         and (rule.season_end is null or rule.season_end >= ${window.checkIn}::date)
@@ -71,8 +87,7 @@ export function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
         and (rule.min_nights is null or rule.min_nights <= ${nights})
         and (rule.max_nights is null or rule.max_nights >= ${nights})
     )
-    or ${hasVendorCharter(nights, { earliestStart: window.checkIn, latestStart: window.checkIn, earliestEnd: window.checkOut, latestEnd: window.checkOut })}
-  ) as "sellsRequestedPeriod"${nearestSellableColumns(window, nights, candidateRange(window, nights, FLEXIBILITY_DAYS[input.dateFlexibility ?? "on-day"]))}`;
+  )`;
 }
 
 /*

@@ -218,10 +218,16 @@ export type ListingSearchDoc = {
    */
   sellsRequestedPeriod: boolean;
   /*
-   * On a dated search, whether the price is the vendor's price for exactly those dates rather
-   * than for another week. Absent on an undated search and on every other read.
+   * On a dated search, whether the price is for exactly those dates rather than for another week.
+   * Absent on an undated search and on every other read.
    */
   pricedForDates?: boolean;
+  /*
+   * Who priced those dates: the vendor itself, or the operator's published list rate for that
+   * week, which is before the discounts both vendors sell at. Null on a dated search where
+   * neither did; absent wherever `pricedForDates` is.
+   */
+  priceSource?: PeriodPriceSource | null;
   /*
    * The charter nearest the searched dates that this listing would actually sell, when the
    * searched one is not it. Null on an undated search, and on a listing with no sellable
@@ -230,6 +236,8 @@ export type ListingSearchDoc = {
   nearestCheckIn: string | null;
   nearestCheckOut: string | null;
 };
+
+export type PeriodPriceSource = "vendor" | "price-list";
 
 export type ListingSearchResult = {
   items: ListingSearchDoc[];

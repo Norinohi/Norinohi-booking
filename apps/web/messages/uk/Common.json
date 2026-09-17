@@ -59,6 +59,8 @@
     "priceIndicative": "Ціна чартеру · базова, можливі доплати",
     "boatPriceFor": "Ціна яхти · {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
     "boatPriceIndicative": "Ціна яхти · базова, можливі доплати",
+    "priceListRate": "Ціна чартеру · за прайсом, без знижок, можливі доплати",
+    "boatPriceListRate": "Ціна яхти · за прайсом, без знижок, можливі доплати",
     "priceForPeriod": "Ціна чартеру · за {from, date, dayCompact} - {to, date, dayCompact}",
     "priceFromLabel": "Від",
     "plusObligatory": "плюс {amount} обов'язкових доплат",

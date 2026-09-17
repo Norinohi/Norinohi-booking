@@ -59,6 +59,8 @@
     "priceIndicative": "Precio del chárter · tarifa base, puede haber suplementos",
     "boatPriceFor": "Precio del barco · {days, plural, one {# día} other {# días}}",
     "boatPriceIndicative": "Precio del barco · tarifa base, puede haber suplementos",
+    "priceListRate": "Precio del chárter · tarifa de lista sin descuentos, puede haber suplementos",
+    "boatPriceListRate": "Precio del barco · tarifa de lista sin descuentos, puede haber suplementos",
     "priceForPeriod": "Precio del chárter · del {from, date, dayCompact} al {to, date, dayCompact}",
     "priceFromLabel": "Desde",
     "plusObligatory": "más {amount} de suplementos obligatorios",

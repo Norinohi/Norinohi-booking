@@ -84,4 +84,37 @@ describe("pricedForShownPeriod", () => {
     expect(card.priceIsFrom).toBe(true);
     expect(card.priceFrom).not.toBeNull();
   });
+  it("captions a week the operator's list priced as a list rate", () => {
+    const card = pricedForShownPeriod(
+      doc({ ...priced, pricedForDates: true, priceSource: "price-list" }),
+      { checkIn: "2099-06-06", checkOut: "2099-06-13" },
+      "base",
+      ranks,
+    );
+    expect(card.priceFrom).not.toBeNull();
+    expect(card.priceIsFrom).toBe(false);
+    expect(card.priceSource).toBe("price-list");
+  });
+
+  it("names the vendor behind a week it priced itself", () => {
+    const card = pricedForShownPeriod(
+      doc({ ...priced, pricedForDates: true, priceSource: "vendor" }),
+      { checkIn: "2099-06-06", checkOut: "2099-06-13" },
+      "base",
+      ranks,
+    );
+    expect(card.priceSource).toBe("vendor");
+  });
+
+  it("puts no season floor beside a dated week nobody priced", () => {
+    const card = pricedForShownPeriod(
+      doc({ ...priced, priceIsFrom: true, pricedForDates: false, priceSource: null }),
+      { checkIn: "2099-06-20", checkOut: "2099-06-27" },
+      "base",
+      ranks,
+    );
+    expect(card.priceFrom).toBeNull();
+    expect(card.allInPriceFrom).toBeNull();
+    expect(card.priceSource).toBeNull();
+  });
 });

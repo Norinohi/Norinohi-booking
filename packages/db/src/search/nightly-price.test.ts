@@ -6,6 +6,7 @@ import {
   priceDescSortValueOf,
   UNPRICED_CHARTER_SORT_OFFSET,
 } from "./repository";
+import { recommendedSortValueOf } from "./pricing-sql";
 
 /**
  * `nightlyPriceOf` is the keyset cursor's copy of the `pricedNights` SQL, so these pin the two
@@ -172,5 +173,31 @@ describe("sort values on a dated search", () => {
     const undated = doc({ ...week, priceFromMinorEur: 700_000 });
     expect(priceAscSortValueOf(undated)).toBe(100_000);
     expect(priceDescSortValueOf(undated)).toBe(100_000);
+  });
+});
+
+describe("recommendedSortValueOf", () => {
+  const rated = { priceIsFrom: false, rating: "4.50" };
+
+  it("ranks a dated search's vendor price, then its list rate, then the rest", () => {
+    const vendor = recommendedSortValueOf({
+      ...rated,
+      pricedForDates: true,
+      priceSource: "vendor",
+    });
+    const list = recommendedSortValueOf({
+      ...rated,
+      rating: "5.00",
+      pricedForDates: true,
+      priceSource: "price-list",
+    });
+    const none = recommendedSortValueOf({ ...rated, pricedForDates: false, priceSource: null });
+    expect(vendor).toBeGreaterThan(list);
+    expect(list).toBeGreaterThan(none);
+  });
+
+  it("leaves an undated search's values as they were", () => {
+    expect(recommendedSortValueOf(rated)).toBe(14.5);
+    expect(recommendedSortValueOf({ ...rated, priceIsFrom: true })).toBe(4.5);
   });
 });

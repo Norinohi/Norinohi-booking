@@ -68,7 +68,10 @@ typed inserts; do not load `seed.ts`, which assumes an empty database with fixed
 
 `src/search/period-price.db.test.ts` pins the dated-search price path: the
 `listing_period_price` projection, its agreement with `listing_search_doc`, and the sort, filter
-and slider that read it. `nearest-priced-week.db.test.ts` pins the rebuild replacing a season
+and slider that read it. `list-rate.db.test.ts` pins the fallback for a dated week no vendor
+priced: the operator's weekly list rate for that exact week (`list-rate-sql.ts`,
+`price_source = 'price-list'`), ranked behind vendor prices and ahead of unpriced cards, and read
+by the same sort, filter, slider and map pin. `nearest-priced-week.db.test.ts` pins the rebuild replacing a season
 minimum with the nearest week a vendor priced, and `duration.db.test.ts` pins that a length
 filter, dated or not, admits only listings with a free charter of that length and names one,
 which short charters `listShortCharterPeriods` hands the NauSYS sweep, and that a card shows the

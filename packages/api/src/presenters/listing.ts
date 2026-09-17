@@ -94,6 +94,19 @@ export function pricedPeriodDays(doc: ListingSearchDoc): number {
 }
 
 /**
+ * Who stands behind the card's figure. Outside a dated search a figure that is not a season floor
+ * is always a vendor's confirmed price, because that is the only other thing the projection stores.
+ */
+function priceSourceOf(
+  doc: ListingSearchDoc,
+  pricesItsCharter: boolean,
+): "vendor" | "price-list" | "season-minimum" | null {
+  if (doc.priceFromMinor === null || doc.priceFromMinor <= 0) return null;
+  if (doc.priceIsFrom || !pricesItsCharter) return "season-minimum";
+  return doc.priceSource === "price-list" ? "price-list" : "vendor";
+}
+
+/**
  * One card, priced on whichever figure the catalogue is set to show.
  *
  * `priceFrom` is the headline, and it is the only field the basis moves: `allInPriceFrom` and
@@ -250,6 +263,7 @@ export function presentListingSummary(
      * charter is gone is a floor, not the price of a named week, so it is captioned as one.
      */
     priceIsFrom: doc.priceIsFrom || bookablePeriod === null,
+    priceSource: priceSourceOf(doc, bookablePeriod !== null),
     /*
      * The same charter before the operator's discount, for the card to strike through. Only
      * ever beside a price and only ever above it: a listing whose price was withheld has

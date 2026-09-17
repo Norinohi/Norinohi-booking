@@ -53,8 +53,9 @@ type Rule = {
 };
 
 /*
- * One published listing sold by one offer, NauSYS unless `providerId` says otherwise, free and
- * carrying a weekly rate across `free`. `rules` omitted means the offer publishes none.
+ * One published listing sold by one offer, NauSYS unless `providerId` says otherwise, free across
+ * `free` and carrying a weekly rate across it unless `rates` lists the bands instead. `rules`
+ * omitted means the offer publishes none.
  */
 export async function seedListing(
   db: TestDatabase["db"],
@@ -63,7 +64,9 @@ export async function seedListing(
     free: { from: string; to: string };
     rules?: Rule[];
     weeklyRateMinor?: number;
+    rates?: { from: string; to: string; priceMinor: number }[];
     providerId?: "prov_ns" | "prov_bm";
+    rating?: string;
   },
 ) {
   const providerId = options.providerId ?? "prov_ns";
@@ -76,6 +79,7 @@ export async function seedListing(
     operatorId: "op_test",
     homeBaseId: "base_test",
     status: "published",
+    providerRating: options.rating ?? null,
   });
   await db.insert(providerRecord).values({
     id: `prec_${slug}`,
@@ -104,15 +108,26 @@ export async function seedListing(
       .insert(listingCheckinRule)
       .values(options.rules.map((rule) => ({ listingId, listingOfferId: offerId, ...rule })));
   }
-  await db.insert(listingPricePeriod).values({
-    listingId,
-    listingOfferId: offerId,
-    startDate: options.free.from,
-    endDate: options.free.to,
-    kind: "weekly",
-    priceMinor: options.weeklyRateMinor ?? 400_000,
-    currency: "EUR",
-  });
+  const rates = options.rates ?? [
+    {
+      from: options.free.from,
+      to: options.free.to,
+      priceMinor: options.weeklyRateMinor ?? 400_000,
+    },
+  ];
+  if (rates.length > 0) {
+    await db.insert(listingPricePeriod).values(
+      rates.map((rate) => ({
+        listingId,
+        listingOfferId: offerId,
+        startDate: rate.from,
+        endDate: rate.to,
+        kind: "weekly" as const,
+        priceMinor: rate.priceMinor,
+        currency: "EUR",
+      })),
+    );
+  }
   await db.insert(listingFreePeriod).values({
     listingId,
     listingOfferId: offerId,

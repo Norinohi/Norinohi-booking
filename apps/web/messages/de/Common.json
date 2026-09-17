@@ -59,6 +59,8 @@
     "priceIndicative": "Charterpreis · Grundpreis, Zuschläge möglich",
     "boatPriceFor": "Yachtpreis · {days, plural, one {# Tag} other {# Tage}}",
     "boatPriceIndicative": "Yachtpreis · Grundpreis, Zuschläge möglich",
+    "priceListRate": "Charterpreis · Listenpreis vor Rabatten, Zuschläge möglich",
+    "boatPriceListRate": "Yachtpreis · Listenpreis vor Rabatten, Zuschläge möglich",
     "priceForPeriod": "Charterpreis · für {from, date, dayCompact} - {to, date, dayCompact}",
     "priceFromLabel": "Ab",
     "plusObligatory": "zzgl. {amount} Pflichtzuschläge",

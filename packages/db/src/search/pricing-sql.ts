@@ -3,6 +3,7 @@ import { getTableColumns, sql, type SQL } from "drizzle-orm";
 import { listingSearchDoc } from "../schema/search";
 import { availabilityWindowFor } from "./candidate-range";
 import { MIN_LEAD_DAYS } from "./lead-time";
+import { listRatePeriodPrice } from "./list-rate-sql";
 import { PERIOD_PRICE_COLUMNS } from "./period-prices";
 import type { ListingSearchDoc, ListingSearchInput, PriceBasis } from "./types";
 
@@ -33,10 +34,12 @@ const NULL_PRICE_DESC = -1;
 export const NULL_YEAR_DESC = 0;
 
 /**
- * The documents a search reads, priced for the dates it names where a vendor priced them.
+ * The documents a search reads, priced for the dates it names where anyone priced them.
  *
- * An undated search, or a listing nobody priced for those dates, reads its document as stored,
- * which is the price of that listing's own week.
+ * The vendor's own price for those dates wins; failing that, the operator's published rate for that
+ * exact week (`listRatePeriodPrice`). `price_source` says which, and a listing neither prices reads
+ * its document as stored, which is the price of that listing's own week. An undated search reads
+ * every document as stored.
  */
 export function searchDocs(input: ListingSearchInput): SQL {
   const window = availabilityWindowFor(input);
@@ -50,18 +53,41 @@ export function searchDocs(input: ListingSearchInput): SQL {
       : sql`stored.${column}`;
   });
 
+  const listRate = listRatePeriodPrice(sql`stored.listing_id`, window);
+
   return sql`(
-    select ${sql.join(columns, sql`, `)}, pp.listing_id is not null as priced_for_dates
+    select ${sql.join(columns, sql`, `)},
+      pp.listing_id is not null as priced_for_dates,
+      pp.price_source
     from listing_search_doc stored
-    left join listing_period_price pp
-      on pp.listing_id = stored.listing_id
-      and pp.start_date = ${window.checkIn}::date
-      and pp.end_date = ${window.checkOut}::date
+    left join lateral (
+      (
+        select
+          vendor.listing_id,
+          vendor.start_date,
+          vendor.end_date,
+          vendor.offer_id,
+          vendor.currency,
+          vendor.all_in_minor,
+          vendor.all_in_minor_eur,
+          vendor.base_minor,
+          vendor.base_minor_eur,
+          vendor.list_all_in_minor,
+          'vendor'::text as price_source
+        from listing_period_price vendor
+        where vendor.listing_id = stored.listing_id
+          and vendor.start_date = ${window.checkIn}::date
+          and vendor.end_date = ${window.checkOut}::date
+      )
+      ${listRate ? sql`union all (${listRate})` : sql``}
+      limit 1
+    ) pp on true
   )`;
 }
 
 /**
- * Whether a row's price is the vendor's price for the dates the search names.
+ * Whether a row carries a price for the dates the search names, from the vendor or from the
+ * operator's list for that week.
  *
  * Always true on an undated search, which names no dates to price. On a dated one the rest are
  * priced for another week or from the season, and a figure for another week is not a price for
@@ -72,7 +98,6 @@ export function pricedForDates(input: ListingSearchInput): SQL {
   return availabilityWindowFor(input) ? sql`doc.priced_for_dates` : sql`true`;
 }
 
-/** The same flag for the card, so the keyset cursor can restate the order in JS. */
 /**
  * The rows `priceDescSortValue` lifts above the rest: the ones priced for the searched dates, and
  * none at all on an undated search, so its sort values stay what its cursors already carry.
@@ -81,8 +106,11 @@ export function liftedForDates(input: ListingSearchInput): SQL {
   return availabilityWindowFor(input) ? sql`doc.priced_for_dates` : sql`false`;
 }
 
+/** The same flags for the card, so the keyset cursor can restate the order in JS. */
 export function pricedForDatesColumn(input: ListingSearchInput): SQL {
-  return availabilityWindowFor(input) ? sql`, doc.priced_for_dates as "pricedForDates"` : sql``;
+  return availabilityWindowFor(input)
+    ? sql`, doc.priced_for_dates as "pricedForDates", doc.price_source as "priceSource"`
+    : sql``;
 }
 
 /**
@@ -168,6 +196,10 @@ export function priceDescSortValueOf(
  */
 export const recommendedSortValue = sql`case when doc.price_is_from then doc.rating else doc.rating + 10 end`;
 
+/* Each clears the 0..5 rating range, so a tier is settled before the stars are read. */
+const VENDOR_PRICED_RANK = 20;
+const LIST_PRICED_RANK = 10;
+
 /**
  * `recommendedSortValue` for a search that may name dates.
  *
@@ -175,19 +207,32 @@ export const recommendedSortValue = sql`case when doc.price_is_from then doc.rat
  * another week shows "on request" beside them, so ranking it with the priced ones filled the first
  * page of a November search with cards that had no price while the six boats a vendor had priced
  * for that week sat further down.
+ *
+ * The vendor's price for the week outranks the operator's list rate for it, because the quote will
+ * match the first and both vendors sell below the second.
  */
 export function recommendedSortValueFor(input: ListingSearchInput): SQL {
   return availabilityWindowFor(input)
-    ? sql`case when doc.priced_for_dates then doc.rating + 10 else doc.rating end`
+    ? sql`case doc.price_source
+        when 'vendor' then doc.rating + ${VENDOR_PRICED_RANK}
+        when 'price-list' then doc.rating + ${LIST_PRICED_RANK}
+        else doc.rating
+      end`
     : recommendedSortValue;
 }
 
 /** `recommendedSortValueFor` in the units the keyset cursor compares. */
 export function recommendedSortValueOf(
-  item: Pick<ListingSearchDoc, "priceIsFrom" | "pricedForDates" | "rating">,
+  item: Pick<ListingSearchDoc, "priceIsFrom" | "pricedForDates" | "priceSource" | "rating">,
 ): number {
-  const pricedHere = item.pricedForDates ?? !item.priceIsFrom;
-  return (pricedHere ? 10 : 0) + Number(item.rating);
+  if (item.pricedForDates === undefined) return (item.priceIsFrom ? 0 : 10) + Number(item.rating);
+  const tier =
+    item.priceSource === "vendor"
+      ? VENDOR_PRICED_RANK
+      : item.priceSource === "price-list"
+        ? LIST_PRICED_RANK
+        : 0;
+  return tier + Number(item.rating);
 }
 
 /**

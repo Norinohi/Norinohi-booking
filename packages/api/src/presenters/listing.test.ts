@@ -213,3 +213,31 @@ describe("presentListingSummary on the charter rate", () => {
     expect(card.basePriceFrom).toBeNull();
   });
 });
+
+describe("presentListingSummary price source", () => {
+  const week = { bookableFrom: "2099-06-06", bookableTo: "2099-06-13" };
+
+  it("reads a stored charter price as the vendor's", () => {
+    expect(presentListingSummary(doc(week)).priceSource).toBe("vendor");
+  });
+
+  it("reads a season floor as one", () => {
+    expect(presentListingSummary(doc({ ...week, priceIsFrom: true })).priceSource).toBe(
+      "season-minimum",
+    );
+  });
+
+  it("reads a price whose charter has lapsed as a floor", () => {
+    expect(presentListingSummary(doc()).priceSource).toBe("season-minimum");
+  });
+
+  it("keeps a dated list rate as one", () => {
+    expect(presentListingSummary(doc({ ...week, priceSource: "price-list" })).priceSource).toBe(
+      "price-list",
+    );
+  });
+
+  it("has no source without a price", () => {
+    expect(presentListingSummary(doc({ ...week, priceFromMinor: null })).priceSource).toBeNull();
+  });
+});

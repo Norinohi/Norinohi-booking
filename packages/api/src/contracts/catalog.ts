@@ -246,6 +246,15 @@ export const listingSummarySchema = z.object({
    */
   priceIsFrom: z.boolean(),
   /**
+   * Who stands behind `priceFrom`, so the card can caption it honestly. Null with no price.
+   *
+   * - `vendor`: the vendor's own price for the charter beside it, which the quote will match.
+   * - `price-list`: on a dated search nobody quoted, the operator's published weekly rate for that
+   *   exact week. Before the discounts both vendors sell at, so the quote is usually lower.
+   * - `season-minimum`: the cheapest week of the season, the figure `priceIsFrom` marks.
+   */
+  priceSource: z.enum(["vendor", "price-list", "season-minimum"]).nullable(),
+  /**
    * The same charter before the operator's own discount, to be rendered struck through beside
    * `priceFrom`. Null unless there is a discount the vendor's own figures account for, which is
    * the ordinary case.

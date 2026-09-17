@@ -59,6 +59,8 @@
     "priceIndicative": "Charter price · base rate, extra charges may apply",
     "boatPriceFor": "Boat price · {days, plural, one {# day} other {# days}}",
     "boatPriceIndicative": "Boat price · base rate, extra charges may apply",
+    "priceListRate": "Charter price · list rate before discounts, extra charges may apply",
+    "boatPriceListRate": "Boat price · list rate before discounts, extra charges may apply",
     "priceForPeriod": "Charter price · for {from, date, dayCompact} - {to, date, dayCompact}",
     "priceFromLabel": "From",
     "plusObligatory": "plus {amount} obligatory extras",

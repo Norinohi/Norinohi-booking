@@ -170,11 +170,14 @@ function priceCaption(
   basis: "base" | "all_in" | undefined,
 ): string {
   if (!listing.priceFrom) return "";
+  const listRate = listing.priceSource === "price-list";
   if (isBoatPrice(listing, basis)) {
     if (listing.priceIsFrom) return t("boatPriceIndicative");
+    if (listRate) return t("boatPriceListRate");
     return t("boatPriceFor", { days: listing.priceDetails.periodDays });
   }
   if (listing.priceIsFrom) return t("priceIndicative");
+  if (listRate) return t("priceListRate");
   return t("priceFor", { days: listing.priceDetails.periodDays });
 }
 
