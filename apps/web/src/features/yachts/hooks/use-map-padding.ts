@@ -33,6 +33,7 @@ export function useMapPadding(map: MapInstance | null, panelsKey: boolean) {
   const shellRef = useRef<HTMLDivElement>(null);
   const filtersRef = useRef<HTMLFormElement>(null);
   const listRef = useRef<HTMLElement>(null);
+  const controlsRef = useRef<HTMLDivElement>(null);
   /* False until the map has been given its first padding, which is the one that must not animate:
      the visitor has not opened anything yet, they are just arriving. */
   const panelsSettled = useRef(false);
@@ -59,11 +60,26 @@ export function useMapPadding(map: MapInstance | null, panelsKey: boolean) {
         return right < box.width / 2 ? right : 0;
       };
 
+      /*
+       * The filter button and its chips lie along the top edge, and a search with a few filters
+       * wraps them onto a second row: a fit framed against the bare container put Istria's
+       * cluster underneath "Country: Croatia". Only a bar in the top half counts, for the same
+       * reason as the panels above.
+       */
+      const topBar = (() => {
+        const bar = controlsRef.current;
+        if (!bar) return 0;
+        const rect = bar.getBoundingClientRect();
+        if (rect.height === 0) return 0;
+        const bottom = rect.bottom - box.top;
+        return bottom < box.height / 2 ? bottom : 0;
+      })();
+
       /* Kept well inside the container: mapbox abandons a fit whose padding leaves it no room,
          and a flat 80 a side very nearly does that on a phone. */
       const clearance = Math.min(MARKER_CLEARANCE, box.width / 6, box.height / 6);
       const next = {
-        top: clearance,
+        top: topBar > 0 ? topBar + clearance / 2 : clearance,
         right: clearance,
         bottom: clearance,
         left: Math.max(claimed(filtersRef.current), claimed(listRef.current)) + clearance,
@@ -85,8 +101,9 @@ export function useMapPadding(map: MapInstance | null, panelsKey: boolean) {
 
     const observer = new ResizeObserver(() => apply(false));
     observer.observe(shell);
+    if (controlsRef.current) observer.observe(controlsRef.current);
     return () => observer.disconnect();
   }, [map, panelsKey]);
 
-  return { shellRef, filtersRef, listRef };
+  return { shellRef, filtersRef, listRef, controlsRef };
 }

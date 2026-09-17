@@ -17,6 +17,8 @@ import { paddingOf } from "@/components/shared/map/camera";
 const BOTTOM_SAFE = 32;
 // Below this container width we treat the map as a phone and pin the popup to the bottom.
 const MOBILE_MAX = 768;
+// The least room kept above the card, so its photo and name are never pushed off the top.
+const TOP_SAFE = 12;
 
 type PopupBoat = YachtCardData & { id: string };
 
@@ -112,10 +114,17 @@ export default function MapBoatPopup({
     const claimed = paddingOf(map);
     const centreY = claimed.top + (viewportH - claimed.top - claimed.bottom) / 2;
 
-    const pinY =
+    /*
+     * Never so low that the card's top leaves the map. On a short window (601x435) the bottom
+     * pinning alone put the photo 186px above the viewport; the card is capped to the window's
+     * height below, and this keeps whatever is left of a mismatch at the bottom instead.
+     */
+    const pinY = Math.max(
       container.clientWidth < MOBILE_MAX
         ? viewportH - BOTTOM_SAFE - PIN_CLEARANCE - height
-        : centreY - PIN_CLEARANCE - height / 2;
+        : centreY - PIN_CLEARANCE - height / 2,
+      TOP_SAFE - PIN_CLEARANCE,
+    );
 
     const center: [number, number] = [coordinates.lng, coordinates.lat];
     const offset: [number, number] = [0, pinY - centreY];
@@ -139,7 +148,9 @@ export default function MapBoatPopup({
       onOpen={recentre}
       className="flex flex-col items-center gap-2"
     >
-      <div className="relative w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl shadow-[4px_4px_15px_rgba(0,0,0,0.08)] md:w-150.25">
+      {/* Capped to the window with room for the pager, and scrolled inside when taller: a phone
+          card is a photo over its details, which is more than a short landscape screen holds. */}
+      <div className="relative max-h-[calc(100dvh-8rem)] w-72 max-w-[calc(100vw-2rem)] overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl shadow-[4px_4px_15px_rgba(0,0,0,0.08)] md:max-h-[calc(100dvh-var(--header-h)-8rem)] md:w-150.25">
         <div
           className="flex transition-transform duration-300 ease-out"
           style={{ transform: `translateX(-${shown * 100}%)` }}

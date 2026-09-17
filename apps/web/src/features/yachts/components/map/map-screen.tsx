@@ -63,7 +63,7 @@ export default function MapScreen() {
      be on the map before the search is framed against it, and the camera writer attached only
      after that framing, so an arrival's jump is not written to the URL. */
   const { clusters, supercluster } = useMapClusters(marinas, map);
-  const { shellRef, filtersRef, listRef } = useMapPadding(map, listOpen);
+  const { shellRef, filtersRef, listRef, controlsRef } = useMapPadding(map, listOpen);
   /* The previous search's pins stay up while the next loads, but framing them would use up this
      search's one fit before its own answer arrived. */
   useFitSearchResults(
@@ -196,6 +196,7 @@ export default function MapScreen() {
           catalogueLabel={catalogueLabel}
           filtersRef={filtersRef}
           listRef={listRef}
+          controlsRef={controlsRef}
         />
       </div>
     </div>

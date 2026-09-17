@@ -57,6 +57,8 @@ export interface MapChromeProps {
   /** The panels that can claim the map's left edge, measured for its padding. */
   filtersRef: Ref<HTMLFormElement>;
   listRef: Ref<HTMLElement>;
+  /** The button row and chips along the top, measured so a fit frames results below them. */
+  controlsRef: Ref<HTMLDivElement>;
 }
 
 /** Everything laid over the search map: the way back, filters, their chips, and the list. */
@@ -72,6 +74,7 @@ export default function MapChrome({
   catalogueLabel,
   filtersRef,
   listRef,
+  controlsRef,
 }: MapChromeProps) {
   const t = useTranslations("YachtsMap");
   const common = useTranslations("Common");
@@ -84,6 +87,7 @@ export default function MapChrome({
   return (
     <div className="pointer-events-none absolute inset-0 flex flex-col gap-3 px-3 pt-3 pb-8 md:gap-5 md:pt-6 md:px-13.5 2xl:flex-row 2xl:items-start 2xl:px-17.5 2xl:pb-17.5">
       <div
+        ref={controlsRef}
         className={cn(
           "flex flex-wrap items-start gap-2 transition-opacity duration-200 md:flex-nowrap md:gap-5 2xl:contents",
           // Popup covers these on phones (< 768px): fade out and disable there, keep them from md up.
