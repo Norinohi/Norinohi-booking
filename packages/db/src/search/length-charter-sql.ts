@@ -1,6 +1,7 @@
 import { sql, type SQL } from "drizzle-orm";
 
 import { undatedRange } from "./candidate-range";
+import { listRatePeriodPrice } from "./list-rate-sql";
 import { WEEKLY_RATE_NIGHTS } from "./weekly-estimate";
 
 /*
@@ -16,7 +17,9 @@ import { WEEKLY_RATE_NIGHTS } from "./weekly-estimate";
  * filter already admitted the listing, and a priced charter past the horizon is still its price.
  */
 
-const PRICED_CHARTER_TIER = 20;
+export const PRICED_CHARTER_TIER = 40;
+const LIST_RATE_TIER = 30;
+const ESTIMATE_TIER = 20;
 const SEASON_WEEK_TIER = 10;
 
 function storedPricedCharter(nights: number): SQL {
@@ -47,14 +50,50 @@ export function pricedLengthStart(nights: number): SQL {
 }
 
 /**
- * How the card for `nights` will be priced, as a rank that clears the 0..5 rating: a price for
- * the charter it names, then a season floor, which a card may show beside a week only, then "on
- * request". `pricedForShownPeriod` in packages/api makes the same call on the page.
+ * The first charter of `nights` the operator's list prices for this row, as a `listRatePeriodPrice`
+ * row, or no row: the one a dated search starting that day would price. Only days some weekly band
+ * covers are tried, earliest first, so a boat with no list pays one index read.
+ */
+export function firstListPricedCharter(listingId: SQL, nights: number): SQL | undefined {
+  const { earliestStart, latestStart } = undatedRange(nights);
+  const listRate = listRatePeriodPrice(listingId, sql`day.start_date`, nights);
+  if (!listRate) return undefined;
+  return sql`
+    select priced.*
+    from (
+      select distinct covered::date as start_date
+      from listing_price_period band
+      cross join lateral generate_series(
+        greatest(band.start_date, ${earliestStart}::date),
+        least(band.end_date, ${latestStart}::date),
+        interval '1 day'
+      ) as covered
+      where band.listing_id = ${listingId}
+        and band.kind = 'weekly'
+        and band.price_minor > 0
+        and band.end_date >= ${earliestStart}::date
+    ) day
+    cross join lateral (${listRate}) priced
+    order by day.start_date
+    limit 1`;
+}
+
+/**
+ * How the card for `nights` will be priced, as a rank that clears the 0..5 rating: a vendor's price
+ * for the charter it names, then the operator's list rate for it, then an estimate from that list,
+ * then a season floor, which a card shows only where it names no charter, then "on request". The
+ * order a dated search ranks the same sources in. `pricedForShownPeriod` in packages/api makes the
+ * same call on the page.
  */
 export function lengthPriceTier(nights: number): SQL {
+  const listed = firstListPricedCharter(sql`doc.listing_id`, nights);
+  const listTier = listed
+    ? sql`when exists (${listed}) then ${nights === WEEKLY_RATE_NIGHTS ? LIST_RATE_TIER : ESTIMATE_TIER}::integer`
+    : sql``;
   return sql`(case
     when ${storedPricedCharter(nights)} or exists (select 1 ${sweptCharters(nights)})
       then ${PRICED_CHARTER_TIER}::integer
+    ${listTier}
     when ${nights === WEEKLY_RATE_NIGHTS} and doc.price_is_from and doc.price_from_minor > 0
       then ${SEASON_WEEK_TIER}::integer
     else 0

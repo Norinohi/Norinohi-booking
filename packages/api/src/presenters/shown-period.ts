@@ -1,11 +1,6 @@
 import type { ListingSearchDoc, PriceBasis } from "@yacht-charter/db/search";
 
-import {
-  bookablePeriodOf,
-  nightsBetween,
-  presentListingSummary,
-  WEEKLY_RATE_DAYS,
-} from "./listing";
+import { bookablePeriodOf, presentListingSummary } from "./listing";
 
 /*
  * The card, with a price only where the price is for the charter the card names.
@@ -41,14 +36,12 @@ export function pricedForShownPeriod(
   if (item.pricedForDates === false) return withoutPrice(listing, item);
 
   /*
-   * A season floor is a week's rate, so it can stand beside a week and nothing shorter. Beside
-   * three nights it read as their price; the card says "on request" instead.
+   * A season floor prices no charter, so beside the dates of one it read as their price. It stood
+   * beside a week, where it at least priced that length, until a length with no date began pricing
+   * the week it names from the operator's list as a dated search does: a floor left here is a
+   * charter nobody priced, which is "on request" there too.
    */
-  if (listing.priceIsFrom) {
-    return nightsBetween(shown.checkIn, shown.checkOut) === WEEKLY_RATE_DAYS
-      ? listing
-      : withoutPrice(listing, item);
-  }
+  if (listing.priceIsFrom) return withoutPrice(listing, item);
 
   /*
    * Both ends, because a charter is a length as well as a start.

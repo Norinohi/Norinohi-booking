@@ -74,16 +74,17 @@ describe("pricedForShownPeriod", () => {
     expect(card.priceFrom).toBeNull();
   });
 
-  it("still reads as a floor where the price never priced a week", () => {
+  it("puts no season floor beside a week either", () => {
     const card = pricedForShownPeriod(
       doc({ ...priced, priceIsFrom: true }),
       { checkIn: "2099-06-20", checkOut: "2099-06-27" },
       "base",
       ranks,
     );
-    expect(card.priceIsFrom).toBe(true);
-    expect(card.priceFrom).not.toBeNull();
+    expect(card.priceFrom).toBeNull();
+    expect(card.priceSource).toBeNull();
   });
+
   it("captions a week the operator's list priced as a list rate", () => {
     const card = pricedForShownPeriod(
       doc({ ...priced, pricedForDates: true, priceSource: "price-list" }),
