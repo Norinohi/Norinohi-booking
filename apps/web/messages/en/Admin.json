@@ -446,14 +446,16 @@
   },
   "Audit": {
     "title": "Audit Log",
-    "subtitle": "Every staff action, newest first. Entries are written once and never edited.",
+    "subtitle": "Every staff action and every recorded failure, newest first. Entries are written once and never edited.",
     "filters": {
       "entityType": "Entity type",
       "allEntities": "All entities",
       "action": "Action",
       "allActions": "All actions",
       "entityId": "Entity id",
-      "entityIdPlaceholder": "Paste a full id"
+      "entityIdPlaceholder": "Paste a full id",
+      "source": "Source",
+      "allSources": "All sources"
     },
     "table": {
       "when": "When",
@@ -469,7 +471,8 @@
       "delete": "Deleted",
       "sync": "Synced",
       "merge": "Merged",
-      "price_adjustment": "Price change"
+      "price_adjustment": "Price change",
+      "error": "Error"
     },
     "entity": {
       "booking": "Booking",
@@ -479,7 +482,20 @@
       "lead": "Enquiry",
       "listing": "Listing",
       "listing_duplicate_candidate": "Duplicate",
-      "maintenance": "Maintenance job"
+      "maintenance": "Maintenance job",
+      "facet_media": "Facet image",
+      "facet_media_rank": "Facet image order",
+      "faq": "FAQ",
+      "marketplace_settings": "Marketplace settings",
+      "popular_yachts_config": "Popular yachts",
+      "provider_commission": "Provider commission",
+      "suggested_route": "Suggested route",
+      "suggested_route_featured": "Featured route",
+      "suggested_route_stop": "Route stop",
+      "procedure": "API operation",
+      "job": "Scheduled job",
+      "stripe_event": "Stripe event",
+      "provider": "Provider"
     },
     "details": {
       "show": "Show",
@@ -488,7 +504,26 @@
       "after": "After",
       "metadata": "Context"
     },
+    "source": {
+      "admin_action": "Staff action",
+      "server": "Server",
+      "provider": "Provider",
+      "stripe_webhook": "Stripe webhook",
+      "job": "Scheduled job"
+    },
+    "errorDetails": {
+      "title": "What failed",
+      "operation": "Operation",
+      "source": "Source",
+      "code": "Code",
+      "status": "Status",
+      "message": "Message",
+      "causes": "Caused by",
+      "vendor": "Vendor",
+      "context": "Context"
+    },
     "actorGone": "Deleted account",
+    "actorSystem": "System",
     "empty": "Nothing recorded yet.",
     "error": "The audit log could not be loaded."
   },

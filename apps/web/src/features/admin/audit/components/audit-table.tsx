@@ -14,16 +14,18 @@ import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
-import { ChevronDown, ChevronUp, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, CircleAlert, Search } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { useAuditLog } from "../hooks/use-audit";
-import type { AuditAction, AuditRow } from "../types";
+import { errorMetadataOf, type ErrorMetadata } from "../lib/error-metadata";
+import type { AuditAction, AuditRow, AuditSource } from "../types";
 
 /*
- * AuditTable — the trail on /audit: entity-type, action and id filters over the entries,
- * newest first, each expandable into the before/after it recorded.
+ * AuditTable - the trail on /audit: entity-type, action, source and id filters over the entries,
+ * newest first, each expandable into the before/after it recorded, or for a failure into what
+ * failed and why.
  *
  * Every admin mutation writes one of these and nothing edits them afterwards, so this is the
  * only account of who cancelled a booking, who refunded it, and which two listings a merge
@@ -40,11 +42,24 @@ const ENTITY_TYPES = [
   "booking",
   "booking_enquiry",
   "discount",
+  "facet_media",
+  "facet_media_rank",
+  "faq",
   "invoice_request",
+  "job",
   "lead",
   "listing",
   "listing_duplicate_candidate",
   "maintenance",
+  "marketplace_settings",
+  "popular_yachts_config",
+  "procedure",
+  "provider",
+  "provider_commission",
+  "stripe_event",
+  "suggested_route",
+  "suggested_route_featured",
+  "suggested_route_stop",
 ] as const;
 
 const ACTIONS: readonly AuditAction[] = [
@@ -54,6 +69,15 @@ const ACTIONS: readonly AuditAction[] = [
   "sync",
   "merge",
   "price_adjustment",
+  "error",
+];
+
+const SOURCES: readonly AuditSource[] = [
+  "admin_action",
+  "server",
+  "provider",
+  "stripe_webhook",
+  "job",
 ];
 
 const ACTION_VARIANTS = {
@@ -63,6 +87,7 @@ const ACTION_VARIANTS = {
   sync: "neutral",
   merge: "warning",
   price_adjustment: "warning",
+  error: "error",
 } as const satisfies Record<AuditAction, string>;
 
 const COLUMN_COUNT = 6;
@@ -83,11 +108,64 @@ function Payload({ label, value }: { label: string; value: unknown }) {
   );
 }
 
+/** A failure's own fields, in the order someone chasing it reads them. */
+function ErrorDetails({ metadata }: { metadata: ErrorMetadata }) {
+  const t = useTranslations("Admin.Audit");
+  const source = SOURCES.find((option) => option === metadata.source);
+  const vendor = metadata.provider;
+
+  const fields = [
+    { label: t("errorDetails.operation"), value: metadata.operation },
+    { label: t("errorDetails.source"), value: source ? t(`source.${source}`) : metadata.source },
+    {
+      label: t("errorDetails.code"),
+      value: [metadata.kind, metadata.code].filter(Boolean).join(" / "),
+    },
+    { label: t("errorDetails.status"), value: metadata.status?.toString() },
+    {
+      label: t("errorDetails.vendor"),
+      value: vendor
+        ? [vendor.errorType, vendor.providerCode, vendor.endpoint].filter(Boolean).join(" / ")
+        : undefined,
+    },
+  ].filter((field) => field.value);
+
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-3">
+      <p className="text-xs font-semibold text-natural-500">{t("errorDetails.title")}</p>
+      <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-sm">
+        {fields.map((field) => (
+          <div key={field.label} className="contents">
+            <dt className="font-medium text-natural-500">{field.label}</dt>
+            <dd className="font-mono text-xs leading-5 wrap-break-word text-foreground">
+              {field.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      {metadata.message ? (
+        <div className="flex flex-col gap-1">
+          <p className="text-xs font-semibold text-natural-500">{t("errorDetails.message")}</p>
+          <p className="rounded-md bg-card p-3 text-sm wrap-break-word text-error-600">
+            {metadata.errorName ? `${metadata.errorName}: ` : null}
+            {metadata.message}
+          </p>
+        </div>
+      ) : null}
+      {metadata.causes && metadata.causes.length > 0 ? (
+        <Payload label={t("errorDetails.causes")} value={metadata.causes} />
+      ) : null}
+      <Payload label={t("errorDetails.context")} value={metadata.context} />
+    </div>
+  );
+}
+
 export default function AuditTable() {
   const t = useTranslations("Admin.Audit");
   const format = useFormatter();
   const [entityType, setEntityType] = useState(ALL);
   const [action, setAction] = useState(ALL);
+  const [source, setSource] = useState(ALL);
   const [entityId, setEntityId] = useState("");
   const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -96,6 +174,7 @@ export default function AuditTable() {
     /* The ALL sentinel is in neither list, so it drops out as `undefined`. */
     entityType: ENTITY_TYPES.find((option) => option === entityType),
     action: ACTIONS.find((option) => option === action),
+    source: SOURCES.find((option) => option === source),
     entityId: entityId.trim() || undefined,
     page,
   });
@@ -108,7 +187,12 @@ export default function AuditTable() {
     setExpanded(null);
   };
 
-  const actorOf = (row: AuditRow) => row.actor?.name ?? row.actor?.email ?? t("actorGone");
+  /* A failure outside a staff action never had an actor; only a staff one can have lost it. */
+  const actorOf = (row: AuditRow) => {
+    if (row.actor) return row.actor.name ?? row.actor.email ?? t("actorGone");
+    const failure = errorMetadataOf(row);
+    return failure && failure.source !== "admin_action" ? t("actorSystem") : t("actorGone");
+  };
 
   const messageRow = (message: string) => (
     <TableRow>
@@ -145,6 +229,18 @@ export default function AuditTable() {
             options={[
               { value: ALL, label: t("filters.allActions") },
               ...ACTIONS.map((value) => ({ value, label: t(`action.${value}`) })),
+            ]}
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <Select
+            className="h-12 min-w-0"
+            ariaLabel={t("filters.source")}
+            value={source}
+            onValueChange={onFilterChange(setSource)}
+            options={[
+              { value: ALL, label: t("filters.allSources") },
+              ...SOURCES.map((value) => ({ value, label: t(`source.${value}`) })),
             ]}
           />
         </div>
@@ -196,9 +292,11 @@ export default function AuditTable() {
                     /* `entityType` is a plain column, so a service could write one this build
                        ships no label for; the raw value beats a missing-key error. */
                     const entity = ENTITY_TYPES.find((option) => option === row.entityType);
+                    const failure = errorMetadataOf(row);
+                    const failureSource = SOURCES.find((option) => option === failure?.source);
 
                     return [
-                      <TableRow key={row.id}>
+                      <TableRow key={row.id} className={failure ? "bg-error-50/40" : undefined}>
                         <TableCell className="whitespace-nowrap">
                           {format.dateTime(new Date(row.createdAt), {
                             dateStyle: "short",
@@ -207,9 +305,15 @@ export default function AuditTable() {
                         </TableCell>
                         <TableCell className="whitespace-nowrap">{actorOf(row)}</TableCell>
                         <TableCell>
-                          <Chip variant={ACTION_VARIANTS[row.action]}>
-                            {t(`action.${row.action}`)}
-                          </Chip>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <Chip variant={ACTION_VARIANTS[row.action]}>
+                              {failure ? <CircleAlert aria-hidden /> : null}
+                              {t(`action.${row.action}`)}
+                            </Chip>
+                            {failureSource ? (
+                              <Chip variant="outline">{t(`source.${failureSource}`)}</Chip>
+                            ) : null}
+                          </div>
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
                           {entity ? t(`entity.${entity}`) : row.entityType}
@@ -230,11 +334,15 @@ export default function AuditTable() {
                       isOpen ? (
                         <TableRow key={`${row.id}-details`}>
                           <TableCell colSpan={COLUMN_COUNT} className="bg-natural-50">
-                            <div className="flex flex-col gap-4 md:flex-row">
-                              <Payload label={t("details.before")} value={row.before} />
-                              <Payload label={t("details.after")} value={row.after} />
-                              <Payload label={t("details.metadata")} value={row.metadata} />
-                            </div>
+                            {failure ? (
+                              <ErrorDetails metadata={failure} />
+                            ) : (
+                              <div className="flex flex-col gap-4 md:flex-row">
+                                <Payload label={t("details.before")} value={row.before} />
+                                <Payload label={t("details.after")} value={row.after} />
+                                <Payload label={t("details.metadata")} value={row.metadata} />
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
                       ) : null,

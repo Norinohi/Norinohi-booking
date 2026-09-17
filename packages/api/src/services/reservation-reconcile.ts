@@ -9,6 +9,7 @@ import { z } from "zod";
 
 import type { Database } from "../context";
 import { driftKindOf, type DriftKind } from "../lib/reservation-drift";
+import { recordErrorInAudit } from "./error-audit";
 import { providerByKey } from "./provider-routing";
 import type { BookingStatus } from "./booking-state";
 
@@ -125,10 +126,19 @@ export async function reconcileReservations(
     } catch (error) {
       /* The cursor is deliberately not advanced: the window this run missed is the next
          run's to cover, and a feed that is down must not quietly skip a day of changes. */
+      const thrown = parseError(error);
       log.error({
         action: "reconcile.feed_unavailable",
         provider: code,
-        ...thrownFields(parseError(error)),
+        ...thrownFields(thrown),
+      });
+      await recordErrorInAudit(db, {
+        source: "provider",
+        operation: "provider.reconcile",
+        thrown,
+        entityType: "provider",
+        entityId: code,
+        context: { since: since.toISOString(), until: now.toISOString() },
       });
       result.unreachable.push(code);
       continue;

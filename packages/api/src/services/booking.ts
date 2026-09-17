@@ -17,6 +17,7 @@ import { user } from "@yacht-charter/db/schema/auth";
 import { quote, type QuoteLine } from "@yacht-charter/db/schema/quote";
 import { listRequestableExtras } from "@yacht-charter/db/search";
 import type { InventoryProvider } from "@yacht-charter/providers";
+import { parseError } from "evlog";
 import { and, count, desc, eq, gte, inArray, lte, notInArray, sql } from "drizzle-orm";
 import type { z } from "zod";
 
@@ -44,6 +45,7 @@ import { readAnyBooking, readOwnedBooking } from "./booking-read";
 import { appendRequestedExtras } from "./requested-extras";
 import { notifyBookingCancelled } from "./booking-email";
 import { type AuditEntry, writeAuditLog } from "./audit";
+import { recordProviderFailure } from "./error-audit";
 import { amountDue, atCheckInMinor, outstandingMinor, payableNowFor } from "./checkout-amounts";
 import { enqueueOutbox, kickOutbox } from "./outbox";
 import { redeemDiscount } from "./discount-redemption";
@@ -600,10 +602,9 @@ async function holdOption(
     // stays on the event, where support and Sentry look for it.
     const refusal = error instanceof Error ? error : null;
     const failure = describeProviderFailure(refusal, "Provider rejected the option");
-    reportProviderRefusal("hold", refusal, {
-      bookingId: pending.id,
-      provider: pending.provider,
-    });
+    const subject = { bookingId: pending.id, provider: pending.provider };
+    reportProviderRefusal("hold", refusal, subject);
+    await recordProviderFailure(db, "hold", parseError(error), subject);
     const rejected = await transition(db, pending, "PROVIDER_REJECTED", {
       cancelReason: failure.customer,
     });

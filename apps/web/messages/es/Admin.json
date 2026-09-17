@@ -446,14 +446,16 @@
   },
   "Audit": {
     "title": "Registro de auditoría",
-    "subtitle": "Cada acción del personal, de la más reciente a la más antigua. Las entradas se escriben una vez y no se editan.",
+    "subtitle": "Cada acción del personal y cada fallo registrado, de la más reciente a la más antigua. Las entradas se escriben una vez y no se editan.",
     "filters": {
       "entityType": "Tipo de entidad",
       "allEntities": "Todas las entidades",
       "action": "Acción",
       "allActions": "Todas las acciones",
       "entityId": "Id de entidad",
-      "entityIdPlaceholder": "Pega un id completo"
+      "entityIdPlaceholder": "Pega un id completo",
+      "source": "Origen",
+      "allSources": "Todos los orígenes"
     },
     "table": {
       "when": "Cuándo",
@@ -469,7 +471,8 @@
       "delete": "Eliminado",
       "sync": "Sincronizado",
       "merge": "Fusionado",
-      "price_adjustment": "Cambio de precio"
+      "price_adjustment": "Cambio de precio",
+      "error": "Error"
     },
     "entity": {
       "booking": "Reserva",
@@ -479,7 +482,20 @@
       "lead": "Consulta",
       "listing": "Anuncio",
       "listing_duplicate_candidate": "Duplicado",
-      "maintenance": "Tarea de mantenimiento"
+      "maintenance": "Tarea de mantenimiento",
+      "facet_media": "Imagen de faceta",
+      "facet_media_rank": "Orden de imágenes de faceta",
+      "faq": "Preguntas frecuentes",
+      "marketplace_settings": "Ajustes del marketplace",
+      "popular_yachts_config": "Yates populares",
+      "provider_commission": "Comisión del proveedor",
+      "suggested_route": "Ruta sugerida",
+      "suggested_route_featured": "Ruta destacada",
+      "suggested_route_stop": "Parada de ruta",
+      "procedure": "Operación de la API",
+      "job": "Tarea programada",
+      "stripe_event": "Evento de Stripe",
+      "provider": "Proveedor"
     },
     "details": {
       "show": "Ver",
@@ -488,7 +504,26 @@
       "after": "Después",
       "metadata": "Contexto"
     },
+    "source": {
+      "admin_action": "Acción del personal",
+      "server": "Servidor",
+      "provider": "Proveedor",
+      "stripe_webhook": "Webhook de Stripe",
+      "job": "Tarea programada"
+    },
+    "errorDetails": {
+      "title": "Qué falló",
+      "operation": "Operación",
+      "source": "Origen",
+      "code": "Código",
+      "status": "Estado",
+      "message": "Mensaje",
+      "causes": "Causado por",
+      "vendor": "Proveedor",
+      "context": "Contexto"
+    },
     "actorGone": "Cuenta eliminada",
+    "actorSystem": "Sistema",
     "empty": "Aún no hay nada registrado.",
     "error": "No se pudo cargar el registro de auditoría."
   },

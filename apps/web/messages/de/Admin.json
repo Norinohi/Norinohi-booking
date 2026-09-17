@@ -446,14 +446,16 @@
   },
   "Audit": {
     "title": "Audit-Protokoll",
-    "subtitle": "Jede Mitarbeiteraktion, neueste zuerst. Einträge werden einmal geschrieben und nie bearbeitet.",
+    "subtitle": "Jede Mitarbeiteraktion und jeder erfasste Fehler, neueste zuerst. Einträge werden einmal geschrieben und nie bearbeitet.",
     "filters": {
       "entityType": "Entitätstyp",
       "allEntities": "Alle Entitäten",
       "action": "Aktion",
       "allActions": "Alle Aktionen",
       "entityId": "Entitäts-ID",
-      "entityIdPlaceholder": "Vollständige ID einfügen"
+      "entityIdPlaceholder": "Vollständige ID einfügen",
+      "source": "Quelle",
+      "allSources": "Alle Quellen"
     },
     "table": {
       "when": "Wann",
@@ -469,7 +471,8 @@
       "delete": "Gelöscht",
       "sync": "Synchronisiert",
       "merge": "Zusammengeführt",
-      "price_adjustment": "Preisänderung"
+      "price_adjustment": "Preisänderung",
+      "error": "Fehler"
     },
     "entity": {
       "booking": "Buchung",
@@ -479,7 +482,20 @@
       "lead": "Anfrage",
       "listing": "Inserat",
       "listing_duplicate_candidate": "Duplikat",
-      "maintenance": "Wartungsjob"
+      "maintenance": "Wartungsjob",
+      "facet_media": "Facettenbild",
+      "facet_media_rank": "Reihenfolge der Facettenbilder",
+      "faq": "FAQ",
+      "marketplace_settings": "Marktplatz-Einstellungen",
+      "popular_yachts_config": "Beliebte Yachten",
+      "provider_commission": "Anbieterprovision",
+      "suggested_route": "Routenvorschlag",
+      "suggested_route_featured": "Hervorgehobene Route",
+      "suggested_route_stop": "Routenstopp",
+      "procedure": "API-Vorgang",
+      "job": "Geplanter Job",
+      "stripe_event": "Stripe-Ereignis",
+      "provider": "Anbieter"
     },
     "details": {
       "show": "Anzeigen",
@@ -488,7 +504,26 @@
       "after": "Nachher",
       "metadata": "Kontext"
     },
+    "source": {
+      "admin_action": "Mitarbeiteraktion",
+      "server": "Server",
+      "provider": "Anbieter",
+      "stripe_webhook": "Stripe-Webhook",
+      "job": "Geplanter Job"
+    },
+    "errorDetails": {
+      "title": "Was fehlgeschlagen ist",
+      "operation": "Vorgang",
+      "source": "Quelle",
+      "code": "Code",
+      "status": "Status",
+      "message": "Meldung",
+      "causes": "Ursache",
+      "vendor": "Anbieter",
+      "context": "Kontext"
+    },
     "actorGone": "Gelöschtes Konto",
+    "actorSystem": "System",
     "empty": "Noch nichts protokolliert.",
     "error": "Das Audit-Protokoll konnte nicht geladen werden."
   },

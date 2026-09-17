@@ -8,12 +8,14 @@ import {
 import { env } from "@yacht-charter/env/server";
 import type { InventoryProvider } from "@yacht-charter/providers";
 import { and, eq, inArray, isNull, ne } from "drizzle-orm";
+import { parseError } from "evlog";
 import type Stripe from "stripe";
 import { z } from "zod";
 
 import type { Database } from "../context";
 import { providerByKey } from "./provider-routing";
 import { confirmBookingWithProvider } from "./booking-confirm";
+import { recordErrorInAudit } from "./error-audit";
 import { canTransition } from "./booking-state";
 import { stripeClient } from "./payment";
 import { announcePaymentReceived } from "./payment-receipt";
@@ -106,6 +108,14 @@ export async function handleStripeWebhook(
       .set({ processedAt: new Date(), error: note ?? null })
       .where(eq(providerWebhookEvent.id, recorded.id));
   } catch (error) {
+    await recordErrorInAudit(db, {
+      source: "stripe_webhook",
+      operation: `stripe.${event.type}`,
+      thrown: parseError(error),
+      entityType: "stripe_event",
+      entityId: event.id,
+      context: { eventType: event.type },
+    });
     await db
       .update(providerWebhookEvent)
       .set({ error: error instanceof Error ? error.message : String(error) })

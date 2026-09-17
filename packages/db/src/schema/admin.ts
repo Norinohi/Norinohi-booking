@@ -24,6 +24,7 @@ export const auditAction = pgEnum("audit_action", [
   "sync",
   "merge",
   "price_adjustment",
+  "error",
 ]);
 
 export const priceAdjustmentType = pgEnum("price_adjustment_type", ["percentage", "fixed_amount"]);

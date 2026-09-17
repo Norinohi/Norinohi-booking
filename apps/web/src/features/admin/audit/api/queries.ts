@@ -1,6 +1,6 @@
 import { orpc } from "@/utils/orpc";
 
-import type { AuditAction } from "../types";
+import type { AuditAction, AuditSource } from "../types";
 
 /*
  * Isomorphic query option factories - used by both the server prefetch helpers
@@ -19,6 +19,7 @@ export const auditListQueryOptions = (input: {
   entityType?: string;
   entityId?: string;
   action?: AuditAction;
+  source?: AuditSource;
   page: number;
   pageSize?: number;
 }) =>

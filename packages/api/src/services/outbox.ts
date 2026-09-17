@@ -6,6 +6,7 @@ import { and, asc, eq, inArray, lte, sql } from "drizzle-orm";
 import type { Database } from "../context";
 import { sendAccountInvitation } from "./account-invitation";
 import { sendBookingReceivedNotice } from "./booking-received";
+import { recordErrorInAudit } from "./error-audit";
 import { retryOptionRelease } from "./provider-option";
 import { LEASE_MS, backoffMs, isExhausted } from "./outbox-retry";
 
@@ -123,13 +124,25 @@ async function deliver(db: Database, message: ClaimedMessage): Promise<keyof Dra
   try {
     await HANDLERS[message.kind](db, message.subjectId);
   } catch (cause) {
+    const thrown = parseError(cause);
     log.error({
       action: "outbox.delivery_failed",
       kind: message.kind,
       subjectId: message.subjectId,
       attempt: message.attempts,
-      ...thrownFields(parseError(cause)),
+      ...thrownFields(thrown),
     });
+    /* A queued release is the retry of a refused cancel, so it is the same vendor failure. */
+    if (message.kind === "release_option") {
+      await recordErrorInAudit(db, {
+        source: "provider",
+        operation: "provider.release",
+        thrown,
+        entityType: "booking",
+        entityId: message.subjectId,
+        context: { outboxAttempt: message.attempts },
+      });
+    }
 
     const exhausted = isExhausted(message.attempts);
 

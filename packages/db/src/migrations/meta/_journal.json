@@ -883,6 +883,13 @@
       "when": 1789588305221,
       "tag": "0125_broken_thunderbolts",
       "breakpoints": true
+    },
+    {
+      "idx": 126,
+      "version": "7",
+      "when": 1789625809391,
+      "tag": "0126_flimsy_mauler",
+      "breakpoints": true
     }
   ]
 }

@@ -455,6 +455,20 @@ export const auditActionSchema = z.enum([
   "sync",
   "merge",
   "price_adjustment",
+  "error",
+]);
+
+/**
+ * Where a recorded failure came from. Only `error` rows carry one, in `metadata.source`:
+ * a staff action that failed, a 5xx from any procedure, a vendor refusing a booking call, the
+ * Stripe webhook, or a scheduled job.
+ */
+export const auditErrorSourceSchema = z.enum([
+  "admin_action",
+  "server",
+  "provider",
+  "stripe_webhook",
+  "job",
 ]);
 
 const AUDIT_PAGE_SIZE = 20;
@@ -464,6 +478,7 @@ export const auditListInputSchema = z
     entityType: z.string().trim().max(100).optional(),
     entityId: z.string().trim().max(200).optional(),
     action: auditActionSchema.optional(),
+    source: auditErrorSourceSchema.optional(),
     ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: AUDIT_PAGE_SIZE }),
   })
   .default(paginationInputDefault(AUDIT_PAGE_SIZE));

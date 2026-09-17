@@ -12,6 +12,8 @@
  * The console output stays exactly as it was. It is what an operator running one
  * of these by hand actually reads, and the event is not a replacement for it.
  */
+import { recordErrorInAudit } from "@yacht-charter/api/services/error-audit";
+import { createDb } from "@yacht-charter/db";
 import { initLogger, log, parseError, type ParsedError } from "evlog";
 import { observability } from "./observability";
 
@@ -35,6 +37,38 @@ export interface JobRun {
   failed: (reason: string, metrics?: Record<string, JobMetric>) => Promise<void>;
 }
 
+/** A run a job declared failed with `job.failed(reason)`, where nothing was thrown. */
+class JobFailure extends Error {
+  constructor(reason: string) {
+    super(reason);
+    this.name = "JobFailure";
+  }
+}
+
+/*
+ * On a connection of its own: most jobs end the shared pool before they call `job.failed`, so
+ * the process-wide `db` is already closed by the time there is a failure to record.
+ */
+async function recordJobFailure(
+  name: string,
+  thrown: ParsedError,
+  metrics: Record<string, JobMetric>,
+): Promise<void> {
+  const db = createDb();
+  try {
+    await recordErrorInAudit(db, {
+      source: "job",
+      operation: `job.${name}`,
+      thrown,
+      entityType: "job",
+      entityId: name,
+      context: metrics,
+    });
+  } finally {
+    await db.$client.end().catch(() => undefined);
+  }
+}
+
 /**
  * Call once, at the top of a job entry point, before any work.
  *
@@ -54,6 +88,7 @@ export function startJob(name: string): JobRun {
     outcome: "ok" | "failed",
     metrics: Record<string, JobMetric>,
     reason?: string,
+    thrown?: ParsedError,
   ): Promise<void> => {
     const base = {
       action: `job.${name}`,
@@ -64,8 +99,16 @@ export function startJob(name: string): JobRun {
     };
     const event = reason === undefined ? base : { ...base, reason };
 
-    if (outcome === "ok") log.info(event);
-    else log.error(event);
+    if (outcome === "ok") {
+      log.info(event);
+    } else {
+      log.error(event);
+      await recordJobFailure(
+        name,
+        thrown ?? parseError(new JobFailure(reason ?? "failed")),
+        metrics,
+      );
+    }
 
     await observability.flush();
   };
@@ -81,7 +124,7 @@ export function startJob(name: string): JobRun {
     // stack before it exits. That trace is what an operator running the job by hand
     // reads, so print it first and keep the non-zero exit that followed it.
     console.error(thrown.raw);
-    await end("failed", {}, thrown.message);
+    await end("failed", {}, thrown.message, thrown);
     process.exit(1);
   };
   process.once("unhandledRejection", (reason) => void reportCrash(parseError(reason)));

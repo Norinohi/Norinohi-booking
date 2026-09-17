@@ -446,14 +446,16 @@
   },
   "Audit": {
     "title": "Журнал аудиту",
-    "subtitle": "Кожна дія персоналу, найновіші згори. Записи створюються один раз і не редагуються.",
+    "subtitle": "Кожна дія персоналу та кожна зафіксована помилка, найновіші згори. Записи створюються один раз і не редагуються.",
     "filters": {
       "entityType": "Тип сутності",
       "allEntities": "Усі сутності",
       "action": "Дія",
       "allActions": "Усі дії",
       "entityId": "Ідентифікатор",
-      "entityIdPlaceholder": "Вставте повний ідентифікатор"
+      "entityIdPlaceholder": "Вставте повний ідентифікатор",
+      "source": "Джерело",
+      "allSources": "Усі джерела"
     },
     "table": {
       "when": "Коли",
@@ -469,7 +471,8 @@
       "delete": "Видалено",
       "sync": "Синхронізовано",
       "merge": "Об'єднано",
-      "price_adjustment": "Зміна ціни"
+      "price_adjustment": "Зміна ціни",
+      "error": "Помилка"
     },
     "entity": {
       "booking": "Бронювання",
@@ -479,7 +482,20 @@
       "lead": "Звернення",
       "listing": "Оголошення",
       "listing_duplicate_candidate": "Дублікат",
-      "maintenance": "Обслуговування"
+      "maintenance": "Обслуговування",
+      "facet_media": "Зображення фасету",
+      "facet_media_rank": "Порядок зображень фасетів",
+      "faq": "Часті питання",
+      "marketplace_settings": "Налаштування маркетплейсу",
+      "popular_yachts_config": "Популярні яхти",
+      "provider_commission": "Комісія постачальника",
+      "suggested_route": "Запропонований маршрут",
+      "suggested_route_featured": "Рекомендований маршрут",
+      "suggested_route_stop": "Зупинка маршруту",
+      "procedure": "Операція API",
+      "job": "Запланове завдання",
+      "stripe_event": "Подія Stripe",
+      "provider": "Постачальник"
     },
     "details": {
       "show": "Показати",
@@ -488,7 +504,26 @@
       "after": "Після",
       "metadata": "Контекст"
     },
+    "source": {
+      "admin_action": "Дія персоналу",
+      "server": "Сервер",
+      "provider": "Постачальник",
+      "stripe_webhook": "Вебхук Stripe",
+      "job": "Запланове завдання"
+    },
+    "errorDetails": {
+      "title": "Що не вдалося",
+      "operation": "Операція",
+      "source": "Джерело",
+      "code": "Код",
+      "status": "Статус",
+      "message": "Повідомлення",
+      "causes": "Причина",
+      "vendor": "Постачальник",
+      "context": "Контекст"
+    },
     "actorGone": "Видалений акаунт",
+    "actorSystem": "Система",
     "empty": "Записів ще немає.",
     "error": "Не вдалося завантажити журнал аудиту."
   },

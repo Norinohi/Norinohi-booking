@@ -3,6 +3,7 @@ import { listing } from "@yacht-charter/db/schema/listing";
 import { quote } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider, ProviderReservation } from "@yacht-charter/providers";
 import { ProviderError } from "@yacht-charter/providers/shared/errors";
+import { parseError } from "evlog";
 import type { z } from "zod";
 
 import { reportProviderRefusal } from "../lib/provider-failure";
@@ -12,6 +13,7 @@ import type { Database, DatabaseExecutor } from "../context";
 import { getEnabledInventoryProviders } from "../context";
 import type { waitingOptionsInputSchema, waitingOptionsSchema } from "../contracts/maintenance";
 import type { BookingStatus } from "./booking-state";
+import { recordProviderFailure } from "./error-audit";
 import { enqueueOutbox } from "./outbox";
 import { providerForListing } from "./provider-routing";
 import { NotFoundError } from "../errors";
@@ -111,7 +113,9 @@ export async function releaseProviderOption(
     const refusal = error instanceof Error ? error : null;
     const reason = refusal?.message ?? "Provider refused the release";
 
-    reportProviderRefusal("release", refusal, { bookingId: row.id, provider: row.provider });
+    const subject = { bookingId: row.id, provider: row.provider };
+    reportProviderRefusal("release", refusal, subject);
+    await recordProviderFailure(db, "release", parseError(error), subject);
 
     // `provider_reservation_event_kind` has no cancel_failed; the sweeper reports
     // the same outcome the same way, as an attempted release that did not land.

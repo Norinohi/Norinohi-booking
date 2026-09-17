@@ -1,12 +1,13 @@
 import { auditLog } from "@yacht-charter/db/schema/admin";
 import { user } from "@yacht-charter/db/schema/auth";
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database, DatabaseExecutor } from "../context";
 import type { auditListInputSchema, auditListSchema } from "../contracts/admin";
 import { paginatedQuery, totalFrom } from "./pagination";
 
+/* `error` is absent on purpose: failures are written by `recordErrorInAudit`, outside any transaction. */
 type AuditAction = "create" | "update" | "delete" | "sync" | "merge" | "price_adjustment";
 
 /**
@@ -62,6 +63,7 @@ export async function listAuditLog(db: Database, input: ListInput): Promise<List
   if (input.entityType) filters.push(eq(auditLog.entityType, input.entityType));
   if (input.entityId) filters.push(eq(auditLog.entityId, input.entityId));
   if (input.action) filters.push(eq(auditLog.action, input.action));
+  if (input.source) filters.push(sql`${auditLog.metadata}->>'source' = ${input.source}`);
   const where = filters.length > 0 ? and(...filters) : undefined;
 
   const { rows, pagination } = await paginatedQuery({
