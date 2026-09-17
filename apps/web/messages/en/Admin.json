@@ -1,7 +1,7 @@
 {
   "Commissions": {
     "title": "Commission Rates",
-    "subtitle": "What CharterNavi earns through each provider, and from when.",
+    "subtitle": "What {brand} earns through each provider, and from when.",
     "add": "Add rate",
     "edit": "Edit",
     "switchOff": "Switch off",
@@ -64,7 +64,7 @@
   "Bookings": {
     "title": "Bookings",
     "subtitle": "Every booking on the platform, newest first. Open one to settle it.",
-    "createdAt": "Booked {at}",
+    "createdAt": "Created {at}",
     "excluded": "Not real business",
     "empty": "No booking matches these filters.",
     "error": "The bookings could not be loaded.",

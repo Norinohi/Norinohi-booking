@@ -1,7 +1,7 @@
 {
   "Commissions": {
     "title": "Commission Rates",
-    "description": "What CharterNavi earns through each provider."
+    "description": "What {brand} earns through each provider."
   },
   "Yachts": {
     "title": "Yacht Charter Search",

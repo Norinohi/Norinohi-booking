@@ -35,7 +35,10 @@
     "allSailboats": "Todos los veleros",
     "specific": "Yates específicos",
     "allSailingYachts": "Todos los yates de vela",
-    "allLuxuryYachts": "Todos los yates de lujo"
+    "allLuxuryYachts": "Todos los yates de lujo",
+    "nothing": "Nada",
+    "missing": "{type, select, listing {Yate eliminado} category {Categoría eliminada} operator {Operador eliminado} region {Región eliminada} other {Destino eliminado}} ({id})",
+    "more": "{first} y {count} más"
   },
   "dialog": {
     "createTitle": "Crear nuevo descuento",
@@ -60,7 +63,7 @@
       "placeholder": "Cualquier fecha"
     },
     "appliesTo": {
-      "label": "Tipo de descuento"
+      "label": "Se aplica a"
     },
     "search": {
       "placeholder": "Buscar yate"

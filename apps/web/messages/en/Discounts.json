@@ -35,7 +35,10 @@
     "allSailboats": "All Sailboat",
     "specific": "Specific Yachts",
     "allSailingYachts": "All Sailing yachts",
-    "allLuxuryYachts": "All Luxury yachts"
+    "allLuxuryYachts": "All Luxury yachts",
+    "nothing": "Nothing",
+    "missing": "{type, select, listing {Deleted yacht} category {Deleted category} operator {Deleted operator} region {Deleted region} other {Deleted target}} ({id})",
+    "more": "{first} +{count} more"
   },
   "dialog": {
     "createTitle": "Create new discount",
@@ -60,7 +63,7 @@
       "placeholder": "Any dates"
     },
     "appliesTo": {
-      "label": "Discount Type"
+      "label": "Applies to"
     },
     "search": {
       "placeholder": "Search Yacht"

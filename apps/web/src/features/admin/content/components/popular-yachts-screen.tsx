@@ -66,7 +66,7 @@ export default function PopularYachtsScreen({ user }: PopularYachtsScreenProps) 
 
   const logout = () => authClient.signOut({ fetchOptions: { onSuccess: () => router.push("/") } });
 
-  const { options: facetOptions } = useFilterOptions();
+  const { options: facetOptions, isPending: facetsPending } = useFilterOptions();
 
   /* Bounded exactly as `popularYachtsConfigSchema` is, so a figure this screen accepts is one
      the save will accept -- an out-of-range number reaching the contract comes back as an
@@ -153,7 +153,9 @@ export default function PopularYachtsScreen({ user }: PopularYachtsScreenProps) 
               <p className="text-sm leading-[1.3] font-medium text-natural-500">{t("subtitle")}</p>
             </div>
 
-            {isPending || !form ? (
+            {/* Waits for the facets too: until they arrive every saved mix key has no label, and
+                the quotas would render under raw filter values. */}
+            {isPending || facetsPending || !form ? (
               <div className="flex flex-col gap-4 p-4 md:p-5">
                 <Skeleton className="h-24 w-full" />
                 <Skeleton className="h-24 w-full" />

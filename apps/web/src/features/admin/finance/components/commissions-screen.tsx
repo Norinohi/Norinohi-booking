@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import Sidebar from "@/components/layout/sidebar";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { authClient } from "@/lib/auth-client";
+import { SITE_NAME } from "@/lib/seo";
 
 import { useInstant } from "../../shared/hooks/use-instant";
 import { SHORT_DAY } from "../../shared/lib/instant";
@@ -31,7 +32,7 @@ import { type CommissionRow, type CommissionStatus } from "../types";
 import CommissionDialog from "./commission-dialog";
 
 /*
- * CommissionsScreen — /commissions: what CharterNavi earns through each vendor.
+ * CommissionsScreen - /commissions: what the marketplace earns through each vendor.
  *
  * Nothing in the sale reads these rates yet. The client agreed they should break a tie between
  * two offers already equal on price and on obligatory extras, and this screen is how that step
@@ -142,7 +143,9 @@ export default function CommissionsScreen({ user }: { user: { name: string; emai
               <h1 className="text-lg leading-[1.3] font-bold text-foreground md:text-xl">
                 {t("title")}
               </h1>
-              <p className="text-sm leading-[1.3] font-medium text-natural-500">{t("subtitle")}</p>
+              <p className="text-sm leading-[1.3] font-medium text-natural-500">
+                {t("subtitle", { brand: SITE_NAME })}
+              </p>
             </div>
 
             <div className="flex flex-col gap-4 p-4 md:p-5">

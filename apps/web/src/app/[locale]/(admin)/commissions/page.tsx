@@ -2,7 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import Hydrated from "@/components/shared/layout/hydrated";
 import { getSessionUser } from "@/lib/auth/server";
-import { buildMetadata } from "@/lib/seo";
+import { buildMetadata, SITE_NAME } from "@/lib/seo";
 
 import { CommissionsScreen, prefetchCommissions } from "@/features/admin";
 
@@ -16,7 +16,7 @@ export async function generateMetadata() {
   return buildMetadata({
     locale,
     title: t("title"),
-    description: t("description"),
+    description: t("description", { brand: SITE_NAME }),
     path: "/commissions",
     noIndex: true,
   });

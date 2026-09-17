@@ -630,8 +630,6 @@ export const discountSchema = z.object({
   valuePct: z.number().nullable(),
   value: moneySchema.nullable(),
   targets: z.array(discountTargetSchema),
-  /** Server-rendered "Applies to" cell, so the table does not reassemble targets. */
-  appliesToLabel: z.string(),
   status: discountStatusSchema,
   startsAt: z.string().nullable(),
   endsAt: z.string().nullable(),

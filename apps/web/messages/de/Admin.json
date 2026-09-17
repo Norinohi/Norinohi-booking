@@ -1,7 +1,7 @@
 {
   "Commissions": {
     "title": "Provisionssätze",
-    "subtitle": "Was CharterNavi über jeden Anbieter verdient, und ab wann.",
+    "subtitle": "Was {brand} über jeden Anbieter verdient, und ab wann.",
     "add": "Satz hinzufügen",
     "edit": "Bearbeiten",
     "switchOff": "Deaktivieren",
@@ -64,7 +64,7 @@
   "Bookings": {
     "title": "Buchungen",
     "subtitle": "Alle Buchungen auf der Plattform, neueste zuerst. Öffnen Sie eine, um sie abzuwickeln.",
-    "createdAt": "Gebucht {at}",
+    "createdAt": "Erstellt {at}",
     "excluded": "Kein echtes Geschäft",
     "empty": "Keine Buchung entspricht diesen Filtern.",
     "error": "Die Buchungen konnten nicht geladen werden.",

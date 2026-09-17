@@ -1,7 +1,7 @@
 {
   "Commissions": {
     "title": "Provisionssätze",
-    "description": "Was CharterNavi über jeden Anbieter verdient."
+    "description": "Was {brand} über jeden Anbieter verdient."
   },
   "Yachts": {
     "title": "Yachtcharter-Suche",

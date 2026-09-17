@@ -17,6 +17,7 @@ import { useState } from "react";
 import { useMoney } from "@/hooks/use-money";
 
 import { useDiscounts } from "../hooks/use-discounts";
+import { CATEGORY_TARGET_OPTIONS } from "../lib/discounts";
 import type { Discount } from "../types";
 
 /*
@@ -56,6 +57,30 @@ export default function DiscountsTable({ onEdit }: DiscountsTableProps) {
       : discount.value !== null
         ? formatMoney(discount.value.amountMinor, discount.value.currency)
         : "—";
+
+  /* Beyond two names the narrow cell reads better as a count. */
+  const appliesTo = (discount: Discount) => {
+    if (discount.targets.some((target) => target.targetType === "all")) {
+      return t("applies.allYachts");
+    }
+    if (discount.targets.length === 0) return t("applies.nothing");
+
+    const named = discount.targets.map((target) => {
+      const seeded = CATEGORY_TARGET_OPTIONS.find(
+        (option) => target.targetType === "category" && option.id === target.targetId,
+      );
+      if (seeded) return t(`applies.${seeded.key}`);
+      /* A target whose row has since been deleted keeps its id, which is what tracks it down. */
+      return (
+        target.targetLabel ??
+        t("applies.missing", { type: target.targetType, id: target.targetId ?? "-" })
+      );
+    });
+
+    return named.length <= 2
+      ? named.join(", ")
+      : t("applies.more", { first: named[0], count: named.length - 1 });
+  };
 
   const messageRow = (message: string) => (
     <TableRow>
@@ -111,7 +136,7 @@ export default function DiscountsTable({ onEdit }: DiscountsTableProps) {
                       <TableCell className="truncate">{discount.name}</TableCell>
                       <TableCell className="whitespace-nowrap">{discount.code}</TableCell>
                       <TableCell className="whitespace-nowrap">{typeValue(discount)}</TableCell>
-                      <TableCell className="truncate">{discount.appliesToLabel}</TableCell>
+                      <TableCell className="truncate">{appliesTo(discount)}</TableCell>
                       <TableCell>
                         <Chip variant={discount.status === "active" ? "brand" : "neutral"}>
                           {t(`status.${discount.status}`)}

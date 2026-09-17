@@ -1,7 +1,7 @@
 {
   "Commissions": {
     "title": "Tasas de comisión",
-    "description": "Lo que CharterNavi gana a través de cada proveedor."
+    "description": "Lo que {brand} gana a través de cada proveedor."
   },
   "Yachts": {
     "title": "Buscador de alquiler de yates",

@@ -35,7 +35,10 @@
     "allSailboats": "Всі вітрильники",
     "specific": "Окремі яхти",
     "allSailingYachts": "Всі вітрильні яхти",
-    "allLuxuryYachts": "Всі люксові яхти"
+    "allLuxuryYachts": "Всі люксові яхти",
+    "nothing": "Нічого",
+    "missing": "{type, select, listing {Видалена яхта} category {Видалена категорія} operator {Видалений оператор} region {Видалений регіон} other {Видалена ціль}} ({id})",
+    "more": "{first} і ще {count}"
   },
   "dialog": {
     "createTitle": "Створити нову знижку",
@@ -60,7 +63,7 @@
       "placeholder": "Будь-які дати"
     },
     "appliesTo": {
-      "label": "Тип знижки"
+      "label": "Застосовується до"
     },
     "search": {
       "placeholder": "Пошук яхти"

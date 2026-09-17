@@ -1,7 +1,7 @@
 {
   "Commissions": {
     "title": "Tasas de comisión",
-    "subtitle": "Lo que CharterNavi gana a través de cada proveedor, y desde cuándo.",
+    "subtitle": "Lo que {brand} gana a través de cada proveedor, y desde cuándo.",
     "add": "Añadir tasa",
     "edit": "Editar",
     "switchOff": "Desactivar",
@@ -64,7 +64,7 @@
   "Bookings": {
     "title": "Reservas",
     "subtitle": "Todas las reservas de la plataforma, las más recientes primero. Abre una para gestionarla.",
-    "createdAt": "Reservada el {at}",
+    "createdAt": "Creada el {at}",
     "excluded": "No es negocio real",
     "empty": "Ninguna reserva coincide con estos filtros.",
     "error": "No se pudieron cargar las reservas.",
