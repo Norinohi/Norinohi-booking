@@ -3,7 +3,7 @@ import { invoiceRequest } from "@yacht-charter/db/schema/checkout";
 import { user } from "@yacht-charter/db/schema/auth";
 import { quote } from "@yacht-charter/db/schema/quote";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
-import { facetTranslator, localizeQuoteLines } from "@yacht-charter/db/search";
+import { baseLabel, facetTranslator, localizeQuoteLines } from "@yacht-charter/db/search";
 import { and, asc, count, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import type { z } from "zod";
 
@@ -182,7 +182,9 @@ export async function getBookingForAdmin(
     // or has to send them a set-password link.
     isGuestAccount: owner.provisionedAt !== null,
     base: {
-      name: translate ? translate("marina", snapshot.baseName) : snapshot.baseName,
+      name: translate
+        ? baseLabel(translate, snapshot.baseName, snapshot.locationName)
+        : snapshot.baseName,
       locationName: translate
         ? translate("location", snapshot.locationName)
         : snapshot.locationName,

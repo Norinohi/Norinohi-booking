@@ -1,4 +1,5 @@
 import type { CommercialSnapshot } from "@yacht-charter/db/schema/booking";
+import { baseLabel } from "@yacht-charter/db/search";
 import type { FacetMediaKind, FacetTranslator } from "@yacht-charter/db/search";
 
 /**
@@ -17,7 +18,7 @@ export function localizeSnapshot(
     value === null ? null : translate(kind, value);
   return {
     ...snapshot,
-    baseName: translate("marina", snapshot.baseName),
+    baseName: baseLabel(translate, snapshot.baseName, snapshot.locationName),
     locationName: translate("location", snapshot.locationName),
     countryName: translate("country", snapshot.countryName),
     category: optional("category", snapshot.category),
