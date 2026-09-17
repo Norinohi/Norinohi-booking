@@ -16,7 +16,7 @@ import { Info, MapPin } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import MapPreview from "@/components/shared/overlay/map-preview";
-import { staticMapFrame } from "@/lib/mapbox";
+import { staticMapFrame, stillPositionStyle } from "@/lib/mapbox";
 
 import {
   arrivalOf,
@@ -327,7 +327,7 @@ function RouteStill({ route }: { route: { title: string; stops: RouteStop[] } })
               <motion.span
                 key={`${point.lat},${point.lng}`}
                 aria-hidden
-                style={{ left: `${marker.leftPercent}%`, top: `${marker.topPercent}%` }}
+                style={stillPositionStyle(marker)}
                 className="absolute flex size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/50 bg-white/25 md:size-21"
                 {...(still
                   ? {}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { MAP_MAX_ZOOM, staticMapFrame, staticMapUrl } from "./mapbox";
+import { MAP_MAX_ZOOM, staticMapFrame, staticMapUrl, stillPositionStyle } from "./mapbox";
 
 const SIZE = { width: 600, height: 400 };
 
@@ -64,5 +64,20 @@ describe("staticMapFrame", () => {
     );
 
     expect(zoomOf(frame.url)).toBe(MAP_MAX_ZOOM);
+  });
+});
+
+describe("stillPositionStyle", () => {
+  it("rounds to what the browser reads a server style back as", () => {
+    expect(
+      stillPositionStyle({ leftPercent: 45.79071999116571, topPercent: 11.666666666666643 }),
+    ).toEqual({ left: "45.791%", top: "11.667%" });
+  });
+
+  it("drops trailing zeros and keeps negatives", () => {
+    expect(stillPositionStyle({ leftPercent: 50, topPercent: -3.10004 })).toEqual({
+      left: "50%",
+      top: "-3.1%",
+    });
   });
 });

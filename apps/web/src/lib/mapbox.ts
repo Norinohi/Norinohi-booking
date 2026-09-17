@@ -69,6 +69,19 @@ const unprojectY = (y: number) => {
 
 export type StillPosition = { leftPercent: number; topPercent: number };
 
+/**
+ * A still position as `left`/`top` strings the server and the browser agree on.
+ *
+ * The browser reserializes a server-rendered `style` attribute to six significant digits, so a raw
+ * `45.79071999116571%` reads back as `45.7907%` and React reports the markers as a hydration
+ * mismatch. Three decimals is finer than a pixel on any still and short enough to survive that
+ * round trip unchanged; going through a number drops trailing zeros, as the browser does.
+ */
+export function stillPositionStyle({ leftPercent, topPercent }: StillPosition) {
+  const percent = (value: number) => `${Math.round(value * 1000) / 1000}%`;
+  return { left: percent(leftPercent), top: percent(topPercent) };
+}
+
 export type StaticMapFrame = {
   url: string;
   /** Each point's place on the still, in percent, ready for `left`/`top`. */
