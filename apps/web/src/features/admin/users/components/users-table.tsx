@@ -14,9 +14,10 @@ import { Select } from "@yacht-charter/ui/components/form/select";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { Search } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
+import { useInstant } from "../../shared/hooks/use-instant";
 import { useUsers } from "../hooks/use-users";
 import type { UserAccountStatus, UserAdminSort, UserRole } from "../types";
 
@@ -46,7 +47,7 @@ const SKELETON_WIDTHS = ["w-36", "w-44", "w-28", "w-16", "w-20", "w-20"];
 
 export default function UsersTable() {
   const t = useTranslations("Admin.Users");
-  const format = useFormatter();
+  const instant = useInstant();
   const [query, setQuery] = useState("");
   const [role, setRole] = useState(ALL);
   const [status, setStatus] = useState(ALL);
@@ -66,7 +67,7 @@ export default function UsersTable() {
     page,
   });
 
-  const day = (value: string) => format.dateTime(new Date(value), { dateStyle: "short" });
+  const day = (value: string) => instant(value, { dateStyle: "short" });
 
   const onFilterChange = (set: (next: string) => void) => (next: string) => {
     set(next);

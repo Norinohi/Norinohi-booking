@@ -24,6 +24,8 @@ import Sidebar from "@/components/layout/sidebar";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { authClient } from "@/lib/auth-client";
 
+import { useInstant } from "../../shared/hooks/use-instant";
+import { SHORT_DAY } from "../../shared/lib/instant";
 import { useCommissions, useSetCommissionActive } from "../hooks/use-commissions";
 import { type CommissionRow, type CommissionStatus } from "../types";
 import CommissionDialog from "./commission-dialog";
@@ -58,6 +60,7 @@ export default function CommissionsScreen({ user }: { user: { name: string; emai
   const t = useTranslations("Admin.Commissions");
   const tProviders = useTranslations("Admin.providers");
   const format = useFormatter();
+  const instant = useInstant();
   const router = useRouter();
 
   const [provider, setProvider] = useState(ALL);
@@ -225,9 +228,7 @@ export default function CommissionsScreen({ user }: { user: { name: string; emai
                                     {t(`status.${rate.status}`)}
                                   </Chip>
                                 </TableCell>
-                                <TableCell>
-                                  {format.dateTime(new Date(rate.createdAt), "dayShort")}
-                                </TableCell>
+                                <TableCell>{instant(rate.createdAt, SHORT_DAY)}</TableCell>
                                 <TableCell>
                                   <div className="flex gap-2">
                                     <Button

@@ -15,9 +15,10 @@ import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
+import { useInstant } from "../../shared/hooks/use-instant";
 import { useSyncRuns } from "../hooks/use-sync-runs";
 import { type SyncRunKind, type SyncRunRow, type SyncRunState } from "../types";
 import { toProviderKey } from "../../shared/types";
@@ -60,7 +61,7 @@ const SKELETON_WIDTHS = ["w-24", "w-20", "w-16", "w-3/4", "w-10", "w-28", "w-28"
 export default function SyncRunsTable() {
   const t = useTranslations("Admin.Sync");
   const tProviders = useTranslations("Admin.providers");
-  const format = useFormatter();
+  const instant = useInstant();
   const [provider, setProvider] = useState(ALL);
   const [kind, setKind] = useState(ALL);
   const [status, setStatus] = useState(ALL);
@@ -84,9 +85,7 @@ export default function SyncRunsTable() {
   };
 
   const at = (value: string | null) =>
-    value
-      ? format.dateTime(new Date(value), { dateStyle: "short", timeStyle: "short" })
-      : t("pending");
+    value ? instant(value, { dateStyle: "short", timeStyle: "short" }) : t("pending");
 
   const counts = (run: SyncRunRow) =>
     [

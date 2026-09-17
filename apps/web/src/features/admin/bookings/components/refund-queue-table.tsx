@@ -19,6 +19,7 @@ import { useState } from "react";
 import { Link } from "@/i18n/navigation";
 
 import { REFUND_QUEUE_STATUSES } from "../api/queries";
+import { useInstant } from "../../shared/hooks/use-instant";
 import { useAmount } from "../hooks/use-amount";
 import { useBookingQueue } from "../hooks/use-payments";
 import type { BookingAdminRow } from "../types";
@@ -40,6 +41,7 @@ const SKELETON_WIDTHS = ["w-24", "w-32", "w-28", "w-24", "w-20", "w-24"];
 export default function RefundQueueTable() {
   const t = useTranslations("Admin.Payments.refunds");
   const format = useFormatter();
+  const instant = useInstant();
   const amount = useAmount();
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -51,7 +53,8 @@ export default function RefundQueueTable() {
     page,
   });
 
-  const at = (value: string) => format.dateTime(new Date(value), { dateStyle: "short" });
+  const at = (value: string) => instant(value, { dateStyle: "short" });
+  const day = (value: string) => format.dateTime(new Date(value), { dateStyle: "short" });
 
   const messageRow = (message: string) => (
     <TableRow>
@@ -134,7 +137,7 @@ export default function RefundQueueTable() {
                         </span>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-sm text-natural-500">
-                        {at(booking.checkIn)} → {at(booking.checkOut)}
+                        {day(booking.checkIn)} → {day(booking.checkOut)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         <span className="font-medium text-foreground">{amount(booking.paid)}</span>

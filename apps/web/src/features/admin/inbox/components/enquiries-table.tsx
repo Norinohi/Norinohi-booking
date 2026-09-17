@@ -15,11 +15,12 @@ import { Select } from "@yacht-charter/ui/components/form/select";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { Search } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { Link } from "@/i18n/navigation";
 
+import { useInstant } from "../../shared/hooks/use-instant";
 import { useEnquiries, useSetEnquiryStatus } from "../hooks/use-inbox";
 import type { EnquiryRow, EnquiryStatus } from "../types";
 import AnswerEnquiryDialog from "./answer-enquiry-dialog";
@@ -47,7 +48,7 @@ const SKELETON_WIDTHS = ["w-24", "w-28", "w-3/4", "w-16", "w-24", "w-20"];
 
 export default function EnquiriesTable() {
   const t = useTranslations("Admin.Inbox.enquiries");
-  const format = useFormatter();
+  const instant = useInstant();
   const [status, setStatus] = useState<string>("open");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -61,7 +62,7 @@ export default function EnquiriesTable() {
     page,
   });
 
-  const at = (value: string) => format.dateTime(new Date(value), { dateStyle: "short" });
+  const at = (value: string) => instant(value, { dateStyle: "short" });
 
   const messageRow = (message: string) => (
     <TableRow>

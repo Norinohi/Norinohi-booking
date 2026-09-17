@@ -13,11 +13,12 @@ import {
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { Link } from "@/i18n/navigation";
 
+import { useInstant } from "../../shared/hooks/use-instant";
 import { useAmount } from "../hooks/use-amount";
 import { useInvoices } from "../hooks/use-payments";
 import type { InvoiceRow, InvoiceStatus } from "../types";
@@ -49,7 +50,7 @@ const SKELETON_WIDTHS = ["w-24", "w-28", "w-32", "w-20", "w-20", "w-16", "w-28"]
 
 export default function InvoiceRequestsTable() {
   const t = useTranslations("Admin.Payments.invoices");
-  const format = useFormatter();
+  const instant = useInstant();
   const amount = useAmount();
   const [status, setStatus] = useState<string>("pending");
   const [page, setPage] = useState(1);
@@ -61,7 +62,7 @@ export default function InvoiceRequestsTable() {
     page,
   });
 
-  const at = (value: string) => format.dateTime(new Date(value), { dateStyle: "short" });
+  const at = (value: string) => instant(value, { dateStyle: "short" });
 
   const messageRow = (message: string) => (
     <TableRow>

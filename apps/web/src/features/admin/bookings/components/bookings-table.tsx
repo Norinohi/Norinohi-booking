@@ -20,6 +20,7 @@ import { useState } from "react";
 
 import { Link } from "@/i18n/navigation";
 
+import { useInstant } from "../../shared/hooks/use-instant";
 import { useAmount } from "../hooks/use-amount";
 import { useBookingQueue } from "../hooks/use-payments";
 import type { BookingStatus } from "../types";
@@ -83,6 +84,7 @@ const SKELETON_WIDTHS = ["w-24", "w-32", "w-40", "w-28", "w-20", "w-20", "w-20"]
 export default function BookingsTable() {
   const t = useTranslations("Admin.Bookings");
   const format = useFormatter();
+  const instant = useInstant();
   const amount = useAmount();
   const [status, setStatus] = useState(ALL);
   const [query, setQuery] = useState("");
@@ -196,7 +198,9 @@ export default function BookingsTable() {
                           {booking.reference}
                         </Link>
                         <span className="block text-sm text-natural-500">
-                          {t("createdAt", { at: day(booking.createdAt) })}
+                          {t("createdAt", {
+                            at: instant(booking.createdAt, { dateStyle: "short" }),
+                          })}
                         </span>
                       </TableCell>
                       {/* Capped and truncated: an address is longer than every other cell and

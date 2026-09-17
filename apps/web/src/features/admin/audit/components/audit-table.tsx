@@ -15,9 +15,10 @@ import { Select } from "@yacht-charter/ui/components/form/select";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { ChevronDown, ChevronUp, CircleAlert, Search } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
+import { useInstant } from "../../shared/hooks/use-instant";
 import { useAuditLog } from "../hooks/use-audit";
 import { errorMetadataOf, type ErrorMetadata } from "../lib/error-metadata";
 import type { AuditAction, AuditRow, AuditSource } from "../types";
@@ -162,7 +163,7 @@ function ErrorDetails({ metadata }: { metadata: ErrorMetadata }) {
 
 export default function AuditTable() {
   const t = useTranslations("Admin.Audit");
-  const format = useFormatter();
+  const instant = useInstant();
   const [entityType, setEntityType] = useState(ALL);
   const [action, setAction] = useState(ALL);
   const [source, setSource] = useState(ALL);
@@ -298,7 +299,7 @@ export default function AuditTable() {
                     return [
                       <TableRow key={row.id} className={failure ? "bg-error-50/40" : undefined}>
                         <TableCell className="whitespace-nowrap">
-                          {format.dateTime(new Date(row.createdAt), {
+                          {instant(row.createdAt, {
                             dateStyle: "short",
                             timeStyle: "short",
                           })}

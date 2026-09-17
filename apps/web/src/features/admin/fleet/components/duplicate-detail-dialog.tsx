@@ -12,6 +12,8 @@ import {
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useFormatter, useTranslations } from "next-intl";
 
+import { useInstant } from "../../shared/hooks/use-instant";
+import { SHORT_DAY } from "../../shared/lib/instant";
 import { useDuplicateDetail } from "../hooks/use-duplicates";
 import { type DetailKey, type DetailRow, detailRows, EMPTY_VALUE } from "../lib/duplicates";
 import { type DuplicateCandidate, type DuplicateDetailListing, type DuplicateSide } from "../types";
@@ -60,6 +62,7 @@ export default function DuplicateDetailDialog({
 function DuplicateDetailBody({ candidate }: { candidate: DuplicateCandidate }) {
   const t = useTranslations("Admin.Duplicates");
   const format = useFormatter();
+  const instant = useInstant();
   const { data, isPending, isError } = useDuplicateDetail(candidate.id);
 
   const money = (amountMinor: number, currency: string | null): string =>
@@ -67,7 +70,7 @@ function DuplicateDetailBody({ candidate }: { candidate: DuplicateCandidate }) {
       ? String(amountMinor / 100)
       : format.number(amountMinor / 100, { style: "currency", currency });
 
-  const day = (date: string) => format.dateTime(new Date(date), "dayShort");
+  const day = (date: string) => instant(date, SHORT_DAY);
 
   const value = (key: DetailKey, listing: DuplicateDetailListing): string => {
     switch (key) {

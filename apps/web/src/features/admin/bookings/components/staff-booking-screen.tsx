@@ -17,6 +17,7 @@ import { useState, type ComponentProps } from "react";
 
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 
+import { useInstant } from "../../shared/hooks/use-instant";
 import { useAmount } from "../hooks/use-amount";
 import { useAdminBooking, useSetBookingExcluded } from "../hooks/use-payments";
 import { type BookingAdminDetail } from "../types";
@@ -144,6 +145,7 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
   const tCrew = useTranslations("Common.crewTypes");
   const tDetail = useTranslations("Booking.detail");
   const format = useFormatter();
+  const instant = useInstant();
   const amount = useAmount();
 
   /* Enum codes from the contract, each rendered through the map that already names it elsewhere.
@@ -159,7 +161,7 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
   };
 
   const at = (value: string | null) =>
-    value ? format.dateTime(new Date(value), { dateStyle: "medium", timeStyle: "short" }) : "—";
+    value ? instant(value, { dateStyle: "medium", timeStyle: "short" }) : "—";
   const day = (value: string) => format.dateTime(new Date(value), { dateStyle: "medium" });
 
   /*
@@ -440,7 +442,7 @@ function StaffActions({
   providerLabel: string;
 }) {
   const t = useTranslations("Admin.StaffBooking");
-  const format = useFormatter();
+  const instant = useInstant();
   const setExcluded = useSetBookingExcluded();
   const [cancelling, setCancelling] = useState(false);
   const isExcluded = booking.excludedAt !== null;
@@ -464,7 +466,7 @@ function StaffActions({
         {isExcluded && booking.excludedAt ? (
           <span className="text-sm text-natural-500">
             {t("excluded.excludedAt", {
-              at: format.dateTime(new Date(booking.excludedAt), {
+              at: instant(booking.excludedAt, {
                 dateStyle: "medium",
                 timeStyle: "short",
               }),

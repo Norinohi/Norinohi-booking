@@ -2,8 +2,9 @@
 
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 
+import { useInstant } from "../../shared/hooks/use-instant";
 import { useSyncRunStatus } from "../hooks/use-sync-runs";
 import type { ProviderKey } from "../../shared/types";
 
@@ -23,7 +24,7 @@ export default function SyncRunErrors({
   provider: ProviderKey;
 }) {
   const t = useTranslations("Admin.Sync");
-  const format = useFormatter();
+  const instant = useInstant();
 
   const { data, isPending, isError } = useSyncRunStatus(syncRunId, provider);
 
@@ -56,7 +57,7 @@ export default function SyncRunErrors({
               {error.message}
             </span>
             <span className="text-sm leading-[1.4] font-medium whitespace-nowrap text-natural-500">
-              {format.dateTime(new Date(error.createdAt), {
+              {instant(error.createdAt, {
                 dateStyle: "short",
                 timeStyle: "short",
               })}

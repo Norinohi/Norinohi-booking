@@ -2,7 +2,7 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -23,6 +23,8 @@ import {
 } from "../hooks/use-duplicates";
 import { type DuplicateCandidate } from "../types";
 import { toProviderKey } from "../../shared/types";
+import { useInstant } from "../../shared/hooks/use-instant";
+import { SHORT_DAY } from "../../shared/lib/instant";
 import DuplicateDetailDialog from "./duplicate-detail-dialog";
 import ListingSourcesDialog from "./listing-sources-dialog";
 import DuplicateSide from "./duplicate-side";
@@ -70,7 +72,7 @@ const MATCH_STATUSES = ["unmatched", "auto", "confirmed", "rejected"] as const;
 export default function DuplicateCandidateCard({ candidate }: { candidate: DuplicateCandidate }) {
   const t = useTranslations("Admin.Duplicates");
   const tProviders = useTranslations("Admin.providers");
-  const format = useFormatter();
+  const instant = useInstant();
   const confirmDuplicate = useConfirmDuplicate();
   const rejectDuplicate = useRejectDuplicate();
   const deferDuplicate = useDeferDuplicate();
@@ -155,7 +157,7 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
     const known = SIGNAL_FIELDS.find((option) => option === field);
     return known ? t(`signalFields.${known}`) : field;
   };
-  const day = (date: string) => format.dateTime(new Date(date), "dayShort");
+  const day = (date: string) => instant(date, SHORT_DAY);
 
   const onError = (error: Error) => {
     toast.error(isResolvedElsewhere(error) ? t("toast.conflict") : t("toast.error"));

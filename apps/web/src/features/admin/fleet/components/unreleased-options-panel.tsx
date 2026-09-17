@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import { Link, type AppPathname } from "@/i18n/navigation";
 import { dayToDisplay } from "@/lib/date";
 
+import { useInstant } from "../../shared/hooks/use-instant";
+import { SHORT_DAY } from "../../shared/lib/instant";
 import { useRetryRelease, useUnreleasedOptions } from "../hooks/use-maintenance";
 
 /*
@@ -35,6 +37,7 @@ import { useRetryRelease, useUnreleasedOptions } from "../hooks/use-maintenance"
 export default function UnreleasedOptionsPanel() {
   const t = useTranslations("Admin.Sync.unreleasedOptions");
   const format = useFormatter();
+  const instant = useInstant();
   const { data, isPending } = useUnreleasedOptions();
   const retry = useRetryRelease();
 
@@ -120,12 +123,12 @@ export default function UnreleasedOptionsPanel() {
                           {lapsed
                             ? t("lapsed")
                             : t("holdsUntil", {
-                                when: format.dateTime(new Date(item.holdExpiresAt), "dayShort"),
+                                when: instant(item.holdExpiresAt, SHORT_DAY),
                               })}
                         </Chip>
                       )}
                     </TableCell>
-                    <TableCell>{format.dateTime(new Date(item.failedAt), "dayShort")}</TableCell>
+                    <TableCell>{instant(item.failedAt, SHORT_DAY)}</TableCell>
                     <TableCell className="max-w-80 text-sm wrap-break-word">
                       {item.reason}
                     </TableCell>
