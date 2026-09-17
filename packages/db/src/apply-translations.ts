@@ -9,7 +9,8 @@
  *
  * Rows land as `source = 'generated'`, which is what keeps three writers out of each other's
  * way: the catalogue sync touches only `provider` rows, the seeded editorial copy is never
- * overwritten by either, and re-running this refreshes its own rows and nothing else.
+ * overwritten by either, and re-running this refreshes its own rows, plus any vendor row whose
+ * "translation" is only the English value again, which it takes over.
  *
  *   pnpm --filter @yacht-charter/db translations:apply
  *   pnpm --filter @yacht-charter/db translations:apply -- --apply
@@ -204,9 +205,21 @@ async function main(): Promise<void> {
       .values(facets)
       .onConflictDoUpdate({
         target: [facetMediaTranslation.facetMediaId, facetMediaTranslation.locale],
-        set: { label: sql`excluded.label`, updatedAt: sql`now()` },
-        // Hand-written copy outranks a generated label, and so does a real vendor one.
-        setWhere: sql`${facetMediaTranslation.source} = 'generated'`,
+        set: { label: sql`excluded.label`, source: sql`excluded.source`, updatedAt: sql`now()` },
+        /*
+         * Hand-written copy outranks a generated label, and so does a real vendor one. A vendor
+         * label that is only the English value again is not one: NauSYS sends "Other" as its
+         * German for "Other", which kept the curated "Sonstiges" off the page. Taking the row over
+         * as generated is what stops the next sync writing the English back.
+         */
+        setWhere: sql`${facetMediaTranslation.source} = 'generated'
+          or (${facetMediaTranslation.source} = 'provider'
+            and lower(trim(${facetMediaTranslation.label})) = (
+              select lower(trim(${facetMedia.value}))
+              from ${facetMedia}
+              where ${facetMedia.id} = ${facetMediaTranslation.facetMediaId}
+            )
+            and lower(trim(excluded.label)) <> lower(trim(${facetMediaTranslation.label})))`,
       });
   }
 

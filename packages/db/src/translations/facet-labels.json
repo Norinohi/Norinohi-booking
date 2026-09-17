@@ -21,6 +21,31 @@
       "de": "Sonstige",
       "es": "Otro",
       "uk": "Інше"
+    },
+    "Fisherman": {
+      "de": "Fischerboot",
+      "es": "Barco de pesca",
+      "uk": "Рибальський катер"
+    },
+    "Floating villa": {
+      "de": "Schwimmende Villa",
+      "es": "Villa flotante",
+      "uk": "Плавуча вілла"
+    },
+    "Jet Ski": {
+      "de": "Jetski",
+      "es": "Moto acuática",
+      "uk": "Гідроцикл"
+    },
+    "Motorsailer": {
+      "de": "Motorsegler",
+      "es": "Motovelero",
+      "uk": "Мотор-сейлер"
+    },
+    "Power catamaran": {
+      "de": "Motorkatamaran",
+      "es": "Catamarán a motor",
+      "uk": "Моторний катамаран"
     }
   },
   "region": {
@@ -695,6 +720,21 @@
       "de": "WLAN und Internet",
       "es": "Wi-Fi e Internet",
       "uk": "Wi-Fi та інтернет"
+    },
+    "DVD player": {
+      "de": "DVD-Player",
+      "es": "Reproductor de DVD",
+      "uk": "DVD-програвач"
+    },
+    "Inverter": {
+      "de": "Wechselrichter",
+      "es": "Inversor",
+      "uk": "Інвертор"
+    },
+    "Other": {
+      "de": "Sonstiges",
+      "es": "Otro",
+      "uk": "Інше"
     }
   },
   "sail_type": {
