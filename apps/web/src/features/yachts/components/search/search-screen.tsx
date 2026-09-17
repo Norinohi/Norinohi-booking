@@ -7,7 +7,7 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type ReactNode, type RefObject, Suspense, useMemo, useRef } from "react";
+import { type ReactNode, type RefObject, Suspense, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { type AppPathname, Link, useRouter } from "@/i18n/navigation";
 import { parseAsInteger, parseAsStringLiteral, useQueryState } from "nuqs";
@@ -163,9 +163,14 @@ function FilteredMapCardLink({ locked }: { locked?: LockedFilters }) {
 function SearchBarSection({
   locked,
   resultsRef,
+  pendingFlexibility,
+  clearPendingFlexibility,
 }: {
   locked?: LockedFilters;
   resultsRef: RefObject<HTMLDivElement | null>;
+  /* A flexibility picked in the panel and not applied there, which this submit carries. */
+  pendingFlexibility: string | null;
+  clearPendingFlexibility: () => void;
 }) {
   const { filters, applyFilters } = useApplyFilters(locked);
   /* Where the results column stops sitting beside the search bar and drops below the map card. */
@@ -174,7 +179,10 @@ function SearchBarSection({
   /* Below `lg` the results start a screen further down, so a search changed nothing the visitor
      could see and read as a button that did not work. */
   function search(next: FiltersState) {
-    applyFilters(next);
+    applyFilters(
+      pendingFlexibility === null ? next : { ...next, dateFlexibility: pendingFlexibility },
+    );
+    clearPendingFlexibility();
     if (!resultsBesideBar) {
       resultsRef.current?.scrollIntoView({ block: "start" });
     }
@@ -183,8 +191,21 @@ function SearchBarSection({
   return <SearchBar value={filters} onSearch={search} />;
 }
 
-function FiltersAside({ locked }: { locked?: LockedFilters }) {
+function FiltersAside({
+  locked,
+  onDateFlexibilityChange,
+  clearPendingFlexibility,
+}: {
+  locked?: LockedFilters;
+  onDateFlexibilityChange: (next: string) => void;
+  clearPendingFlexibility: () => void;
+}) {
   const { filters, applyFilters } = useApplyFilters(locked);
+
+  function apply(next: FiltersState) {
+    applyFilters(next);
+    clearPendingFlexibility();
+  }
   const filtersRef = useFillToFold("lg");
 
   return (
@@ -192,7 +213,13 @@ function FiltersAside({ locked }: { locked?: LockedFilters }) {
       ref={filtersRef}
       className="hidden lg:sticky lg:top-[calc(var(--header-h)+1.5rem)] lg:flex lg:max-h-[calc(100dvh-var(--header-h)-3rem)] lg:flex-col"
     >
-      <FiltersPanel scrollable className="min-h-0 flex-1" value={filters} onApply={applyFilters} />
+      <FiltersPanel
+        scrollable
+        className="min-h-0 flex-1"
+        value={filters}
+        onApply={apply}
+        onDateFlexibilityChange={onDateFlexibilityChange}
+      />
     </div>
   );
 }
@@ -296,6 +323,8 @@ export default function SearchScreen({
 }) {
   const t = useTranslations("Yachts");
   const resultsRef = useRef<HTMLDivElement>(null);
+  const [pendingFlexibility, setPendingFlexibility] = useState<string | null>(null);
+  const clearPendingFlexibility = () => setPendingFlexibility(null);
 
   return (
     <div className="flex flex-col">
@@ -306,7 +335,12 @@ export default function SearchScreen({
               boundary all the same, or it never reaches the HTML a crawler receives. */}
           <h1 className="sr-only">{heading ?? t("heading")}</h1>
           <Suspense fallback={null}>
-            <SearchBarSection locked={locked} resultsRef={resultsRef} />
+            <SearchBarSection
+              locked={locked}
+              resultsRef={resultsRef}
+              pendingFlexibility={pendingFlexibility}
+              clearPendingFlexibility={clearPendingFlexibility}
+            />
           </Suspense>
         </div>
       </div>
@@ -338,7 +372,11 @@ export default function SearchScreen({
             </div>
 
             <Suspense fallback={null}>
-              <FiltersAside locked={locked} />
+              <FiltersAside
+                locked={locked}
+                onDateFlexibilityChange={setPendingFlexibility}
+                clearPendingFlexibility={clearPendingFlexibility}
+              />
             </Suspense>
           </aside>
 

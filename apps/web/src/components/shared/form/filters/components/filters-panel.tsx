@@ -32,6 +32,11 @@ export interface FiltersPanelProps {
   onClose?: () => void;
   /** The panel's own box, for a caller that has to lay something else out around it. */
   ref?: Ref<HTMLFormElement>;
+  /**
+   * Told of a date flexibility picked but not yet applied, for a search bar beside the panel whose
+   * own submit should not drop it.
+   */
+  onDateFlexibilityChange?: (next: string) => void;
 }
 
 export default function FiltersPanel({
@@ -41,6 +46,7 @@ export default function FiltersPanel({
   scrollable = false,
   onClose,
   ref,
+  onDateFlexibilityChange,
 }: FiltersPanelProps) {
   const t = useTranslations("Filters");
   const { defaults } = useFilterRanges();
@@ -49,6 +55,9 @@ export default function FiltersPanel({
 
   function set<K extends keyof FiltersState>(key: K, next: FiltersState[K]) {
     setDraft((current) => ({ ...current, [key]: next }));
+    if (key === "dateFlexibility") {
+      onDateFlexibilityChange?.({ ...draft, [key]: next }.dateFlexibility);
+    }
   }
 
   function handleSubmit(event: FormEvent) {
