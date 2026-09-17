@@ -23,7 +23,31 @@
       "dayWithFood": "{price} per day incl. food",
       "oneWayPerson": "{price} one-way per person",
       "set": "{price} per set",
-      "service": "{price} per service"
+      "service": "{price} per service",
+      "piece": "{price} per piece",
+      "weekStarted": "{price} per week started",
+      "oneWay": "{price} one way",
+      "weekPerson": "{price} per person / week",
+      "weekFood": "{price} per week incl. food",
+      "dayPerson": "{price} per person / day",
+      "bookingPerson": "{price} per person per booking",
+      "pet": "{price} per pet",
+      "cabin": "{price} per cabin",
+      "twoWeeks": "{price} per 2 weeks",
+      "hour": "{price} per hour",
+      "engineHour": "{price} per engine hour",
+      "halfHour": "{price} per half hour",
+      "crewChange": "{price} per crew change",
+      "personCourse": "{price} per person per course",
+      "boat": "{price} per boat",
+      "pack": "{price} per pack",
+      "bottle": "{price} per bottle",
+      "licence": "{price} per licence",
+      "meal": "{price} per meal",
+      "nauticalMile": "{price} per nautical mile",
+      "roundTrip": "{price} round trip",
+      "litre": "{price} per litre",
+      "weekStartedPerson": "{price} per person per week started"
     }
   },
   "resultsCount": "{count, plural, one {# yacht found} other {# yachts found}}",
@@ -85,7 +109,8 @@
       "showers": "Showers",
       "mainsail": "Mainsail type",
       "cabins": "Cabins",
-      "length": "Length"
+      "length": "Length",
+      "lengthValue": "{length, number} m"
     },
     "battenMainsail": "Batten mainsail",
     "badges": {
@@ -124,7 +149,7 @@
       "fullCrew": "Full crew",
       "skipperOptional": "Skipper optional"
     },
-    "moreAmenities": "Show {count} more amenities",
+    "moreAmenities": "{count, plural, one {Show # more amenity} other {Show # more amenities}}",
     "moreAmenitiesShort": "+{count}",
     "holdEndsIn": "Hold ends in {time}",
     "holdEnding": "Hold is ending, check back shortly",
@@ -135,7 +160,13 @@
     "previous": "Previous",
     "next": "Next",
     "zoomIn": "Zoom in",
-    "zoomOut": "Zoom out"
+    "zoomOut": "Zoom out",
+    "slideCounter": "{index} of {total}",
+    "slide": "Slide",
+    "carousel": "Carousel",
+    "photoGallery": "Photo gallery",
+    "lightbox": "Photo viewer",
+    "thumbnails": "Thumbnails"
   },
   "marina": {
     "viewDetails": "View Details"

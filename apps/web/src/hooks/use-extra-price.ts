@@ -12,7 +12,31 @@ type MeasureKey =
   | "dayWithFood"
   | "oneWayPerson"
   | "set"
-  | "service";
+  | "service"
+  | "piece"
+  | "weekStarted"
+  | "oneWay"
+  | "weekPerson"
+  | "weekFood"
+  | "dayPerson"
+  | "bookingPerson"
+  | "pet"
+  | "cabin"
+  | "twoWeeks"
+  | "hour"
+  | "engineHour"
+  | "halfHour"
+  | "crewChange"
+  | "personCourse"
+  | "boat"
+  | "pack"
+  | "bottle"
+  | "licence"
+  | "meal"
+  | "nauticalMile"
+  | "roundTrip"
+  | "litre"
+  | "weekStartedPerson";
 
 /**
  * Each provider states what an extra's price is per in its own words: Booking Manager sends
@@ -31,6 +55,36 @@ const MEASURE_KEY_BY_TEXT: ReadonlyMap<string, MeasureKey> = new Map([
   ["one way person", "oneWayPerson"],
   ["per set", "set"],
   ["per service", "service"],
+  ["per piece", "piece"],
+  ["per week started", "weekStarted"],
+  ["one way", "oneWay"],
+  ["per week person", "weekPerson"],
+  ["per guest week", "weekPerson"],
+  ["per week food", "weekFood"],
+  ["per guest day", "dayPerson"],
+  ["per day person", "dayPerson"],
+  ["per person day", "dayPerson"],
+  ["per guest night", "nightPerson"],
+  ["per person night", "nightPerson"],
+  ["per booking person", "bookingPerson"],
+  ["per booking crew", "booking"],
+  ["per pet", "pet"],
+  ["per cabin", "cabin"],
+  ["per 2 weeks", "twoWeeks"],
+  ["per hour", "hour"],
+  ["per running hour", "engineHour"],
+  ["half an hour", "halfHour"],
+  ["per crew change", "crewChange"],
+  ["per person per course", "personCourse"],
+  ["per boat", "boat"],
+  ["per pack", "pack"],
+  ["per bottle", "bottle"],
+  ["per licence", "licence"],
+  ["per meal", "meal"],
+  ["per nautical mile", "nauticalMile"],
+  ["round trip", "roundTrip"],
+  ["per liter", "litre"],
+  ["per week started person", "weekStartedPerson"],
 ]);
 
 const levelled = (measure: string) =>

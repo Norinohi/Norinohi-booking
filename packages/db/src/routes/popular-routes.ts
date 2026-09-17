@@ -2,6 +2,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { sql } from "drizzle-orm";
 
 import type * as schema from "../schema/index";
+import { valueForLabel } from "../search/filters";
 import { normalizedKey, normalizedKeySql } from "../search/normalize";
 
 export type PopularRouteStop = {
@@ -27,7 +28,8 @@ export type PopularRoute = {
   countryLabel: string | null;
   /**
    * The sailing area a card's link filters the catalogue by, for a route drawn over a region. The
-   * search filter matches it against the boats' region, so it is the English name, not a label.
+   * search filter matches it against the boats' region, so it is the English name's filter value
+   * (`split-region`), not a translated label.
    *
    * Null for a route that starts from a base. A base's region is whatever its vendor filed, and
    * Booking Manager files most of the Mediterranean as "Southern Europe": filtering Split's route
@@ -145,5 +147,17 @@ export async function listPopularRoutes(
     limit ${limit}
   `);
 
-  return rows.rows;
+  /*
+   * Filter values in the same slug form the filter controls select by. The bare names reached the
+   * URL as `country=Croatia&sailingArea=Split+region`: the search matched them all the same, but
+   * the chips look options up by value, found none, and printed "Country: Croatia" on a Ukrainian
+   * page.
+   */
+  const asValue = (name: string | null) => (name === null ? null : valueForLabel(name));
+  return rows.rows.map((row) => ({
+    ...row,
+    countryValue: asValue(row.countryValue),
+    sailingAreaValue: asValue(row.sailingAreaValue),
+    marinaValue: asValue(row.marinaValue),
+  }));
 }

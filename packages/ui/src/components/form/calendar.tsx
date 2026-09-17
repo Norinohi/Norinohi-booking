@@ -120,6 +120,23 @@ function weekdayLabels(weekStartsOn: number, locale?: string): string[] {
   });
 }
 
+/*
+ * "Вересень 2026", not "вересень 2026 р.": the month and the year alone, the first letter raised.
+ * `capitalize` raised every word, so Ukrainian's year marker read "Р." after it.
+ */
+function monthCaption(month: Date, locale?: string): string {
+  const parts = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).formatToParts(
+    month,
+  );
+  const monthName = parts.find((part) => part.type === "month")?.value ?? "";
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const monthFirst =
+    parts.findIndex((part) => part.type === "month") <
+    parts.findIndex((part) => part.type === "year");
+  const caption = (monthFirst ? [monthName, year] : [year, monthName]).join(" ").trim();
+  return caption.charAt(0).toLocaleUpperCase(locale) + caption.slice(1);
+}
+
 /** Inclusive, order-normalised range endpoints (handles reversed input), or undefined. */
 function rangeEndpoints(
   from: Date | undefined,
@@ -237,10 +254,7 @@ function Calendar(props: CalendarProps) {
   const weeks = React.useMemo(() => buildWeeks(month, weekStartsOn), [month, weekStartsOn]);
   const labels = React.useMemo(() => weekdayLabels(weekStartsOn, locale), [weekStartsOn, locale]);
   const today = startOfDay(new Date());
-  const monthLabel = new Intl.DateTimeFormat(locale, {
-    month: "long",
-    year: "numeric",
-  }).format(month);
+  const monthLabel = monthCaption(month, locale);
   const dayFormatter = new Intl.DateTimeFormat(locale, { dateStyle: "full" });
 
   return (
@@ -260,7 +274,7 @@ function Calendar(props: CalendarProps) {
         >
           <ChevronLeft className="size-5" />
         </button>
-        <div className="flex-1 text-center text-sm font-semibold leading-[1.2] tracking-[0.02em] text-foreground capitalize">
+        <div className="flex-1 text-center text-sm font-semibold leading-[1.2] tracking-[0.02em] text-foreground">
           {monthLabel}
         </div>
         <button

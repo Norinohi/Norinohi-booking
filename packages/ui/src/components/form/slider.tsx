@@ -17,6 +17,8 @@ type SliderProps = SliderPrimitive.Root.Props & {
   showValue?: boolean;
   showTicks?: boolean;
   controlClassName?: string;
+  /** Accessible name of each thumb, by index; a range needs one per end to say which it moves. */
+  thumbLabel?: (index: number) => string;
 };
 
 function Slider({
@@ -24,6 +26,7 @@ function Slider({
   showValue = false,
   showTicks = false,
   controlClassName,
+  thumbLabel,
   className,
   ...props
 }: SliderProps) {
@@ -61,6 +64,7 @@ function Slider({
             <SliderPrimitive.Thumb
               key={index}
               index={index}
+              getAriaLabel={thumbLabel}
               className="size-4 rounded-full border-2 border-brand bg-white outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-50"
             />
           ))}

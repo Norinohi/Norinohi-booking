@@ -22,7 +22,8 @@
       "region": "Zona de navegación",
       "city": "Ciudad",
       "base": "Marina"
-    }
+    },
+    "clearBoatType": "Borrar tipo de barco"
   },
   "paginationSummary": "Mostrando {from}-{to} de {total}"
 }

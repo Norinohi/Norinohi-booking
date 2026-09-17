@@ -184,6 +184,7 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
             }))
           }
           placeholder={t("anyBoat")}
+          clearLabel={t("clearBoatType")}
           icon={<Sailboat className="size-6 shrink-0 text-foreground" />}
         />
       </div>

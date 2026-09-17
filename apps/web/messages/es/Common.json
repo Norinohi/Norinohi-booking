@@ -23,7 +23,31 @@
       "dayWithFood": "{price} por día, comida incluida",
       "oneWayPerson": "{price} por persona, solo ida",
       "set": "{price} por juego",
-      "service": "{price} por servicio"
+      "service": "{price} por servicio",
+      "piece": "{price} por unidad",
+      "weekStarted": "{price} por semana iniciada",
+      "oneWay": "{price} solo ida",
+      "weekPerson": "{price} por persona y semana",
+      "weekFood": "{price} por semana, comida incluida",
+      "dayPerson": "{price} por persona y día",
+      "bookingPerson": "{price} por persona por reserva",
+      "pet": "{price} por mascota",
+      "cabin": "{price} por camarote",
+      "twoWeeks": "{price} por 2 semanas",
+      "hour": "{price} por hora",
+      "engineHour": "{price} por hora de motor",
+      "halfHour": "{price} por media hora",
+      "crewChange": "{price} por cambio de tripulación",
+      "personCourse": "{price} por persona y plato",
+      "boat": "{price} por barco",
+      "pack": "{price} por paquete",
+      "bottle": "{price} por botella",
+      "licence": "{price} por licencia",
+      "meal": "{price} por comida",
+      "nauticalMile": "{price} por milla náutica",
+      "roundTrip": "{price} ida y vuelta",
+      "litre": "{price} por litro",
+      "weekStartedPerson": "{price} por persona por semana iniciada"
     }
   },
   "resultsCount": "{count, plural, one {# yate encontrado} other {# yates encontrados}}",
@@ -85,7 +109,8 @@
       "showers": "Duchas",
       "mainsail": "Tipo de mayor",
       "cabins": "Camarotes",
-      "length": "Eslora"
+      "length": "Eslora",
+      "lengthValue": "{length, number} m"
     },
     "battenMainsail": "Mayor con sables",
     "badges": {
@@ -124,7 +149,7 @@
       "fullCrew": "Tripulación completa",
       "skipperOptional": "Patrón opcional"
     },
-    "moreAmenities": "Ver {count} equipamientos más",
+    "moreAmenities": "{count, plural, one {Ver # equipamiento más} other {Ver # equipamientos más}}",
     "moreAmenitiesShort": "+{count}",
     "holdEndsIn": "La reserva vence en {time}",
     "holdEnding": "La reserva está por vencer, vuelve a consultar en breve",
@@ -135,7 +160,13 @@
     "previous": "Anterior",
     "next": "Siguiente",
     "zoomIn": "Acercar",
-    "zoomOut": "Alejar"
+    "zoomOut": "Alejar",
+    "slideCounter": "{index} de {total}",
+    "slide": "Diapositiva",
+    "carousel": "Carrusel",
+    "photoGallery": "Galería de fotos",
+    "lightbox": "Visor de fotos",
+    "thumbnails": "Miniaturas"
   },
   "marina": {
     "viewDetails": "Ver detalles"
@@ -153,15 +184,15 @@
     "fields": {
       "name": {
         "label": "Nombre completo",
-        "placeholder": "Jane Doe"
+        "placeholder": "Juan Pérez"
       },
       "email": {
         "label": "Correo electrónico",
-        "placeholder": "jane@example.com"
+        "placeholder": "nombre@ejemplo.com"
       },
       "phone": {
         "label": "Teléfono (opcional)",
-        "placeholder": "+1 234 567 8900"
+        "placeholder": "+34 612 345 678"
       },
       "country": {
         "label": "País",

@@ -63,12 +63,7 @@ export default function PopularYachtsSection() {
       <Carousel options={{ align: "start", containScroll: "trimSnaps" }} className="mt-4">
         <div className="mb-3 flex items-center justify-between gap-4">
           <CarouselNav />
-          <Button
-            variant="neutral"
-            nativeButton={false}
-            render={<Link href="/yachts" />}
-            className="capitalize"
-          >
+          <Button variant="neutral" nativeButton={false} render={<Link href="/yachts" />}>
             {t("popular.seeAll")}
           </Button>
         </div>

@@ -133,10 +133,7 @@ function MapCardLink({ href }: { href: AppPathname }) {
   const t = useTranslations("Yachts");
 
   return (
-    <Link
-      href={href}
-      className={buttonVariants({ variant: "neutral", className: "relative capitalize" })}
-    >
+    <Link href={href} className={buttonVariants({ variant: "neutral", className: "relative" })}>
       <Search />
       {t("searchByMap")}
     </Link>

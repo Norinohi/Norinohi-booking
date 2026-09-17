@@ -16,6 +16,11 @@
       "de": "Motorkatamaran",
       "es": "Catamarán a motor",
       "uk": "Моторний катамаран"
+    },
+    "Other": {
+      "de": "Sonstige",
+      "es": "Otro",
+      "uk": "Інше"
     }
   },
   "region": {

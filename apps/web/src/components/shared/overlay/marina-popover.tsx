@@ -115,7 +115,7 @@ export function MarinaDetails({ marina, className }: { marina: Marina; className
           render={
             <a href={withProtocol(marina.website)} target="_blank" rel="noopener noreferrer" />
           }
-          className="w-fit capitalize"
+          className="w-fit"
         >
           {t("viewDetails")}
           <ArrowUpRight className="size-4 shrink-0" />

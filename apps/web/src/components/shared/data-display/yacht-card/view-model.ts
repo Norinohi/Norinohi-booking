@@ -110,7 +110,7 @@ export function yachtSpecs(t: YachtCardTranslator, specs: BoatSpecs): YachtCardS
       value: specs.sailType ? slugToLabel(specs.sailType) : t("battenMainsail"),
     },
     { label: t("specs.cabins"), value: String(specs.cabins) },
-    { label: t("specs.length"), value: `${specs.lengthM} m` },
+    { label: t("specs.length"), value: t("specs.lengthValue", { length: specs.lengthM }) },
   ];
 }
 

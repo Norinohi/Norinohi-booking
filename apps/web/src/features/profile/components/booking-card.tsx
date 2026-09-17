@@ -99,7 +99,7 @@ export default function BookingCard({
                 {payBalanceLabel}
               </Button>
             ) : null}
-            <YachtCardDetailsButton detailHref={booking.detailHref} className="capitalize" />
+            <YachtCardDetailsButton detailHref={booking.detailHref} className="" />
             {cancel}
           </>
         }

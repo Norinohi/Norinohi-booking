@@ -74,6 +74,8 @@ export function MultiSelectField({
   allLabel,
   className,
 }: MultiSelectFieldProps) {
+  const t = useTranslations("Filters");
+  const name = label ?? ariaLabel;
   const groups =
     popularLabel && allLabel
       ? groupByPopularity(options, { popular: popularLabel, all: allLabel })
@@ -92,6 +94,8 @@ export function MultiSelectField({
         onValueChange={(next) => onChange(orderedValues(options, next))}
         placeholder={placeholder}
         searchPlaceholder={searchPlaceholder}
+        /* Named after the field, not the placeholder: "Clear All regions" said nothing. */
+        clearLabel={name ? t("clearField", { label: name }) : t("clearSelection")}
       />
     </Field>
   );
@@ -260,6 +264,7 @@ export function RangeField({
           onChange(next as Range);
         }}
         aria-label={label}
+        thumbLabel={(index) => t(index === 0 ? "rangeFrom" : "rangeTo", { label })}
         showTicks
       />
       {showScale && (

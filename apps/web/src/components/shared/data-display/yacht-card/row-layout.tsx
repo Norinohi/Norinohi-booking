@@ -230,7 +230,7 @@ function Action({
         <YachtCardDetailsButton
           detailHref={detailHref}
           openInNewTab={openInNewTab}
-          className="w-full capitalize"
+          className="w-full"
         />
         {footer}
       </div>

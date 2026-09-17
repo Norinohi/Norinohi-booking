@@ -22,7 +22,8 @@
       "region": "Регіон",
       "city": "Місто",
       "base": "Марина"
-    }
+    },
+    "clearBoatType": "Очистити тип човна"
   },
   "paginationSummary": "Показано {from}–{to} з {total}"
 }

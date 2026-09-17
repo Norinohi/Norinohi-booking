@@ -23,7 +23,31 @@
       "dayWithFood": "{price} за день, харчування включено",
       "oneWayPerson": "{price} за особу в один бік",
       "set": "{price} за комплект",
-      "service": "{price} за послугу"
+      "service": "{price} за послугу",
+      "piece": "{price} за штуку",
+      "weekStarted": "{price} за кожен розпочатий тиждень",
+      "oneWay": "{price} в один бік",
+      "weekPerson": "{price} за особу за тиждень",
+      "weekFood": "{price} за тиждень, харчування включено",
+      "dayPerson": "{price} за особу за день",
+      "bookingPerson": "{price} за особу за бронювання",
+      "pet": "{price} за тварину",
+      "cabin": "{price} за каюту",
+      "twoWeeks": "{price} за 2 тижні",
+      "hour": "{price} за годину",
+      "engineHour": "{price} за мотогодину",
+      "halfHour": "{price} за пів години",
+      "crewChange": "{price} за зміну екіпажу",
+      "personCourse": "{price} за особу за страву",
+      "boat": "{price} за човен",
+      "pack": "{price} за упаковку",
+      "bottle": "{price} за пляшку",
+      "licence": "{price} за ліцензію",
+      "meal": "{price} за прийом їжі",
+      "nauticalMile": "{price} за морську милю",
+      "roundTrip": "{price} в обидва боки",
+      "litre": "{price} за літр",
+      "weekStartedPerson": "{price} за особу за кожен розпочатий тиждень"
     }
   },
   "resultsCount": "{count, plural, one {# яхта знайдена} few {# яхти знайдено} many {# яхт знайдено} other {# яхти знайдено}}",
@@ -50,7 +74,7 @@
     "charterHint": "яхта разом з усіма обов'язковими доплатами (чартерний пакет, прибирання та інші обов'язкові збори): скільки чартер коштує насправді."
   },
   "boatCard": {
-    "save": "Зберегти у обране",
+    "save": "Зберегти в обране",
     "remove": "Видалити з обраного",
     "viewDetails": "Детальніше",
     "imageAlt": "{name} біля причалу {marina}",
@@ -85,7 +109,8 @@
       "showers": "Душових",
       "mainsail": "Тип грота",
       "cabins": "Кают",
-      "length": "Довжина"
+      "length": "Довжина",
+      "lengthValue": "{length, number} м"
     },
     "battenMainsail": "Грот на латах",
     "badges": {
@@ -124,7 +149,7 @@
       "fullCrew": "Повний екіпаж",
       "skipperOptional": "Шкіпер за бажанням"
     },
-    "moreAmenities": "Показати ще {count} зручностей",
+    "moreAmenities": "{count, plural, one {Показати ще # зручність} few {Показати ще # зручності} many {Показати ще # зручностей} other {Показати ще # зручності}}",
     "moreAmenitiesShort": "+{count}",
     "holdEndsIn": "Бронь спливає через {time}",
     "holdEnding": "Бронь ось-ось спливе, перевірте трохи згодом",
@@ -135,7 +160,13 @@
     "previous": "Назад",
     "next": "Далі",
     "zoomIn": "Збільшити",
-    "zoomOut": "Зменшити"
+    "zoomOut": "Зменшити",
+    "slideCounter": "{index} з {total}",
+    "slide": "Слайд",
+    "carousel": "Карусель",
+    "photoGallery": "Фотогалерея",
+    "lightbox": "Перегляд фото",
+    "thumbnails": "Мініатюри"
   },
   "marina": {
     "viewDetails": "Детальніше"
@@ -153,15 +184,15 @@
     "fields": {
       "name": {
         "label": "Повне ім'я",
-        "placeholder": "Jane Doe"
+        "placeholder": "Іван Петренко"
       },
       "email": {
         "label": "Електронна пошта",
-        "placeholder": "jane@example.com"
+        "placeholder": "name@example.com"
       },
       "phone": {
         "label": "Телефон (необов'язково)",
-        "placeholder": "+1 234 567 8900"
+        "placeholder": "+380 67 123 45 67"
       },
       "country": {
         "label": "Країна",

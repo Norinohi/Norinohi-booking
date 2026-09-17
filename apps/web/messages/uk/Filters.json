@@ -136,5 +136,7 @@
       "1-month": "У межах місяця"
     }
   },
-  "rangeUnavailable": "Немає даних для діапазону"
+  "rangeUnavailable": "Немає даних для діапазону",
+  "rangeFrom": "{label}, від",
+  "rangeTo": "{label}, до"
 }

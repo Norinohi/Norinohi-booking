@@ -136,5 +136,7 @@
       "1-month": "In 1 Monat"
     }
   },
-  "rangeUnavailable": "Kein Bereich verfügbar"
+  "rangeUnavailable": "Kein Bereich verfügbar",
+  "rangeFrom": "{label}, Minimum",
+  "rangeTo": "{label}, Maximum"
 }

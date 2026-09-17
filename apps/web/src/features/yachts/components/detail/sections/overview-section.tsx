@@ -15,8 +15,10 @@ import {
   Sailboat,
   Ship,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
+
+import { localizeMeasure, type UnitFormatter } from "../../../lib/measure-value";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
 import DetailSection from "./detail-section";
@@ -79,7 +81,10 @@ const OVERVIEW_ICON = new Map<string, ReactNode>(
 export default function OverviewSection() {
   const t = useTranslations("YachtDetail");
   const tOverview = useTranslations("YachtDetail.overview");
+  const format = useFormatter();
   const { data } = useListingDetail();
+  const formatUnit: UnitFormatter = (value, unit) =>
+    format.number(value, { style: "unit", unit, unitDisplay: "short" });
 
   if (!data) return null;
 
@@ -106,7 +111,9 @@ export default function OverviewSection() {
               {labelOf(item.code, item.label)}:
             </span>
             <span className="min-w-0 flex-1 text-sm font-medium text-natural-600">
-              {item.value ?? tOverview("notSpecified")}
+              {item.value === null
+                ? tOverview("notSpecified")
+                : localizeMeasure(item.value, formatUnit)}
             </span>
           </div>
         ))}

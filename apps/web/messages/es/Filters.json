@@ -136,5 +136,7 @@
       "1-month": "En 1 mes"
     }
   },
-  "rangeUnavailable": "No hay un intervalo disponible"
+  "rangeUnavailable": "No hay un intervalo disponible",
+  "rangeFrom": "{label}, mínimo",
+  "rangeTo": "{label}, máximo"
 }

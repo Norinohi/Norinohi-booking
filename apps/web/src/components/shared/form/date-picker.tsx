@@ -94,6 +94,8 @@ export default function DatePicker({
 }: DatePickerProps) {
   const format = useFormatter();
   const locale = useLocale();
+  /* Monday everywhere the site is read except English, whose visitors expect the Sunday column. */
+  const weekStartsOn = locale === "en" ? 0 : 1;
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isOpen = open ?? uncontrolledOpen;
 
@@ -181,6 +183,7 @@ export default function DatePicker({
               className="w-full"
               mode="range"
               locale={locale}
+              weekStartsOn={weekStartsOn}
               defaultMonth={defaultMonth}
               disabled={isDayDisabled}
               dayModifier={dayModifier}
@@ -191,6 +194,7 @@ export default function DatePicker({
             <Calendar
               className="w-full"
               locale={locale}
+              weekStartsOn={weekStartsOn}
               defaultMonth={defaultMonth}
               disabled={isDayDisabled}
               dayModifier={dayModifier}

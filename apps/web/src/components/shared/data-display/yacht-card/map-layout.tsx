@@ -141,7 +141,7 @@ export default function MapLayout({
         <YachtCardDetailsButton
           detailHref={detailHref}
           openInNewTab={openInNewTab}
-          className="w-full capitalize"
+          className="w-full"
         />
       </div>
     </article>

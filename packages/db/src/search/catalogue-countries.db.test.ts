@@ -130,6 +130,16 @@ describe("listCatalogueCountries and the popular routes filter", () => {
     expect(routes.map((route) => route.id)).toEqual(["srt_split", "srt_ionian", "srt_sardinia"]);
   });
 
+  it("links a route by filter values, not by the catalogue's names", async () => {
+    const [split, ionian] = await listPopularRoutes(test.db);
+    expect(split).toMatchObject({
+      countryValue: "croatia",
+      marinaValue: "aci-marina-split",
+      sailingAreaValue: null,
+    });
+    expect(ionian).toMatchObject({ countryValue: "greece", sailingAreaValue: "ionian-islands" });
+  });
+
   it("filters routes by country, reaching it through a base or a region", async () => {
     const croatia = await listPopularRoutes(test.db, { country: "croatia" });
     expect(croatia.map((route) => route.id)).toEqual(["srt_split"]);

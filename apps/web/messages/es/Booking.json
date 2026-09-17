@@ -111,7 +111,7 @@
       "notice": "¿Prefieres pagar sin conexión? Te enviaremos una factura para completar el pago por transferencia bancaria.",
       "cta": "Solicitar factura (por {amount})",
       "name": "Nombre de facturación",
-      "namePlaceholder": "Jane Doe",
+      "namePlaceholder": "Juan Pérez",
       "addressLine1": "Dirección",
       "addressLine1Placeholder": "Calle del Puerto 12",
       "addressLine2": "Dirección línea 2 (opcional)",

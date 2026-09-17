@@ -22,7 +22,8 @@
       "region": "Sailing area",
       "city": "City",
       "base": "Marina"
-    }
+    },
+    "clearBoatType": "Clear boat type"
   },
   "paginationSummary": "Showing {from}-{to} of {total}"
 }

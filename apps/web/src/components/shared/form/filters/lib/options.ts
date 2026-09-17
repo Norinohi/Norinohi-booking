@@ -1,5 +1,3 @@
-import { slugToLabel } from "@/lib/slug-to-label";
-
 export type Option = {
   value: string;
   label: string;
@@ -64,12 +62,22 @@ export function groupByPopularity(
 /**
  * A value with no option behind it is un-slugged rather than printed raw.
  *
- * Catalogue pages pin facets the option lists do not carry — a city, or a builder filed under
- * the model key — and those used to surface as "Model: bavaria" in a chip.
+ * Catalogue pages pin facets the option lists do not carry (a city, or a builder filed under
+ * the model key), and those used to surface as "Model: bavaria" in a chip. Every word is
+ * capitalised, because what arrives this way is a proper name: "fountaine-pajot" is the shipyard
+ * Fountaine Pajot, and sentence case printed it as "Fountaine pajot".
  */
 export function labelOf(options: Option[], value: string): string {
   const option = options.find((candidate) => candidate.value === value);
-  return option?.label ?? slugToLabel(value);
+  return option?.label ?? properNameFromSlug(value);
+}
+
+function properNameFromSlug(value: string): string {
+  return value
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 export function orderedValues(options: Option[], selected: string[]): string[] {

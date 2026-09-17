@@ -22,7 +22,8 @@
       "region": "Segelrevier",
       "city": "Stadt",
       "base": "Marina"
-    }
+    },
+    "clearBoatType": "Bootstyp löschen"
   },
   "paginationSummary": "{from}–{to} von {total}"
 }
