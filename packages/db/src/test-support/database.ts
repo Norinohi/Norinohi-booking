@@ -45,6 +45,10 @@ export async function createTestDatabase(): Promise<TestDatabase> {
     connection: { connectionString: url.toString(), options: "-c jit=off" },
     schema,
   });
+  /* `drop` ends the pool and then force-drops the database. A query some service fired without
+     awaiting can still hold a client then, and Postgres terminating it (57P01) arrives as a pool
+     error event; without a listener vitest reports it as unhandled and fails a green run. */
+  db.$client.on("error", () => {});
   await migrate(db, { migrationsFolder: MIGRATIONS });
 
   return {
