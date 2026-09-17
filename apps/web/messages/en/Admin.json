@@ -863,7 +863,14 @@
       "added": "{name} was added.",
       "removed": "{name} was removed.",
       "failed": "Couldn't save the stop",
-      "missingNotes": "No note in: {locales}"
+      "missingNotes": "No note in: {locales}",
+      "deleteDialog": {
+        "title": "Remove this stop?",
+        "description": "“{name}” (day {day}) will be removed from “{title}”, and every later stop moves one day earlier. This cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Remove stop",
+        "deleting": "Removing..."
+      }
     },
     "previewDialog": {
       "title": "Route preview",

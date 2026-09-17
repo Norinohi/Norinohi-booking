@@ -863,7 +863,14 @@
       "added": "{name} wurde hinzugefügt.",
       "removed": "{name} wurde entfernt.",
       "failed": "Stopp konnte nicht gespeichert werden",
-      "missingNotes": "Keine Notiz in: {locales}"
+      "missingNotes": "Keine Notiz in: {locales}",
+      "deleteDialog": {
+        "title": "Diesen Stopp entfernen?",
+        "description": "„{name}“ (Tag {day}) wird aus „{title}“ entfernt, jeder spätere Stopp rückt einen Tag nach vorne. Das lässt sich nicht rückgängig machen.",
+        "cancel": "Abbrechen",
+        "confirm": "Stopp entfernen",
+        "deleting": "Wird entfernt..."
+      }
     },
     "previewDialog": {
       "title": "Routenvorschau",

@@ -18,15 +18,11 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import {
-  useCreateRouteStop,
-  useDeleteRouteStop,
-  useReorderRouteStops,
-  useUpdateRouteStop,
-} from "../hooks/use-routes";
+import { useCreateRouteStop, useReorderRouteStops, useUpdateRouteStop } from "../hooks/use-routes";
 import type { RouteRow, RouteStopRow } from "../types";
 import PlaceSearch from "./place-search";
 import RoutePreviewDialog from "./route-preview-dialog";
+import RouteStopDeleteDialog from "./route-stop-delete-dialog";
 
 /*
  * The stop editor: the ordered list on the left, the map that produces the coordinates on the
@@ -94,10 +90,12 @@ export default function RouteStopsDialog({ route, open, onOpenChange }: RouteSto
   const [working, setWorking] = useState<Working>(BLANK);
   const [noteTab, setNoteTab] = useState<NoteTab>("en");
   const [previewOpen, setPreviewOpen] = useState(false);
+  /* The day is kept from the click: once the stop is gone the list renumbers under the closing dialog. */
+  const [removing, setRemoving] = useState<{ stop: RouteStopRow; day: number } | null>(null);
+  const [removeOpen, setRemoveOpen] = useState(false);
 
   const createStop = useCreateRouteStop();
   const updateStop = useUpdateRouteStop();
-  const deleteStop = useDeleteRouteStop();
   const reorderStops = useReorderRouteStops();
 
   /* A different route in the same dialog must not inherit the last one's half-typed stop. */
@@ -108,8 +106,7 @@ export default function RouteStopsDialog({ route, open, onOpenChange }: RouteSto
   if (!route) return null;
 
   const stops = route.stops;
-  const pending =
-    createStop.isPending || updateStop.isPending || deleteStop.isPending || reorderStops.isPending;
+  const pending = createStop.isPending || updateStop.isPending || reorderStops.isPending;
 
   /* Where the map opens: the pin, then the base the route targets, then the first stop. */
   const centre = working.point ?? route.targetPoint ?? stops[0] ?? FALLBACK_CENTRE;
@@ -144,14 +141,9 @@ export default function RouteStopsDialog({ route, open, onOpenChange }: RouteSto
     }
   };
 
-  const remove = async (stop: RouteStopRow) => {
-    try {
-      await deleteStop.mutateAsync({ id: stop.id });
-      if (working.id === stop.id) setWorking(BLANK);
-      toast.success(t("removed", { name: stop.name }));
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("failed"));
-    }
+  const remove = (stop: RouteStopRow, day: number) => {
+    setRemoving({ stop, day });
+    setRemoveOpen(true);
   };
 
   /* Reorder submits the whole list: `sort_order` is unique per route, so a partial order would
@@ -283,7 +275,7 @@ export default function RouteStopsDialog({ route, open, onOpenChange }: RouteSto
                           size="sm"
                           aria-label={t("remove")}
                           disabled={pending}
-                          onClick={() => void remove(stop)}
+                          onClick={() => remove(stop, index + 1)}
                         >
                           <Trash2 className="size-4 text-error-500" />
                         </Button>
@@ -435,6 +427,16 @@ export default function RouteStopsDialog({ route, open, onOpenChange }: RouteSto
       </Dialog>
 
       <RoutePreviewDialog route={route} open={previewOpen} onOpenChange={setPreviewOpen} />
+      <RouteStopDeleteDialog
+        routeTitle={route.title}
+        stop={removing?.stop ?? null}
+        day={removing?.day ?? 0}
+        open={removeOpen}
+        onOpenChange={setRemoveOpen}
+        onDeleted={(stop) => {
+          if (working.id === stop.id) setWorking(BLANK);
+        }}
+      />
     </>
   );
 }
