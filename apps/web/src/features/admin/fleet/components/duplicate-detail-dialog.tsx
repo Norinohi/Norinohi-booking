@@ -12,6 +12,9 @@ import {
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useFormatter, useTranslations } from "next-intl";
 
+import { crewLabel } from "@/lib/crew-label";
+import { slugToLabel } from "@/lib/slug-to-label";
+
 import { useInstant } from "../../shared/hooks/use-instant";
 import { SHORT_DAY } from "../../shared/lib/instant";
 import { useDuplicateDetail } from "../hooks/use-duplicates";
@@ -61,6 +64,7 @@ export default function DuplicateDetailDialog({
 
 function DuplicateDetailBody({ candidate }: { candidate: DuplicateCandidate }) {
   const t = useTranslations("Admin.Duplicates");
+  const tCrew = useTranslations("Common.crewTypes");
   const format = useFormatter();
   const instant = useInstant();
   const { data, isPending, isError } = useDuplicateDetail(candidate.id);
@@ -79,7 +83,7 @@ function DuplicateDetailBody({ candidate }: { candidate: DuplicateCandidate }) {
       case "builder":
         return listing.builderName ?? EMPTY_VALUE;
       case "crewType":
-        return listing.crewType ?? EMPTY_VALUE;
+        return listing.crewType === null ? EMPTY_VALUE : crewLabel(tCrew, listing.crewType);
       case "beam":
         return listing.beamM === null ? EMPTY_VALUE : t("lengthValue", { value: listing.beamM });
       case "draft":
@@ -107,7 +111,7 @@ function DuplicateDetailBody({ candidate }: { candidate: DuplicateCandidate }) {
       case "steering":
         return listing.steeringType ?? EMPTY_VALUE;
       case "sail":
-        return listing.sailType ?? EMPTY_VALUE;
+        return listing.sailType === null ? EMPTY_VALUE : slugToLabel(listing.sailType);
       case "deposit":
         return listing.securityDepositMinor === null
           ? EMPTY_VALUE

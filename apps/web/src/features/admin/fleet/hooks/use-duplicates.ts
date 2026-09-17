@@ -2,6 +2,7 @@
 
 import { ORPCError } from "@orpc/client";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 
 import {
   confirmDuplicateMutationOptions,
@@ -47,7 +48,7 @@ export function useDuplicateMetrics() {
 
 /** Callers mount this only once a pair is opened, which is what keeps the queue cheap. */
 export function useDuplicateDetail(candidateId: string) {
-  return useQuery(duplicateDetailQueryOptions(candidateId));
+  return useQuery(duplicateDetailQueryOptions(candidateId, useLocale()));
 }
 
 /**

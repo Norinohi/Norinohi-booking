@@ -438,7 +438,11 @@ export const duplicateDetailSideSchema = z.object({
   listing: duplicateDetailListingSchema.nullable(),
 });
 
-export const duplicateDetailInputSchema = z.object({ candidateId: idSchema });
+export const duplicateDetailInputSchema = z.object({
+  candidateId: idSchema,
+  /* Category, crew and rig read in the public site's words for this locale. */
+  locale: z.string().min(2).max(10).optional(),
+});
 
 export const duplicateDetailSchema = z.object({
   candidateId: z.string(),

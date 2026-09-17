@@ -53,8 +53,8 @@ export const duplicateQueueQueryOptions = (input: {
  * worth of galleries is not something the queue should pay for. Cached longer than the
  * queue because a synced listing's specs do not move while the tab is open.
  */
-export const duplicateDetailQueryOptions = (candidateId: string) =>
-  orpc.admin.match.detail.queryOptions({ input: { candidateId }, staleTime: 300_000 });
+export const duplicateDetailQueryOptions = (candidateId: string, locale: string) =>
+  orpc.admin.match.detail.queryOptions({ input: { candidateId, locale }, staleTime: 300_000 });
 
 /*
  * Precision per rule and band. Cached longer than the queue because it only moves as pairs are

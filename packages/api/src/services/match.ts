@@ -12,6 +12,7 @@ import { listingDuplicateCandidate, listingSource } from "@yacht-charter/db/sche
 import { operator } from "@yacht-charter/db/schema/operator";
 import { provider, providerRecord } from "@yacht-charter/db/schema/provider";
 import { amenity, builder, yachtCategory, yachtModel } from "@yacht-charter/db/schema/taxonomy";
+import { facetTranslator } from "@yacht-charter/db/search/localize";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
 import { resolveCanonicalListings } from "@yacht-charter/providers/sync/canonical-listing-writer";
 import { and, asc, count, countDistinct, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
@@ -428,12 +429,38 @@ export async function getDuplicateCandidateDetail(
 
   if (!candidate) throw new NotFoundError({ message: "Unknown duplicate candidate" });
 
-  const sides = await loadDetailSides(db, [candidate.sourceAId, candidate.sourceBId]);
+  const [sides, translate] = await Promise.all([
+    loadDetailSides(db, [candidate.sourceAId, candidate.sourceBId]),
+    facetTranslator(db, input.locale),
+  ]);
+  const labelled = (side: DetailSide | undefined): DetailSide | undefined =>
+    side?.listing && translate
+      ? {
+          ...side,
+          listing: {
+            ...side.listing,
+            categoryName:
+              side.listing.categoryName === null
+                ? null
+                : translate("category", side.listing.categoryName),
+            crewType:
+              side.listing.crewType === null ? null : translate("crew", side.listing.crewType),
+            sailType:
+              side.listing.sailType === null ? null : translate("sail_type", side.listing.sailType),
+          },
+        }
+      : side;
 
   return {
     candidateId: candidate.id,
-    sideA: sides.get(candidate.sourceAId) ?? { sourceId: candidate.sourceAId, listing: null },
-    sideB: sides.get(candidate.sourceBId) ?? { sourceId: candidate.sourceBId, listing: null },
+    sideA: labelled(sides.get(candidate.sourceAId)) ?? {
+      sourceId: candidate.sourceAId,
+      listing: null,
+    },
+    sideB: labelled(sides.get(candidate.sourceBId)) ?? {
+      sourceId: candidate.sourceBId,
+      listing: null,
+    },
   };
 }
 
@@ -449,7 +476,9 @@ async function loadDetailSides(
       listingId: listing.id,
       title: listing.title,
       slug: listing.slug,
-      categoryName: yachtCategory.name,
+      categoryName: sql<
+        string | null
+      >`coalesce(${yachtCategory.canonicalName}, ${yachtCategory.name})`,
       builderName: builder.name,
       crewType: listing.crewType,
       securityDepositMinor: listing.securityDepositMinor,
