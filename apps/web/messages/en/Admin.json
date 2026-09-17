@@ -894,6 +894,13 @@
         "title": "No routes chosen",
         "body": "The home page section stays empty until a route is added here. Pick from the published routes on the right."
       }
+    },
+    "deleteDialog": {
+      "title": "Delete this route?",
+      "description": "“{title}” will be deleted together with its {stops, plural, one {# stop} other {# stops}}. This cannot be undone. To take it off the site and keep it, use Unpublish instead.",
+      "cancel": "Cancel",
+      "confirm": "Delete route",
+      "deleting": "Deleting..."
     }
   },
   "Payments": {

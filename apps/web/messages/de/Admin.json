@@ -894,6 +894,13 @@
         "title": "Keine Routen ausgewählt",
         "body": "Der Bereich auf der Startseite bleibt leer, bis hier eine Route hinzugefügt wird. Wählen Sie rechts aus den veröffentlichten Routen."
       }
+    },
+    "deleteDialog": {
+      "title": "Diese Route löschen?",
+      "description": "„{title}“ wird mit {stops, plural, one {# Stopp} other {# Stopps}} gelöscht. Das lässt sich nicht rückgängig machen. Um die Route von der Website zu nehmen und zu behalten, nutzen Sie „Zurückziehen“.",
+      "cancel": "Abbrechen",
+      "confirm": "Route löschen",
+      "deleting": "Wird gelöscht..."
     }
   },
   "Payments": {

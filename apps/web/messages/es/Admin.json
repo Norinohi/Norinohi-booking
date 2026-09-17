@@ -894,6 +894,13 @@
         "title": "Ninguna ruta elegida",
         "body": "La sección de la página de inicio queda vacía hasta que se añada una ruta aquí. Elige entre las publicadas a la derecha."
       }
+    },
+    "deleteDialog": {
+      "title": "¿Eliminar esta ruta?",
+      "description": "«{title}» se eliminará junto con {stops, plural, one {# parada} other {# paradas}}. No se puede deshacer. Para quitarla del sitio y conservarla, usa «Despublicar».",
+      "cancel": "Cancelar",
+      "confirm": "Eliminar ruta",
+      "deleting": "Eliminando..."
     }
   },
   "Payments": {

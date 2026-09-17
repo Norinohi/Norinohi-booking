@@ -19,14 +19,10 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import {
-  useDeleteRoute,
-  useGeographyOptions,
-  useRoutes,
-  useSetRouteActive,
-} from "../hooks/use-routes";
+import { useGeographyOptions, useRoutes, useSetRouteActive } from "../hooks/use-routes";
 import { ROUTE_KINDS, type RouteRow } from "../types";
 import FeaturedRoutesDialog from "./featured-routes-dialog";
+import RouteDeleteDialog from "./route-delete-dialog";
 import RouteDialog from "./route-dialog";
 import RoutePreviewDialog from "./route-preview-dialog";
 import RouteStopsDialog from "./route-stops-dialog";
@@ -62,10 +58,11 @@ export default function RoutesTable() {
   const [stopsFor, setStopsFor] = useState<string | null>(null);
   const [previewFor, setPreviewFor] = useState<string | null>(null);
   const [featuredOpen, setFeaturedOpen] = useState(false);
+  const [deleting, setDeleting] = useState<RouteRow | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const geography = useGeographyOptions();
   const setActive = useSetRouteActive();
-  const deleteRoute = useDeleteRoute();
 
   const { data, isPending, isError } = useRoutes({
     /* The ALL sentinel is in neither list, so it drops out as `undefined`. */
@@ -107,13 +104,8 @@ export default function RoutesTable() {
   };
 
   const remove = (route: RouteRow) => {
-    deleteRoute.mutate(
-      { id: route.id },
-      {
-        onSuccess: () => toast.success(t("deleted", { title: route.title })),
-        onError: (error: Error) => toast.error(error.message),
-      },
-    );
+    setDeleting(route);
+    setDeleteOpen(true);
   };
 
   const onFilterChange = (set: (next: string) => void) => (next: string) => {
@@ -132,7 +124,7 @@ export default function RoutesTable() {
     </TableRow>
   );
 
-  const busy = setActive.isPending || deleteRoute.isPending;
+  const busy = setActive.isPending;
 
   return (
     <div className="flex flex-col gap-4">
@@ -319,6 +311,7 @@ export default function RoutesTable() {
 
       <RouteDialog route={editing} open={editOpen} onOpenChange={setEditOpen} />
       <FeaturedRoutesDialog open={featuredOpen} onOpenChange={setFeaturedOpen} />
+      <RouteDeleteDialog route={deleting} open={deleteOpen} onOpenChange={setDeleteOpen} />
       <RouteStopsDialog
         route={stopsRoute}
         open={stopsFor !== null}
