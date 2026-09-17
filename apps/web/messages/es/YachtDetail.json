@@ -132,7 +132,7 @@
     "dropOff": "Puerto de entrega",
     "pickUp": "Recogida: {marina}",
     "boatPriceHintDiscounted": "Precio de alquiler con descuento",
-    "depositWhenInsured": "o {amount} con la exencion de danos"
+    "depositWhenInsured": "o {amount} con la exención de daños"
   },
   "panels": {
     "details": "Detalles del yate",
