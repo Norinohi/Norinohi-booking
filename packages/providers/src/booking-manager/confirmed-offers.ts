@@ -62,6 +62,11 @@ export interface BookingManagerConfirmedOfferOptions {
    * the periods this pass exists to price.
    */
   loadAdvertisedPeriods?: () => Promise<readonly SweepPeriod[]>;
+  /**
+   * The weeks to walk behind the advertised periods, in place of every charter Saturday of
+   * `years`. The price-weeks job names its own horizon.
+   */
+  weeks?: readonly SweepPeriod[];
   /** Today, for dropping the weeks that are already over. Injectable so the walk is testable. */
   today?: string;
   /** This run's slice of the advertised tail; see `sweepRotation`. */
@@ -191,10 +196,12 @@ export async function* streamBookingManagerConfirmedOffers(
    * exists on the offer and nowhere in the catalogue.
    */
   const advertised = (await options.loadAdvertisedPeriods?.()) ?? [];
-  const grid = charterSaturdays([...options.years]).map((checkIn) => ({
-    startDate: checkIn,
-    endDate: addDays(checkIn, 7),
-  }));
+  const grid =
+    options.weeks ??
+    charterSaturdays([...options.years]).map((checkIn) => ({
+      startDate: checkIn,
+      endDate: addDays(checkIn, 7),
+    }));
   const plan = sweepPlan(advertised, grid, {
     today: options.today ?? new Date().toISOString().slice(0, 10),
     ...(options.rotation === undefined ? null : { rotation: options.rotation }),

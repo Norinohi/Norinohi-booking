@@ -56,9 +56,12 @@ import {
   ADVERTISED_PERIOD_LIMIT,
   SHORT_CHARTER_LENGTHS,
   SHORT_PERIODS_PER_LENGTH,
+  type SweepPeriod,
   sweepRotation,
   withShortCharterPeriods,
 } from "../shared/sweep-periods";
+import { DEFAULT_RATE_LIMIT_PAUSE, priceWeeksSource } from "../shared/price-weeks";
+import { streamNausysConfirmedOffers } from "./confirmed-offers";
 import { DEFAULT_HOT_WINDOW_COUNT, sweepWindows, upcomingCharterWeeks } from "./sweep-windows";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { log, parseError } from "evlog";
@@ -345,6 +348,39 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
         yield* inner.searchConfirmed(resume ?? options.resume);
       },
     };
+  }
+
+  /**
+   * The same `freeYachts` pass the availability sweep runs, over the given weeks for every hull
+   * we list, on the sync lane. Whole-fleet asks, so each week's silence is judged across the same
+   * companies the fleet list was scoped to.
+   */
+  createPriceWeeksSource(weeks: readonly SweepPeriod[]): AvailabilitySource {
+    return priceWeeksSource({
+      weeks,
+      stream: (pending) => this.streamPriceWeeks(pending),
+      rateLimit: {
+        ...DEFAULT_RATE_LIMIT_PAUSE,
+        onPause: (pause, week) =>
+          log.warn({ action: "nausys.price_weeks_rate_limited", pause, week: week.startDate }),
+      },
+    });
+  }
+
+  private async *streamPriceWeeks(weeks: readonly SweepPeriod[]) {
+    const companyIds = (await this.resolver.listExternalCompanyIds()).filter((id) =>
+      this.config.companyScope.inScope(id),
+    );
+    yield* streamNausysConfirmedOffers(
+      {
+        client: this.syncClient,
+        periods: { advertised: [], grid: weeks },
+        loadYachtIds: () => loadNausysYachtIds(this.db, this.config.companyScope),
+        companyIds,
+        currency: this.currency,
+      },
+      { windowIndex: 0 },
+    );
   }
 
   async loadSeasonalPrices(listingIds: string[]): Promise<Map<string, SeasonalPrice[]>> {

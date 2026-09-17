@@ -7,6 +7,7 @@ export default defineConfig({
     "./src/sync-catalogue.ts",
     "./src/sync-media-cleanup.ts",
     "./src/sync-availability.ts",
+    "./src/sync-price-weeks.ts",
     "./src/sweep-expiries.ts",
     "./src/reconcile-reservations.ts",
     "./src/payment-reminders.ts",
