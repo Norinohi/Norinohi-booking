@@ -3,6 +3,7 @@ import { getTableColumns, sql, type SQL } from "drizzle-orm";
 import { listingSearchDoc } from "../schema/search";
 import { availabilityWindowFor } from "./candidate-range";
 import { MIN_LEAD_DAYS } from "./lead-time";
+import { lengthPriceTier } from "./length-charter-sql";
 import { listRatePeriodPrice } from "./list-rate-sql";
 import { PERIOD_PRICE_COLUMNS } from "./period-prices";
 import { shownCharterStart } from "./sellable-starts";
@@ -233,6 +234,9 @@ const ASKED_DATES_RANK = 30;
  * are priced, but only the first is the trip as described.
  */
 export function recommendedSortValueFor(input: ListingSearchInput): SQL {
+  if (!availabilityWindowFor(input) && input.duration) {
+    return sql`(doc.rating + ${lengthPriceTier(input.duration)})`;
+  }
   return availabilityWindowFor(input)
     ? sql`case
         when doc.price_source is null then doc.rating
@@ -259,9 +263,15 @@ const SOURCE_RANK = {
 export function recommendedSortValueOf(
   item: Pick<
     ListingSearchDoc,
-    "priceIsFrom" | "pricedForDates" | "priceSource" | "pricedForNearbyDates" | "rating"
+    | "priceIsFrom"
+    | "pricedForDates"
+    | "priceSource"
+    | "pricedForNearbyDates"
+    | "rating"
+    | "lengthPriceTier"
   >,
 ): number {
+  if (item.lengthPriceTier !== undefined) return item.lengthPriceTier + Number(item.rating);
   if (item.pricedForDates === undefined) return (item.priceIsFrom ? 0 : 10) + Number(item.rating);
   if (item.priceSource === null || item.priceSource === undefined) return Number(item.rating);
   const source = SOURCE_RANK[item.priceSource];

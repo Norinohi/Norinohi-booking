@@ -12,6 +12,7 @@ import {
   type CandidateRange,
 } from "./candidate-range";
 import { MIN_LEAD_DAYS, providerLeadDaysSql } from "./lead-time";
+import { lengthPriceTier, pricedLengthStart } from "./length-charter-sql";
 import type { ListingSearchInput } from "./types";
 
 /*
@@ -34,15 +35,15 @@ export function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
     /*
      * A length with no date: the card still has to name a charter of that length. Left to the
      * listing's own first sellable period, a "7 days" search captioned a boat "1 day, 15-16 Sep",
-     * because that was the shortest thing its operator happened to have free first. The nearest
-     * charter of the asked-for length from the earliest bookable day is the honest answer.
+     * because that was the shortest thing its operator happened to have free first. A priced
+     * charter of the asked-for length, else the nearest one from the earliest bookable day, is
+     * the honest answer (`pricedLengthStart`).
      */
     const range = undatedRange(input.duration);
-    return sql`, true as "sellsRequestedPeriod"${nearestSellableColumns(
-      { checkIn: range.earliestStart, checkOut: range.earliestEnd },
-      input.duration,
-      range,
-    )}`;
+    const named = sql`coalesce(${pricedLengthStart(input.duration)}, ${nearestSellableStart(range.earliestStart, input.duration, range)})`;
+    return sql`, true as "sellsRequestedPeriod", ${named} as "nearestCheckIn",
+      (${named} + ${input.duration}::integer) as "nearestCheckOut",
+      ${lengthPriceTier(input.duration)} as "lengthPriceTier"`;
   }
   if (!window) {
     return sql`, true as "sellsRequestedPeriod"${nextCharterAfterLapseColumns()}`;

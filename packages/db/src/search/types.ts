@@ -242,6 +242,11 @@ export type ListingSearchDoc = {
    */
   nearestCheckIn: string | null;
   nearestCheckOut: string | null;
+  /*
+   * On a length with no date, how the card will be priced (`lengthPriceTier`), which ranks it.
+   * Absent everywhere else.
+   */
+  lengthPriceTier?: number;
 };
 
 export type PeriodPriceSource =

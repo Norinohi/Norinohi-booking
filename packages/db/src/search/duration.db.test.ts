@@ -9,6 +9,7 @@ import {
   seedSearchWorld,
   shiftIso,
 } from "../test-support/search-fixture";
+import { encodeSearchCursor } from "./cursor";
 import { rebuildListingSearchDocs } from "./read-model";
 import { listShortCharterPeriods, searchListings } from "./repository";
 import type { ListingSearchInput } from "./types";
@@ -40,6 +41,7 @@ beforeAll(async () => {
   const anyday = await seedListing(db, "anyday", {
     free: { from: SAT, to: END },
     rules: [{ minNights: 1 }],
+    rating: "3.00",
   });
   /* The vendor priced both the night its card stores and the three nights a "3 days" card names. */
   await db.insert(availabilitySlot).values(
@@ -57,7 +59,18 @@ beforeAll(async () => {
       currency: "EUR",
     })),
   );
-  await seedListing(db, "norule", { free: { from: SAT, to: END } });
+  const norule = await seedListing(db, "norule", { free: { from: SAT, to: END }, rating: "5.00" });
+  /* Priced for a week only, so a "3 days" card names three nights nobody priced. */
+  await db.insert(availabilitySlot).values({
+    listingId: norule.listingId,
+    listingOfferId: norule.offerId,
+    startDate: SAT,
+    endDate: shiftIso(SAT, 7),
+    status: "available",
+    priceMinor: 500_000,
+    obligatoryExtrasMinor: 0,
+    currency: "EUR",
+  });
   const booked = await seedListing(db, "booked", {
     free: { from: SAT, to: shiftIso(SAT, 2) },
     rules: [{ minNights: 1 }],
@@ -156,5 +169,26 @@ describe("the price on a card a length names", () => {
       bookableFrom: SAT,
       bookableTo: shiftIso(SAT, 3),
     });
+  });
+});
+
+describe("recommending cards a length names", () => {
+  it("ranks a card priced for its charter above a better-rated one on request, on every page", async () => {
+    const input: ListingSearchInput = { locale: "en", duration: 3, sort: "recommended" };
+    const { items } = await searchListings(test.db, input);
+    expect(items.map((item) => [item.slug, item.nearestCheckIn])).toEqual([
+      ["anyday", SAT],
+      ["norule", expect.any(String)],
+    ]);
+    expect(items.map((item) => item.basePriceFromMinor)).toEqual([250_000, 500_000]);
+
+    const slugs: string[] = [];
+    let cursor: string | undefined = encodeSearchCursor({ value: 100, listingId: "~" });
+    do {
+      const page = await searchListings(test.db, { ...input, limit: 1, cursor });
+      slugs.push(...page.items.map((item) => item.slug));
+      cursor = page.nextCursor;
+    } while (cursor);
+    expect(slugs).toEqual(["anyday", "norule"]);
   });
 });
