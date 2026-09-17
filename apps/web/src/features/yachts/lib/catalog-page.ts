@@ -10,6 +10,8 @@ type CatalogPageTranslator = ReturnType<typeof useTranslations<"Seo.CatalogPage"
 /** How many sibling links a page carries. Enough to spread crawl depth, few enough to read. */
 const SIBLING_LIMIT = 8;
 
+const MARINA_KINDS = new Set<CatalogPage["kind"]>(["marina", "type-marina"]);
+
 /*
  * How many catalog pages the build prerenders, counted across both roots and before the locale
  * multiplies them. Prerendering the whole enumeration dominated the web deploy: every page costs
@@ -94,20 +96,35 @@ export function catalogPageHeading(t: CatalogPageTranslator, page: CatalogPage):
  * A sitemap is an invitation; internal links are the signal. Siblings rather than children on
  * purpose: a country page linking its cities, and a city page linking the other cities, reaches
  * the whole level from anywhere in it.
+ *
+ * A marina is the exception, because a town rarely has two marinas with enough boats for a page:
+ * Marina Kaštela had no siblings at all. Its list is topped up with the other marina pages in the
+ * same country, the closest the enumeration comes to nearby, since it carries no coordinates.
  */
 export function catalogPageSiblings(pages: CatalogPage[], page: CatalogPage): CatalogPage[] {
-  const parent = page.segments.slice(0, -1).join("/");
+  const byCount = (a: CatalogPage, b: CatalogPage) => b.count - a.count;
+  const levelOf = (other: CatalogPage) =>
+    other.root === page.root &&
+    other.segments.length === page.segments.length &&
+    other.segments.join("/") !== page.segments.join("/");
+  const sharesPrefix = (other: CatalogPage, dropped: number) =>
+    other.segments.slice(0, -dropped).join("/") === page.segments.slice(0, -dropped).join("/");
 
-  return pages
+  const siblings = pages.filter((other) => levelOf(other) && sharesPrefix(other, 1)).sort(byCount);
+  if (!MARINA_KINDS.has(page.kind) || siblings.length >= SIBLING_LIMIT) {
+    return siblings.slice(0, SIBLING_LIMIT);
+  }
+
+  const sameCountry = pages
     .filter(
       (other) =>
-        other.root === page.root &&
-        other.segments.length === page.segments.length &&
-        other.segments.slice(0, -1).join("/") === parent &&
-        other.segments.join("/") !== page.segments.join("/"),
+        levelOf(other) &&
+        other.kind === page.kind &&
+        !sharesPrefix(other, 1) &&
+        sharesPrefix(other, 2),
     )
-    .sort((a, b) => b.count - a.count)
-    .slice(0, SIBLING_LIMIT);
+    .sort(byCount);
+  return [...siblings, ...sameCountry].slice(0, SIBLING_LIMIT);
 }
 
 /**
