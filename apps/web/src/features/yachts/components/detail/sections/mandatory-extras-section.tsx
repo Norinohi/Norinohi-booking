@@ -11,7 +11,7 @@ import DetailSection from "./detail-section";
 export default function MandatoryExtrasSection() {
   const t = useTranslations("YachtDetail");
   const tExtras = useTranslations("Common.extras");
-  const extraPrice = useExtraPrice();
+  const extraPrice = useExtraPrice({ exact: true });
   const { data } = useListingDetail();
   const { quote } = useBooking();
 
@@ -63,7 +63,7 @@ export default function MandatoryExtrasSection() {
                   <p className="text-xs font-semibold text-natural-300">
                     {item.oneWayOnly
                       ? tExtras("oneWayOnly")
-                      : tExtras(payableInBase ? "payAtCheckIn" : "payNow")}
+                      : tExtras(payableInBase ? "payAtCheckIn" : "dueWithPrepayment")}
                   </p>
                 )}
               </div>
