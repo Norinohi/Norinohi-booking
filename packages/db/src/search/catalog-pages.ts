@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
+import { WORLD_REGION_NAMES } from "../geo/world-regions";
 import type * as schema from "../schema";
 import { facetTranslator } from "./localize";
 import { valueForLabel } from "./repository";
@@ -122,23 +123,6 @@ async function group(
 
 const str = (row: Row, key: string): string => String(row[key] ?? "");
 
-/**
- * Region names that are a continent's subdivision rather than somewhere to sail.
- *
- * Booking Manager has no sailing region per country, so its projection files each country under
- * the vendor's world region: Croatia, Greece, Italy and five more all carry a region called
- * "Southern Europe". As a catalogue page that read "Yacht charter in Southern Europe, Croatia",
- * 2,096 boats deep, beside the real Split and Zadar regions. A sailing region belongs to one
- * country, so a name the region table files under more than one is one of these. The data stays
- * as synced; only the page is withheld.
- */
-async function worldRegionNames(db: NodePgDatabase<typeof schema>): Promise<Set<string>> {
-  const rows = await db.execute<{ name: string }>(sql`
-    select name from region group by name having count(distinct country_id) > 1
-  `);
-  return new Set(rows.rows.map((row) => row.name));
-}
-
 /*
  * A builder a vendor records by name for boats it has no builder for. NauSYS ships one called
  * "Unknown" in its builder list, and 36 boats point at it, which made `/shipyard/unknown` a page.
@@ -185,7 +169,6 @@ export async function listCatalogPages(
     typeMarinas,
     builders,
     models,
-    worldRegions,
   ] = await Promise.all([
     of(["country"]),
     of(["country", "region"]),
@@ -198,9 +181,14 @@ export async function listCatalogPages(
     of(["category", "country", "city", "base_name"]),
     of(["builder"]),
     of(["builder", "model_canonical"]),
-    worldRegionNames(db),
   ]);
-  const sailingRegion = (row: Row) => !worldRegions.has(str(row, "region"));
+  /*
+   * Booking Manager used to file each country under its world region, which made "Southern
+   * Europe, Croatia" a 2,096-boat page beside Split and Zadar. The rows stay as synced; only the
+   * page is withheld. Matched by the vendor's list,
+   * not by a name shared across countries, because real sailing areas cross borders (Ionian).
+   */
+  const sailingRegion = (row: Row) => !WORLD_REGION_NAMES.has(str(row, "region"));
   const realBuilder = (row: Row) => !isPlaceholderBuilder(str(row, "builder"));
 
   const pages: CatalogPage[] = [];
