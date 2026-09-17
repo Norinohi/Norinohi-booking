@@ -419,6 +419,13 @@
       },
       "placeSearch": "Buscar localidades",
       "placeEmpty": "Ninguna localidad con ese nombre"
+    },
+    "priceLineLabels": {
+      "charterPrice": "Precio del chárter",
+      "charterExtra": "Suplemento del chárter",
+      "charterDiscount": "Descuento del chárter",
+      "referralWelcome": "Descuento de bienvenida por recomendación",
+      "referralCredit": "Crédito por recomendación"
     }
   },
   "support": {

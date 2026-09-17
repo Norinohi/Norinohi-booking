@@ -419,6 +419,13 @@
       },
       "placeSearch": "Orte suchen",
       "placeEmpty": "Kein Ort dieses Namens"
+    },
+    "priceLineLabels": {
+      "charterPrice": "Charterpreis",
+      "charterExtra": "Charter-Zuschlag",
+      "charterDiscount": "Charter-Rabatt",
+      "referralWelcome": "Willkommensrabatt über Empfehlung",
+      "referralCredit": "Empfehlungsguthaben"
     }
   },
   "support": {

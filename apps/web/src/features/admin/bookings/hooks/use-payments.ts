@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 
 import {
   adminBookingKey,
@@ -51,7 +52,8 @@ export function useBookingQueue(input: {
 }
 
 export function useAdminBooking(id: string) {
-  return useQuery(bookingDetailQueryOptions({ id }));
+  const locale = useLocale();
+  return useQuery(bookingDetailQueryOptions({ id, locale }));
 }
 
 export function useSettleInvoice() {

@@ -1,5 +1,5 @@
 import {
-  adminBookingIdInputSchema,
+  adminBookingGetInputSchema,
   bookingAdminDetailSchema,
   bookingAdminListInputSchema,
   bookingAdminListSchema,
@@ -61,11 +61,11 @@ export const bookingAdminRouter = {
         "The staff view of one booking: the customer it belongs to, the provider reservation, every price line, the payment schedule, and each payment with how it arrived and whether it is disputed. booking.get is scoped to the session user and answers NOT_FOUND for anyone else — correct for a customer, which is why staff need this. Travellers are deliberately absent here too: passport and crew data stays behind booking.travellers.*.",
       tags: ["Admin"],
       successDescription: "The booking.",
-      spec: withJsonBodyExample({ id: "bkg_example" }),
+      spec: withJsonBodyExample({ id: "bkg_example", locale: "uk" }),
     })
-    .input(adminBookingIdInputSchema)
+    .input(adminBookingGetInputSchema)
     .output(bookingAdminDetailSchema)
-    .handler(({ context, input }) => getBookingForAdmin(context.db, input.id)),
+    .handler(({ context, input }) => getBookingForAdmin(context.db, input.id, input.locale)),
   setExcluded: adminProcedure
     .route({
       method: "POST",

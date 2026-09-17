@@ -1,5 +1,6 @@
 "use client";
 
+import { ownLineLabel } from "@yacht-charter/api/lib/own-line-label";
 import { placeLine } from "@yacht-charter/api/lib/place-line";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
@@ -423,6 +424,10 @@ function PriceAside({ booking }: { booking: BookingDetail }) {
   const t = useTranslations("Booking.detail");
   const money = useExactMoney();
   const outstanding = booking.outstanding.amountMinor;
+  const lineLabel = (line: BookingDetail["priceLines"][number]) => {
+    const own = ownLineLabel(line);
+    return own ? t(`priceLineLabels.${own}`) : line.label;
+  };
   /*
    * The base collects this on the day and we never charge it, so it is in the total and in
    * nothing else. Left unsaid, the panel reads as broken arithmetic: €1,421 total against
@@ -438,7 +443,7 @@ function PriceAside({ booking }: { booking: BookingDetail }) {
         {booking.priceLines.map((line, index) => (
           <Row
             key={`${line.code}-${index}`}
-            label={line.label}
+            label={lineLabel(line)}
             /* Tagged on the line as well as totalled below, so it is obvious which €125 it is. */
             note={
               line.payWhen === "at_check_in" ? (

@@ -28,6 +28,6 @@ export function prefetchAdminBookings(queryClient: QueryClient) {
 }
 
 /** Server prefetch for /staff/bookings/[id]. */
-export function prefetchAdminBooking(queryClient: QueryClient, id: string) {
-  return queryClient.prefetchQuery(bookingDetailQueryOptions({ id }));
+export function prefetchAdminBooking(queryClient: QueryClient, id: string, locale: string) {
+  return queryClient.prefetchQuery(bookingDetailQueryOptions({ id, locale }));
 }

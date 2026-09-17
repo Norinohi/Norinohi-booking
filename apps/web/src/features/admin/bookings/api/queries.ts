@@ -52,7 +52,7 @@ export const bookingQueueQueryOptions = (input: {
  * One booking for staff. Longer staleTime than the queues: a detail screen is opened to read,
  * and the actions on it invalidate the whole booking segment anyway.
  */
-export const bookingDetailQueryOptions = (input: { id: string }) =>
+export const bookingDetailQueryOptions = (input: { id: string; locale: string }) =>
   orpc.admin.booking.get.queryOptions({ input, staleTime: 30_000 });
 
 /*

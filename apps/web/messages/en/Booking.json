@@ -419,6 +419,13 @@
       },
       "placeSearch": "Search places",
       "placeEmpty": "No place by that name"
+    },
+    "priceLineLabels": {
+      "charterPrice": "Charter price",
+      "charterExtra": "Charter extra",
+      "charterDiscount": "Charter discount",
+      "referralWelcome": "Referral welcome discount",
+      "referralCredit": "Referral credit"
     }
   },
   "support": {

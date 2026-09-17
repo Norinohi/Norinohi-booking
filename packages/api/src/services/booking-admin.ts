@@ -3,6 +3,7 @@ import { invoiceRequest } from "@yacht-charter/db/schema/checkout";
 import { user } from "@yacht-charter/db/schema/auth";
 import { quote } from "@yacht-charter/db/schema/quote";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
+import { facetTranslator, localizeQuoteLines } from "@yacht-charter/db/search";
 import { and, asc, count, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import type { z } from "zod";
 
@@ -127,10 +128,14 @@ function present(row: {
  * is why staff could not open the bookings their own queues link to. The gate moves up to the
  * procedure — `adminProcedure` — instead of the query.
  */
-export async function getBookingForAdmin(db: Database, id: string): Promise<Detail> {
+export async function getBookingForAdmin(
+  db: Database,
+  id: string,
+  locale?: string,
+): Promise<Detail> {
   const row = await readAnyBooking(db, id);
 
-  const [customer, schedules, payments, invoices] = await Promise.all([
+  const [customer, schedules, payments, invoices, translate, lines] = await Promise.all([
     db.select().from(user).where(eq(user.id, row.booking.userId)).limit(1),
     db
       .select()
@@ -148,6 +153,8 @@ export async function getBookingForAdmin(db: Database, id: string): Promise<Deta
       .where(eq(invoiceRequest.bookingId, id))
       .orderBy(desc(invoiceRequest.createdAt))
       .limit(1),
+    facetTranslator(db, locale),
+    localizeQuoteLines(db, row.quote.listingId, row.quote.lines, locale),
   ]);
 
   const owner = customer[0];
@@ -175,11 +182,13 @@ export async function getBookingForAdmin(db: Database, id: string): Promise<Deta
     // or has to send them a set-password link.
     isGuestAccount: owner.provisionedAt !== null,
     base: {
-      name: snapshot.baseName,
-      locationName: snapshot.locationName,
-      countryName: snapshot.countryName,
+      name: translate ? translate("marina", snapshot.baseName) : snapshot.baseName,
+      locationName: translate
+        ? translate("location", snapshot.locationName)
+        : snapshot.locationName,
+      countryName: translate ? translate("country", snapshot.countryName) : snapshot.countryName,
     },
-    priceLines: row.quote.lines.map((line) => ({
+    priceLines: lines.map((line) => ({
       code: line.code,
       label: line.label,
       amount: { amountMinor: line.amountMinor, currency: line.currency },

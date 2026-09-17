@@ -18,6 +18,7 @@ import { quote, type QuoteLine } from "@yacht-charter/db/schema/quote";
 import {
   facetTranslator,
   listRequestableExtras,
+  localizeQuoteLines,
   type FacetTranslator,
 } from "@yacht-charter/db/search";
 import type { InventoryProvider } from "@yacht-charter/providers";
@@ -158,7 +159,7 @@ export async function getBooking(
 ): Promise<Detail> {
   const row = await readOwnedBooking(db, userId, id);
 
-  const [extras, schedules, payments, money, invoices, translate] = await Promise.all([
+  const [extras, schedules, payments, money, invoices, translate, lines] = await Promise.all([
     db.select().from(bookingExtra).where(eq(bookingExtra.bookingId, id)),
     db.select().from(paymentSchedule).where(eq(paymentSchedule.bookingId, id)),
     db.select().from(payment).where(eq(payment.bookingId, id)),
@@ -172,9 +173,16 @@ export async function getBooking(
       .orderBy(desc(invoiceRequest.createdAt))
       .limit(1),
     facetTranslator(db, locale),
+    localizeQuoteLines(db, row.quote.listingId, row.quote.lines, locale),
   ]);
 
   const [invoice] = invoices;
+  const extraRows = await localizeQuoteLines(
+    db,
+    row.quote.listingId,
+    extras.map((extra) => ({ ...extra, kind: "extra" })),
+    locale,
+  );
 
   const summary = presentSummary(row.booking, row.quote, money.get(id), translate);
 
@@ -188,14 +196,14 @@ export async function getBooking(
     cancelledAt: row.booking.cancelledAt?.toISOString() ?? null,
     cancelReason: row.booking.cancelReason,
     crewType: row.quote.crewType,
-    priceLines: row.quote.lines.map((line) => ({
+    priceLines: lines.map((line) => ({
       code: line.code,
       label: line.label,
       amount: { amountMinor: line.amountMinor, currency: line.currency },
       group: line.group ?? null,
       payWhen: line.payWhen,
     })),
-    extras: extras.map((extra) => ({
+    extras: extraRows.map((extra) => ({
       code: extra.code,
       label: extra.label,
       pricingType: extra.pricingType,

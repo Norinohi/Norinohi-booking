@@ -419,6 +419,13 @@
       },
       "placeSearch": "Пошук населених пунктів",
       "placeEmpty": "Немає такого населеного пункту"
+    },
+    "priceLineLabels": {
+      "charterPrice": "Ціна чартеру",
+      "charterExtra": "Доплата за чартер",
+      "charterDiscount": "Знижка на чартер",
+      "referralWelcome": "Вітальна знижка за рекомендацією",
+      "referralCredit": "Бонус за рекомендацією"
     }
   },
   "support": {

@@ -672,6 +672,10 @@ export const invoiceRequestSchema = z.object({
 /** Staff address a booking by id alone — no guest token, and no ownership to prove. */
 export const adminBookingIdInputSchema = z.object({ id: idSchema });
 
+export const adminBookingGetInputSchema = adminBookingIdInputSchema.extend({
+  locale: bookingLocaleSchema,
+});
+
 export const bookingAdminDetailSchema = bookingAdminRowSchema.extend({
   provider: z.string(),
   providerReservationId: z.string().nullable(),
