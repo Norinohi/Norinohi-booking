@@ -41,7 +41,10 @@ export async function createTestDatabase(): Promise<TestDatabase> {
 
   const url = new URL(adminUrl);
   url.pathname = `/${name}`;
-  const db = drizzle({ connection: { connectionString: url.toString() }, schema });
+  const db = drizzle({
+    connection: { connectionString: url.toString(), options: "-c jit=off" },
+    schema,
+  });
   await migrate(db, { migrationsFolder: MIGRATIONS });
 
   return {

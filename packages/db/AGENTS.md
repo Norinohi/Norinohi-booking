@@ -76,6 +76,9 @@ minimum with the nearest week a vendor priced, and `duration.db.test.ts` pins th
 filter, dated or not, admits only listings with a free charter of that length and names one,
 which short charters `listShortCharterPeriods` hands the NauSYS sweep, and that a card shows the
 swept price of the charter it names.
+`page-totals.db.test.ts` pins the results total, which the page query reads with
+`count(*) over ()` instead of a second query, for undated, dated, lone check-in and length
+searches, including a page past the last one, where no row carries it and a plain count runs.
 Shared seeding for these lives in `src/test-support/search-fixture.ts`.
 `src/search/catalogue-countries.db.test.ts` pins `listCatalogueCountries` (boats per country, with
 the ISO code the planner builds its flag from) and the `country` and `region` filters on
@@ -113,5 +116,6 @@ A new route or map query belongs in one of these folders; `search/` is for the l
 - `drizzle.config.ts` sets `out: "./src/migrations"`, so generated SQL lands inside `src/`. Never hand-edit files there once generated, and always commit it — `src/migrations` is what reaches production. Deployment applies it through `src/migrate.ts`. Editing an applied migration leaves every database that already ran it holding different SQL from the repository, which is why `0018_goofy_reaper` no longer matches its recorded hash; `db:baseline` reports that but cannot fix it.
 - `src/migrate.ts` exports `runMigrations(migrationsFolder)` and takes the folder as an argument on purpose: consumers bundle this file, so an `import.meta.url` computed here would resolve to _their_ output location. `apps/server/src/migrate.ts` is the caller.
 - `src/index.ts` exports both the `createDb()` factory and a `db` singleton. Prefer `createDb()` where lifecycle matters — `packages/auth` calls the factory.
+- `createDb()` opens every connection with `options: "-c jit=off"`. The search queries (results, map, facets) carry planner estimates past 20M, so Postgres JIT-compiles them, and the compile took longer than the query: a lone check-in results page ran 10.6s with JIT and 1.5s without, the count 3.9s against 0.8s. Keep it off for the app's pool; `createTestDatabase()` sets the same option so the suites run what production runs. Startup options only reach Postgres on a direct connection. A pooler that strips them (PgBouncer in transaction mode, some managed proxies) needs the database-level setting instead: `ALTER DATABASE "<name>" SET jit = off;`, which applies to new sessions. Check with `show jit` from the server's own connection.
 - The compose project name, container name, and volume are all `yacht-charter`-prefixed. Renaming them orphans the existing local volume and its data.
 - Curated seed and label data is JSON beside the module that owns it (`catalogue-routes.json`, `catalogue-stop-refresh.json`, `popular-routes.json`, `boat-types.json`, `site-faq.json`, `translations/*.json`). The module imports it `with { type: "json" }` and parses it with zod at load, keeping the exported name and type, so a hand edit that breaks the shape fails on import rather than halfway through a write. The `tsdown` bundle of `apps/server` inlines these imports. A JSON file cannot hold a comment, so a note on an entry is a `$comment` key, which the parse strips.

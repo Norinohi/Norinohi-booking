@@ -12,7 +12,17 @@ import * as schema from "./schema";
  * ~3,900-page prod prerender is slower than its query cost alone would suggest.
  */
 export function createDb() {
-  return drizzle({ connection: { connectionString: env.DATABASE_URL, max: 20 }, schema });
+  return drizzle({
+    connection: {
+      connectionString: env.DATABASE_URL,
+      max: 20,
+      /* The search queries are estimated at 20M+ cost, far past jit_above_cost, but finish in a
+         second or two; compiling them cost more than running them (lone check-in page 10.6s with
+         JIT, 1.5s without). */
+      options: "-c jit=off",
+    },
+    schema,
+  });
 }
 
 export const db = createDb();
