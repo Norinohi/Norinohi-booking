@@ -125,6 +125,13 @@ export const quote = pgTable(
      * comes back to a stored quote can still show the choice rather than losing it on reload.
      * A snapshot like `lines`, and just as stale-able: the quote's own TTL governs both.
      */
+    /**
+     * The handover times, "HH:mm" at the marina, the vendor put on this offer, or null where it
+     * stated none. Kept because the booking is built from this row after the live response is
+     * gone, and NauSYS names the times on the offer but not on the option the hold opens.
+     */
+    checkInTime: text("check_in_time"),
+    checkOutTime: text("check_out_time"),
     routeOptions: jsonb("route_options").$type<QuoteRouteOption[]>().default([]).notNull(),
     priceSourceHash: text("price_source_hash").notNull(),
     status: quoteStatus("status").default("active").notNull(),

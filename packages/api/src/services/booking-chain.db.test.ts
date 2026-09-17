@@ -473,6 +473,24 @@ describe("handover times", () => {
     const { booking: row } = await bookingState(db, hold.bookingId);
     expect(row.commercialSnapshot).toMatchObject({ checkInTime: null, checkOutTime: null });
   });
+
+  it("takes the offer's times where the option states none", async () => {
+    const { db } = test;
+    const { listingId } = await seedYacht(db, "handoveroffer");
+    const userId = await seedCustomer(db, "usr_handoveroffer");
+
+    const getQuote = inventory.getQuote.bind(inventory);
+    vi.spyOn(inventory, "getQuote").mockImplementationOnce(async (request) => ({
+      ...(await getQuote(request)),
+      checkInTime: "17:00",
+      checkOutTime: "08:00",
+    }));
+    const quote = await quoteWeek(db, inventory, listingId, userId);
+    const hold = await holdQuote(db, inventory, userId, quote.quoteId);
+
+    const { booking: row } = await bookingState(db, hold.bookingId);
+    expect(row.commercialSnapshot).toMatchObject({ checkInTime: "17:00", checkOutTime: "08:00" });
+  });
 });
 
 /* The outbox drain runs on its own after a hold, so its rows are not the chain's to compare. */

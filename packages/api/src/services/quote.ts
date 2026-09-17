@@ -1159,6 +1159,8 @@ async function insertQuote(
       // and the alternatives it offered, so the choice survives a reload.
       route: input.priced.route,
       routeOptions: input.priced.routeOptions,
+      checkInTime: input.priced.checkInTime ?? null,
+      checkOutTime: input.priced.checkOutTime ?? null,
       priceSourceHash: input.priced.priceSourceHash,
       expiresAt: new Date(input.priced.expiresAt),
     })

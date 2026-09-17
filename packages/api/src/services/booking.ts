@@ -340,7 +340,10 @@ export async function createHold(
   }
   await assertOnlineBookable(db, priced.listingOfferId);
 
-  const snapshot = await buildSnapshot(db, priced.listingId);
+  const snapshot = withHandoverTimes(await buildSnapshot(db, priced.listingId), {
+    checkInTime: priced.checkInTime ?? undefined,
+    checkOutTime: priced.checkOutTime ?? undefined,
+  });
   const [account] = await db
     .select({ name: user.name, email: user.email })
     .from(user)
