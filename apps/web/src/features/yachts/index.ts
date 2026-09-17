@@ -9,6 +9,7 @@ export { default as YachtDetailScreen } from "./components/detail/detail-screen"
 export { default as SuggestedRouteView } from "./components/detail/sections/suggested-route-view";
 export { buildSearchHref, type SearchCriteria } from "./lib/build-search-href";
 export { listingDetailHref } from "./lib/detail-href";
+export { lastSearchedPeriod } from "./lib/last-search";
 export { serializeDetailPeriod, serializeSearch } from "./lib/search-params";
 export { useListingCards } from "./hooks/use-listing-cards";
 export { useListingDetail } from "./hooks/use-listing-detail";

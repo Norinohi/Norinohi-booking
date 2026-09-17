@@ -9,7 +9,9 @@ import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 
-import { useListingCards } from "@/features/yachts";
+import type { CharterPeriod } from "@/components/shared/form/charter-date-field";
+import { lastSearchedPeriod, serializeDetailPeriod, useListingCards } from "@/features/yachts";
+import { dayFromNative } from "@/lib/date";
 
 import { useWishlistPage } from "../hooks/use-wishlist-page";
 
@@ -24,6 +26,15 @@ export default function WishlistScreen() {
   const t = useTranslations("Wishlist");
   const { toCard } = useListingCards();
   const [page, setPage] = useState(1);
+  /*
+   * A saved card prices the boat's own next charter, but the visitor saved it while looking at a
+   * week, so its link opens that week. Read after mount: session storage is not there to render
+   * against on the server.
+   */
+  const [searchedPeriod, setSearchedPeriod] = useState<CharterPeriod | null>(null);
+  useEffect(() => {
+    setSearchedPeriod(lastSearchedPeriod(dayFromNative(new Date())));
+  }, []);
 
   const { isLoading, listings, totalItems, pageSize, hasStaleSaves } = useWishlistPage(page);
 
@@ -73,6 +84,14 @@ export default function WishlistScreen() {
                       key={listing.id}
                       layout="row"
                       {...toCard(listing)}
+                      {...(searchedPeriod
+                        ? {
+                            detailHref: serializeDetailPeriod(
+                              `/yachts/${listing.slug}`,
+                              searchedPeriod,
+                            ),
+                          }
+                        : null)}
                       priority={index === 0}
                     />
                   ))}
