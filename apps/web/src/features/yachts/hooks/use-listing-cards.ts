@@ -21,8 +21,18 @@ export function useListingCards() {
    * to print one hardcoded week for every listing regardless of what was searched, so a
    * 14-night October search still read "July 7 - July 14". No period, no dates.
    */
-  function toCard(listing: ResultListing, period?: CharterPeriod) {
-    return toYachtCard(t, tCrew, tBadge, formatMoney, listing, period, basis, display === null);
+  function toCard(listing: ResultListing, period?: CharterPeriod, datesInCaption = false) {
+    return toYachtCard(
+      t,
+      tCrew,
+      tBadge,
+      formatMoney,
+      listing,
+      period,
+      basis,
+      display === null,
+      datesInCaption,
+    );
   }
 
   return { toCard };

@@ -139,7 +139,7 @@ export default function MapScreen() {
             <MapBoatPopup
               key={selected.id}
               coordinates={{ lat: selected.base.lat, lng: selected.base.lng }}
-              boats={[toCard(selected)]}
+              boats={[toCard(selected, undefined, true)]}
               map={map}
               focusZoom={selection.selectedFocus?.focusZoom}
               focusDurationMs={selection.selectedFocus?.focusDurationMs}
@@ -151,7 +151,7 @@ export default function MapScreen() {
             <MapBoatPopup
               key={openMarina.baseIds.join()}
               coordinates={{ lat: openMarina.lat, lng: openMarina.lng }}
-              boats={marinaBoats.items.map((item) => toCard(item.listing, item))}
+              boats={marinaBoats.items.map((item) => toCard(item.listing, item, true))}
               total={openMarina.count}
               pageStart={(marinaPage - 1) * MARINA_PAGE_SIZE}
               onActiveIndex={selection.setMarinaIndex}

@@ -58,6 +58,11 @@ export function toYachtCard(
    * every card already.
    */
   publishedCurrencies = false,
+  /**
+   * Whether the caption names the priced charter's dates rather than its length. The map's cards
+   * print no dates of their own, so "7 days" there named a week nobody could see.
+   */
+  datesInCaption = false,
 ): YachtCardData & { id: string } {
   const hold = listing.availability.temporaryHold;
   /* An undated search still sends a period, both ends null; that is no period at all. */
@@ -79,6 +84,11 @@ export function toYachtCard(
   };
 
   const identity = yachtCardIdentity(t, tCrew, tBadge, listing);
+  const captionPeriod = datesInCaption
+    ? (searched ?? listing.availability.bookablePeriod)
+    : period?.periodIsAlternative
+      ? searched
+      : null;
 
   return {
     ...identity,
@@ -112,7 +122,7 @@ export function toYachtCard(
     datesNote: period?.periodIsAlternative ? t("datesAlternative") : undefined,
     /* Says what the badge above it leaves out: how long the other customer's hold has left. */
     hold: hold ?? undefined,
-    priceLabel: priceCaption(t, listing, basis, period?.periodIsAlternative ? searched : null),
+    priceLabel: priceCaption(t, listing, basis, captionPeriod),
     price: yachtCardPrice(t, listing, formatMoney),
     listPrice: yachtCardListPrice(listing, formatMoney),
     /* Only ever present where the headline is the charter rate, which is what makes the line
@@ -187,7 +197,8 @@ function perNightLine(
  * that produced "From / On request", which reads as a broken sentence rather than as a price.
  *
  * `otherDates` is the charter a flexible search moved the card onto, which the API priced. The
- * caption names it, so the figure cannot pass for a price of the dates that were searched.
+ * caption names it, so the figure cannot pass for a price of the dates that were searched. A map
+ * card passes its priced charter here too, having no dates line to show it on.
  */
 function priceCaption(
   t: CardTranslator,
