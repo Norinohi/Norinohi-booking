@@ -1,8 +1,8 @@
 # Scheduled jobs
 
-Seven jobs keep a live provider catalogue current, stop expired holds from
-selling a slot twice, notice when an operator has changed a charter behind our back,
-tell a customer their balance is coming due, clean retired provider media, and deliver the mail
+Eight jobs keep a live provider catalogue current, price the weeks ahead a visitor might
+search, stop expired holds from selling a slot twice, notice when an operator has changed a
+charter behind our back, tell a customer their balance is coming due, clean retired provider media, and deliver the mail
 checkout wrote down instead of sending. None of them run on the `server` service itself: that service
 answers requests, and a catalogue walk takes hours.
 
@@ -11,6 +11,7 @@ answers requests, and a catalogue walk takes hours.
 | Catalogue sync        | daily, 01:00 UTC | `pnpm --filter server sync:catalogue`         | `apps/server/railway.cron-catalogue.json`     |
 | Media cleanup         | daily, 04:00 UTC | `pnpm --filter server sync:media-cleanup`     | `apps/server/railway.cron-media-cleanup.json` |
 | Availability sync     | every 30 min     | `pnpm --filter server sync:availability`      | `apps/server/railway.cron-availability.json`  |
+| Price weeks           | daily, 22:15 UTC | `pnpm --filter server sync:price-weeks`       | `apps/server/railway.cron-price-weeks.json`   |
 | Expiry sweep          | every 10 min     | `pnpm --filter server sweep:expiries`         | `apps/server/railway.cron-sweep.json`         |
 | Reservation reconcile | every 6 hours    | `pnpm --filter server reconcile:reservations` | `apps/server/railway.cron-reconcile.json`     |
 | Payment reminders     | daily, 09:00 UTC | `pnpm --filter server remind:payments`        | `apps/server/railway.cron-reminders.json`     |
@@ -55,6 +56,100 @@ so in a healthy system the mail is already gone and this tick finds nothing. It 
 at Railway's minimum gap because what it catches is a container replaced mid-drain
 and a mailer that was down — the cases where the customer is waiting on this run and
 nothing else. See `packages/api/src/services/outbox.ts`.
+
+## Price weeks
+
+The half-hourly availability sweep asks the vendors about the charters the cards already
+advertise: each listing's nearest bookable period, a rotating tail of rarer ones, short charters,
+and a grid of weeks only for listings advertising nothing. So a week three months out is priced
+only for the few boats whose first free week it happens to be. On the local fleet before this job,
+Split listings with a vendor-confirmed price by check-in month were Sep 235, Oct 817, Nov 19,
+Dec 4, and a visitor searching 7 to 14 November saw 6 exact prices among 1,193 boats.
+
+`sync-price-weeks.ts` asks both vendors to price every Saturday-to-Saturday week of the next
+`PRICE_WEEKS_COUNT` weeks for the whole fleet, one week at a time, through the same confirming
+streams the sweep uses (`streamNausysConfirmedOffers`, `streamBookingManagerConfirmedOffers`) and
+the same writer, which then rebuilds `listing_search_doc` and `listing_period_price` for the
+listings it priced. There is no occupancy walk in front of it. The pieces are
+`packages/providers/src/shared/price-weeks.ts` (the week list, cursor and source) and
+`packages/providers/src/sync/price-weeks.ts` (lock wait and run).
+
+- **Which weeks.** From the first Saturday a charter could still be sold on: today plus the
+  vendor's `leadDays` from `packages/env/src/providers.ts`, never under the read model's
+  `MIN_LEAD_DAYS`. Booking Manager's two days mean a Friday run starts a week later than NauSYS.
+  Saturday weeks only, and no check-in rule logic here: a boat that does not turn around on
+  Saturday is simply not in the vendor's answer.
+- **Silence is judged.** Each week is asked for the whole fleet, so a hull missing from the answer
+  is written as a refusal, the same as the Booking Manager grid already does. Three things make
+  that the safe choice rather than the risky one. The writer only refuses listings the vendor
+  could have sold that exact week: an active offer inside the swept companies, a published rate
+  for every night, nothing occupied over it, and check-in rules that admit a seven-night Saturday
+  charter, so a Sunday-turnaround boat is never judged by a Saturday ask. A week is refused only
+  from a page that arrived whole: a batch that fails ends the page before anyone is judged. And a
+  refusal outranks a confirmed price in `sellableConfirmedSlot`, so a pass that priced weeks
+  without restating refusals would leave a week that has since reopened hidden behind a
+  fortnight-old refusal from another pass, with the fresh price written underneath it. The
+  containment rule (`wasRefused`) blocks longer charters over a refused week, which is right for
+  a seven-night refusal and is exactly why short charters in the sweep do not judge. The cost is
+  bounded: a false refusal lasts until the next night restates that week, and at most
+  `REFUSAL_TRUST_DAYS`. Measured: the runs below added, net, 90 Booking Manager and 68 NauSYS
+  Saturday-week refusals across the whole horizon, against 35,885 and 25,575 prices.
+- **Same lock as the sweep.** It opens its run under the `availability` kind, with its own cursor
+  row (`sync_cursor` scope `price-weeks`). `sync_run_in_flight_uq` is the only thing that keeps two
+  processes off one vendor credential, NauSYS forbids parallel calls, and both passes write the
+  same slots and refusals, so no new `sync_kind` value and no migration. While it runs, the
+  half-hourly ticks for that provider report "skipped" and exit 0. If a sweep holds the lock when
+  the job starts, the job polls every 30 seconds for up to 20 minutes rather than losing the night.
+- **Budget and resume.** `PRICE_WEEKS_BUDGET_MS` is wall clock from process start, including that
+  wait. The writer checks it after each week, so a run overruns by at most one week plus the
+  closing rebuild. The cursor is the check-in date of the first unfinished week, not an index,
+  because the next night rebuilds the list from a later today; a cursor past the horizon starts
+  the cycle over, and a completed walk clears it.
+- **Rate limits.** Calls go through the provider clients, so `NAUSYS_MIN_INTERVAL_MS` and
+  `BOOKING_MANAGER_MIN_INTERVAL_MS` (and Booking Manager's sweep lanes) apply unchanged. NauSYS
+  also rate limits sustained `freeYachts` traffic with a 429 that outlasts the client's own
+  retries: measured on 2026-09-17, a run two minutes after a 60-call run was refused on every
+  retry of its first call. A 429 therefore pauses the pass for two minutes and restarts it at the
+  week that failed, up to five times a run, before giving the night up with the cursor on that
+  week.
+
+Schedule: `15 22 * * *`, 22:15 UTC (23:15 CET, 00:15 CEST). Between two sweep ticks, when traffic
+is lowest, and a 45 minute budget plus rebuild ends near 23:10, well clear of the catalogue sync
+at 01:00, which rewrites the rate bands refusal eligibility reads.
+
+### Cost, measured locally on 2026-09-17
+
+Against the live vendors from a developer machine, NauSYS fleet 7,408 hulls (30 `freeYachts`
+calls of 250 per week), Booking Manager 11,223 listings account-wide (one `/offers` per week,
+fanned over its sweep lanes).
+
+| Run                      | Weeks | Wall clock | Per week                                       | Prices written | Refusals | Listings rebuilt |
+| ------------------------ | ----- | ---------- | ---------------------------------------------- | -------------- | -------- | ---------------- |
+| NauSYS, 19 Sep to 3 Oct  | 2     | 178 s      | fetch 71 s / 94 s, write 4.6 s / 3.0 s         | 2,153          | 135      | 1,532            |
+| Booking Manager, same    | 2     | 26 s       | fetch 1.7 s, write 3.3 to 3.8 s                | 4,205          | 474      | 2,888            |
+| NauSYS, 19 Sep to 14 Nov | 8     | 846 s      | fetch 53 to 136 s (mean 98 s), write 2 to 10 s | 25,575         | 602      | 6,415            |
+| Booking Manager, same    | 8     | 152 s      | fetch under 2 s, write 5 to 29 s (mean 12.5 s) | 35,885         | 1,502    | 8,619            |
+
+NauSYS time is almost all vendor latency, and it grows with the size of the answer: about 55 s for
+a week returning 800 free hulls, 135 s for one returning 4,800 (the `obligatoryExtras` payload).
+Booking Manager time is almost all writing.
+
+Extrapolated to the default 26 weeks: NauSYS about 26 x 104 s = 45 minutes, which is the budget,
+so in season a cycle takes one night and occasionally spills a few weeks into the next; winter
+weeks return fewer free hulls and run faster. Booking Manager about 26 x 19 s = 8 minutes. Call
+volume per cycle: NauSYS 26 x 30 = 780 `freeYachts` calls, Booking Manager 26 `/offers`. Rebuilds
+are scoped to the listings priced, roughly the published fleet on a full run. Re-measure from the
+Railway region before raising the horizon.
+
+Effect of the 8-week run on the Split region (listings with a vendor-confirmed Saturday price):
+
+| Split listings                               | Before | After |
+| -------------------------------------------- | ------ | ----- |
+| Week 2026-11-07 to 2026-11-14 (period price) | 6      | 649   |
+| Check-in in September                        | 235    | 282   |
+| Check-in in October                          | 817    | 1,065 |
+| Check-in in November                         | 19     | 650   |
+| Check-in in December (outside the 8 weeks)   | 4      | 4     |
 
 ## Reservation reconciliation
 
@@ -188,11 +283,11 @@ depends on cannot drift.
 
 Then what the jobs actually use.
 
-`cron-catalogue` and `cron-availability` fan out over **every enabled provider**,
+`cron-catalogue`, `cron-availability` and `cron-price-weeks` fan out over **every enabled provider**,
 not the one `PROVIDER_MODE` names - they build from `createEnabledInventoryProviders`,
 and a provider whose credentials are absent is skipped silently. That is the trap:
 give these two only one vendor's credentials and the other vendor simply never
-syncs, with no error anywhere. Both need both sets.
+syncs, with no error anywhere. All three need both sets.
 
 ```
 PROVIDER_MODE=nausys
@@ -207,6 +302,15 @@ BOOKING_MANAGER_COMPANY_IDS          ${{api.BOOKING_MANAGER_COMPANY_IDS}}
 BOOKING_MANAGER_EXCLUDED_COMPANY_IDS ${{api.BOOKING_MANAGER_EXCLUDED_COMPANY_IDS}}
 PROVIDER_AUTO_PUBLISH=nausys
 REVALIDATE_SECRET                    ${{api.REVALIDATE_SECRET}}
+```
+
+`cron-price-weeks` takes the block above (it rebuilds the catalog, so it wants
+`REVALIDATE_SECRET`; `PROVIDER_AUTO_PUBLISH` it never reads) plus its own two, both optional with
+defaults:
+
+```
+PRICE_WEEKS_COUNT       26        # Saturday weeks ahead, 1 to 104
+PRICE_WEEKS_BUDGET_MS   2700000   # 45 minutes, including any wait for the availability lock
 ```
 
 `PROVIDER_MODE` is still single-valued and still matters, but only to the booking

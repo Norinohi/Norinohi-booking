@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 
+import { useBooking } from "@/features/booking";
 import { useExtraPrice } from "@/hooks/use-extra-price";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
@@ -10,10 +11,20 @@ import DetailSection from "./detail-section";
 export default function MandatoryExtrasSection() {
   const t = useTranslations("YachtDetail");
   const tExtras = useTranslations("Common.extras");
-  const extraPrice = useExtraPrice();
+  const extraPrice = useExtraPrice({ exact: true });
   const { data } = useListingDetail();
+  const { quote } = useBooking();
 
   if (!data) return null;
+
+  /*
+   * Where it is collected is the offer's answer once a quote exists, as it is in the sidebar and
+   * the optional list. NauSYS files some fees ADVANCE_PAYMENT in the yacht's catalogue and bills
+   * them separately in the live offer, and the offer is what checkout charges: Sileb's
+   * accommodation package read "included in the prepayment" here beside a sidebar saying
+   * "pay at check-in".
+   */
+  const offeredPayWhen = new Map(quote?.lines.map((line) => [line.code, line.payWhen]));
 
   return (
     <DetailSection id="mandatory-extras" title={t("sections.mandatoryExtras")}>
@@ -33,6 +44,8 @@ export default function MandatoryExtrasSection() {
           const included =
             item.percentage === null &&
             (item.pricingType === "included" || item.price.amountMinor === 0);
+          const offered = offeredPayWhen.get(item.code);
+          const payableInBase = offered ? offered === "at_check_in" : item.payableInBase;
 
           return (
             <div
@@ -46,17 +59,17 @@ export default function MandatoryExtrasSection() {
                     counting into the prepayment on the same screen. A route-conditional fee
                     says so instead: it is not charged on the same-base charter most of these
                     listings sell, so presenting it flatly overstates the trip. */}
-                {!included && (item.oneWayOnly || item.payableInBase !== null) && (
+                {!included && (item.oneWayOnly || payableInBase !== null) && (
                   <p className="text-xs font-semibold text-natural-300">
                     {item.oneWayOnly
                       ? tExtras("oneWayOnly")
-                      : tExtras(item.payableInBase ? "payAtCheckIn" : "payNow")}
+                      : tExtras(payableInBase ? "payAtCheckIn" : "dueWithPrepayment")}
                   </p>
                 )}
               </div>
               {/* The operator's own measure, where it gave one: a per-person extra quoted
                   as "per booking" understates what the charter will be billed. */}
-              <p className="shrink-0 text-right text-base leading-5.5 font-bold text-foreground max-md:max-w-18">
+              <p className="max-w-1/2 shrink-0 text-right text-base leading-5.5 font-bold text-foreground">
                 {item.percentage !== null
                   ? tExtras("percentageOfCharter", { percent: item.percentage * 100 })
                   : included

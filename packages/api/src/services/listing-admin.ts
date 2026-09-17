@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { base, location } from "@yacht-charter/db/schema/geography";
 import { listing, listingSpecification } from "@yacht-charter/db/schema/listing";
 import { listingFieldSource, listingOffer } from "@yacht-charter/db/schema/listing-offer";
@@ -32,6 +31,7 @@ import {
 import { writeAuditLog } from "./audit";
 import { loadPrimaryImages } from "./match";
 import { paginatedQuery, totalFrom } from "./pagination";
+import { BadRequestError, NotFoundError } from "../errors";
 
 type FieldSources = z.infer<typeof listingFieldSourcesSchema>;
 type FieldSourcesInput = z.infer<typeof listingFieldSourcesInputSchema>;
@@ -230,7 +230,7 @@ export async function setListingStatus(
       .limit(1)
       .for("update");
 
-    if (!current) throw new ORPCError("NOT_FOUND", { message: "Unknown listing" });
+    if (!current) throw new NotFoundError({ message: "Unknown listing" });
 
     await tx.update(listing).set({ status: input.status }).where(eq(listing.id, input.id));
 
@@ -347,7 +347,7 @@ export async function listListingFieldSources(
   `);
 
   if (offers.rows.length === 0) {
-    throw new ORPCError("NOT_FOUND", { message: "This listing has no provider offers" });
+    throw new NotFoundError({ message: "This listing has no provider offers" });
   }
 
   const decisions = await db.execute<{
@@ -437,7 +437,7 @@ export async function setListingFieldSource(
       .limit(1);
 
     if (!offer) {
-      throw new ORPCError("BAD_REQUEST", {
+      throw new BadRequestError({
         message: "That offer does not belong to this listing",
       });
     }

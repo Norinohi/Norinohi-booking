@@ -8,12 +8,14 @@ import {
 import { env } from "@yacht-charter/env/server";
 import type { InventoryProvider } from "@yacht-charter/providers";
 import { and, eq, inArray, isNull, ne } from "drizzle-orm";
+import { parseError } from "evlog";
 import type Stripe from "stripe";
 import { z } from "zod";
 
 import type { Database } from "../context";
 import { providerByKey } from "./provider-routing";
 import { confirmBookingWithProvider } from "./booking-confirm";
+import { recordErrorInAudit } from "./error-audit";
 import { canTransition } from "./booking-state";
 import { stripeClient } from "./payment";
 import { announcePaymentReceived } from "./payment-receipt";
@@ -57,26 +59,45 @@ export async function handleStripeWebhook(
     // Must run against the raw body — any JSON round-trip breaks the signature.
     event = stripe.webhooks.constructEvent(rawBody, signature, env.STRIPE_WEBHOOK_SECRET);
   } catch (error) {
-    return {
-      handled: false,
-      reason: error instanceof Error ? error.message : "Signature verification failed",
-    };
+    const reason = error instanceof Error ? error.message : "Signature verification failed";
+    /* Stripe's error carries the raw payload and header; only its message is kept. */
+    await recordErrorInAudit(db, {
+      source: "stripe_webhook",
+      operation: "stripe.signature",
+      thrown: parseError(new Error(reason)),
+      entityType: "stripe_event",
+      entityId: null,
+    });
+    return { handled: false, reason };
   }
 
-  const [inserted] = await db
-    .insert(providerWebhookEvent)
-    .values({
-      source: "stripe",
-      externalEventId: event.id,
-      eventType: event.type,
-      payload: event,
-    })
-    .onConflictDoNothing()
-    .returning({ id: providerWebhookEvent.id });
+  let recorded: { id: string } | null;
+  try {
+    const [inserted] = await db
+      .insert(providerWebhookEvent)
+      .values({
+        source: "stripe",
+        externalEventId: event.id,
+        eventType: event.type,
+        payload: event,
+      })
+      .onConflictDoNothing()
+      .returning({ id: providerWebhookEvent.id });
 
-  // The unique (source, external_event_id) index already held this one; whether
-  // that means "done" depends on how far the earlier attempt got.
-  const recorded = inserted ?? (await claimUnprocessed(db, event.id));
+    // The unique (source, external_event_id) index already held this one; whether
+    // that means "done" depends on how far the earlier attempt got.
+    recorded = inserted ?? (await claimUnprocessed(db, event.id));
+  } catch (error) {
+    await recordErrorInAudit(db, {
+      source: "stripe_webhook",
+      operation: "stripe.record_event",
+      thrown: parseError(error),
+      entityType: "stripe_event",
+      entityId: event.id,
+      context: { eventType: event.type },
+    });
+    throw error;
+  }
 
   if (!recorded) return { handled: true, eventId: event.id, duplicate: true };
 
@@ -106,6 +127,14 @@ export async function handleStripeWebhook(
       .set({ processedAt: new Date(), error: note ?? null })
       .where(eq(providerWebhookEvent.id, recorded.id));
   } catch (error) {
+    await recordErrorInAudit(db, {
+      source: "stripe_webhook",
+      operation: `stripe.${event.type}`,
+      thrown: parseError(error),
+      entityType: "stripe_event",
+      entityId: event.id,
+      context: { eventType: event.type },
+    });
     await db
       .update(providerWebhookEvent)
       .set({ error: error instanceof Error ? error.message : String(error) })

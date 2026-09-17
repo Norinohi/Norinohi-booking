@@ -1,9 +1,7 @@
-import { headers } from "next/headers";
-import { redirect } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import Hydrated from "@/components/shared/layout/hydrated";
-import { authClient } from "@/lib/auth-client";
+import { requireSignedIn } from "@/lib/auth/server";
 import { buildMetadata } from "@/lib/seo";
 
 import { BookingsScreen, prefetchBookings } from "@/features/profile";
@@ -25,21 +23,12 @@ export async function generateMetadata() {
 }
 
 export default async function BookingsPage() {
+  const user = await requireSignedIn();
   const locale = await getLocale();
-  const session = await authClient.getSession({
-    fetchOptions: {
-      headers: await headers(),
-      throw: true,
-    },
-  });
-
-  if (!session?.user) {
-    return redirect({ href: "/login", locale });
-  }
 
   return (
-    <Hydrated prefetch={(queryClient) => prefetchBookings(queryClient, { page: 1 })}>
-      <BookingsScreen user={{ name: session.user.name, email: session.user.email }} />
+    <Hydrated prefetch={(queryClient) => prefetchBookings(queryClient, { page: 1, locale })}>
+      <BookingsScreen user={{ name: user.name, email: user.email }} />
     </Hydrated>
   );
 }

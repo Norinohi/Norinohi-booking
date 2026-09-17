@@ -1,5 +1,6 @@
 import { base, country, location, region } from "@yacht-charter/db/schema/geography";
 import { listing } from "@yacht-charter/db/schema/listing";
+import { baseLabel, facetTranslator } from "@yacht-charter/db/search/localize";
 import { and, asc, count, desc, eq, ilike, or, sql } from "drizzle-orm";
 import type { z } from "zod";
 
@@ -33,7 +34,7 @@ export async function listGeographyOptions(db: Database, input: Input): Promise<
   if (input.countryId) baseFilters.push(eq(country.id, input.countryId));
   if (pattern) baseFilters.push(or(ilike(base.name, pattern), ilike(location.name, pattern)));
 
-  const [countries, regions, bases] = await Promise.all([
+  const [countries, regions, bases, translate] = await Promise.all([
     db
       .select({ id: country.id, code: country.code, name: country.name })
       .from(country)
@@ -89,7 +90,27 @@ export async function listGeographyOptions(db: Database, input: Input): Promise<
       )
       .orderBy(desc(publishedListings), asc(base.name))
       .limit(input.limit),
+    facetTranslator(db, input.locale),
   ]);
 
-  return { countries, regions, bases };
+  if (!translate) return { countries, regions, bases };
+
+  const collator = new Intl.Collator(input.locale);
+  return {
+    countries: countries
+      .map((row) => ({ ...row, name: translate("country", row.name) }))
+      .toSorted((a, b) => collator.compare(a.name, b.name)),
+    regions: regions.map((row) => ({
+      ...row,
+      name: translate("region", row.name),
+      countryName: translate("country", row.countryName),
+    })),
+    bases: bases.map((row) => ({
+      ...row,
+      name: baseLabel(translate, row.name, row.locationName),
+      locationName: translate("location", row.locationName),
+      regionName: translate("region", row.regionName),
+      countryName: translate("country", row.countryName),
+    })),
+  };
 }

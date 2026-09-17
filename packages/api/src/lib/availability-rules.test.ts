@@ -155,6 +155,45 @@ describe("rangeStatus", () => {
   });
 });
 
+/*
+ * The vendor's own priced answer outranks our copy of its rules. One Booking Manager operator
+ * lists Monday and Friday and sells every weekday; its Saturday weeks were refused here.
+ */
+describe("a charter the vendor priced as free", () => {
+  const vendorWeek = { startDate: "2026-08-18", endDate: "2026-08-25" }; // Tuesday to Tuesday
+
+  it("is bookable although no rule admits its weekday", () => {
+    expect(rangeStatus(vendorWeek.startDate, vendorWeek.endDate, constraints())).toBe(
+      "checkin-day",
+    );
+    expect(
+      rangeStatus(
+        vendorWeek.startDate,
+        vendorWeek.endDate,
+        constraints({ confirmed: [vendorWeek] }),
+      ),
+    ).toBe("bookable");
+  });
+
+  it("opens its check-in day on the calendar", () => {
+    expect(canCheckIn(vendorWeek.startDate, constraints({ confirmed: [vendorWeek] }))).toBe(true);
+  });
+
+  it("still yields to a booking made since", () => {
+    const booked = constraints({
+      confirmed: [vendorWeek],
+      occupied: [{ startDate: "2026-08-20", endDate: "2026-08-22" }],
+    });
+    expect(rangeStatus(vendorWeek.startDate, vendorWeek.endDate, booked)).toBe("occupied");
+  });
+
+  it("admits only its own exact dates", () => {
+    expect(
+      rangeStatus("2026-08-18", "2026-08-24", constraints({ confirmed: [vendorWeek] })),
+    ).not.toBe("bookable");
+  });
+});
+
 describe("canCheckIn", () => {
   it("accepts a legal weekday inside an open, free season", () => {
     expect(canCheckIn("2026-08-15", constraints())).toBe(true);

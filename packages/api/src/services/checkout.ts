@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { booking, payment, paymentSchedule } from "@yacht-charter/db/schema/booking";
 import { bookingEnquiry, invoiceRequest } from "@yacht-charter/db/schema/checkout";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
@@ -16,6 +15,7 @@ import { notifyInvoiceIssued } from "./booking-email";
 import { readOwnedBooking } from "./booking-read";
 import { payableNowFor } from "./checkout-amounts";
 import { assertTransition, type BookingStatus } from "./booking-state";
+import { ConflictError, InternalError } from "../errors";
 type InvoiceResult = z.infer<typeof invoiceRequestSchema>;
 
 type EnquiryResult = z.infer<typeof enquirySchema>;
@@ -70,7 +70,7 @@ export async function requestInvoice(
   // Zero covers every reason there is nothing to raise a document for: settled, cancelled,
   // mid-commit, or a quote or provider hold that has lapsed and has to be repriced first.
   if (amountMinor <= 0) {
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message: "This booking has nothing left to invoice",
     });
   }
@@ -114,7 +114,7 @@ export async function requestInvoice(
       })
       .returning();
 
-    if (!request) throw new ORPCError("INTERNAL_SERVER_ERROR");
+    if (!request) throw new InternalError();
 
     const [schedule] = await tx
       .insert(paymentSchedule)
@@ -184,7 +184,7 @@ async function nextInvoiceNumber(tx: DatabaseExecutor): Promise<string> {
   // `nextval` returns bigint, which the driver hands back as a string.
   const value = z.coerce.number().int().positive().safeParse(result.rows[0]?.value);
 
-  if (!value.success) throw new ORPCError("INTERNAL_SERVER_ERROR");
+  if (!value.success) throw new InternalError();
 
   return `INV-${new Date().getUTCFullYear()}-${String(value.data).padStart(6, "0")}`;
 }
@@ -217,7 +217,7 @@ export async function askQuestion(
     .values({ bookingId: input.bookingId, userId, question: input.question })
     .returning();
 
-  if (!created) throw new ORPCError("INTERNAL_SERVER_ERROR");
+  if (!created) throw new InternalError();
 
   return {
     id: created.id,

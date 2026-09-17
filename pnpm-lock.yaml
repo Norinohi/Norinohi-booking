@@ -326,6 +326,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.7(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.1)
 
   packages/api:
     dependencies:
@@ -510,6 +513,9 @@ importers:
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.2(@types/pg@8.20.0)(kysely@0.29.4)(pg@8.22.0)
+      evlog:
+        specifier: 'catalog:'
+        version: 2.22.1(@orpc/server@1.14.8(ws@8.21.1))(express@5.2.1)(hono@4.12.31)(next@16.3.0(@playwright/test@1.62.1)(@types/node@26.1.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
       zod:
         specifier: 'catalog:'
         version: 4.4.3

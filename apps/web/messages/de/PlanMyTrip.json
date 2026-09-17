@@ -1,0 +1,224 @@
+{
+  "title": "Hilf mir, meine Reise zu planen",
+  "close": "Planer schließen",
+  "progress": "Schritt {current} von {total}",
+  "stepHeading": "Schritt {current}",
+  "placeholder": "Die Frage und ihre Optionen erscheinen hier im nächsten Schritt.",
+  "back": "Zurück",
+  "next": "Weiter",
+  "steps": {
+    "destination": {
+      "question": "Wohin möchten Sie segeln?",
+      "subtitle": "Wählen Sie ein Reiseziel oder lassen Sie sich von uns die beste Option vorschlagen",
+      "options": {
+        "croatia": {
+          "label": "Kroatien",
+          "description": "Ideal für Inselhopping und Segelneulinge. Ruhige Gewässer, kurze Distanzen zwischen den Inseln und eine riesige Routenauswahl - perfekt für Einsteiger und entspannte Törns."
+        },
+        "greece": {
+          "label": "Griechenland",
+          "description": "Ideal für malerische Routen und kulturelle Vielfalt. Segeln Sie durch ikonische Inseln mit kristallklarem Wasser, historischen Städten und einer Balance aus Abenteuer und Komfort."
+        },
+        "italy": {
+          "label": "Italien",
+          "description": "Ideal für Premium-Erlebnisse und Küstenpanoramen. Wunderschöne Küstenrouten, erstklassige Marinas und unvergessliche Ziele wie Amalfi - ideal für eine luxuriösere Reise."
+        },
+        "spain": {
+          "label": "Spanien",
+          "description": "Ideal für Lifestyle und gesellige Stimmung. Tolles Wetter, lebendige Atmosphäre und Ziele wie Ibiza oder Mallorca - perfekt für Spaß, Gruppen und aktive Reisen."
+        },
+        "notSure": {
+          "label": "Noch unsicher"
+        }
+      }
+    },
+    "groupSize": {
+      "question": "Wie viele Personen kommen mit?",
+      "subtitle": "Die Gruppengröße beeinflusst Yachttyp, Platz und den Gesamtpreis pro Person",
+      "options": {
+        "twoToFour": {
+          "label": "2-4 Personen",
+          "description": "Mehr Privatsphäre, höhere Kosten pro Person"
+        },
+        "fiveToEight": {
+          "label": "5-8 Personen",
+          "description": "Beste Balance aus Komfort und Preis"
+        },
+        "ninePlus": {
+          "label": "9+ Personen",
+          "description": "Erfordert größere Yachten oder mehrere Boote"
+        },
+        "notSure": {
+          "label": "Noch unsicher"
+        }
+      }
+    },
+    "experience": {
+      "question": "Haben Sie Segelerfahrung?",
+      "subtitle": "Ein Skipper ist auf jedem Niveau möglich - das hier entscheidet nur, wer steuert.",
+      "options": {
+        "none": {
+          "label": "Keine Erfahrung",
+          "description": "Ich brauche einen Skipper, der das Boot segelt"
+        },
+        "some": {
+          "label": "Etwas Erfahrung",
+          "description": "Ich bin schon gesegelt, brauche aber einen Skipper"
+        },
+        "licensed": {
+          "label": "Mit Lizenz",
+          "description": "Ich habe einen gültigen Schein und segle selbst"
+        }
+      }
+    },
+    "tripVibe": {
+      "question": "Welche Art von Reise suchen Sie?",
+      "subtitle": "Was Sie sich von der Woche erwarten, bestimmt Boot, Route und Tempo.",
+      "options": {
+        "adventure": {
+          "label": "Abenteuer",
+          "description": "Aktives Segeln und Erkunden. Mehr Bewegung, längere Routen und selbst mit anpacken"
+        },
+        "relax": {
+          "label": "Entspannung",
+          "description": "Gemächliches Tempo, Natur und ruhige Buchten. Perfekt für ruhiges Segeln, Schwimmen und Abschalten."
+        },
+        "family": {
+          "label": "Familie",
+          "description": "Sicher, komfortabel und geräumig. Ideal für Kinder, Stabilität und einfache Routen."
+        },
+        "luxury": {
+          "label": "Luxus",
+          "description": "Premium-Yachten und Full-Service-Erlebnis. Crew, Komfort und exklusive Ziele."
+        },
+        "party": {
+          "label": "Party",
+          "description": "Musik, Nachtleben und gesellige Atmosphäre. Ideal für Routen im Ibiza-Stil und Gruppenenergie."
+        }
+      }
+    },
+    "duration": {
+      "question": "Wie lange soll Ihre Reise dauern?",
+      "subtitle": "Wählen Sie die Dauer, die am besten zu Ihren Plänen passt. So können wir die passenden Yachten, Routen und das Gesamterlebnis vorschlagen.",
+      "options": {
+        "week": {
+          "label": "7 Tage"
+        },
+        "twoWeeks": {
+          "label": "14 Tage"
+        },
+        "threeWeeks": {
+          "label": "21 Tage"
+        },
+        "more": {
+          "label": "21+ Tage"
+        }
+      }
+    },
+    "budget": {
+      "question": "Welches Budget fühlt sich angenehm an?",
+      "subtitle": "Pro Person für eine Woche an Bord, damit es mit einem bekannten Urlaub vergleichbar ist.",
+      "perPersonWeek": "pro Person/Woche",
+      "options": {
+        "low": {
+          "label": "€300-600"
+        },
+        "mid": {
+          "label": "€600-1000"
+        },
+        "high": {
+          "label": "€1000-1200"
+        },
+        "upper": {
+          "label": "€1200-2000"
+        },
+        "premium": {
+          "label": "€2000+"
+        }
+      }
+    }
+  },
+  "result": {
+    "title": "Ihre perfekte Yachtreise",
+    "subtitle": "Basierend auf Ihren Angaben empfehlen wir Folgendes.",
+    "labels": {
+      "yachtType": "Yachttyp",
+      "skipper": "Skipper",
+      "style": "Stil",
+      "duration": "Dauer"
+    },
+    "yachtType": {
+      "sailing": "Segelyacht",
+      "catamaran": "Katamaran",
+      "gulet": "Gulet",
+      "motor": "Motoryacht",
+      "luxury": "Luxusyacht"
+    },
+    "skipper": {
+      "yes": "Ja",
+      "no": "Nein"
+    },
+    "difficulty": {
+      "easy": "Leicht",
+      "moderate": "Mittel",
+      "advanced": "Anspruchsvoll"
+    },
+    "getConsultation": "Beratung anfragen",
+    "viewDetails": "Details ansehen",
+    "seeAllMatches": "Alle Treffer ansehen",
+    "durationDays": "{days, plural, one {# Tag} other {# Tage}}",
+    "price": {
+      "perPerson": "≈ {price} pro Person",
+      "similar": "Ähnliche Yachten",
+      "perPersonWeek": "≈ {range} pro Person und Woche",
+      "estimate": "Preisschätzung",
+      "perPersonDays": "≈ {price} pro Person für {days, plural, one {# Tag} other {# Tage}}"
+    },
+    "noMatch": {
+      "title": "Noch kein exakter Treffer",
+      "description": "Wir konnten keine Yacht finden, die zu jeder Antwort passt, aber so würden wir suchen.",
+      "seeAllMatches": "Alle Yachten ansehen"
+    },
+    "error": {
+      "title": "Etwas ist schiefgelaufen",
+      "description": "Wir konnten Ihre Empfehlung nicht laden. Bitte versuchen Sie es erneut.",
+      "retry": "Erneut versuchen"
+    },
+    "consultationDialog": {
+      "title": "Kostenlose Beratung anfragen",
+      "description": "Sagen Sie uns, wie wir Sie erreichen, und einer unserer Charter-Experten meldet sich mit passenden Optionen.",
+      "submit": "Anfrage senden",
+      "cancel": "Abbrechen",
+      "success": "Danke! Wir melden uns in Kürze."
+    }
+  },
+  "consultation": {
+    "close": "Schließen",
+    "title": "Kontakt aufnehmen",
+    "subtitle": "Buchen Sie einen Anruf oder schreiben Sie uns, ganz wie es Ihnen passt.",
+    "options": {
+      "call": {
+        "title": "Kurzen Anruf buchen",
+        "description": "Wählen Sie eine passende Zeit - ein kurzes Gespräch mit einem Charter-Experten."
+      },
+      "message": {
+        "title": "Nachricht senden",
+        "description": "Erzählen Sie uns von Ihrer Reise und wir melden uns per E-Mail."
+      }
+    },
+    "placeholder": {
+      "title": "Terminbuchung folgt in Kürze",
+      "description": "Die Online-Terminvergabe ist noch nicht bereit. Schreiben Sie uns eine Nachricht und wir finden eine passende Zeit.",
+      "cta": "Stattdessen Nachricht senden"
+    },
+    "submitted": {
+      "title": "Danke - wir melden uns",
+      "description": "Einer unserer Charter-Experten meldet sich in Kürze."
+    },
+    "error": {
+      "title": "Etwas ist schiefgelaufen",
+      "description": "Wir konnten Ihre Reisedetails nicht laden. Bitte versuchen Sie es erneut.",
+      "retry": "Erneut versuchen"
+    }
+  }
+}

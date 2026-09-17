@@ -42,7 +42,7 @@ function recordingClient() {
 }
 
 async function sweep(options: {
-  advertised?: { startDate: string; endDate: string }[];
+  advertised?: { startDate: string; endDate: string; judgesSilence?: boolean }[];
   today: string;
   years?: number[];
   weekIndex?: number;
@@ -133,6 +133,17 @@ describe("the periods the confirming sweep asks about", () => {
     });
 
     expect(pages[0]?.swept).toMatchObject({ startDate: "2026-10-03", endDate: "2026-10-10" });
+  });
+
+  /* Three nights refused would retire the week around them; see SweepPeriod.judgesSilence. */
+  it("prices a short charter without reading anyone's absence as a refusal", async () => {
+    const { asked, pages } = await sweep({
+      advertised: [{ startDate: "2026-10-05", endDate: "2026-10-08", judgesSilence: false }],
+      today: "2026-08-31",
+    });
+
+    expect(asked[0]).toEqual({ from: "2026-10-05", to: "2026-10-08" });
+    expect(pages[0]).not.toHaveProperty("swept");
   });
 });
 

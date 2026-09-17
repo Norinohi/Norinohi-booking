@@ -1,5 +1,7 @@
 "use client";
 
+import { isClosedBooking } from "@yacht-charter/api/lib/closed-booking";
+import { ownLineLabel } from "@yacht-charter/api/lib/own-line-label";
 import { placeLine } from "@yacht-charter/api/lib/place-line";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
@@ -18,22 +20,29 @@ import {
   Phone,
   XCircle,
 } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { type ReactNode, useState } from "react";
 
-import BoatCard from "@/components/shared/data-display/boat-card";
+import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
 import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
 import SplitPanels from "@/components/shared/layout/split-panels";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import CancelBookingDialog from "@/components/shared/overlay/cancel-booking-dialog";
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 import { authClient } from "@/lib/auth-client";
-import { boatCardIdentity, bookingMarina } from "@/lib/boat-card-fields";
+import { crewLabel } from "@/lib/crew-label";
+import {
+  bookingMarina,
+  yachtCardIdentity,
+} from "@/components/shared/data-display/yacht-card/view-model";
 
 import { type BookingDetail, bookingDetailQueryOptions } from "../api/queries";
+import { charterRange } from "../lib/handover";
+import { pendingHoldDeadline } from "../lib/hold-clock";
 import CrewListPanel from "./crew-list-panel";
+import { HoldNotice, useHoldRemaining } from "./steps/payment/hold-clock";
 
 /* Which statuses read as "this charter is happening" versus a problem worth colouring. */
 const SETTLED_STATUSES = new Set(["CONFIRMED"]);
@@ -63,6 +72,7 @@ const FAILED_STATUSES = new Set([
  */
 export default function BookingDetailScreen({ bookingId }: { bookingId: string }) {
   const t = useTranslations("Booking.detail");
+  const locale = useLocale();
   const tCard = useTranslations("Common.boatCard");
   const tCrew = useTranslations("Common.crewTypes");
   const tBadge = useTranslations("Common.boatCard.badges");
@@ -77,7 +87,7 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
    * it — so the rule that this page is for account holders is kept here, by not asking.
    */
   const { data: booking, isLoading } = useQuery({
-    ...bookingDetailQueryOptions(bookingId),
+    ...bookingDetailQueryOptions(bookingId, undefined, locale),
     enabled: signedIn,
     /* A missing booking is answered by the empty state below, not by a toast. */
     meta: { silent: true },
@@ -131,7 +141,7 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
    * after the listing is renamed, re-photographed or withdrawn by the provider.
    */
   const boat = {
-    ...boatCardIdentity(tCard, tCrew, tBadge, booking.listing),
+    ...yachtCardIdentity(tCard, tCrew, tBadge, booking.listing),
     imageAlt: tCard("imageAlt", { name: booking.listing.title, marina: booking.base.name }),
     marina: bookingMarina(booking.listing.id, booking.base),
     priceLabel: "",
@@ -153,9 +163,9 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
           labels={{ main: t("panels.main"), aside: t("panels.aside") }}
           main={
             <>
-              <BoatCard
+              <YachtCard
+                layout="summary"
                 {...boat}
-                summary
                 priority
                 summaryAction={
                   <Button
@@ -200,7 +210,8 @@ function Charter({
   const t = useTranslations("Booking.detail");
   const tCancel = useTranslations("Bookings.cancel");
   const tBalance = useTranslations("Booking.balance");
-  const money = useMoney();
+  const tCrew = useTranslations("Common.crewTypes");
+  const money = useExactMoney();
   const format = useFormatter();
   const [cancelOpen, setCancelOpen] = useState(false);
 
@@ -213,6 +224,9 @@ function Charter({
    */
   const payable = booking.payableNow.amountMinor;
   const showPay = payable > 0;
+  /* Unpaid and held: how long the operator keeps the dates is the reason to press Pay now. */
+  const holdDeadline = showPay ? pendingHoldDeadline(booking) : null;
+  const holdLeft = useHoldRemaining(holdDeadline);
   /*
    * The invoice document only exists for a booking that asked to pay by transfer, and it is an
    * instruction to send money — so a charter that is off no longer offers it.
@@ -262,10 +276,10 @@ function Charter({
       {/* Two columns from `sm` up: a full-width panel with one column of key/value rows leaves
           the right half of the card empty. */}
       <dl className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
-        <Fact label={t("dates")} value={`${day(booking.checkIn)} → ${day(booking.checkOut)}`} />
+        <Fact label={t("dates")} value={charterRange(day, booking.checkIn, booking.checkOut)} />
         <Fact label={t("guestsLabel")} value={String(booking.guests)} />
         {booking.crewType ? (
-          <Fact label={t("crew")} value={booking.crewType} className="capitalize" />
+          <Fact label={t("crew")} value={crewLabel(tCrew, booking.crewType)} />
         ) : null}
         <Fact label={t("marina")} value={placeLine(booking.base.name, booking.base.countryName)} />
         <Fact label={t("referenceLabel")} value={booking.reference} className="font-mono" />
@@ -278,6 +292,10 @@ function Charter({
         ) : null}
       </dl>
 
+      {holdDeadline && holdLeft ? (
+        <HoldNotice expiresAt={holdDeadline} remaining={holdLeft} />
+      ) : null}
+
       {expired ? (
         <Notification variant="warning">
           <span className="flex flex-col gap-2">
@@ -289,7 +307,7 @@ function Charter({
 
       {expired || showPay || hasTransfer || showCancel || showRequestCancel ? (
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          {showPay ? (
+          {showPay && !holdLeft?.expired ? (
             <Button
               variant="brand"
               className="h-13 sm:min-w-56"
@@ -364,7 +382,7 @@ function Charter({
 
 function Payments({ booking }: { booking: BookingDetail }) {
   const t = useTranslations("Booking.detail");
-  const money = useMoney();
+  const money = useExactMoney();
 
   return (
     <Panel>
@@ -405,14 +423,19 @@ function Payments({ booking }: { booking: BookingDetail }) {
  */
 function PriceAside({ booking }: { booking: BookingDetail }) {
   const t = useTranslations("Booking.detail");
-  const money = useMoney();
+  const money = useExactMoney();
   const outstanding = booking.outstanding.amountMinor;
+  const lineLabel = (line: BookingDetail["priceLines"][number]) => {
+    const own = ownLineLabel(line);
+    return own ? t(`priceLineLabels.${own}`) : line.label;
+  };
   /*
    * The base collects this on the day and we never charge it, so it is in the total and in
    * nothing else. Left unsaid, the panel reads as broken arithmetic: €1,421 total against
    * €1,296 paid, and then "nothing left to pay". Naming it is what makes the column add up.
    */
   const atCheckIn = booking.dueAtCheckIn.amountMinor;
+  const closed = isClosedBooking(booking.status);
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5">
@@ -422,7 +445,7 @@ function PriceAside({ booking }: { booking: BookingDetail }) {
         {booking.priceLines.map((line, index) => (
           <Row
             key={`${line.code}-${index}`}
-            label={line.label}
+            label={lineLabel(line)}
             /* Tagged on the line as well as totalled below, so it is obvious which €125 it is. */
             note={
               line.payWhen === "at_check_in" ? (
@@ -444,14 +467,16 @@ function PriceAside({ booking }: { booking: BookingDetail }) {
           label={t("paid")}
           value={money(booking.paidTotal.amountMinor, booking.paidTotal.currency)}
         />
-        {atCheckIn > 0 ? (
+        {atCheckIn > 0 && !closed ? (
           <Row label={t("dueAtCheckIn")} value={money(atCheckIn, booking.total.currency)} />
         ) : null}
-        <Row
-          label={outstanding > 0 ? t("outstanding") : t("settled")}
-          value={money(outstanding, booking.total.currency)}
-          emphasis
-        />
+        {closed ? null : (
+          <Row
+            label={outstanding > 0 ? t("outstanding") : t("settled")}
+            value={money(outstanding, booking.total.currency)}
+            emphasis
+          />
+        )}
       </dl>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl";
 
-import { useMoney } from "./use-money";
+import { useExactMoney, useMoney } from "./use-money";
 
 type MeasureKey =
   | "booking"
@@ -12,7 +12,31 @@ type MeasureKey =
   | "dayWithFood"
   | "oneWayPerson"
   | "set"
-  | "service";
+  | "service"
+  | "piece"
+  | "weekStarted"
+  | "oneWay"
+  | "weekPerson"
+  | "weekFood"
+  | "dayPerson"
+  | "bookingPerson"
+  | "pet"
+  | "cabin"
+  | "twoWeeks"
+  | "hour"
+  | "engineHour"
+  | "halfHour"
+  | "crewChange"
+  | "personCourse"
+  | "boat"
+  | "pack"
+  | "bottle"
+  | "licence"
+  | "meal"
+  | "nauticalMile"
+  | "roundTrip"
+  | "litre"
+  | "weekStartedPerson";
 
 /**
  * Each provider states what an extra's price is per in its own words: Booking Manager sends
@@ -31,6 +55,36 @@ const MEASURE_KEY_BY_TEXT: ReadonlyMap<string, MeasureKey> = new Map([
   ["one way person", "oneWayPerson"],
   ["per set", "set"],
   ["per service", "service"],
+  ["per piece", "piece"],
+  ["per week started", "weekStarted"],
+  ["one way", "oneWay"],
+  ["per week person", "weekPerson"],
+  ["per guest week", "weekPerson"],
+  ["per week food", "weekFood"],
+  ["per guest day", "dayPerson"],
+  ["per day person", "dayPerson"],
+  ["per person day", "dayPerson"],
+  ["per guest night", "nightPerson"],
+  ["per person night", "nightPerson"],
+  ["per booking person", "bookingPerson"],
+  ["per booking crew", "booking"],
+  ["per pet", "pet"],
+  ["per cabin", "cabin"],
+  ["per 2 weeks", "twoWeeks"],
+  ["per hour", "hour"],
+  ["per running hour", "engineHour"],
+  ["half an hour", "halfHour"],
+  ["per crew change", "crewChange"],
+  ["per person per course", "personCourse"],
+  ["per boat", "boat"],
+  ["per pack", "pack"],
+  ["per bottle", "bottle"],
+  ["per licence", "licence"],
+  ["per meal", "meal"],
+  ["per nautical mile", "nauticalMile"],
+  ["round trip", "roundTrip"],
+  ["per liter", "litre"],
+  ["per week started person", "weekStartedPerson"],
 ]);
 
 const levelled = (measure: string) =>
@@ -46,9 +100,12 @@ const levelled = (measure: string) =>
  * a new one appearing in a sync should read a little rough rather than be relabelled "per
  * booking" and understate what the charter will be billed.
  */
-export function useExtraPrice() {
+export function useExtraPrice(options: { exact?: boolean } = {}) {
   const t = useTranslations("Common.extras.measure");
-  const money = useMoney();
+  const rounded = useMoney();
+  const exactMoney = useExactMoney();
+  /* Exact where a unit rate explains a charged total: 1.33 a night rounded to 1 no longer adds up. */
+  const money = options.exact ? exactMoney : rounded;
 
   /*
    * `toMinor` is the top of a range, for a fee the provider keys as several variants at
@@ -64,7 +121,7 @@ export function useExtraPrice() {
     const price =
       toMinor == null || toMinor === amountMinor
         ? money(amountMinor, currency)
-        : `${money(amountMinor, currency)}–${money(toMinor, currency)}`;
+        : `${money(amountMinor, currency)}-${money(toMinor, currency)}`;
     // No measure at all is the vendors' way of pricing the whole booking.
     if (measure === null || measure === undefined || measure.trim() === "") {
       return t("booking", { price });

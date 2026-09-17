@@ -6,6 +6,7 @@ import { formatExtraCode } from "../shared/extra-code";
 import { toExactPositiveIntId } from "../shared/projection-helpers";
 import { stableSourceHash } from "../shared/raw-retention";
 import { DEFAULT_LINE_LABELS } from "../shared/generic-labels";
+import { wallClockTime } from "../shared/wall-clock";
 import {
   providerQuoteSchema,
   quoteRequestSchema,
@@ -307,12 +308,7 @@ export interface OfferTimes {
 
 /** The base's own check-in/check-out wall clock, as the vendor substituted it. */
 export function readOfferTimes(offer: RestOffer): OfferTimes {
-  return { checkInTime: timeOf(offer.dateFrom), checkOutTime: timeOf(offer.dateTo) };
-}
-
-function timeOf(value: string | null | undefined): string | undefined {
-  const time = value?.trim().split(/[ T]/)[1];
-  return time === undefined || time === "" ? undefined : time;
+  return { checkInTime: wallClockTime(offer.dateFrom), checkOutTime: wallClockTime(offer.dateTo) };
 }
 
 export interface OfferMapping {
@@ -418,8 +414,8 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
     provider: PROVIDER,
     listingId: input.listingId,
     providerSourceId: `${PROVIDER}:${offer.yachtId}`,
-    // Calendar dates only. The wall-clock times the vendor substituted belong to
-    // the base, not to the price, and `readOfferTimes` exposes them separately.
+    // Calendar dates only. The wall-clock times the vendor substituted are not part
+    // of the price, and ride on `checkInTime`/`checkOutTime` below instead.
     checkIn: input.checkIn,
     checkOut: input.checkOut,
     guests: input.guests,
@@ -442,6 +438,9 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
     expiresAt: input.expiresAt,
   };
   if (securityDeposit) quoteInput.securityDeposit = securityDeposit;
+  const times = readOfferTimes(offer);
+  if (times.checkInTime) quoteInput.checkInTime = times.checkInTime;
+  if (times.checkOutTime) quoteInput.checkOutTime = times.checkOutTime;
 
   return providerQuoteSchema.parse(quoteInput);
 }

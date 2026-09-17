@@ -15,7 +15,7 @@ import {
 } from "@yacht-charter/ui/components/form/form";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { ArrowUpRight, CalendarX, CheckCircle2, LifeBuoy, Mail, Phone } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useQueryStates } from "nuqs";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -47,6 +47,7 @@ const MESSAGE_MAX = 2000;
  */
 export default function SupportScreen() {
   const t = useTranslations("Booking.support");
+  const locale = useLocale();
   const [{ booking: bookingId, topic }] = useQueryStates(supportParsers);
   const cancelling = topic === "cancellation";
 
@@ -56,7 +57,7 @@ export default function SupportScreen() {
   useEffect(() => setAccess({ token: guestAccessFor(bookingId) }), [bookingId]);
 
   const { data: booking, isLoading } = useQuery({
-    ...bookingDetailQueryOptions(bookingId ?? "", access?.token),
+    ...bookingDetailQueryOptions(bookingId ?? "", access?.token, locale),
     enabled: Boolean(bookingId) && access !== null,
     /* No rights to this booking is not an error here — the general enquiry form takes over. */
     meta: { silent: true },
@@ -66,7 +67,7 @@ export default function SupportScreen() {
 
   return (
     <div className="mx-auto flex w-full max-w-384 flex-1 flex-col justify-center px-4 py-8 md:px-13.5 md:py-15 xl:px-17.5">
-      <div className="mx-auto flex w-full max-w-175 flex-col gap-6 rounded-3xl bg-card p-6 shadow-[4px_4px_15px_rgba(0,0,0,0.03)] md:gap-8 md:p-10">
+      <div className="mx-auto flex w-full max-w-175 flex-col gap-6 rounded-3xl bg-card p-6 shadow-card md:gap-8 md:p-10">
         <div className="flex flex-col items-center gap-3 text-center">
           <span className="flex size-12 items-center justify-center rounded-xl bg-brand-50 text-brand">
             {cancelling ? <CalendarX className="size-6" /> : <LifeBuoy className="size-6" />}

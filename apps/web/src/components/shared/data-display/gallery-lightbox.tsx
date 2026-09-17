@@ -39,6 +39,13 @@ export default function GalleryLightbox({ openAt, onClose, slides }: GalleryLigh
         Next: t("next"),
         "Zoom in": t("zoomIn"),
         "Zoom out": t("zoomOut"),
+        /* The library fills these two placeholders itself, so they pass through untouched. */
+        "{index} of {total}": t("slideCounter", { index: "{index}", total: "{total}" }),
+        Slide: t("slide"),
+        Carousel: t("carousel"),
+        "Photo gallery": t("photoGallery"),
+        Lightbox: t("lightbox"),
+        Thumbnails: t("thumbnails"),
       }}
     />
   );

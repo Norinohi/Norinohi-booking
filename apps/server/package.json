@@ -13,6 +13,7 @@
     "sync:catalogue": "node dist/sync-catalogue.mjs",
     "sync:media-cleanup": "node dist/sync-media-cleanup.mjs",
     "sync:availability": "node dist/sync-availability.mjs",
+    "sync:price-weeks": "node dist/sync-price-weeks.mjs",
     "sweep:expiries": "node dist/sweep-expiries.mjs",
     "reconcile:reservations": "node dist/reconcile-reservations.mjs",
     "remind:payments": "node dist/payment-reminders.mjs",

@@ -342,7 +342,7 @@ Two things to keep consistent with the search page:
 | Curated routes   | `packages/db/src/search/popular-routes.ts`                                  |
 | Admin contract   | `packages/api/src/contracts/popular-facets.ts`                              |
 | Admin service    | `packages/api/src/services/popular-facets-admin.ts`                         |
-| Admin screen     | `apps/web/src/features/admin/components/popular-facets-table.tsx`           |
+| Admin screen     | `apps/web/src/features/admin/content/components/popular-facets-table.tsx`           |
 | Slider config    | `popularYachtsConfig` on `marketplace_setting`, edited on `/popular-yachts` |
 
 ## Known issue

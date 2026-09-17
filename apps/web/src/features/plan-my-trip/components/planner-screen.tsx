@@ -37,7 +37,7 @@ function PlannerCard({ compact, children }: { compact?: boolean; children?: Reac
   return (
     <div
       className={cn(
-        "relative mx-auto flex w-full max-w-290 flex-1 flex-col overflow-hidden rounded-3xl bg-card px-6 pt-18 pb-6 shadow-[4px_4px_15px_rgba(0,0,0,0.03)] md:px-10 md:pt-10 md:pb-10",
+        "relative mx-auto flex w-full max-w-290 flex-1 flex-col overflow-hidden rounded-3xl bg-card px-6 pt-18 pb-6 shadow-card md:px-10 md:pt-10 md:pb-10",
         compact && "mt-4 md:mt-6",
       )}
     >

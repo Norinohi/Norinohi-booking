@@ -502,6 +502,34 @@ describe("createNausysAvailabilitySource", () => {
     expect(pages.map((page) => page.swept?.externalYachtIds)).toEqual([["4711002"], null]);
   });
 
+  /*
+   * A refusal of three nights blocks every week around them, and a vendor selling the hull by
+   * the week refuses three nights for that alone. So a short charter asked about only to price
+   * it keeps the prices that came back and licenses no refusal.
+   */
+  it("prices a window that judges nobody without licensing refusals", async () => {
+    const { client, transport } = build();
+    transport.respondWith("freeYachts", { status: "OK", freeYachts: [] });
+
+    const source = createNausysAvailabilitySource({
+      optionTimeZone: "Europe/Zagreb",
+      client,
+      companyIds: ["102701"],
+      years: [],
+      hotWindows: [
+        { periodFrom: "2026-07-07", periodTo: "2026-07-10", judgesSilence: false },
+        { periodFrom: "2026-07-11", periodTo: "2026-07-18" },
+      ],
+      loadYachtIds: () => Promise.resolve(["4711001"]),
+    });
+
+    const pages = [];
+    for await (const page of source.searchConfirmed?.(null) ?? []) pages.push(page);
+
+    expect(transport.calls).toHaveLength(2);
+    expect(pages.map((page) => page.swept?.startDate)).toEqual([undefined, "2026-07-11"]);
+  });
+
   /* A hull that left the account between the two reads is not one to ask about. */
   it("skips a window whose hulls we no longer list, without refusing anyone", async () => {
     const { client, transport } = build();

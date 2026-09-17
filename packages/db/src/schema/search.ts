@@ -7,6 +7,7 @@ import {
   jsonb,
   numeric,
   pgTable,
+  primaryKey,
   text,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
@@ -219,5 +220,40 @@ export const listingSearchDoc = pgTable(
       sql`coalesce(${t.yearBuilt}, 0) desc`,
       t.listingId.desc(),
     ),
+  ],
+);
+
+/**
+ * What the catalogue can say a listing costs for one exact charter, for every charter a vendor
+ * has priced.
+ *
+ * `listing_search_doc` holds one price per listing, the one for its own bookable week, and a
+ * dated search used to caption that figure against dates it was never quoted for. The sweep
+ * prices far more than that week, so this keeps all of it: a dated search reads the row for the
+ * dates it names, and only falls back to the document's week where no vendor was asked.
+ *
+ * Same arithmetic as the document's own figures, from the same laterals in `read-model.ts`, and
+ * the same choice between offers, so a listing whose bookable week is the searched one reads
+ * the same numbers either way.
+ */
+export const listingPeriodPrice = pgTable(
+  "listing_period_price",
+  {
+    listingId: text("listing_id")
+      .notNull()
+      .references(() => listing.id, { onDelete: "cascade" }),
+    startDate: date("start_date").notNull(),
+    endDate: date("end_date").notNull(),
+    offerId: text("offer_id").notNull(),
+    currency: text("currency").notNull(),
+    allInMinor: integer("all_in_minor").notNull(),
+    allInMinorEur: integer("all_in_minor_eur"),
+    baseMinor: integer("base_minor").notNull(),
+    baseMinorEur: integer("base_minor_eur"),
+    listAllInMinor: integer("list_all_in_minor"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.listingId, t.startDate, t.endDate] }),
+    index("listing_period_price_period_idx").on(t.startDate, t.endDate),
   ],
 );

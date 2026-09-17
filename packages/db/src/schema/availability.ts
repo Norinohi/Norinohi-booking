@@ -82,6 +82,20 @@ export const availabilitySlot = pgTable(
     index("availability_slot_option_idx")
       .on(t.listingId, t.startDate, t.endDate)
       .where(sql`status = 'option'`),
+    /*
+     * Whether anything has taken a vendor-priced charter, asked once per candidate slot. The
+     * period index answers it too, but has to visit the heap to skip the available rows.
+     */
+    index("availability_slot_taken_idx")
+      .on(t.listingOfferId, t.startDate, t.endDate)
+      .where(sql`status <> 'available'`),
+    /*
+     * An offer's vendor-priced charters of one length, which search walks offer by offer and
+     * stops at the first. Keyed on the length so an offer with none of it costs one descent.
+     */
+    index("availability_slot_priced_length_idx")
+      .on(t.listingOfferId, sql`(end_date - start_date)`, t.startDate, t.endDate)
+      .where(sql`availability_confirmed and status = 'available' and price_minor is not null`),
   ],
 );
 

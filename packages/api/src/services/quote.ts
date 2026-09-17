@@ -1,5 +1,8 @@
-import { ORPCError } from "@orpc/server";
-import { listRequestableExtras, listSelectableExtraCodes } from "@yacht-charter/db/search";
+import {
+  listRequestableExtraPrices,
+  listRequestableExtras,
+  listSelectableExtraCodes,
+} from "@yacht-charter/db/search";
 import { rebuildListingSearchDocs } from "@yacht-charter/db/search/read-model";
 import { listing } from "@yacht-charter/db/schema/listing";
 import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
@@ -9,14 +12,21 @@ import {
   type QuoteLine,
   type QuotePaymentPolicy,
 } from "@yacht-charter/db/schema/quote";
-import { crewTypeSchema } from "@yacht-charter/providers";
+import { booking } from "@yacht-charter/db/schema/booking";
+import { discount } from "@yacht-charter/db/schema/discount";
+import { crewTypeSchema, providerQuoteSchema } from "@yacht-charter/providers";
+import { thrownFields } from "@yacht-charter/providers/shared/log-fields";
+import { log, parseError } from "evlog";
 import type {
   CrewType,
   InventoryProvider,
   ProviderQuote,
   QuoteRequest,
 } from "@yacht-charter/providers";
-import { NotFoundError, SlotUnavailableError } from "@yacht-charter/providers/shared/errors";
+import {
+  NotFoundError as ProviderNotFoundError,
+  SlotUnavailableError,
+} from "@yacht-charter/providers/shared/errors";
 
 import {
   NoSellableOfferError,
@@ -26,10 +36,13 @@ import {
   recordOfferAttempts,
   selectBestOffer,
 } from "./offer-selection";
-import { and, eq, gt, isNull, or } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNull, or } from "drizzle-orm";
 
+import { daysBetween } from "../lib/dates";
 import { classifyRefusal } from "../lib/refusal-report";
+import { requestedExtraAmountMinor } from "../lib/requested-extra-amount";
 import { saysSlotIsGone } from "../lib/provider-failure";
+import { onlyVendorFailures } from "../lib/vendor-outage";
 
 import type { Database, DatabaseExecutor } from "../context";
 import { learnExtrasFromQuote } from "./learn-extras";
@@ -47,9 +60,17 @@ import {
   type QuotePaymentScheduleEntry,
 } from "./pricing";
 import { getMarketplaceSettings } from "./marketplace-settings";
+import {
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  InternalError,
+  NotFoundError,
+  ServiceUnavailableError,
+} from "../errors";
 export type PersistedQuote = ProviderQuote & {
   quoteId: string;
-  /** Asked of the base rather than bought here; priced by nothing. See the quote schema. */
+  /** Asked of the base rather than bought here; priced off the catalogue. See the quote schema. */
   requestedExtras: string[];
   /** The trip split across the party; null when the guest count is unusable. */
   perPerson: { amountMinor: number; currency: string } | null;
@@ -147,10 +168,11 @@ export async function createQuote(
       winningOfferId: selection.selected.listingOfferId,
     });
   } catch (error) {
-    console.warn(
-      "[quote] could not record offer attempts",
-      error instanceof Error ? error.message : error,
-    );
+    log.warn({
+      action: "quote.offer_attempts_not_recorded",
+      listingId: input.listingId,
+      ...thrownFields(parseError(error)),
+    });
   }
 
   /*
@@ -174,10 +196,11 @@ export async function createQuote(
       });
     }
   } catch (error) {
-    console.warn(
-      "[quote] could not learn billed extras",
-      error instanceof Error ? error.message : error,
-    );
+    log.warn({
+      action: "quote.billed_extras_not_learned",
+      listingId: input.listingId,
+      ...thrownFields(parseError(error)),
+    });
   }
 
   return quote;
@@ -204,10 +227,16 @@ async function selectOrConflict(
     if (error instanceof NoSellableOfferError) {
       reportRefusal(input, error.attempts);
       await learnFromRefusal(db, provider, input, error.attempts);
+      if (onlyVendorFailures(error.attempts)) {
+        throw new ServiceUnavailableError({
+          message: "The provider could not price this charter right now",
+          data: { code: "PROVIDER_UNAVAILABLE" },
+        });
+      }
     }
-    if (error instanceof SlotUnavailableError || error instanceof NotFoundError) {
+    if (error instanceof SlotUnavailableError || error instanceof ProviderNotFoundError) {
       if (!(error instanceof NoSellableOfferError)) reportRefusal(input, []);
-      throw new ORPCError("CONFLICT", { message: "Requested slot is not available" });
+      throw new ConflictError({ message: "Requested slot is not available" });
     }
     throw error;
   }
@@ -238,10 +267,15 @@ async function sellableToASmallerParty(
 
   try {
     await selectBestOffer(db, provider, { ...input, guests: SMALLEST_PARTY });
-    console.warn(
-      `[quote] ${input.listingId} ${input.checkIn}..${input.checkOut} refused for ${input.guests} ` +
-        `guests but sells to ${SMALLEST_PARTY}; the party is the reason, so nothing is learned`,
-    );
+    log.warn({
+      action: "quote.refused_for_party_size",
+      listingId: input.listingId,
+      checkIn: input.checkIn,
+      checkOut: input.checkOut,
+      guests: input.guests,
+      sellsTo: SMALLEST_PARTY,
+      learned: false,
+    });
     return true;
   } catch {
     return false;
@@ -283,10 +317,11 @@ async function rememberCapacityRefusal(
 
     await rebuildListingSearchDocs(db, { listingIds: [input.listingId] });
   } catch (error) {
-    console.warn(
-      "[quote] could not record the refused party size",
-      error instanceof Error ? error.message : error,
-    );
+    log.warn({
+      action: "quote.refused_party_not_recorded",
+      listingId: input.listingId,
+      ...thrownFields(parseError(error)),
+    });
   }
 }
 
@@ -298,14 +333,19 @@ async function rememberCapacityRefusal(
  */
 function reportRefusal(input: QuoteRequest, attempts: readonly OfferAttempt[]): void {
   const { blame, said } = classifyRefusal(attempts);
-  const where = `${input.listingId} ${input.checkIn}..${input.checkOut}`;
+  const event = {
+    listingId: input.listingId,
+    checkIn: input.checkIn,
+    checkOut: input.checkOut,
+    said,
+  };
 
   if (blame === "ours") {
-    console.error(`[quote] ${where} refused by us, not the vendor: ${said}`);
+    log.error({ action: "quote.refused_by_us", ...event });
     return;
   }
 
-  console.warn(`[quote] ${where} unsellable: ${said}`);
+  log.warn({ action: "quote.unsellable", ...event });
 }
 
 /**
@@ -331,10 +371,11 @@ async function learnFromRefusal(
       winningOfferId: null,
     });
   } catch (error) {
-    console.warn(
-      "[quote] could not record offer attempts",
-      error instanceof Error ? error.message : error,
-    );
+    log.warn({
+      action: "quote.offer_attempts_not_recorded",
+      listingId: input.listingId,
+      ...thrownFields(parseError(error)),
+    });
   }
 
   /*
@@ -375,10 +416,11 @@ async function learnFromRefusal(
      */
     if (learned > 0) await rebuildListingSearchDocs(db, { listingIds: [input.listingId] });
   } catch (error) {
-    console.warn(
-      "[quote] could not record live refusal",
-      error instanceof Error ? error.message : error,
-    );
+    log.warn({
+      action: "quote.live_refusal_not_recorded",
+      listingId: input.listingId,
+      ...thrownFields(parseError(error)),
+    });
   }
 }
 
@@ -449,7 +491,18 @@ export async function repriceQuote(
   // first signed-in user to reprice it, which is how the sign-in-at-checkout flow
   // carries an anonymous price forward.
   if (existing.userId && userId && existing.userId !== userId) {
-    throw new ORPCError("FORBIDDEN", { message: "Quote belongs to another user" });
+    throw new ForbiddenError({ message: "Quote belongs to another user" });
+  }
+
+  /*
+   * A checkout reloaded after Confirm enters on the quote its booking was made from. Asking the
+   * vendor again there is asking about our own option, which it answers as taken, and the page
+   * read that as the dates being gone while the hold was still running. The booking froze this
+   * price, so the stored quote is the answer until the hold is paid or lapses.
+   */
+  if (hasNoChanges(changes)) {
+    const held = await heldQuote(db, existing);
+    if (held) return held;
   }
 
   // Anything the caller did not send keeps the previous quote's value, so the
@@ -527,9 +580,130 @@ export async function repriceQuote(
   return { ...replacement, repriced: true };
 }
 
+/* Mirrors `canPay` on the web: a booking in one of these can still be paid for from checkout. */
+const PAYABLE_HOLD_STATUSES = [
+  "QUOTED",
+  "OPTION_HELD",
+  "PAYMENT_PENDING",
+  "PAYMENT_FAILED",
+] as const;
+
+function hasNoChanges(changes: RepriceChanges): boolean {
+  return Object.values(changes).every((value) => value === undefined);
+}
+
+async function heldQuote(
+  db: Database,
+  row: Awaited<ReturnType<typeof readQuote>>,
+  now = new Date(),
+): Promise<PersistedQuote | null> {
+  const [held] = await db
+    .select({ holdExpiresAt: booking.holdExpiresAt })
+    .from(booking)
+    .where(and(eq(booking.quoteId, row.id), inArray(booking.status, PAYABLE_HOLD_STATUSES)))
+    .limit(1);
+  if (!held || (held.holdExpiresAt && held.holdExpiresAt <= now)) return null;
+
+  const [adjustments, promo] = await Promise.all([
+    db
+      .select()
+      .from(priceAdjustmentSnapshot)
+      .where(eq(priceAdjustmentSnapshot.quoteId, row.id))
+      .orderBy(asc(priceAdjustmentSnapshot.sortOrder)),
+    row.discountId
+      ? db
+          .select({ name: discount.name })
+          .from(discount)
+          .where(eq(discount.id, row.discountId))
+          .limit(1)
+      : Promise.resolve([]),
+  ]);
+
+  const { currency } = row;
+  const money = (amountMinor: number) => ({ amountMinor, currency });
+  const priced = providerQuoteSchema.parse({
+    id: row.providerQuoteId ?? row.id,
+    provider: row.provider,
+    listingId: row.listingId,
+    providerSourceId: row.providerSourceId,
+    checkIn: row.checkIn,
+    checkOut: row.checkOut,
+    guests: row.guests,
+    crewType: asCrewType(row.crewType) ?? null,
+    currency,
+    lines: row.lines.map((line) => ({
+      code: line.code,
+      label: line.label,
+      amount: { amountMinor: line.amountMinor, currency: line.currency },
+      payWhen: line.payWhen,
+      kind: line.kind,
+      group: line.group,
+    })),
+    total: money(row.totalMinor),
+    deposit: money(row.depositMinor),
+    securityDeposit:
+      row.securityDepositMinor === null ? undefined : money(row.securityDepositMinor),
+    paymentPolicy: {
+      mode: row.paymentPolicy.mode,
+      depositPct: row.paymentPolicy.depositPct,
+      balanceDueAt: row.paymentPolicy.balanceDueAt,
+    },
+    route: row.route,
+    routeOptions: row.routeOptions,
+    priceSourceHash: row.priceSourceHash,
+    expiresAt: row.expiresAt.toISOString(),
+    repriced: false,
+    checkInTime: row.checkInTime ?? undefined,
+    checkOutTime: row.checkOutTime ?? undefined,
+  });
+
+  const discountLine = row.lines.find(
+    (line) => line.kind === "discount" && line.code === row.discountCode,
+  );
+
+  return {
+    ...priced,
+    quoteId: row.id,
+    requestedExtras: row.requestedExtras,
+    perPerson: toPerPerson(row.totalMinor, row.guests, currency),
+    paymentSchedule: buildPaymentSchedulePreview({
+      lines: row.lines,
+      paymentPolicy: row.paymentPolicy,
+      depositMinor: row.depositMinor,
+      securityDepositMinor: row.securityDepositMinor,
+      checkIn: row.checkIn,
+      currency,
+    }).map((entry) => ({
+      kind: entry.kind,
+      amount: { amountMinor: entry.amountMinor, currency: entry.currency },
+      dueAt: entry.dueAt,
+    })),
+    discount:
+      row.discountCode && promo[0]
+        ? {
+            code: row.discountCode,
+            name: promo[0].name,
+            amountMinor: Math.abs(discountLine?.amountMinor ?? 0),
+          }
+        : null,
+    discountRejected: null,
+    creditApplied: row.creditAppliedMinor > 0 ? money(row.creditAppliedMinor) : null,
+    creditAvailable: row.creditAppliedMinor > 0 ? money(row.creditAppliedMinor) : null,
+    adjustments: adjustments.map((adjustment) => ({
+      source: adjustment.source,
+      sourceId: adjustment.sourceId,
+      name: adjustment.name,
+      type: adjustment.type,
+      valuePct: adjustment.valuePct === null ? null : Number(adjustment.valuePct),
+      valueMinor: adjustment.valueMinor,
+      amountMinor: adjustment.amountMinor,
+    })),
+  };
+}
+
 export async function readQuote(db: Database, quoteId: string) {
   const [row] = await db.select().from(quote).where(eq(quote.id, quoteId)).limit(1);
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown quote" });
+  if (!row) throw new NotFoundError({ message: "Unknown quote" });
   return row;
 }
 
@@ -541,14 +715,14 @@ export async function assertQuoteIsFresh(db: Database, quoteId: string, now = ne
   const row = await readQuote(db, quoteId);
 
   if (row.status === "consumed") {
-    throw new ORPCError("CONFLICT", { message: "Quote has already been used" });
+    throw new ConflictError({ message: "Quote has already been used" });
   }
 
   if (row.status === "expired" || row.expiresAt <= now) {
     if (row.status !== "expired") {
       await db.update(quote).set({ status: "expired" }).where(eq(quote.id, quoteId));
     }
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message: "Quote has expired — reprice before continuing",
       data: { code: "QUOTE_EXPIRED", quoteId },
     });
@@ -579,7 +753,7 @@ async function assertSelectableExtras(
   const unsold = [...new Set(extras)].filter((code) => !selectable.has(code));
   if (unsold.length === 0) return;
 
-  throw new ORPCError("BAD_REQUEST", {
+  throw new BadRequestError({
     message: `This listing does not sell: ${unsold.join(", ")}`,
     data: { code: "EXTRA_NOT_SELECTABLE", extras: unsold },
   });
@@ -606,7 +780,7 @@ async function assertRequestableExtras(
   const unknown = [...new Set(requested)].filter((code) => !requestable.has(code));
   if (unknown.length === 0) return;
 
-  throw new ORPCError("BAD_REQUEST", {
+  throw new BadRequestError({
     message: `This listing does not offer: ${unknown.join(", ")}`,
     data: { code: "EXTRA_NOT_REQUESTABLE", extras: unknown },
   });
@@ -623,7 +797,7 @@ async function priceOrConflict(
   } catch (error) {
     // Matched on the type, not the wording: a provider rephrasing its message must
     // not silently turn a sold-out week into a 500.
-    if (error instanceof SlotUnavailableError || error instanceof NotFoundError) {
+    if (error instanceof SlotUnavailableError || error instanceof ProviderNotFoundError) {
       /*
        * Reported for the same reason the first quote is: this is every date, guest and crew
        * change a visitor makes on the listing, and a refusal here reaches them as "not
@@ -655,7 +829,7 @@ async function priceOrConflict(
        * sync came round, and the next visitor met the same refusal.
        */
       if (listingOfferId) await learnFromRefusal(db, provider, input, attempts);
-      throw new ORPCError("CONFLICT", { message: "Requested slot is not available" });
+      throw new ConflictError({ message: "Requested slot is not available" });
     }
     throw error;
   }
@@ -895,6 +1069,10 @@ async function persistPricedQuote(
     return mapped;
   });
 
+  lines.push(
+    ...(await requestedExtraLines(db, priced, options.requestedExtras, options.listingOfferId)),
+  );
+
   const applied: AppliedAdjustment[] = [];
 
   // 1. Internal price_adjustment_rule, against the charter base.
@@ -1012,6 +1190,52 @@ async function persistPricedQuote(
   };
 }
 
+/**
+ * The requested extras as lines, so the total is everything the charter will cost.
+ *
+ * The vendor never sees these on the offer, and every one of them is settled with the base on
+ * arrival, so they are `at_check_in`: counted in the total, never in what is charged here. Their
+ * own group keeps them apart from the extras the offer priced, which the booking flow reads back
+ * as the customer's purchasable selection. An extra whose catalogue rate cannot be counted for
+ * this charter gets no line and stays a request the base prices.
+ */
+async function requestedExtraLines(
+  db: DatabaseExecutor,
+  priced: ProviderQuote,
+  requestedExtras: readonly string[],
+  listingOfferId: string | null,
+): Promise<QuoteLine[]> {
+  if (requestedExtras.length === 0) return [];
+
+  const catalogue = await listRequestableExtraPrices(db, priced.listingId, listingOfferId);
+  const basis = {
+    nights: daysBetween(priced.checkIn, priced.checkOut) ?? 0,
+    guests: priced.guests,
+    baseMinor: priced.lines.find((line) => line.kind === "base")?.amount.amountMinor ?? 0,
+  };
+
+  return [...new Set(requestedExtras)].flatMap((code): QuoteLine[] => {
+    const rate = catalogue.get(code);
+    // A catalogue row in another currency cannot be summed into this quote's total.
+    if (!rate || (rate.priceCurrency !== null && rate.priceCurrency !== priced.currency)) return [];
+
+    const amountMinor = requestedExtraAmountMinor(rate, basis);
+    if (amountMinor === null) return [];
+
+    return [
+      {
+        code,
+        label: rate.name,
+        amountMinor,
+        currency: priced.currency,
+        payWhen: "at_check_in",
+        kind: "extra",
+        group: "requested",
+      },
+    ];
+  });
+}
+
 function toPerPerson(
   totalMinorAmount: number,
   guests: number,
@@ -1077,12 +1301,14 @@ async function insertQuote(
       // and the alternatives it offered, so the choice survives a reload.
       route: input.priced.route,
       routeOptions: input.priced.routeOptions,
+      checkInTime: input.priced.checkInTime ?? null,
+      checkOutTime: input.priced.checkOutTime ?? null,
       priceSourceHash: input.priced.priceSourceHash,
       expiresAt: new Date(input.priced.expiresAt),
     })
     .returning({ id: quote.id });
 
-  if (!row) throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Could not persist quote" });
+  if (!row) throw new InternalError({ message: "Could not persist quote" });
 
   if (input.applied.length > 0) {
     await db.insert(priceAdjustmentSnapshot).values(

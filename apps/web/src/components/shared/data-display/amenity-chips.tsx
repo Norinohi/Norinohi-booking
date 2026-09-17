@@ -7,10 +7,10 @@ import {
 } from "@yacht-charter/ui/components/overlay/popover";
 import { useTranslations } from "next-intl";
 
-import type { BoatCardAmenity } from "./boat-card";
+import type { YachtCardAmenity } from "./yacht-card/types";
 
 /* One amenity, icon and name. Shared by the row and the overflow list so the two cannot drift. */
-export function AmenityChip({ amenity }: { amenity: BoatCardAmenity }) {
+export function AmenityChip({ amenity }: { amenity: YachtCardAmenity }) {
   return (
     <div className="flex items-center gap-2">
       <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand *:size-4">
@@ -33,7 +33,7 @@ export function AmenityChip({ amenity }: { amenity: BoatCardAmenity }) {
  * The list scrolls because the curated set runs to eighteen and a well-equipped boat carries
  * most of it; `max-h` is what stops the popup growing past the card it belongs to.
  */
-export function AmenityOverflow({ amenities }: { amenities: BoatCardAmenity[] }) {
+export function AmenityOverflow({ amenities }: { amenities: YachtCardAmenity[] }) {
   const t = useTranslations("Common.boatCard");
 
   return (

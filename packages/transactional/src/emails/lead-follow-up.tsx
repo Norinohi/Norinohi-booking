@@ -24,7 +24,7 @@ import {
   Title,
 } from "./_components/ui";
 
-export type LeadKind = "quote_request" | "charter_expert" | "consultation";
+export type LeadKind = "quote_request" | "charter_expert" | "consultation" | "booking_request";
 
 export type LeadFollowUpEmailProps = {
   name: string;
@@ -50,12 +50,15 @@ const OPENINGS = {
     "thanks for getting in touch. A charter expert has your message and will reply within one working day.",
   consultation:
     "thanks for telling us about your trip. A charter expert is putting together options that match what you described and will be in touch within one working day.",
+  booking_request:
+    "thanks for your booking request. This yacht's operator confirms every charter personally, so a charter expert is asking them to confirm your dates and will come back to you within one working day. Nothing has been charged.",
 } satisfies Record<LeadKind, string>;
 
 const EYEBROWS = {
   quote_request: "Quote request",
   charter_expert: "Enquiry",
   consultation: "Consultation",
+  booking_request: "Booking request",
 } satisfies Record<LeadKind, string>;
 
 export function LeadFollowUpEmail({

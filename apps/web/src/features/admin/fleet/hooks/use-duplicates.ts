@@ -1,0 +1,103 @@
+"use client";
+
+import { ORPCError } from "@orpc/client";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
+
+import {
+  confirmDuplicateMutationOptions,
+  deferDuplicateMutationOptions,
+  duplicateDetailQueryOptions,
+  duplicateKey,
+  duplicateMetricsQueryOptions,
+  duplicateQueueQueryOptions,
+  rejectDuplicateMutationOptions,
+  reopenDuplicateMutationOptions,
+} from "../api/queries";
+import type { DuplicateConfidenceFilter, DuplicateDecision } from "../types";
+
+/*
+ * Hooks over the admin duplicate-review procedures. Both verdicts invalidate the whole
+ * `admin.match` segment, so every decision tab reflects a resolution at once.
+ */
+
+export function useDuplicateQueue(input: {
+  decision: DuplicateDecision;
+  confidence: DuplicateConfidenceFilter;
+  matchedOn?: string;
+  page: number;
+}) {
+  /*
+   * The filters read their options out of this query's `summary`, so a filter change that
+   * emptied `data` would unmount the band a reviewer had just picked; Base UI's Select then
+   * reverts to a value its popup can still see and the selection appears not to take.
+   */
+  return useQuery({ ...duplicateQueueQueryOptions(input), placeholderData: keepPreviousData });
+}
+
+/**
+ * How often each rule has been right so far.
+ *
+ * Read-only, and deliberately so: nothing merges automatically, and this is the measurement
+ * that would have to justify letting it. Mounted with the queue rather than behind the open
+ * panel, so the header can say how many decisions the rates rest on before anyone expands it.
+ */
+export function useDuplicateMetrics() {
+  return useQuery(duplicateMetricsQueryOptions());
+}
+
+/** Callers mount this only once a pair is opened, which is what keeps the queue cheap. */
+export function useDuplicateDetail(candidateId: string) {
+  return useQuery(duplicateDetailQueryOptions(candidateId, useLocale()));
+}
+
+/**
+ * A candidate someone else already resolved comes back as CONFLICT. That is not a failure
+ * worth showing as one: the queue is simply out of date, so callers refetch and say so.
+ */
+export function isResolvedElsewhere(error: Error): boolean {
+  return error instanceof ORPCError && error.code === "CONFLICT";
+}
+
+export function useConfirmDuplicate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...confirmDuplicateMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: duplicateKey() }),
+  });
+}
+
+export function useRejectDuplicate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...rejectDuplicateMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: duplicateKey() }),
+  });
+}
+
+/**
+ * Takes a verdict back: the pair returns to the queue as pending, without its note.
+ *
+ * Guarded on the server rather than here — a confirmation whose merge still stands comes back
+ * CONFLICT, because the offers have to be split out before the pair is a question again.
+ */
+export function useReopenDuplicate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...reopenDuplicateMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: duplicateKey() }),
+  });
+}
+
+/** "I looked and I cannot tell" — a third verdict, kept out of the precision denominator. */
+export function useDeferDuplicate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...deferDuplicateMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: duplicateKey() }),
+  });
+}

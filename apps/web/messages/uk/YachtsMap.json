@@ -1,0 +1,14 @@
+{
+  "loading": "Завантажуємо яхти…",
+  "noResults": "За цими фільтрами яхт не знайдено. Спробуйте змінити їх.",
+  "title": "Яхти на карті",
+  "backToSearch": "Назад до пошуку",
+  "viewInCatalogue": "Переглянути в каталозі",
+  "showAllList": "Показати весь список",
+  "closeList": "Закрити список",
+  "marker": "Марина {name}",
+  "clusterCount": "{count, plural, one {# яхта} few {# яхти} many {# яхт} other {# яхт}}",
+  "previousBoat": "Попередня яхта",
+  "nextBoat": "Наступна яхта",
+  "allInCatalogue": "{count, plural, one {# яхта в каталозі} few {Усі # яхти в каталозі} many {Усі # яхт у каталозі} other {Усі # яхти в каталозі}}"
+}

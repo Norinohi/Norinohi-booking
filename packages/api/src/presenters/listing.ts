@@ -4,12 +4,25 @@ import {
   MIN_LEAD_DAYS,
   normalizedFilterValue,
 } from "@yacht-charter/db/search";
-import type { ListingDetail, ListingSearchDoc, PriceBasis } from "@yacht-charter/db/search";
+import { docHasMainsail } from "@yacht-charter/db/search/mainsail";
+import type { z } from "zod";
+
+import type { moneySchema } from "../contracts/primitives";
+import { BASE_CURRENCY } from "../lib/display-currency";
+import type {
+  ListingDetail,
+  ListingSearchDoc,
+  PeriodPriceSource,
+  PriceBasis,
+} from "@yacht-charter/db/search";
 
 /* Shared so the no-ranks path allocates nothing per card. */
 const EMPTY_AMENITY_RANKS: ReadonlyMap<string, number> = new Map();
 
 const EMPTY_IMAGE = "";
+
+/* Set only where a dated search withheld the price: see `withoutPrice` in shown-period.ts. */
+const NO_WEEKLY_PRICE: z.infer<typeof moneySchema> | null = null;
 
 /** `listing_price_period.kind = 'weekly'` is what the read model reads, so the rate is a week. */
 export const WEEKLY_RATE_DAYS = 7;
@@ -27,7 +40,7 @@ function daysFromTodayIso(days: number): string {
 }
 
 /** Whole days between two `yyyy-MM-dd` days, both read as UTC midnight. */
-function nightsBetween(checkIn: string, checkOut: string): number {
+export function nightsBetween(checkIn: string, checkOut: string): number {
   const ms = Date.parse(`${checkOut}T00:00:00.000Z`) - Date.parse(`${checkIn}T00:00:00.000Z`);
   return Math.round(ms / 86_400_000);
 }
@@ -94,6 +107,30 @@ export function pricedPeriodDays(doc: ListingSearchDoc): number {
 }
 
 /**
+ * Who stands behind the card's figure. Outside a dated search a figure that is not a season floor
+ * is always a vendor's confirmed price, because that is the only other thing the projection stores.
+ */
+function priceSourceOf(
+  doc: ListingSearchDoc,
+  pricesItsCharter: boolean,
+): PeriodPriceSource | "season-minimum" | null {
+  if (doc.priceFromMinor === null || doc.priceFromMinor <= 0) return null;
+  if (doc.priceIsFrom || !pricesItsCharter) return "season-minimum";
+  return doc.priceSource ?? "vendor";
+}
+
+/* `comparablePrice` in the search SQL, for the figure the card shows. */
+function comparablePriceOf(
+  doc: ListingSearchDoc,
+  amountMinor: number | null,
+  showsRate: boolean,
+): { amountMinor: number; currency: string } | null {
+  if (amountMinor === null || (doc.currency ?? BASE_CURRENCY) === BASE_CURRENCY) return null;
+  const converted = (showsRate ? doc.basePriceFromMinorEur : null) ?? doc.priceFromMinorEur;
+  return converted === null ? null : { amountMinor: converted, currency: BASE_CURRENCY };
+}
+
+/**
  * One card, priced on whichever figure the catalogue is set to show.
  *
  * `priceFrom` is the headline, and it is the only field the basis moves: `allInPriceFrom` and
@@ -135,6 +172,13 @@ export function presentListingSummary(
   /* The rate is never shown without the total it belongs to: a card that lost one of the two
      would advertise a figure with no way to say what sits on top of it. */
   const amountMinor = basis === "base" && baseMinor !== null ? baseMinor : allInMinor;
+  /* The stored list price is all-in, and the extras are never discounted, so beside a rate it
+     loses the same extras the headline did. Struck through as stored, EUR 15,050 sat beside a
+     EUR 7,500 rate whose own list price was EUR 10,000: a 25% discount advertised as 50%. */
+  const listMinor =
+    amountMinor === null || allInMinor === null || doc.listPriceFromMinor === null
+      ? null
+      : doc.listPriceFromMinor - (allInMinor - amountMinor);
 
   return {
     id: doc.listingId,
@@ -175,6 +219,7 @@ export function presentListingSummary(
       showers: doc.showers,
       yearBuilt: doc.yearBuilt ?? 0,
       sailType: doc.sailType,
+      hasMainsail: docHasMainsail(doc),
     },
     policies: {
       depositInsuranceIncluded: doc.depositInsuranceIncluded,
@@ -191,6 +236,7 @@ export function presentListingSummary(
         bookablePeriod === null && doc.nearestCheckIn && doc.nearestCheckOut
           ? { checkIn: doc.nearestCheckIn, checkOut: doc.nearestCheckOut }
           : null,
+      requiresOperatorConfirmation: doc.requiresOperatorConfirmation,
     },
     rating: Number(doc.rating),
     reviewCount: doc.reviewCount,
@@ -220,6 +266,11 @@ export function presentListingSummary(
       normalizedFilterValue,
     ).map((key) => amenityLabel.get(key) ?? key),
     priceFrom: amountMinor === null ? null : { amountMinor, currency },
+    comparablePriceFrom: comparablePriceOf(
+      doc,
+      amountMinor,
+      basis === "base" && baseMinor !== null,
+    ),
     /*
      * Both figures, whatever the headline is, so a card can disclose the difference and a
      * detail page can break it down without a second read.
@@ -242,15 +293,17 @@ export function presentListingSummary(
      * charter is gone is a floor, not the price of a named week, so it is captioned as one.
      */
     priceIsFrom: doc.priceIsFrom || bookablePeriod === null,
+    priceSource: priceSourceOf(doc, bookablePeriod !== null),
     /*
      * The same charter before the operator's discount, for the card to strike through. Only
      * ever beside a price and only ever above it: a listing whose price was withheld has
      * nothing to strike, and the projection never writes a figure that does not exceed it.
      */
     listPriceFrom:
-      allInMinor === null || doc.listPriceFromMinor === null
+      listMinor === null || amountMinor === null || listMinor <= amountMinor
         ? null
-        : { amountMinor: doc.listPriceFromMinor, currency },
+        : { amountMinor: listMinor, currency },
+    weeklyPriceFrom: NO_WEEKLY_PRICE,
     priceDetails: {
       periodDays,
       /*

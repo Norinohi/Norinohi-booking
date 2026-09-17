@@ -6,8 +6,15 @@ import { user } from "./auth";
 import { listing } from "./listing";
 
 // Top of the funnel: unlike booking_enquiry, a lead has no booking and usually no
-// account. Only quote_request carries a listing.
-export const leadKind = pgEnum("lead_kind", ["quote_request", "charter_expert", "consultation"]);
+// account. quote_request and booking_request carry a listing. A booking_request is a quoted
+// charter on a yacht whose operator confirms each booking by hand, so it cannot be paid for
+// online and a manager arranges it.
+export const leadKind = pgEnum("lead_kind", [
+  "quote_request",
+  "charter_expert",
+  "consultation",
+  "booking_request",
+]);
 
 export const leadStatus = pgEnum("lead_status", ["new", "contacted", "closed"]);
 

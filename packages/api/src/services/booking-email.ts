@@ -2,6 +2,8 @@ import { placeLine } from "../lib/place-line";
 import type { CommercialSnapshot, payment } from "@yacht-charter/db/schema/booking";
 import type { quote } from "@yacht-charter/db/schema/quote";
 import { env } from "@yacht-charter/env/server";
+import { thrownFields } from "@yacht-charter/providers/shared/log-fields";
+import { log, parseError } from "evlog";
 import {
   type RefundMethod,
   sendBalanceReminderEmail,
@@ -174,7 +176,12 @@ export async function notifyBookingConfirmed(booking: BookingConfirmedEmail): Pr
       supportUrl: appUrl(`/support?booking=${booking.bookingId}`),
     });
   } catch (cause) {
-    console.error(`[email] booking confirmed notice for ${booking.reference} failed`, cause);
+    log.error({
+      action: "email.failed",
+      email: "booking_confirmed",
+      reference: booking.reference,
+      ...thrownFields(parseError(cause)),
+    });
   }
 }
 
@@ -232,7 +239,12 @@ export async function notifyPaymentReceived(paid: PaymentReceivedEmail): Promise
       supportUrl: appUrl(`/support?booking=${paid.bookingId}`),
     });
   } catch (cause) {
-    console.error(`[email] payment receipt for ${paid.reference} failed`, cause);
+    log.error({
+      action: "email.failed",
+      email: "payment_receipt",
+      reference: paid.reference,
+      ...thrownFields(parseError(cause)),
+    });
   }
 }
 
@@ -284,7 +296,12 @@ export async function notifyInvoiceIssued(invoice: InvoiceIssuedEmail): Promise<
       supportUrl: appUrl(`/support?booking=${invoice.bookingId}`),
     });
   } catch (cause) {
-    console.error(`[email] invoice ${invoice.invoiceNumber} failed`, cause);
+    log.error({
+      action: "email.failed",
+      email: "invoice_issued",
+      invoiceNumber: invoice.invoiceNumber,
+      ...thrownFields(parseError(cause)),
+    });
   }
 }
 
@@ -326,7 +343,12 @@ export async function notifyRefundIssued(refund: RefundIssuedEmail): Promise<voi
       supportUrl: appUrl(`/support?booking=${refund.bookingId}`),
     });
   } catch (cause) {
-    console.error(`[email] refund notice for ${refund.reference} failed`, cause);
+    log.error({
+      action: "email.failed",
+      email: "refund_issued",
+      reference: refund.reference,
+      ...thrownFields(parseError(cause)),
+    });
   }
 }
 
@@ -357,7 +379,12 @@ export async function notifyBalanceDue(reminder: BalanceDueEmail): Promise<void>
       supportUrl: appUrl(`/support?booking=${reminder.bookingId}`),
     });
   } catch (cause) {
-    console.error(`[email] balance reminder for ${reminder.reference} failed`, cause);
+    log.error({
+      action: "email.failed",
+      email: "balance_reminder",
+      reference: reminder.reference,
+      ...thrownFields(parseError(cause)),
+    });
   }
 }
 
@@ -396,6 +423,11 @@ export async function notifyBookingCancelled(booking: BookingCancelledEmail): Pr
       supportUrl: appUrl(`/support?booking=${booking.bookingId}`),
     });
   } catch (cause) {
-    console.error(`[email] cancellation notice for ${booking.reference} failed`, cause);
+    log.error({
+      action: "email.failed",
+      email: "booking_cancelled",
+      reference: booking.reference,
+      ...thrownFields(parseError(cause)),
+    });
   }
 }

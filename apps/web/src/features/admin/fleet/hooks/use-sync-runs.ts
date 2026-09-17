@@ -1,0 +1,60 @@
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import {
+  providerCapabilitiesQueryOptions,
+  providerReliabilityQueryOptions,
+  startSyncMutationOptions,
+  syncRunsKey,
+  syncRunsQueryOptions,
+  syncRunStatusQueryOptions,
+} from "../api/queries";
+import type { ProviderKey } from "../../shared/types";
+import type { SyncRunKind, SyncRunState } from "../types";
+
+/* Hooks over the admin provider-sync procedures — the run history, and starting a run by hand. */
+
+export function useSyncRuns(input: {
+  provider?: ProviderKey;
+  kind?: SyncRunKind;
+  status?: SyncRunState;
+  page: number;
+}) {
+  return useQuery(syncRunsQueryOptions(input));
+}
+
+/** One run's errors. Only called from an expanded row, so it never runs speculatively. */
+export function useSyncRunStatus(syncRunId: string, provider: ProviderKey) {
+  return useQuery(syncRunStatusQueryOptions({ syncRunId, provider }));
+}
+
+/**
+ * How reliably each vendor has answered over the last `windowDays`.
+ *
+ * Read-only: nothing in the sale consults these numbers, and showing them is what has to come
+ * before anything does.
+ */
+export function useProviderReliability(windowDays: number) {
+  return useQuery(providerReliabilityQueryOptions(windowDays));
+}
+
+/** What the active connector supports. Read once; the answer is compiled in, not stored. */
+export function useProviderCapabilities() {
+  return useQuery(providerCapabilitiesQueryOptions());
+}
+
+/**
+ * Starts a catalogue or availability run by hand. The cron routes normally do this; staff need
+ * it when a provider was down at the scheduled hour, or after a mapping fix.
+ *
+ * The call returns as soon as the runs are opened — a full catalogue import outlives the request
+ * by hours — so the only thing to do on success is refetch the history the run now appears in.
+ */
+export function useStartSync(kind: "catalogue" | "availability") {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...startSyncMutationOptions(kind),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: syncRunsKey() }),
+  });
+}

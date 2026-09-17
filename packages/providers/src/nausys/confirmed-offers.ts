@@ -153,6 +153,11 @@ export async function* streamNausysConfirmedOffers(
     }
 
     if (period.source === "grid") windowIndex += 1;
+    /* A period asked about only to price it prices what came back and refuses nobody. */
+    if (period.judgesSilence === false) {
+      yield { offers, cursor: { windowIndex, page: 1 } };
+      continue;
+    }
     yield {
       offers,
       cursor: { windowIndex, page: 1 },

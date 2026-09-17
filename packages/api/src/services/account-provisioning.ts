@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 
-import { ORPCError } from "@orpc/server";
 import { user } from "@yacht-charter/db/schema/auth";
 import { eq } from "drizzle-orm";
 
 import type { Database } from "../context";
 import { enqueueOutbox } from "./outbox";
+import { InternalError } from "../errors";
 
 /*
  * The account behind a guest checkout.
@@ -63,7 +63,7 @@ export async function provisionGuestAccount(
   if (!inserted) {
     const raced = await findByEmail(db, email);
     if (!raced) {
-      throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Could not create an account" });
+      throw new InternalError({ message: "Could not create an account" });
     }
     return { userId: raced, created: false };
   }

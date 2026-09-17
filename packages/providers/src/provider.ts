@@ -1,9 +1,15 @@
+import type { JsonValue } from "./shared/json";
+import type { SweepPeriod } from "./shared/sweep-periods";
+import type { AvailabilitySource } from "./sync/availability-writer";
+import type { SeasonalPrice } from "./sync/price-writer";
+import type { CatalogueSyncSource } from "./sync/runner";
 import type {
   AvailabilityCalendar,
   AvailabilitySearch,
   AvailableOffer,
   BookingDraft,
   CanonicalCatalogue,
+  CatalogueProjectionContext,
   CrewListReceipt,
   CrewListSubmission,
   CrewPlace,
@@ -30,7 +36,10 @@ export interface InventoryProvider {
    * company, base and equipment records that arrive in earlier sync batches, so it
    * cannot be done while streaming.
    */
-  projectCatalogue(records: ProviderRecordSet): CanonicalCatalogue;
+  projectCatalogue(
+    records: ProviderRecordSet,
+    context?: CatalogueProjectionContext,
+  ): CanonicalCatalogue;
   searchAvailability(input: AvailabilitySearch): Promise<AvailableOffer[]>;
   getAvailability(input: ListingPeriod): Promise<AvailabilityCalendar>;
   getQuote(input: QuoteRequest): Promise<ProviderQuote>;
@@ -78,5 +87,59 @@ export interface InventoryProvider {
    * NauSYS keeps such a queue, Booking Manager does not publish one.
    */
   getWaitingOptions?(input: ListingPeriod): Promise<WaitingOptions>;
+  /**
+   * A catalogue stream that reports scope completion, which `syncCatalogue` cannot. Optional:
+   * without it the runner adapts `syncCatalogue` and announces scopes only once it ends.
+   */
+  createCatalogueSyncSource?(options: { resume?: JsonValue }): CatalogueSyncSource;
+  /** Drives an availability sync. Optional: the mock has no occupancy to sync. */
+  createAvailabilitySource?(options: { resume?: JsonValue }): AvailabilitySource;
+  /**
+   * A confirming pass over exactly these weeks for the whole fleet, with no occupancy walk in
+   * front of it; the nightly price-weeks job drives it. See `shared/price-weeks.ts`.
+   */
+  createPriceWeeksSource?(weeks: readonly SweepPeriod[]): AvailabilitySource;
+  /**
+   * The provider's published price list. Optional: a vendor may have no catalogue-wide price
+   * dump at all, in which case the quote path is the only thing that prices its listings.
+   */
+  loadSeasonalPrices?(listingIds: string[]): Promise<Map<string, SeasonalPrice[]>>;
   capabilities(): ProviderCapabilities;
+}
+
+/*
+ * Guards for the optional sync capabilities above. Checked on the typed member rather than with
+ * `in`, so renaming a capability is a compile error at every caller instead of a silent `false`.
+ */
+export type ScopedCatalogueProvider = Required<
+  Pick<InventoryProvider, "createCatalogueSyncSource">
+>;
+export type AvailabilitySyncProvider = Required<
+  Pick<InventoryProvider, "createAvailabilitySource">
+>;
+export type PriceWeeksProvider = Required<Pick<InventoryProvider, "createPriceWeeksSource">>;
+export type SeasonalPriceProvider = Required<Pick<InventoryProvider, "loadSeasonalPrices">>;
+
+export function supportsScopedCatalogueSync(
+  provider: InventoryProvider,
+): provider is InventoryProvider & ScopedCatalogueProvider {
+  return provider.createCatalogueSyncSource !== undefined;
+}
+
+export function supportsAvailabilitySync(
+  provider: InventoryProvider,
+): provider is InventoryProvider & AvailabilitySyncProvider {
+  return provider.createAvailabilitySource !== undefined;
+}
+
+export function supportsPriceWeeks(
+  provider: InventoryProvider,
+): provider is InventoryProvider & PriceWeeksProvider {
+  return provider.createPriceWeeksSource !== undefined;
+}
+
+export function supportsSeasonalPrices<T extends Partial<SeasonalPriceProvider>>(
+  provider: T,
+): provider is T & SeasonalPriceProvider {
+  return provider.loadSeasonalPrices !== undefined;
 }

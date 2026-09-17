@@ -4,6 +4,7 @@ import {
   syncError,
   syncRun,
 } from "@yacht-charter/db/schema/provider";
+import { findProviderMeta } from "@yacht-charter/env/providers";
 import { env } from "@yacht-charter/env/server";
 import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -11,19 +12,20 @@ import { z } from "zod";
 import { chunked, ROW_CHUNK } from "../shared/chunks";
 import { describeErrorChain } from "../shared/error-chain";
 
-import type { InventoryProvider } from "../provider";
+import {
+  type InventoryProvider,
+  supportsScopedCatalogueSync,
+  supportsSeasonalPrices,
+} from "../provider";
 import type { Database } from "../registry";
 import { NotFoundError, ProviderError, toSyncErrorType } from "../shared/errors";
 import type { JsonField, JsonValue } from "../shared/json";
+import { listReferenceRegions } from "@yacht-charter/db/geo/reference-regions";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
 
 import { refreshOfferFlags } from "./offer-flags";
 import { retainRawPayloads, stableSourceHash } from "../shared/raw-retention";
-import {
-  createDrizzlePricePeriodStore,
-  supportsSeasonalPrices,
-  writeSeasonalPrices,
-} from "./price-writer";
+import { createDrizzlePricePeriodStore, writeSeasonalPrices } from "./price-writer";
 import { openSyncRun, releaseSyncRun } from "./run";
 import type { ProviderResourceType, RawEntity } from "../types";
 import { clearSyncCursor, readSyncCursor, writeSyncCursor } from "./cursor";
@@ -79,15 +81,7 @@ export interface SyncReporter {
 export type CatalogueSyncSource = (reporter: SyncReporter) => AsyncIterable<CatalogueSyncEvent>;
 
 /** A provider that can report scope completion; `syncCatalogue` cannot. */
-export interface ScopedCatalogueProvider {
-  createCatalogueSyncSource(options: { resume?: JsonValue }): CatalogueSyncSource;
-}
-
-export function supportsScopedCatalogueSync(
-  provider: InventoryProvider,
-): provider is InventoryProvider & ScopedCatalogueProvider {
-  return "createCatalogueSyncSource" in provider;
-}
+export { type ScopedCatalogueProvider, supportsScopedCatalogueSync } from "../provider";
 
 /**
  * Adapts a plain `AsyncIterable<RawEntity>` to the event protocol.
@@ -741,13 +735,6 @@ export async function resolveProviderId(db: Database, code: string): Promise<str
   return row.id;
 }
 
-/** Display name for a provider row this package bootstraps for the first time. */
-const PROVIDER_DISPLAY_NAME = new Map([
-  ["nausys", "NauSYS"],
-  ["mock", "Mock Inventory Provider"],
-  ["booking_manager", "Booking Manager"],
-]);
-
 /**
  * Like `resolveProviderId`, but creates the row (enabled, EUR default) the first
  * time this provider syncs instead of throwing — for one-off ops scripts run
@@ -766,7 +753,7 @@ export async function ensureProviderId(db: Database, code: string): Promise<stri
     .insert(providerTable)
     .values({
       code,
-      name: PROVIDER_DISPLAY_NAME.get(code) ?? code,
+      name: findProviderMeta(code)?.displayName ?? code,
       enabled: true,
       defaultCurrency: "EUR",
     })
@@ -951,7 +938,9 @@ export async function runCatalogueSyncJob(
   let written: Awaited<ReturnType<typeof writeCanonicalCatalogue>>;
   try {
     const records = await loadProviderRecordSet(db, providerId);
-    const catalogue = provider.projectCatalogue(records);
+    const catalogue = provider.projectCatalogue(records, {
+      referenceRegions: await listReferenceRegions(db, providerId),
+    });
     written = await writeCanonicalCatalogue({
       db,
       providerId,

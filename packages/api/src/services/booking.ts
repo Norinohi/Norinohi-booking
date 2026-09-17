@@ -1,6 +1,5 @@
 import { describeProviderFailure, reportProviderRefusal } from "../lib/provider-failure";
 import { placeLine } from "../lib/place-line";
-import { ORPCError } from "@orpc/server";
 import {
   booking,
   bookingConsent,
@@ -11,15 +10,25 @@ import {
 } from "@yacht-charter/db/schema/booking";
 import { invoiceRequest } from "@yacht-charter/db/schema/checkout";
 import { base } from "@yacht-charter/db/schema/geography";
+import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
 import { listingSearchDoc } from "@yacht-charter/db/schema/search";
+import { requiresOperatorConfirmation } from "@yacht-charter/db/sellable-offer";
 import { user } from "@yacht-charter/db/schema/auth";
 import { quote, type QuoteLine } from "@yacht-charter/db/schema/quote";
-import { listRequestableExtras } from "@yacht-charter/db/search";
+import {
+  facetTranslator,
+  listRequestableExtras,
+  localizeQuoteLines,
+  type FacetTranslator,
+} from "@yacht-charter/db/search";
 import type { InventoryProvider } from "@yacht-charter/providers";
-import { and, count, desc, eq, gte, inArray, lte, notInArray } from "drizzle-orm";
+import { parseError } from "evlog";
+import { and, count, desc, eq, gte, inArray, lte, notInArray, sql } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database, DatabaseExecutor } from "../context";
+import { hasMainsail } from "@yacht-charter/db/search/mainsail";
+import { localizeSnapshot } from "../presenters/booking-snapshot";
 import { badgesFor } from "../presenters/listing";
 import type {
   bookingCancelSchema,
@@ -42,6 +51,8 @@ import {
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
 import { appendRequestedExtras } from "./requested-extras";
 import { notifyBookingCancelled } from "./booking-email";
+import { type AuditEntry, writeAuditLog } from "./audit";
+import { recordProviderFailure } from "./error-audit";
 import { amountDue, atCheckInMinor, outstandingMinor, payableNowFor } from "./checkout-amounts";
 import { enqueueOutbox, kickOutbox } from "./outbox";
 import { redeemDiscount } from "./discount-redemption";
@@ -52,6 +63,13 @@ import { isUniqueViolation, violatedConstraint } from "./pg-errors";
 import { randomCode, withUniqueRetry } from "./random-code";
 import { asCrewType, assertQuoteIsFresh, learnFromProviderRefusal } from "./quote";
 import type { GuestAccessToken } from "./guest-access";
+import {
+  ConflictError,
+  DomainError,
+  ForbiddenError,
+  InternalError,
+  NotFoundError,
+} from "../errors";
 
 type ListInput = z.infer<typeof bookingListInputSchema>;
 
@@ -118,21 +136,31 @@ export async function listBookings(
       ),
   });
 
-  const money = await loadMoney(
-    db,
-    rows.map((row) => row.booking.id),
-  );
+  const [money, translate] = await Promise.all([
+    loadMoney(
+      db,
+      rows.map((row) => row.booking.id),
+    ),
+    facetTranslator(db, input.locale),
+  ]);
 
   return {
-    items: rows.map((row) => presentSummary(row.booking, row.quote, money.get(row.booking.id))),
+    items: rows.map((row) =>
+      presentSummary(row.booking, row.quote, money.get(row.booking.id), translate),
+    ),
     pagination,
   };
 }
 
-export async function getBooking(db: Database, userId: string, id: string): Promise<Detail> {
+export async function getBooking(
+  db: Database,
+  userId: string,
+  id: string,
+  locale?: string,
+): Promise<Detail> {
   const row = await readOwnedBooking(db, userId, id);
 
-  const [extras, schedules, payments, money, invoices] = await Promise.all([
+  const [extras, schedules, payments, money, invoices, translate, lines] = await Promise.all([
     db.select().from(bookingExtra).where(eq(bookingExtra.bookingId, id)),
     db.select().from(paymentSchedule).where(eq(paymentSchedule.bookingId, id)),
     db.select().from(payment).where(eq(payment.bookingId, id)),
@@ -145,11 +173,19 @@ export async function getBooking(db: Database, userId: string, id: string): Prom
       .where(eq(invoiceRequest.bookingId, id))
       .orderBy(desc(invoiceRequest.createdAt))
       .limit(1),
+    facetTranslator(db, locale),
+    localizeQuoteLines(db, row.quote.listingId, row.quote.lines, locale),
   ]);
 
   const [invoice] = invoices;
+  const extraRows = await localizeQuoteLines(
+    db,
+    row.quote.listingId,
+    extras.map((extra) => ({ ...extra, kind: "extra" })),
+    locale,
+  );
 
-  const summary = presentSummary(row.booking, row.quote, money.get(id));
+  const summary = presentSummary(row.booking, row.quote, money.get(id), translate);
 
   return {
     ...summary,
@@ -161,14 +197,14 @@ export async function getBooking(db: Database, userId: string, id: string): Prom
     cancelledAt: row.booking.cancelledAt?.toISOString() ?? null,
     cancelReason: row.booking.cancelReason,
     crewType: row.quote.crewType,
-    priceLines: row.quote.lines.map((line) => ({
+    priceLines: lines.map((line) => ({
       code: line.code,
       label: line.label,
       amount: { amountMinor: line.amountMinor, currency: line.currency },
       group: line.group ?? null,
       payWhen: line.payWhen,
     })),
-    extras: extras.map((extra) => ({
+    extras: extraRows.map((extra) => ({
       code: extra.code,
       label: extra.label,
       pricingType: extra.pricingType,
@@ -287,7 +323,7 @@ export async function createHold(
      * a reprice, which mints a new quote and with it a new key.
      */
     if (NEVER_HELD.includes(existing.status)) {
-      throw new ORPCError("CONFLICT", {
+      throw new ConflictError({
         message: existing.cancelReason ?? "This slot could not be held — please reprice",
         /* `cancelReason` is the English the first attempt stored; a client with a message
            catalogue says the same thing in the reader's language off this. */
@@ -301,17 +337,21 @@ export async function createHold(
 
   const priced = await assertQuoteIsFresh(db, quoteId);
   if (priced.userId && priced.userId !== userId) {
-    throw new ORPCError("FORBIDDEN", { message: "Quote belongs to another user" });
+    throw new ForbiddenError({ message: "Quote belongs to another user" });
   }
+  await assertOnlineBookable(db, priced.listingOfferId);
 
-  const snapshot = await buildSnapshot(db, priced.listingId);
+  const snapshot = withHandoverTimes(await buildSnapshot(db, priced.listingId), {
+    checkInTime: priced.checkInTime ?? undefined,
+    checkOutTime: priced.checkOutTime ?? undefined,
+  });
   const [account] = await db
     .select({ name: user.name, email: user.email })
     .from(user)
     .where(eq(user.id, userId))
     .limit(1);
 
-  if (!account) throw new ORPCError("NOT_FOUND", { message: "Unknown user" });
+  if (!account) throw new NotFoundError({ message: "Unknown user" });
 
   // Created from a validated quote, so the booking starts at QUOTED. DRAFT exists
   // in the §6 enum for a booking with no quote yet, which this flow never produces.
@@ -556,6 +596,7 @@ async function holdOption(
         providerStatus: reservation.status,
         holdExpiresAt: reservation.holdExpiresAt ? new Date(reservation.holdExpiresAt) : null,
         crewListLink: reservation.crewListLink ?? null,
+        commercialSnapshot: withHandoverTimes(pending.commercialSnapshot, reservation),
       });
     } catch (error) {
       // booking_provider_option_uq: someone else already holds this exact option.
@@ -564,7 +605,7 @@ async function holdOption(
         await transition(db, pending, "PROVIDER_REJECTED", {
           cancelReason: "This slot was taken while you were checking out",
         });
-        throw new ORPCError("CONFLICT", {
+        throw new ConflictError({
           message: "This slot was taken while you were checking out — please reprice",
           data: { code: "SLOT_TAKEN" },
         });
@@ -583,17 +624,16 @@ async function holdOption(
   } catch (error) {
     // Already handled and already moved to a terminal state — re-running the
     // transition here would fail its compare-and-set and mask the real reason.
-    if (error instanceof ORPCError) throw error;
+    if (error instanceof DomainError) throw error;
 
     // `cancelReason` is read back by the booking screens and by the idempotent
     // replay above, so it carries the customer wording; the vendor's own text
     // stays on the event, where support and Sentry look for it.
     const refusal = error instanceof Error ? error : null;
     const failure = describeProviderFailure(refusal, "Provider rejected the option");
-    reportProviderRefusal("hold", refusal, {
-      bookingId: pending.id,
-      provider: pending.provider,
-    });
+    const subject = { bookingId: pending.id, provider: pending.provider };
+    reportProviderRefusal("hold", refusal, subject);
+    await recordProviderFailure(db, "hold", parseError(error), subject);
     const rejected = await transition(db, pending, "PROVIDER_REJECTED", {
       cancelReason: failure.customer,
     });
@@ -610,8 +650,27 @@ async function holdOption(
      * is booked.
      */
     await learnFromProviderRefusal(db, provider, priced, refusal);
-    throw new ORPCError("CONFLICT", { message: failure.customer, data: { code: failure.code } });
+    throw new ConflictError({ message: failure.customer, data: { code: failure.code } });
   }
+}
+
+/**
+ * The option's own check-in and check-out over the ones the snapshot took from the base.
+ *
+ * A base row is shared by every fleet at the marina and one sync fills it for all of them, so it
+ * can be another operator's turnaround. What the vendor wrote on the option is this charter's, and
+ * the booking pages read the snapshot from here on. Either end the option leaves out keeps the
+ * base's.
+ */
+function withHandoverTimes(
+  snapshot: CommercialSnapshot,
+  reservation: { checkInTime?: string; checkOutTime?: string },
+): CommercialSnapshot {
+  return {
+    ...snapshot,
+    checkInTime: reservation.checkInTime ?? snapshot.checkInTime,
+    checkOutTime: reservation.checkOutTime ?? snapshot.checkOutTime,
+  };
 }
 
 /**
@@ -631,7 +690,7 @@ export async function cancelBooking(
   const current = row.booking.status;
 
   if (!actor.isAdmin && !isUserCancellable(current)) {
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message:
         current === "CONFIRMED"
           ? "A confirmed booking has to be cancelled by our team"
@@ -642,12 +701,31 @@ export async function cancelBooking(
   const target: BookingStatus = current === "CONFIRMED" ? "REFUND_PENDING" : "CANCELLED";
 
   try {
-    const moved = await transition(db, row.booking, target, {
-      cancelReason: reason ?? null,
-      cancelledAt: new Date(),
-    });
+    const moved = await db.transaction(async (tx) => {
+      const cancelled = await transition(tx, row.booking, target, {
+        cancelReason: reason ?? null,
+        cancelledAt: new Date(),
+      });
 
-    await withdrawOpenInvoices(db, moved.id, reason);
+      await withdrawOpenInvoices(tx, cancelled.id, reason);
+
+      /* The audit log records staff actions; a customer cancelling their own booking is on the booking itself. */
+      if (actor.isAdmin) {
+        const entry: AuditEntry = {
+          actorUserId: actor.userId,
+          action: "update",
+          entityType: "booking",
+          entityId: cancelled.id,
+          before: { status: current },
+          after: { status: cancelled.status, cancelReason: cancelled.cancelReason },
+        };
+        if (reason) entry.metadata = { reason };
+
+        await writeAuditLog(tx, entry);
+      }
+
+      return cancelled;
+    });
 
     /* Nothing was ever held, so nothing is still held. */
     let release: ProviderRelease = { released: true, reason: null };
@@ -696,7 +774,7 @@ export async function cancelBooking(
     };
   } catch (error) {
     if (error instanceof InvalidTransitionError) {
-      throw new ORPCError("CONFLICT", { message: error.message });
+      throw new ConflictError({ message: error.message });
     }
     throw error;
   }
@@ -719,7 +797,7 @@ export async function cancelBooking(
  * sends to REFUND_PENDING.
  */
 async function withdrawOpenInvoices(
-  db: Database,
+  db: DatabaseExecutor,
   bookingId: string,
   reason: string | undefined,
 ): Promise<void> {
@@ -868,7 +946,7 @@ async function transition(
     // Reachable when a webhook or a concurrent call already advanced the booking,
     // so this is a conflict for the caller rather than a server fault.
     if (error instanceof InvalidTransitionError) {
-      throw new ORPCError("CONFLICT", { message: error.message });
+      throw new ConflictError({ message: error.message });
     }
     throw error;
   }
@@ -882,7 +960,7 @@ async function transition(
   // The status guard in the WHERE makes this a compare-and-set: a concurrent
   // webhook that moved the booking first wins, and this caller is told so.
   if (!updated) {
-    throw new ORPCError("CONFLICT", { message: "Booking changed while it was being updated" });
+    throw new ConflictError({ message: "Booking changed while it was being updated" });
   }
 
   return updated;
@@ -894,7 +972,7 @@ async function transition(
  * here is the same key again in a moment, and the reprice refusals mean the opposite.
  */
 function holdInProgress(): never {
-  throw new ORPCError("CONFLICT", {
+  throw new ConflictError({
     message: "This booking is still being confirmed — try again in a moment",
     data: { code: "HOLD_IN_PROGRESS" },
   });
@@ -926,7 +1004,7 @@ async function insertBooking(
   });
 
   if (!row) {
-    throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Could not allocate a booking" });
+    throw new InternalError({ message: "Could not allocate a booking" });
   }
   return row;
 }
@@ -969,7 +1047,7 @@ async function buildSnapshot(db: Database, listingId: string): Promise<Commercia
     .where(eq(listingSearchDoc.listingId, listingId))
     .limit(1);
 
-  if (!doc) throw new ORPCError("NOT_FOUND", { message: "Unknown listing" });
+  if (!doc) throw new NotFoundError({ message: "Unknown listing" });
 
   const [baseRow] = await db
     .select({ checkInTime: base.checkInTime, checkOutTime: base.checkOutTime })
@@ -1047,16 +1125,26 @@ async function loadMoney(db: Database, bookingIds: string[]): Promise<Map<string
   return totals;
 }
 
+/*
+ * The snapshot freezes the catalogue's English labels, so the reader's language is applied on the
+ * way out, from the same facet copy the search cards read.
+ */
 function presentSummary(
   row: BookingRow,
   priced: typeof quote.$inferSelect,
   money: MoneyTotals | undefined,
+  translate?: FacetTranslator,
 ): Summary {
-  const snapshot = row.commercialSnapshot;
+  const snapshot = localizeSnapshot(row.commercialSnapshot, translate);
   const paidMinor = money?.paidMinor ?? 0;
   const snapshotSpecs = snapshot.specs;
+  /* Read off the frozen snapshot, whose category is still the English group. */
+  const mainsail = hasMainsail(
+    row.commercialSnapshot.category,
+    row.commercialSnapshot.specs?.sailType ?? null,
+  );
   const specs = snapshotSpecs
-    ? { ...snapshotSpecs, showers: snapshotSpecs.showers ?? null }
+    ? { ...snapshotSpecs, showers: snapshotSpecs.showers ?? null, hasMainsail: mainsail }
     : {
         lengthM: 0,
         cabins: 0,
@@ -1065,6 +1153,7 @@ function presentSummary(
         showers: null,
         yearBuilt: 0,
         sailType: null,
+        hasMainsail: mainsail,
       };
 
   return {
@@ -1148,4 +1237,35 @@ const BASE_TIME_ZONE = "UTC";
 function combine(date: string, time: string | null): string {
   const clock = time && /^\d{2}:\d{2}/.test(time) ? time.slice(0, 5) : "00:00";
   return `${date}T${clock}:00.000Z`;
+}
+
+/**
+ * Refuses a hold on an offer whose operator confirms each booking by hand.
+ *
+ * Such an offer is quoted like any other, because the vendor prices it, but it cannot be held
+ * and paid for: NauSYS refuses the option outright where it needs approval, and where the
+ * operator fixes the booking we would take the money for a charter nobody has confirmed. The
+ * page offers a booking request instead; this is the guard behind it, so a stale page or a
+ * direct link cannot open a checkout. Before the booking row, so nothing is written.
+ */
+async function assertOnlineBookable(db: Database, listingOfferId: string | null): Promise<void> {
+  if (!listingOfferId) return;
+
+  const [offer] = await db
+    .select({
+      confirms: sql<boolean>`${requiresOperatorConfirmation({
+        optionApprovalRequired: listingOffer.optionApprovalRequired,
+        fixedBookingSupported: listingOffer.fixedBookingSupported,
+      })}`,
+    })
+    .from(listingOffer)
+    .where(eq(listingOffer.id, listingOfferId))
+    .limit(1);
+
+  if (offer?.confirms) {
+    throw new ConflictError({
+      message: "This yacht's operator confirms each booking, so it can only be requested",
+      data: { code: "OPERATOR_CONFIRMATION_REQUIRED" },
+    });
+  }
 }

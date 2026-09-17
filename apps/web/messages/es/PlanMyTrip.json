@@ -1,0 +1,224 @@
+{
+  "title": "Ayúdame a planificar mi viaje",
+  "close": "Cerrar el planificador",
+  "progress": "Paso {current} de {total}",
+  "stepHeading": "Paso {current}",
+  "placeholder": "La pregunta y sus opciones aparecerán aquí en la siguiente etapa.",
+  "back": "Atrás",
+  "next": "Siguiente",
+  "steps": {
+    "destination": {
+      "question": "¿A dónde te gustaría navegar?",
+      "subtitle": "Elige un destino o deja que te sugiramos la mejor opción",
+      "options": {
+        "croatia": {
+          "label": "Croacia",
+          "description": "Ideal para saltar entre islas y navegar por primera vez. Aguas tranquilas, distancias cortas entre islas y una gran variedad de rutas: perfecto para principiantes y viajes relajados."
+        },
+        "greece": {
+          "label": "Grecia",
+          "description": "Ideal para rutas escénicas y mezcla cultural. Navega entre islas icónicas de aguas cristalinas, pueblos históricos y un equilibrio entre aventura y confort."
+        },
+        "italy": {
+          "label": "Italia",
+          "description": "Ideal para experiencias premium y vistas de la costa. Hermosas rutas costeras, marinas de alta gama y destinos inolvidables como Amalfi: perfecto para un viaje más lujoso."
+        },
+        "spain": {
+          "label": "España",
+          "description": "Ideal para estilo de vida y ambiente social. Buen clima, ambiente vibrante y destinos como Ibiza o Mallorca: perfecto para diversión, grupos y viajes activos."
+        },
+        "notSure": {
+          "label": "No estoy seguro"
+        }
+      }
+    },
+    "groupSize": {
+      "question": "¿Cuántas personas van a bordo?",
+      "subtitle": "El tamaño del grupo influye en el tipo de yate, el espacio y el precio por persona",
+      "options": {
+        "twoToFour": {
+          "label": "2-4 personas",
+          "description": "Más privacidad, mayor coste por persona"
+        },
+        "fiveToEight": {
+          "label": "5-8 personas",
+          "description": "El mejor equilibrio entre confort y precio"
+        },
+        "ninePlus": {
+          "label": "9+ personas",
+          "description": "Requiere yates más grandes o varios barcos"
+        },
+        "notSure": {
+          "label": "No estoy seguro"
+        }
+      }
+    },
+    "experience": {
+      "question": "¿Tienes experiencia navegando?",
+      "subtitle": "Se puede añadir patrón con cualquier nivel - esto solo decide quién lleva el timón.",
+      "options": {
+        "none": {
+          "label": "Sin experiencia",
+          "description": "Necesito un patrón para navegar"
+        },
+        "some": {
+          "label": "Algo de experiencia",
+          "description": "He navegado antes, pero necesito un patrón"
+        },
+        "licensed": {
+          "label": "Con licencia",
+          "description": "Tengo licencia válida y navegaré yo mismo"
+        }
+      }
+    },
+    "tripVibe": {
+      "question": "¿Qué tipo de viaje buscas?",
+      "subtitle": "Lo que buscas de la semana define el barco, la ruta y el ritmo.",
+      "options": {
+        "adventure": {
+          "label": "Aventura",
+          "description": "Navegación activa y exploración. Más movimiento, rutas más largas y navegación práctica"
+        },
+        "relax": {
+          "label": "Relax",
+          "description": "Ritmo tranquilo, naturaleza y calas tranquilas. Perfecto para navegar con calma, nadar y desconectar."
+        },
+        "family": {
+          "label": "Familia",
+          "description": "Seguro, cómodo y espacioso. Ideal para niños, estabilidad y rutas fáciles."
+        },
+        "luxury": {
+          "label": "Lujo",
+          "description": "Yates premium y servicio completo. Tripulación, confort y destinos exclusivos."
+        },
+        "party": {
+          "label": "Fiesta",
+          "description": "Música, vida nocturna y ambiente social. Ideal para rutas estilo Ibiza y energía de grupo."
+        }
+      }
+    },
+    "duration": {
+      "question": "¿Cuánto quieres que dure tu viaje?",
+      "subtitle": "Elige la duración que mejor se adapte a tus planes. Nos ayuda a sugerir los yates, las rutas y la experiencia adecuados.",
+      "options": {
+        "week": {
+          "label": "7 días"
+        },
+        "twoWeeks": {
+          "label": "14 días"
+        },
+        "threeWeeks": {
+          "label": "21 días"
+        },
+        "more": {
+          "label": "21+ días"
+        }
+      }
+    },
+    "budget": {
+      "question": "¿Qué presupuesto te resulta cómodo?",
+      "subtitle": "Por persona y semana a bordo, para poder compararlo con unas vacaciones que ya conoces.",
+      "perPersonWeek": "por persona/semana",
+      "options": {
+        "low": {
+          "label": "€300-600"
+        },
+        "mid": {
+          "label": "€600-1000"
+        },
+        "high": {
+          "label": "€1000-1200"
+        },
+        "upper": {
+          "label": "€1200-2000"
+        },
+        "premium": {
+          "label": "€2000+"
+        }
+      }
+    }
+  },
+  "result": {
+    "title": "Tu viaje en yate perfecto",
+    "subtitle": "Según tus preferencias, esto es lo que recomendamos.",
+    "labels": {
+      "yachtType": "Tipo de yate",
+      "skipper": "Patrón",
+      "style": "Estilo",
+      "duration": "Duración"
+    },
+    "yachtType": {
+      "sailing": "Velero",
+      "catamaran": "Catamarán",
+      "gulet": "Gulet",
+      "motor": "Yate a motor",
+      "luxury": "Yate de lujo"
+    },
+    "skipper": {
+      "yes": "Sí",
+      "no": "No"
+    },
+    "difficulty": {
+      "easy": "Fácil",
+      "moderate": "Moderado",
+      "advanced": "Avanzado"
+    },
+    "getConsultation": "Solicitar asesoría",
+    "viewDetails": "Ver detalles",
+    "seeAllMatches": "Ver todas las coincidencias",
+    "durationDays": "{days, plural, one {# día} other {# días}}",
+    "price": {
+      "perPerson": "≈ {price} por persona",
+      "similar": "Yates similares",
+      "perPersonWeek": "≈ {range} por persona y semana",
+      "estimate": "Precio estimado",
+      "perPersonDays": "≈ {price} por persona por {days, plural, one {# día} other {# días}}"
+    },
+    "noMatch": {
+      "title": "Aún no hay una coincidencia exacta",
+      "description": "No encontramos un yate que coincida con todas tus respuestas, pero esto es lo que buscaríamos.",
+      "seeAllMatches": "Ver todos los yates"
+    },
+    "error": {
+      "title": "Algo salió mal",
+      "description": "No pudimos cargar tu recomendación. Inténtalo de nuevo.",
+      "retry": "Intentar de nuevo"
+    },
+    "consultationDialog": {
+      "title": "Solicita una asesoría gratuita",
+      "description": "Cuéntanos cómo contactarte y uno de nuestros expertos en chárter te enviará opciones a medida.",
+      "submit": "Enviar solicitud",
+      "cancel": "Cancelar",
+      "success": "¡Gracias! Nos pondremos en contacto pronto."
+    }
+  },
+  "consultation": {
+    "close": "Cerrar",
+    "title": "Ponte en contacto",
+    "subtitle": "Reserva una llamada o envíanos un mensaje, lo que prefieras.",
+    "options": {
+      "call": {
+        "title": "Reservar una llamada rápida",
+        "description": "Elige un horario que te convenga - una breve llamada con un experto en chárter."
+      },
+      "message": {
+        "title": "Enviar un mensaje",
+        "description": "Cuéntanos sobre tu viaje y te responderemos por correo electrónico."
+      }
+    },
+    "placeholder": {
+      "title": "La reserva estará disponible pronto",
+      "description": "La programación en línea aún no está lista. Envíanos un mensaje y coordinaremos un horario que te convenga.",
+      "cta": "Enviar un mensaje en su lugar"
+    },
+    "submitted": {
+      "title": "Gracias - nos pondremos en contacto",
+      "description": "Uno de nuestros expertos en chárter te contactará en breve."
+    },
+    "error": {
+      "title": "Algo salió mal",
+      "description": "No pudimos cargar los datos de tu viaje. Inténtalo de nuevo.",
+      "retry": "Intentar de nuevo"
+    }
+  }
+}

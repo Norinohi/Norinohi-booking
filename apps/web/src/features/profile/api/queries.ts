@@ -6,12 +6,14 @@ import type { BookingStatus } from "../types";
  * Isomorphic query option factories — used by both the server prefetch helper
  * (api/server.ts) and the client hooks (hooks/), so cache keys never drift.
  */
-/*
- * staleTime keeps the server-prefetched snapshot fresh across hydration —
- * with the default 0 every /profile visit would refetch immediately on mount,
- * duplicating the SSR request. Mutations invalidate the key explicitly.
- */
-export const profileQueryOptions = () => orpc.profile.get.queryOptions({ staleTime: 30_000 });
+/* Shared with checkout and the lead form, which read the same cache entry. */
+export { profileQueryOptions } from "@/lib/api/queries";
+
+export const profileKey = () => orpc.profile.get.key();
+
+export const updateProfileMutationOptions = () => orpc.profile.update.mutationOptions();
+
+export const deactivateProfileMutationOptions = () => orpc.profile.deactivate.mutationOptions();
 
 /*
  * One call backs the whole upper half of /profile/referrals — the share code,
@@ -21,6 +23,10 @@ export const profileQueryOptions = () => orpc.profile.get.queryOptions({ staleTi
  */
 export const referralSummaryQueryOptions = () =>
   orpc.referral.summary.queryOptions({ staleTime: 30_000 });
+
+export const referralSummaryKey = () => orpc.referral.summary.key();
+
+export const rotateReferralCodeMutationOptions = () => orpc.referral.rotateCode.mutationOptions();
 
 /** Referral history page size — the design shows a single unpaged table. */
 export const REFERRAL_HISTORY_PAGE_SIZE = 10;
@@ -65,6 +71,15 @@ export const discountListQueryOptions = (input: {
 export const discountQueryOptions = (id: string) =>
   orpc.admin.discount.get.queryOptions({ input: { id }, staleTime: 30_000 });
 
+export const discountKey = () => orpc.admin.discount.key();
+
+export const createDiscountMutationOptions = () => orpc.admin.discount.create.mutationOptions();
+
+export const updateDiscountMutationOptions = () => orpc.admin.discount.update.mutationOptions();
+
+export const setDiscountActiveMutationOptions = () =>
+  orpc.admin.discount.setActive.mutationOptions();
+
 /** Typeahead behind the "Specific Yachts" picker; empty query lists the first page of yachts. */
 export const discountYachtOptionsQueryOptions = (query: string) =>
   orpc.admin.discount.yachtOptions.queryOptions({
@@ -92,6 +107,14 @@ export const listingPriceQueryOptions = (listingId: string) =>
 export const listingPriceFiltersQueryOptions = () =>
   orpc.admin.listingPrice.filters.queryOptions({ input: {}, staleTime: 300_000 });
 
+export const listingPriceKey = () => orpc.admin.listingPrice.key();
+
+export const updateListingPriceMutationOptions = () =>
+  orpc.admin.listingPrice.update.mutationOptions();
+
+export const clearListingPriceMutationOptions = () =>
+  orpc.admin.listingPrice.clear.mutationOptions();
+
 /* ----------------------------------- My Bookings ----------------------------------- */
 
 export const BOOKINGS_PAGE_SIZE = 3;
@@ -101,6 +124,7 @@ export const bookingListQueryOptions = (input: {
   from?: string;
   to?: string;
   status?: BookingStatus[];
+  locale: string;
   page: number;
   pageSize?: number;
 }) =>

@@ -48,6 +48,86 @@ where the ledger has only ever been written by real migrations and marking one
 applied would skip it forever. It also warns when a recorded migration's SQL has
 changed since it ran, which a baseline cannot repair.
 
+## Database suites
+
+`*.db.test.ts` files run against a real Postgres, not mocks. Each suite calls
+`createTestDatabase()` (`src/test-support/database.ts`), which creates a throwaway database,
+applies the committed migrations from `src/migrations`, and drops it in `afterAll`. Building
+from migrations rather than from the Drizzle schema means a schema edit nobody generated SQL
+for fails here, not at deploy.
+
+```bash
+pnpm db:start   # the compose Postgres on 5434 is the default target
+pnpm test:db    # only *.db.test.ts; plain `pnpm test` excludes them
+```
+
+`TEST_DATABASE_URL` points it elsewhere and must name a database the user can connect to in
+order to create others (`.../postgres`). The server's `DATABASE_URL` is deliberately not read,
+so a run can never create or drop anything beside real data. Fixtures are built per suite with
+typed inserts; do not load `seed.ts`, which assumes an empty database with fixed ids.
+
+`src/search/period-price.db.test.ts` pins the dated-search price path: the
+`listing_period_price` projection, its agreement with `listing_search_doc`, and the sort, filter
+and slider that read it. `list-rate.db.test.ts` pins the fallback for a dated week no vendor
+priced: the operator's weekly list rate for that exact week (`list-rate-sql.ts`,
+`price_source = 'price-list'`), ranked behind vendor prices and ahead of unpriced cards, and read
+by the same sort, filter, slider and map pin. `price-list-estimate.db.test.ts` pins the fallback
+for a dated charter of any other length from four nights: an estimate from that list, a seventh of
+the rate covering each night with Booking Manager's short-charter premium under a week
+(`price_source` `price-list-estimate`, `-from` or `-before-discounts` by provider and length, the SQL
+twin of `estimateFromWeeklyRates` in `weekly-estimate.ts`, which holds the thresholds and premiums),
+ranked behind list rates and read the same way; three nights or fewer stay on request. `shown-period-price.db.test.ts` pins a flexible
+search pricing the nearby week a card is moved onto instead of the dates asked for
+(`shownCharterStart`, the SQL twin of `periodFor` in packages/api), ranked after prices for those
+dates and read by the same sort, filter, slider and map pin. `nearest-priced-week.db.test.ts` pins the rebuild replacing a season
+minimum with the nearest week a vendor priced, and `duration.db.test.ts` pins that a length
+filter, dated or not, admits only listings with a free charter of that length and names one,
+which short charters `listShortCharterPeriods` hands the NauSYS sweep, and that a card shows the
+swept price of the charter it names.
+`page-totals.db.test.ts` pins the results total, which the page query reads with
+`count(*) over ()` instead of a second query, for undated, dated, lone check-in and length
+searches, including a page past the last one, where no row carries it and a plain count runs.
+Shared seeding for these lives in `src/test-support/search-fixture.ts`.
+`src/search/facets.db.test.ts` pins which filters each facet list ignores (a country still lists
+the other countries), that a boat failing two lists' filters reaches none of them, and the
+equipment allowlist. `listSearchFacets` answers in one statement: the search is filtered once into
+a `candidate` CTE carrying one boolean per facet-owned filter, and each list aggregates over it, so
+a new facet or filter key has to be added to `FACET_OWN_FILTERS` / `OPTION_FACETS` there rather
+than given its own query.
+`src/search/catalogue-countries.db.test.ts` pins `listCatalogueCountries` (boats per country, with
+the ISO code the planner builds its flag from) and the `country` and `region` filters on
+`listPopularRoutes`.
+
+## Routes and geo modules
+
+Sailing-route data access lives in `src/routes/`, not in `src/search/`:
+
+- `suggested-route.ts` - `suggestedRouteFor`, the itinerary a listing detail page shows.
+- `popular-routes.ts` - `listPopularRoutes`, the home page slider (still re-exported through
+  `@yacht-charter/db/search`).
+- `library.ts` - the admin route library's reads and writes (target joins, stops, translations,
+  stop renumbering). `packages/api/src/services/route-admin.ts` keeps the orchestration: audit
+  log, domain errors, locale parsing and cache revalidation.
+- `types.ts` - `SuggestedRoute`, re-exported from `search/types.ts` for `ListingDetail`.
+
+Anything spatial goes in `src/geo/`, pure where it can be:
+
+- `distance.ts` - `distanceKm` (haversine in TypeScript) and `distanceKmSql`, the same formula
+  in SQL. Plain math functions: no PostGIS or earthdistance extension is installed, and adding
+  one is its own migration.
+- `bounds.ts` - `boundingBox` and `boundingBoxSql`, a cheap `lat`/`lng` prefilter that may keep
+  points outside the radius but never drops one inside it (handles the antimeridian and poles).
+- `nearest-marinas.ts` - `listNearestBases`, bounding box, then exact distance, then order.
+- `reference-regions.ts` - `listReferenceRegions`, the regions other providers' offers sail from
+  with their base coordinates, which Booking Manager's projection places its bases into.
+- `relocate-bases.ts` - `relocateBases` moves existing base rows to a new placement keeping their
+  ids (merging into a same-named base at the destination), `pruneEmptyGeography` deletes the
+  bases, locations and regions nothing references. Used by `geography:repair-bm` in
+  packages/providers; `geo/relocate-bases.db.test.ts` pins both.
+
+A new route or map query belongs in one of these folders; `search/` is for the listing catalogue.
+`geo/nearest-marinas.db.test.ts` pins the ordering, the `maxKm` cut and the listing counts.
+
 ## Conventions
 
 - Schema files live in `src/schema/` and must be re-exported from `src/schema/index.ts` — `src/index.ts` passes `* as schema` into `drizzle()`, so a table missing from that barrel is invisible to the ORM.
@@ -56,4 +136,6 @@ changed since it ran, which a baseline cannot repair.
 - `drizzle.config.ts` sets `out: "./src/migrations"`, so generated SQL lands inside `src/`. Never hand-edit files there once generated, and always commit it — `src/migrations` is what reaches production. Deployment applies it through `src/migrate.ts`. Editing an applied migration leaves every database that already ran it holding different SQL from the repository, which is why `0018_goofy_reaper` no longer matches its recorded hash; `db:baseline` reports that but cannot fix it.
 - `src/migrate.ts` exports `runMigrations(migrationsFolder)` and takes the folder as an argument on purpose: consumers bundle this file, so an `import.meta.url` computed here would resolve to _their_ output location. `apps/server/src/migrate.ts` is the caller.
 - `src/index.ts` exports both the `createDb()` factory and a `db` singleton. Prefer `createDb()` where lifecycle matters — `packages/auth` calls the factory.
+- `createDb()` opens every connection with `options: "-c jit=off"`. The search queries (results, map, facets) carry planner estimates past 20M, so Postgres JIT-compiles them, and the compile took longer than the query: a lone check-in results page ran 10.6s with JIT and 1.5s without, the count 3.9s against 0.8s. Keep it off for the app's pool; `createTestDatabase()` sets the same option so the suites run what production runs. Startup options only reach Postgres on a direct connection. A pooler that strips them (PgBouncer in transaction mode, some managed proxies) needs the database-level setting instead: `ALTER DATABASE "<name>" SET jit = off;`, which applies to new sessions. Check with `show jit` from the server's own connection.
 - The compose project name, container name, and volume are all `yacht-charter`-prefixed. Renaming them orphans the existing local volume and its data.
+- Curated seed and label data is JSON beside the module that owns it (`catalogue-routes.json`, `catalogue-stop-refresh.json`, `popular-routes.json`, `boat-types.json`, `site-faq.json`, `translations/*.json`). The module imports it `with { type: "json" }` and parses it with zod at load, keeping the exported name and type, so a hand edit that breaks the shape fails on import rather than halfway through a write. The `tsdown` bundle of `apps/server` inlines these imports. A JSON file cannot hold a comment, so a note on an entry is a `$comment` key, which the parse strips.

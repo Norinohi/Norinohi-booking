@@ -1,9 +1,11 @@
-import { ORPCError } from "@orpc/server";
 import { discount, discountRedemption, discountTarget } from "@yacht-charter/db/schema/discount";
 import { listing } from "@yacht-charter/db/schema/listing";
+import { yachtCategory } from "@yacht-charter/db/schema/taxonomy";
 import { count, eq } from "drizzle-orm";
 
 import type { Database, DatabaseExecutor } from "../context";
+import { ConflictError, NotFoundError } from "../errors";
+import { categoryGroupSql } from "./discount-targets";
 
 /*
  * The customer half of discounts: validating a promo code while quoting, and
@@ -89,8 +91,10 @@ async function targetsListing(db: Database, discountId: string, listingId: strin
       id: listing.id,
       operatorId: listing.operatorId,
       categoryId: listing.categoryId,
+      categoryGroup: categoryGroupSql,
     })
     .from(listing)
+    .leftJoin(yachtCategory, eq(yachtCategory.id, listing.categoryId))
     .where(eq(listing.id, listingId))
     .limit(1);
 
@@ -98,7 +102,9 @@ async function targetsListing(db: Database, discountId: string, listingId: strin
 
   return targets.some((target) => {
     if (target.targetType === "listing") return target.targetId === owner.id;
-    if (target.targetType === "category") return target.targetId === owner.categoryId;
+    if (target.targetType === "category") {
+      return target.targetId === owner.categoryGroup || target.targetId === owner.categoryId;
+    }
     if (target.targetType === "operator") return target.targetId === owner.operatorId;
     return false;
   });
@@ -127,7 +133,7 @@ export async function redeemDiscount(
     .where(eq(discount.id, input.discountId))
     .limit(1);
 
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown discount" });
+  if (!row) throw new NotFoundError({ message: "Unknown discount" });
 
   if (row.usageLimit !== null) {
     const [used] = await tx
@@ -136,7 +142,7 @@ export async function redeemDiscount(
       .where(eq(discountRedemption.discountId, input.discountId));
 
     if ((used?.total ?? 0) >= row.usageLimit) {
-      throw new ORPCError("CONFLICT", {
+      throw new ConflictError({
         message: "This promo code has been fully redeemed",
         data: { code: "DISCOUNT_EXHAUSTED" },
       });

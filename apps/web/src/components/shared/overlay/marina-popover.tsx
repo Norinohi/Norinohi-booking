@@ -13,11 +13,11 @@ import { ArrowUpRight, Globe, Mail, Smartphone } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
 
+import type { Coordinates } from "@/components/shared/map/geometry";
+
 import MapPreview from "./map-preview";
 
 const withProtocol = (url: string) => (/^https?:\/\//.test(url) ? url : `https://${url}`);
-
-export type Coordinates = { lat: number; lng: number };
 
 export type Marina = {
   id: string;
@@ -115,7 +115,7 @@ export function MarinaDetails({ marina, className }: { marina: Marina; className
           render={
             <a href={withProtocol(marina.website)} target="_blank" rel="noopener noreferrer" />
           }
-          className="w-fit capitalize"
+          className="w-fit"
         >
           {t("viewDetails")}
           <ArrowUpRight className="size-4 shrink-0" />
@@ -165,7 +165,7 @@ export function MarinaPopover({ marina, className }: MarinaPopoverProps) {
         sideOffset={12}
         collisionPadding={16}
         backdrop
-        className="w-150.25 max-w-[calc(100vw-2rem)] overflow-visible rounded-2xl border-0 p-0 shadow-[4px_4px_15px_rgba(0,0,0,0.03)]"
+        className="w-150.25 max-w-[calc(100vw-2rem)] overflow-visible rounded-2xl border-0 p-0 shadow-card"
       >
         <PopoverArrow className="before:border-0" />
         <MarinaCard marina={marina} onMapOpenChange={setMapOpen} />

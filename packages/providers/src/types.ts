@@ -1,6 +1,8 @@
+import type { ReferenceRegion } from "@yacht-charter/db/geo/reference-regions";
+import { PROVIDER_KEYS } from "@yacht-charter/env/providers";
 import { z } from "zod";
 
-export const providerKeySchema = z.enum(["mock", "booking_manager", "nausys"]);
+export const providerKeySchema = z.enum(PROVIDER_KEYS);
 export type ProviderKey = z.infer<typeof providerKeySchema>;
 
 export const moneySchema = z.object({
@@ -170,8 +172,11 @@ export const providerQuoteSchema = z.object({
        * grouped, which `kind` cannot answer — an unavoidable cleaning fee and an
        * optional hot tub are both charges against the same yacht. Absent on lines
        * that belong to no section (the base, discounts, credit).
+       *
+       * `requested` is never an adapter's to set: the quote service adds those lines for
+       * extras the offer would not price, at the catalogue rate.
        */
-      group: z.enum(["mandatory", "optional", "crew"]).optional(),
+      group: z.enum(["mandatory", "optional", "crew", "requested"]).optional(),
     }),
   ),
   total: moneySchema,
@@ -259,6 +264,16 @@ export const providerQuoteSchema = z.object({
   priceSourceHash: z.string(),
   expiresAt: z.string(),
   repriced: z.boolean(),
+  /**
+   * The handover times this offer was made for, "HH:mm" at the marina, where the vendor states
+   * them. Absent means the offer said nothing and the base's own times stand.
+   *
+   * Preferred over the base's because a base row is shared by every fleet at that marina, and
+   * Booking Manager fills it from whichever yacht synced first: the site said 12:00 for a charter
+   * the operator hands over at 17:00.
+   */
+  checkInTime: z.string().optional(),
+  checkOutTime: z.string().optional(),
 });
 export type ProviderQuote = z.infer<typeof providerQuoteSchema>;
 
@@ -398,6 +413,9 @@ export const providerReservationSchema = z.object({
    * value is an http(s) URL, and omits it otherwise.
    */
   crewListLink: z.string().optional(),
+  /** The handover times the vendor put on the reservation itself; see `checkInTime` on the quote. */
+  checkInTime: z.string().optional(),
+  checkOutTime: z.string().optional(),
 });
 export type ProviderReservation = z.infer<typeof providerReservationSchema>;
 
@@ -516,6 +534,8 @@ const canonicalLocationSchema = z.object({
   externalId: z.string(),
   externalRegionId: z.string(),
   name: z.string(),
+  /** The town, where the vendor states one. Fills an empty `location.city`, never replaces one. */
+  city: z.string().optional(),
   translations: canonicalTranslationsSchema,
 });
 
@@ -878,3 +898,12 @@ export const canonicalCatalogueSchema = z.object({
   listings: z.array(canonicalListingSchema),
 });
 export type CanonicalCatalogue = z.infer<typeof canonicalCatalogueSchema>;
+
+/**
+ * What a projection may read about the catalogue beyond its own records. Loaded by the caller,
+ * so `projectCatalogue` itself stays free of I/O.
+ */
+export type CatalogueProjectionContext = {
+  /** Regions other providers' boats sail from, for a provider too coarse to name its own. */
+  referenceRegions: ReferenceRegion[];
+};

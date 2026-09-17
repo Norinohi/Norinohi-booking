@@ -12,10 +12,10 @@ import {
   MAP_STYLE_KEYS,
   MapStyleProvider,
   type MapStyleKey,
-} from "@/components/shared/data-display/map-canvas";
+} from "@/components/shared/map/map-canvas";
 import { staticMapUrl } from "@/lib/mapbox";
 
-import type { Coordinates } from "./marina-popover";
+import type { Coordinates } from "@/components/shared/map/geometry";
 
 /*
  * mapbox-gl and its stylesheet are far larger than the picture they replace, and every card on a

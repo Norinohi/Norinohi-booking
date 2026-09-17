@@ -19,11 +19,21 @@ import type { Range } from "@/components/shared/form/filters/lib/state";
  * Shape only. A range is not measured against the facet limits here, because those arrive with the
  * facets and a parser runs before them -- the sliders clamp to the limits once they land.
  */
+/*
+ * Plain decimal spelling only. `Number()` alone reads "" as 0 and accepts "0x10", "1e1" and " 7 ",
+ * so an empty range side became a zero bound and odd spellings stayed in the URL.
+ */
+const WHOLE = /^\d+$/;
+const DECIMAL = /^\d+(?:\.\d+)?$/;
+const SIGNED_DECIMAL = /^-?\d+(?:\.\d+)?$/;
+
 const rangeParser = ({ integer = false, min = 0, max = Number.POSITIVE_INFINITY } = {}) =>
   createParser({
     parse: (query: string) => {
       const parts = query.split(",");
       if (parts.length !== 2) return null;
+      const spelling = integer ? WHOLE : DECIMAL;
+      if (!parts.every((part) => spelling.test(part))) return null;
       const first = Number(parts[0]);
       const second = Number(parts[1]);
       const valid = (value: number) =>
@@ -53,9 +63,10 @@ const MAX_CHARTER_NIGHTS = 365;
 const durationParser = createParser({
   parse: (query: string) => {
     if (query === "any") return query;
+    if (!WHOLE.test(query)) return null;
     const nights = Number(query);
-    if (!Number.isInteger(nights) || nights < 1 || nights > MAX_CHARTER_NIGHTS) return null;
-    return query;
+    if (nights < 1 || nights > MAX_CHARTER_NIGHTS) return null;
+    return String(nights);
   },
   serialize: (value: string) => value,
 });
@@ -66,12 +77,20 @@ const yearParser = createParser({
   serialize: (value: string) => value,
 });
 
-/** A real calendar day. The contract takes the same shape and rejects anything else. */
+/*
+ * A real calendar day. The round trip is the check: `Date` rolls "2026-02-31" over to 3 March
+ * instead of rejecting it.
+ */
+function isCalendarDay(query: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(query)) return false;
+  const date = new Date(`${query}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === query;
+}
+
+/* A start date already behind us searched nothing and said nothing; it reads as no date instead. */
 const dayParser = createParser({
   parse: (query: string) =>
-    /^\d{4}-\d{2}-\d{2}$/.test(query) && !Number.isNaN(new Date(`${query}T00:00:00.000Z`).getTime())
-      ? query
-      : null,
+    isCalendarDay(query) && query >= new Date().toISOString().slice(0, 10) ? query : null,
   serialize: (value: string) => value,
 });
 
@@ -81,6 +100,7 @@ const multi = () => parseAsArrayOf(parseAsString).withDefault([]);
 
 const capacityParser = createParser({
   parse: (query: string) => {
+    if (!WHOLE.test(query)) return null;
     const value = Number(query);
     return Number.isSafeInteger(value) && value > 0 ? value : null;
   },
@@ -153,8 +173,10 @@ export const mapCameraParsers = {
   zoom: parseAsFloat,
   centre: createParser({
     parse: (query: string) => {
-      const [lng, lat] = query.split(",").map(Number);
-      if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;
+      const parts = query.split(",");
+      if (parts.length !== 2 || !parts.every((part) => SIGNED_DECIMAL.test(part))) return null;
+      const [lng, lat] = parts.map(Number);
+      if (lng === undefined || lat === undefined) return null;
       if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
       return { lat, lng };
     },

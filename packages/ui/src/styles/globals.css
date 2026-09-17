@@ -48,6 +48,15 @@
   --text-lg: max(calc(1.125rem * var(--density-type)), 0.75rem);
   --text-xl: max(calc(1.25rem * var(--density-type)), 0.75rem);
   --text-2xl: max(calc(1.5rem * var(--density-type)), 0.75rem);
+
+  /* Elevation, one token per shadow the design repeats. Names avoid the colour names on
+     purpose: `shadow-brand` is already the shadow-colour utility for `--color-brand`.
+     A new token must also be listed in `packages/ui/src/lib/utils.ts`, or `cn()` reads it
+     as a shadow colour and stops resolving it against `shadow-none` and friends. */
+  --shadow-card: 4px 4px 15px rgba(0, 0, 0, 0.03);
+  --shadow-popover: 4px 4px 10px rgba(0, 0, 0, 0.1);
+  --shadow-dialog: 4px 4px 20px rgba(0, 0, 0, 0.1);
+  --shadow-brand-glow: 4px 4px 15px rgba(47, 128, 237, 0.15);
 }
 
 /*

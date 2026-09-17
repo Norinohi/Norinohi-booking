@@ -1,17 +1,29 @@
-import { ORPCError } from "@orpc/server";
 import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
-import { base, country, location, region } from "@yacht-charter/db/schema/geography";
 import {
-  suggestedRoute,
-  suggestedRouteStop,
-  suggestedRouteStopTranslation,
-  suggestedRouteTranslation,
-} from "@yacht-charter/db/schema/route";
-import { and, asc, count, desc, eq, ilike, inArray, isNotNull, or, sql } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
+  baseExists,
+  countRouteTargets,
+  findRouteStop,
+  findRouteTarget,
+  listExistingRouteIds,
+  listFeaturedRouteTargets,
+  listRouteStopRows,
+  listRouteTargets,
+  listRouteTranslationRows,
+  listStopNoteRows,
+  nextRouteStopSortOrder,
+  regionExists,
+  renumberRouteStops,
+  writeRouteStopNotes,
+  writeRouteTranslations,
+  type RouteTargetRow,
+} from "@yacht-charter/db/routes/library";
+import { suggestedRoute, suggestedRouteStop } from "@yacht-charter/db/schema/route";
+import { baseLabel, facetTranslator } from "@yacht-charter/db/search/localize";
+import type { FacetMediaKind, FacetTranslator } from "@yacht-charter/db/search";
+import { asc, eq, inArray, isNotNull } from "drizzle-orm";
 import type { z } from "zod";
 
-import type { Database, DatabaseExecutor } from "../context";
+import type { Database } from "../context";
 import {
   ROUTE_LOCALES,
   ROUTE_STOP_NOTE_LOCALES,
@@ -20,7 +32,6 @@ import {
 import type {
   routeCreateInputSchema,
   routeFeaturedReorderInputSchema,
-  routeLocaleSchema,
   routeListInputSchema,
   routeListSchema,
   routeSchema,
@@ -31,6 +42,7 @@ import type {
 } from "../contracts/route";
 import { writeAuditLog } from "./audit";
 import { paginatedQuery, totalFrom } from "./pagination";
+import { ConflictError, InternalError, NotFoundError } from "../errors";
 
 type ListInput = z.infer<typeof routeListInputSchema>;
 type ListResult = z.infer<typeof routeListSchema>;
@@ -42,44 +54,10 @@ type StopCreateInput = z.infer<typeof routeStopCreateInputSchema>;
 type StopUpdateInput = z.infer<typeof routeStopUpdateInputSchema>;
 type ReorderInput = z.infer<typeof routeStopReorderInputSchema>;
 type FeaturedReorderInput = z.infer<typeof routeFeaturedReorderInputSchema>;
-type RouteLocale = z.infer<typeof routeLocaleSchema>;
-type StopNoteLocale = z.infer<typeof routeStopNoteLocaleSchema>;
 type StopNoteTranslation = Stop["noteTranslations"][number];
 type Translation = Route["translations"][number];
 
-/*
- * A route hangs off a base or off a region, and the two reach their country by different paths —
- * base -> location -> region -> country against region -> country. Both are joined on every read
- * so the target reads as one label wherever it came from, which is also what the country filter
- * has to match against.
- */
-const baseRegion = alias(region, "base_region");
-const baseCountry = alias(country, "base_country");
-const regionCountry = alias(country, "region_country");
-
-const targetSelection = {
-  route: suggestedRoute,
-  baseName: base.name,
-  baseLat: base.lat,
-  baseLng: base.lng,
-  locationName: location.name,
-  baseRegionName: baseRegion.name,
-  baseCountryName: baseCountry.name,
-  regionName: region.name,
-  regionCountryName: regionCountry.name,
-};
-
-type TargetRow = {
-  route: typeof suggestedRoute.$inferSelect;
-  baseName: string | null;
-  baseLat: number | null;
-  baseLng: number | null;
-  locationName: string | null;
-  baseRegionName: string | null;
-  baseCountryName: string | null;
-  regionName: string | null;
-  regionCountryName: string | null;
-};
+type TargetRow = RouteTargetRow;
 
 /**
  * "Marina Kaštela · Split · Croatia" for a base route, "Ionian · Greece" for a region one.
@@ -88,10 +66,19 @@ type TargetRow = {
  * itself, so a base and its location routinely carry the same string ("ACI Marina Trogir"), and
  * a label saying it twice reads as a rendering fault.
  */
-function targetLabel(row: TargetRow): string {
+function targetLabel(row: TargetRow, translate?: FacetTranslator): string {
+  const as = (kind: FacetMediaKind, value: string | null) =>
+    value !== null && translate ? translate(kind, value) : value;
   const parts = row.baseName
-    ? [row.baseName, row.locationName, row.baseRegionName, row.baseCountryName]
-    : [row.regionName, row.regionCountryName];
+    ? [
+        translate && row.locationName
+          ? baseLabel(translate, row.baseName, row.locationName)
+          : row.baseName,
+        as("location", row.locationName),
+        as("region", row.baseRegionName),
+        as("country", row.baseCountryName),
+      ]
+    : [as("region", row.regionName), as("country", row.regionCountryName)];
 
   const named: string[] = [];
   for (const part of parts) {
@@ -101,13 +88,18 @@ function targetLabel(row: TargetRow): string {
   return named.length > 0 ? named.join(" · ") : "Unknown target";
 }
 
-function toRoute(row: TargetRow, stops: Stop[], translations: Translation[] = []): Route {
+function toRoute(
+  row: TargetRow,
+  stops: Stop[],
+  translations: Translation[] = [],
+  translate?: FacetTranslator,
+): Route {
   const present = new Set(translations.map((entry) => entry.locale));
   return {
     id: row.route.id,
     baseId: row.route.baseId,
     regionId: row.route.regionId,
-    targetLabel: targetLabel(row),
+    targetLabel: targetLabel(row, translate),
     targetPoint:
       row.baseLat !== null && row.baseLng !== null ? { lat: row.baseLat, lng: row.baseLng } : null,
     title: row.route.title,
@@ -127,13 +119,7 @@ function toRoute(row: TargetRow, stops: Stop[], translations: Translation[] = []
   };
 }
 
-/*
- * Every route's copy, keyed by route.
- *
- * Read alongside the stops rather than joined onto the target query: a route has up to four
- * translation rows and up to a couple of dozen stops, and joining both would multiply them
- * against each other for no gain.
- */
+/* Every route's copy, keyed by route. */
 async function translationsByRoute(
   db: Database,
   routeIds: string[],
@@ -141,11 +127,7 @@ async function translationsByRoute(
   const byRoute = new Map<string, Translation[]>();
   if (routeIds.length === 0) return byRoute;
 
-  const rows = await db
-    .select()
-    .from(suggestedRouteTranslation)
-    .where(inArray(suggestedRouteTranslation.routeId, routeIds))
-    .orderBy(asc(suggestedRouteTranslation.locale));
+  const rows = await listRouteTranslationRows(db, routeIds);
 
   for (const row of rows) {
     const parsed = ROUTE_LOCALES.find((locale) => locale === row.locale);
@@ -162,53 +144,11 @@ async function translationsByRoute(
   return byRoute;
 }
 
-/**
- * Writes the locales the caller named, leaving the rest alone.
- *
- * A locale whose title and description are both empty is deleted rather than stored blank:
- * "no copy in German" and "German copy that says nothing" are the same thing to the read, and
- * keeping only one of them means `missingLocales` can be trusted.
- */
-async function writeTranslations(
-  tx: DatabaseExecutor,
-  routeId: string,
-  entries: { locale: RouteLocale; title?: string | null; description?: string | null }[],
-): Promise<void> {
-  for (const entry of entries) {
-    const title = entry.title?.trim() || null;
-    const description = entry.description?.trim() || null;
-
-    if (title === null && description === null) {
-      await tx
-        .delete(suggestedRouteTranslation)
-        .where(
-          and(
-            eq(suggestedRouteTranslation.routeId, routeId),
-            eq(suggestedRouteTranslation.locale, entry.locale),
-          ),
-        );
-      continue;
-    }
-
-    await tx
-      .insert(suggestedRouteTranslation)
-      .values({ routeId, locale: entry.locale, title, description })
-      .onConflictDoUpdate({
-        target: [suggestedRouteTranslation.routeId, suggestedRouteTranslation.locale],
-        set: { title, description, updatedAt: new Date() },
-      });
-  }
-}
-
 async function stopsByRoute(db: Database, routeIds: string[]): Promise<Map<string, Stop[]>> {
   const byRoute = new Map<string, Stop[]>();
   if (routeIds.length === 0) return byRoute;
 
-  const rows = await db
-    .select()
-    .from(suggestedRouteStop)
-    .where(inArray(suggestedRouteStop.routeId, routeIds))
-    .orderBy(asc(suggestedRouteStop.sortOrder));
+  const rows = await listRouteStopRows(db, routeIds);
 
   const notesByStop = await stopNotesByStop(
     db,
@@ -242,10 +182,7 @@ async function stopNotesByStop(
   const byStop = new Map<string, StopNoteTranslation[]>();
   if (stopIds.length === 0) return byStop;
 
-  const rows = await db
-    .select()
-    .from(suggestedRouteStopTranslation)
-    .where(inArray(suggestedRouteStopTranslation.stopId, stopIds));
+  const rows = await listStopNoteRows(db, stopIds);
 
   for (const row of rows) {
     /* The column is text, so a language the admin does not edit -- one a later import adds --
@@ -261,113 +198,40 @@ async function stopNotesByStop(
   return byStop;
 }
 
-/**
- * Writes the stop notes the caller named, leaving the rest alone.
- *
- * An empty note is deleted rather than stored blank, for the reason `writeTranslations` gives:
- * the read falls back to the stop's English note either way, so a blank row would only make
- * `missingNoteLocales` lie.
- */
-async function writeStopNotes(
-  tx: DatabaseExecutor,
-  stopId: string,
-  entries: { locale: StopNoteLocale; note?: string | null }[],
-): Promise<void> {
-  for (const entry of entries) {
-    const note = entry.note?.trim() || null;
-
-    if (note === null) {
-      await tx
-        .delete(suggestedRouteStopTranslation)
-        .where(
-          and(
-            eq(suggestedRouteStopTranslation.stopId, stopId),
-            eq(suggestedRouteStopTranslation.locale, entry.locale),
-          ),
-        );
-      continue;
-    }
-
-    await tx
-      .insert(suggestedRouteStopTranslation)
-      .values({ stopId, locale: entry.locale, note })
-      .onConflictDoUpdate({
-        target: [suggestedRouteStopTranslation.stopId, suggestedRouteStopTranslation.locale],
-        set: { note, updatedAt: new Date() },
-      });
-  }
-}
-
 export async function listRoutes(db: Database, input: ListInput): Promise<ListResult> {
-  const filters = [];
-  if (input.query) filters.push(ilike(suggestedRoute.title, `%${input.query}%`));
-  if (input.kind) filters.push(eq(suggestedRoute.kind, input.kind));
-  if (input.active !== undefined) filters.push(eq(suggestedRoute.active, input.active));
-  if (input.countryId) {
-    filters.push(or(eq(baseCountry.id, input.countryId), eq(regionCountry.id, input.countryId)));
-  }
-  const where = filters.length > 0 ? and(...filters) : undefined;
+  const filter = {
+    query: input.query,
+    kind: input.kind,
+    active: input.active,
+    countryId: input.countryId,
+  };
 
   const { rows, pagination } = await paginatedQuery({
     page: input.page,
     pageSize: input.pageSize,
-    rows: (limit, offset) =>
-      db
-        .select(targetSelection)
-        .from(suggestedRoute)
-        .leftJoin(base, eq(base.id, suggestedRoute.baseId))
-        .leftJoin(location, eq(location.id, base.locationId))
-        .leftJoin(baseRegion, eq(baseRegion.id, location.regionId))
-        .leftJoin(baseCountry, eq(baseCountry.id, baseRegion.countryId))
-        .leftJoin(region, eq(region.id, suggestedRoute.regionId))
-        .leftJoin(regionCountry, eq(regionCountry.id, region.countryId))
-        .where(where)
-        .orderBy(asc(suggestedRoute.sortOrder), desc(suggestedRoute.createdAt))
-        .limit(limit)
-        .offset(offset),
-    total: async () =>
-      totalFrom(
-        await db
-          .select({ totalItems: count() })
-          .from(suggestedRoute)
-          .leftJoin(base, eq(base.id, suggestedRoute.baseId))
-          .leftJoin(location, eq(location.id, base.locationId))
-          .leftJoin(baseRegion, eq(baseRegion.id, location.regionId))
-          .leftJoin(baseCountry, eq(baseCountry.id, baseRegion.countryId))
-          .leftJoin(region, eq(region.id, suggestedRoute.regionId))
-          .leftJoin(regionCountry, eq(regionCountry.id, region.countryId))
-          .where(where),
-      ),
+    rows: (limit, offset) => listRouteTargets(db, filter, limit, offset),
+    total: async () => totalFrom(await countRouteTargets(db, filter)),
   });
 
   const routeIds = rows.map((row) => row.route.id);
-  const [stops, translations] = await Promise.all([
+  const [stops, translations, translate] = await Promise.all([
     stopsByRoute(db, routeIds),
     translationsByRoute(db, routeIds),
+    facetTranslator(db, input.locale),
   ]);
 
   return {
     items: rows.map((row) =>
-      toRoute(row, stops.get(row.route.id) ?? [], translations.get(row.route.id) ?? []),
+      toRoute(row, stops.get(row.route.id) ?? [], translations.get(row.route.id) ?? [], translate),
     ),
     pagination,
   };
 }
 
 export async function getRoute(db: Database, id: string): Promise<Route> {
-  const [row] = await db
-    .select(targetSelection)
-    .from(suggestedRoute)
-    .leftJoin(base, eq(base.id, suggestedRoute.baseId))
-    .leftJoin(location, eq(location.id, base.locationId))
-    .leftJoin(baseRegion, eq(baseRegion.id, location.regionId))
-    .leftJoin(baseCountry, eq(baseCountry.id, baseRegion.countryId))
-    .leftJoin(region, eq(region.id, suggestedRoute.regionId))
-    .leftJoin(regionCountry, eq(regionCountry.id, region.countryId))
-    .where(eq(suggestedRoute.id, id))
-    .limit(1);
+  const row = await findRouteTarget(db, id);
 
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown route" });
+  if (!row) throw new NotFoundError({ message: "Unknown route" });
 
   const [stops, translations] = await Promise.all([
     stopsByRoute(db, [id]),
@@ -382,21 +246,13 @@ async function assertTargetExists(
   input: { baseId?: string | null; regionId?: string | null },
 ) {
   if (input.baseId) {
-    const [row] = await db
-      .select({ id: base.id })
-      .from(base)
-      .where(eq(base.id, input.baseId))
-      .limit(1);
-    if (!row) throw new ORPCError("NOT_FOUND", { message: `Unknown base ${input.baseId}` });
+    if (!(await baseExists(db, input.baseId)))
+      throw new NotFoundError({ message: `Unknown base ${input.baseId}` });
   }
 
   if (input.regionId) {
-    const [row] = await db
-      .select({ id: region.id })
-      .from(region)
-      .where(eq(region.id, input.regionId))
-      .limit(1);
-    if (!row) throw new ORPCError("NOT_FOUND", { message: `Unknown region ${input.regionId}` });
+    if (!(await regionExists(db, input.regionId)))
+      throw new NotFoundError({ message: `Unknown region ${input.regionId}` });
   }
 }
 
@@ -436,9 +292,9 @@ export async function createRoute(
       })
       .returning({ id: suggestedRoute.id });
 
-    if (!created) throw new ORPCError("INTERNAL_SERVER_ERROR");
+    if (!created) throw new InternalError();
 
-    if (input.translations) await writeTranslations(tx, created.id, input.translations);
+    if (input.translations) await writeRouteTranslations(tx, created.id, input.translations);
 
     await writeAuditLog(tx, {
       actorUserId,
@@ -481,7 +337,7 @@ export async function updateRoute(
     if (input.cloudinaryId !== undefined) patch.cloudinaryId = input.cloudinaryId;
     if (input.difficulty !== undefined) patch.difficulty = input.difficulty;
 
-    if (input.translations) await writeTranslations(tx, input.id, input.translations);
+    if (input.translations) await writeRouteTranslations(tx, input.id, input.translations);
 
     if (Object.keys(patch).length > 0) {
       await tx.update(suggestedRoute).set(patch).where(eq(suggestedRoute.id, input.id));
@@ -510,17 +366,7 @@ export async function updateRoute(
  * published again, which is what an editor pulling a card for the afternoon expects.
  */
 export async function listFeaturedRoutes(db: Database): Promise<{ routes: Route[] }> {
-  const rows = await db
-    .select(targetSelection)
-    .from(suggestedRoute)
-    .leftJoin(base, eq(base.id, suggestedRoute.baseId))
-    .leftJoin(location, eq(location.id, base.locationId))
-    .leftJoin(baseRegion, eq(baseRegion.id, location.regionId))
-    .leftJoin(baseCountry, eq(baseCountry.id, baseRegion.countryId))
-    .leftJoin(region, eq(region.id, suggestedRoute.regionId))
-    .leftJoin(regionCountry, eq(regionCountry.id, region.countryId))
-    .where(and(isNotNull(suggestedRoute.featuredRank), eq(suggestedRoute.active, true)))
-    .orderBy(asc(suggestedRoute.featuredRank));
+  const rows = await listFeaturedRouteTargets(db);
 
   const routeIds = rows.map((row) => row.route.id);
   const [stops, translations] = await Promise.all([
@@ -534,6 +380,8 @@ export async function listFeaturedRoutes(db: Database): Promise<{ routes: Route[
     ),
   };
 }
+
+const FEATURED_ROUTES_ENTITY_ID = "featured_routes";
 
 /**
  * Replaces the featured list with the routes given, in the order given.
@@ -549,19 +397,15 @@ export async function reorderFeaturedRoutes(
   input: FeaturedReorderInput,
 ): Promise<{ routes: Route[] }> {
   if (new Set(input.ids).size !== input.ids.length) {
-    throw new ORPCError("CONFLICT", { message: "A route may appear in the list only once" });
+    throw new ConflictError({ message: "A route may appear in the list only once" });
   }
 
   const before = await listFeaturedRoutes(db);
 
   if (input.ids.length > 0) {
-    const found = await db
-      .select({ id: suggestedRoute.id })
-      .from(suggestedRoute)
-      .where(inArray(suggestedRoute.id, input.ids));
-    const known = new Set(found.map((row) => row.id));
+    const known = new Set(await listExistingRouteIds(db, input.ids));
     const missing = input.ids.find((id) => !known.has(id));
-    if (missing) throw new ORPCError("NOT_FOUND", { message: `Unknown route ${missing}` });
+    if (missing) throw new NotFoundError({ message: `Unknown route ${missing}` });
   }
 
   await db.transaction(async (tx) => {
@@ -577,12 +421,32 @@ export async function reorderFeaturedRoutes(
         .where(eq(suggestedRoute.id, id));
     }
 
+    const beforeIds = before.routes.map((route) => route.id);
+    const changed = [
+      ...input.ids.filter((id) => !beforeIds.includes(id)),
+      ...beforeIds.filter((id) => !input.ids.includes(id)),
+    ];
+    const titles = new Map(before.routes.map((route) => [route.id, route.title]));
+    const unseen = input.ids.filter((id) => !titles.has(id));
+    if (unseen.length > 0) {
+      const rows = await tx
+        .select({ id: suggestedRoute.id, title: suggestedRoute.title })
+        .from(suggestedRoute)
+        .where(inArray(suggestedRoute.id, unseen));
+      for (const row of rows) titles.set(row.id, row.title);
+    }
+    const named = (ids: string[]) => ids.map((id) => ({ id, title: titles.get(id) ?? null }));
+
+    /* The list has no id of its own, so an entry that features or unfeatures one route is filed
+       under that route, which is what the audit's ID filter searches. Any other change, a pure
+       reorder included, is filed under the list's fixed name. */
     await writeAuditLog(tx, {
       actorUserId,
       action: "update",
       entityType: "suggested_route_featured",
-      before: before.routes.map((route) => route.id),
-      after: input.ids,
+      entityId: changed.length === 1 ? changed[0] : FEATURED_ROUTES_ENTITY_ID,
+      before: named(beforeIds),
+      after: named(input.ids),
     });
   });
 
@@ -600,7 +464,7 @@ export async function setRouteActive(
 
   /* Publishing a route with nothing on the map would draw a section with no itinerary in it. */
   if (active && before.stops.length === 0) {
-    throw new ORPCError("CONFLICT", { message: "Add at least one stop before publishing" });
+    throw new ConflictError({ message: "Add at least one stop before publishing" });
   }
 
   await db.transaction(async (tx) => {
@@ -645,23 +509,9 @@ export async function deleteRoute(
 /* ------------------------------------------------------------------- stops */
 
 async function loadStop(db: Database, id: string) {
-  const [row] = await db
-    .select()
-    .from(suggestedRouteStop)
-    .where(eq(suggestedRouteStop.id, id))
-    .limit(1);
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown stop" });
+  const row = await findRouteStop(db, id);
+  if (!row) throw new NotFoundError({ message: "Unknown stop" });
   return row;
-}
-
-/** Appends: `suggested_route_stop_order_uq` means the new row cannot reuse an existing slot. */
-async function nextSortOrder(db: DatabaseExecutor, routeId: string): Promise<number> {
-  const [row] = await db
-    .select({ highest: sql<number | null>`max(${suggestedRouteStop.sortOrder})` })
-    .from(suggestedRouteStop)
-    .where(eq(suggestedRouteStop.routeId, routeId));
-
-  return (row?.highest ?? -1) + 1;
 }
 
 export async function createRouteStop(
@@ -680,13 +530,13 @@ export async function createRouteStop(
         lat: input.lat,
         lng: input.lng,
         note: input.note ?? null,
-        sortOrder: await nextSortOrder(tx, input.routeId),
+        sortOrder: await nextRouteStopSortOrder(tx, input.routeId),
       })
       .returning({ id: suggestedRouteStop.id });
 
-    if (!created) throw new ORPCError("INTERNAL_SERVER_ERROR");
+    if (!created) throw new InternalError();
 
-    if (input.noteTranslations) await writeStopNotes(tx, created.id, input.noteTranslations);
+    if (input.noteTranslations) await writeRouteStopNotes(tx, created.id, input.noteTranslations);
 
     await writeAuditLog(tx, {
       actorUserId,
@@ -718,7 +568,7 @@ export async function updateRouteStop(
       await tx.update(suggestedRouteStop).set(patch).where(eq(suggestedRouteStop.id, input.id));
     }
 
-    if (input.noteTranslations) await writeStopNotes(tx, input.id, input.noteTranslations);
+    if (input.noteTranslations) await writeRouteStopNotes(tx, input.id, input.noteTranslations);
 
     await writeAuditLog(tx, {
       actorUserId,
@@ -752,7 +602,7 @@ export async function deleteRouteStop(
       .where(eq(suggestedRouteStop.routeId, before.routeId))
       .orderBy(asc(suggestedRouteStop.sortOrder));
 
-    await renumber(
+    await renumberRouteStops(
       tx,
       remaining.map((row) => row.id),
     );
@@ -769,30 +619,6 @@ export async function deleteRouteStop(
   return getRoute(db, before.routeId);
 }
 
-/**
- * Writes positions 0..n-1 in two passes.
- *
- * `suggested_route_stop_order_uq` is a plain unique index, not a deferrable constraint, so it is
- * enforced per statement: moving stop 3 to slot 1 while stop 1 still holds it fails immediately.
- * The first pass parks every row on a negative slot, which nothing else can occupy, and the
- * second lays them down in order.
- */
-async function renumber(tx: DatabaseExecutor, orderedIds: string[]): Promise<void> {
-  for (const [index, id] of orderedIds.entries()) {
-    await tx
-      .update(suggestedRouteStop)
-      .set({ sortOrder: -(index + 1) })
-      .where(eq(suggestedRouteStop.id, id));
-  }
-
-  for (const [index, id] of orderedIds.entries()) {
-    await tx
-      .update(suggestedRouteStop)
-      .set({ sortOrder: index })
-      .where(eq(suggestedRouteStop.id, id));
-  }
-}
-
 export async function reorderRouteStops(
   db: Database,
   actorUserId: string,
@@ -804,16 +630,16 @@ export async function reorderRouteStops(
   const submitted = new Set(input.stopIds);
   /* The whole list, or the rows left out would keep positions the reordered ones now want. */
   if (submitted.size !== input.stopIds.length || submitted.size !== known.size) {
-    throw new ORPCError("CONFLICT", { message: "Reorder must list every stop exactly once" });
+    throw new ConflictError({ message: "Reorder must list every stop exactly once" });
   }
   for (const id of input.stopIds) {
     if (!known.has(id)) {
-      throw new ORPCError("NOT_FOUND", { message: `Stop ${id} is not on this route` });
+      throw new NotFoundError({ message: `Stop ${id} is not on this route` });
     }
   }
 
   await db.transaction(async (tx) => {
-    await renumber(tx, input.stopIds);
+    await renumberRouteStops(tx, input.stopIds);
     await writeAuditLog(tx, {
       actorUserId,
       action: "update",

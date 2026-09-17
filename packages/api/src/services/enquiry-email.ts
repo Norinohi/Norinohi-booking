@@ -1,4 +1,6 @@
 import { env } from "@yacht-charter/env/server";
+import { thrownFields } from "@yacht-charter/providers/shared/log-fields";
+import { log, parseError } from "evlog";
 import { sendEnquiryAnswerEmail, sendStaffAlertEmail } from "@yacht-charter/transactional";
 
 import { BOOKING_RECEIVED_STATES, type BookingStatus } from "./booking-state";
@@ -56,7 +58,12 @@ export async function notifyEnquiryAnswered(enquiry: EnquiryAnswered): Promise<v
       cta: answerCta(enquiry.bookingId, enquiry.bookingStatus),
     });
   } catch (cause) {
-    console.error(`[email] enquiry answer for ${enquiry.reference} failed`, cause);
+    log.error({
+      action: "email.failed",
+      email: "enquiry_answer",
+      reference: enquiry.reference,
+      ...thrownFields(parseError(cause)),
+    });
   }
 }
 
@@ -86,6 +93,11 @@ export async function notifyStaff(alert: StaffAlert): Promise<void> {
       actionLabel: alert.actionLabel,
     });
   } catch (cause) {
-    console.error(`[email] staff alert "${alert.title}" failed`, cause);
+    log.error({
+      action: "email.failed",
+      email: "staff_alert",
+      title: alert.title,
+      ...thrownFields(parseError(cause)),
+    });
   }
 }

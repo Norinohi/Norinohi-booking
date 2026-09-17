@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { booking, payment, paymentSchedule } from "@yacht-charter/db/schema/booking";
 import { invoiceRequest } from "@yacht-charter/db/schema/checkout";
 import { listing } from "@yacht-charter/db/schema/listing";
@@ -19,6 +18,7 @@ import { confirmBookingWithProvider } from "./booking-confirm";
 import { releaseProviderOption } from "./provider-option";
 import { paginatedQuery, totalFrom } from "./pagination";
 import { announcePaymentReceived } from "./payment-receipt";
+import { ConflictError, InternalError, NotFoundError } from "../errors";
 type ListInput = z.infer<typeof invoiceListInputSchema>;
 
 type ListResult = z.infer<typeof invoiceListSchema>;
@@ -78,10 +78,10 @@ export async function settleInvoiceRequest(
     .where(eq(invoiceRequest.id, input.id))
     .limit(1);
 
-  if (!found) throw new ORPCError("NOT_FOUND", { message: "Unknown invoice request" });
+  if (!found) throw new NotFoundError({ message: "Unknown invoice request" });
 
   if (found.invoice.status === "cancelled") {
-    throw new ORPCError("CONFLICT", { message: "This invoice request was cancelled" });
+    throw new ConflictError({ message: "This invoice request was cancelled" });
   }
 
   const settledMinor = input.amountMinor ?? found.invoice.amountMinor;
@@ -157,7 +157,7 @@ export async function settleInvoiceRequest(
     .where(eq(invoiceRequest.id, input.id))
     .limit(1);
 
-  if (!after) throw new ORPCError("INTERNAL_SERVER_ERROR");
+  if (!after) throw new InternalError();
 
   return {
     invoice: present(after.invoice, after.booking, after.listingTitle),
@@ -182,10 +182,10 @@ export async function cancelInvoiceRequest(
     .where(eq(invoiceRequest.id, id))
     .limit(1);
 
-  if (!found) throw new ORPCError("NOT_FOUND", { message: "Unknown invoice request" });
+  if (!found) throw new NotFoundError({ message: "Unknown invoice request" });
 
   if (found.invoice.status === "paid") {
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message: "This invoice was already settled — cancel the booking instead",
     });
   }
@@ -243,7 +243,7 @@ export async function cancelInvoiceRequest(
     return { row, cancelled };
   });
 
-  if (!updated.row) throw new ORPCError("INTERNAL_SERVER_ERROR");
+  if (!updated.row) throw new InternalError();
 
   /*
    * Only where this actually cancelled the booking, and only after the rows are committed.

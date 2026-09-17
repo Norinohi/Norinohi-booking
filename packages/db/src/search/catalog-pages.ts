@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
+import { WORLD_REGION_NAMES } from "../geo/world-regions";
 import type * as schema from "../schema";
 import { facetTranslator } from "./localize";
 import { valueForLabel } from "./repository";
@@ -30,6 +31,13 @@ import { valueForLabel } from "./repository";
  */
 export const DEFAULT_CATALOG_PAGE_THRESHOLD = 8;
 
+/*
+ * The combinations that multiply fastest (a marina, a boat type in a town, a shipyard model) need
+ * more boats behind them. At eight they were most of the catalogue, and mostly thin. Builders stay
+ * on the default, so the seed fixture still gives the shipyard root its pages.
+ */
+export const NARROW_CATALOG_PAGE_THRESHOLD = 25;
+
 export type CatalogPageRoot = "yacht-charter" | "shipyard";
 
 export type CatalogPageKind =
@@ -39,7 +47,6 @@ export type CatalogPageKind =
   | "type"
   | "type-country"
   | "type-geo"
-  | "type-marina"
   | "builder"
   | "model";
 
@@ -122,12 +129,31 @@ async function group(
 
 const str = (row: Row, key: string): string => String(row[key] ?? "");
 
+/*
+ * A builder a vendor records by name for boats it has no builder for. NauSYS ships one called
+ * "Unknown" in its builder list, and 36 boats point at it, which made `/shipyard/unknown` a page.
+ */
+const PLACEHOLDER_BUILDERS = new Set(["unknown", "n a", "na", "none", "other", "not specified"]);
+
+export function isPlaceholderBuilder(name: string): boolean {
+  return PLACEHOLDER_BUILDERS.has(
+    name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim(),
+  );
+}
+
 export async function listCatalogPages(
   db: NodePgDatabase<typeof schema>,
-  options: { threshold?: number; locale?: string } = {},
+  options: { threshold?: number; narrowThreshold?: number; locale?: string } = {},
 ): Promise<CatalogPage[]> {
   const threshold = options.threshold ?? DEFAULT_CATALOG_PAGE_THRESHOLD;
+  const narrowThreshold =
+    options.narrowThreshold ?? options.threshold ?? NARROW_CATALOG_PAGE_THRESHOLD;
   const of = (columns: string[]) => group(db, columns, threshold);
+  const ofNarrow = (columns: string[]) => group(db, columns, narrowThreshold);
 
   /*
    * Labels are translated, slugs and filter values are not. A URL is a stable identifier and the
@@ -149,22 +175,28 @@ export async function listCatalogPages(
     typeCountries,
     typeRegions,
     typeCities,
-    typeMarinas,
     builders,
     models,
   ] = await Promise.all([
     of(["country"]),
     of(["country", "region"]),
     of(["country", "city"]),
-    of(["country", "city", "base_name"]),
+    ofNarrow(["country", "city", "base_name"]),
     of(["category"]),
     of(["category", "country"]),
     of(["category", "country", "region"]),
-    of(["category", "country", "city"]),
-    of(["category", "country", "city", "base_name"]),
+    ofNarrow(["category", "country", "city"]),
     of(["builder"]),
-    of(["builder", "model_canonical"]),
+    ofNarrow(["builder", "model_canonical"]),
   ]);
+  /*
+   * Booking Manager used to file each country under its world region, which made "Southern
+   * Europe, Croatia" a 2,096-boat page beside Split and Zadar. The rows stay as synced; only the
+   * page is withheld. Matched by the vendor's list,
+   * not by a name shared across countries, because real sailing areas cross borders (Ionian).
+   */
+  const sailingRegion = (row: Row) => !WORLD_REGION_NAMES.has(str(row, "region"));
+  const realBuilder = (row: Row) => !isPlaceholderBuilder(str(row, "builder"));
 
   const pages: CatalogPage[] = [];
 
@@ -188,7 +220,7 @@ export async function listCatalogPages(
    * region named after its city ("Split region" slugs apart, but "Hvar" does not) is the broader
    * page of the two and the one a searcher means.
    */
-  for (const row of regions) {
+  for (const row of regions.filter(sailingRegion)) {
     const country = str(row, "country");
     const region = str(row, "region");
     push({
@@ -258,7 +290,7 @@ export async function listCatalogPages(
     });
   }
 
-  for (const row of typeRegions) {
+  for (const row of typeRegions.filter(sailingRegion)) {
     const category = str(row, "category");
     const country = str(row, "country");
     const region = str(row, "region");
@@ -286,27 +318,7 @@ export async function listCatalogPages(
     });
   }
 
-  for (const row of typeMarinas) {
-    const category = str(row, "category");
-    const country = str(row, "country");
-    const city = str(row, "city");
-    const marina = str(row, "base_name");
-    push({
-      root: "yacht-charter",
-      kind: "type-marina",
-      segments: [toSlug(category), toSlug(country), toSlug(city), toSlug(marina)],
-      filters: { category: v(category), country: v(country), city: v(city), marina: v(marina) },
-      labels: [
-        label("category", category),
-        label("country", country),
-        city,
-        label("marina", marina),
-      ],
-      count: Number(row.count),
-    });
-  }
-
-  for (const row of builders) {
+  for (const row of builders.filter(realBuilder)) {
     const builder = str(row, "builder");
     push({
       root: "shipyard",
@@ -323,7 +335,7 @@ export async function listCatalogPages(
    * and the builder, so adding the builder would narrow to listings whose model name happens to
    * contain it.
    */
-  for (const row of models) {
+  for (const row of models.filter(realBuilder)) {
     const builder = str(row, "builder");
     const model = str(row, "model_canonical");
     push({

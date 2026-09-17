@@ -1,0 +1,70 @@
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import {
+  answerEnquiryMutationOptions,
+  answerLeadMutationOptions,
+  enquiryKey,
+  enquiryListQueryOptions,
+  leadKey,
+  leadListQueryOptions,
+  setEnquiryStatusMutationOptions,
+  setLeadStatusMutationOptions,
+} from "../api/queries";
+import type { EnquiryStatus, LeadKind, LeadStatus } from "../types";
+
+/*
+ * Hooks over the two staff queues. Every write invalidates its whole router segment rather
+ * than one page: answering a question moves it between the status filters, so the tab the
+ * colleague is not looking at has to be stale too.
+ */
+
+export function useEnquiries(input: { status?: EnquiryStatus; query?: string; page: number }) {
+  return useQuery(enquiryListQueryOptions(input));
+}
+
+export function useLeads(input: {
+  status?: LeadStatus;
+  kind?: LeadKind;
+  query?: string;
+  page: number;
+}) {
+  return useQuery(leadListQueryOptions(input));
+}
+
+export function useAnswerEnquiry() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...answerEnquiryMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: enquiryKey() }),
+  });
+}
+
+export function useSetEnquiryStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...setEnquiryStatusMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: enquiryKey() }),
+  });
+}
+
+export function useAnswerLead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...answerLeadMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: leadKey() }),
+  });
+}
+
+export function useSetLeadStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...setLeadStatusMutationOptions(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: leadKey() }),
+  });
+}

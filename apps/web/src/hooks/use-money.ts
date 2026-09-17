@@ -3,6 +3,7 @@
 import { useFormatter } from "next-intl";
 
 import { useConvertPrice } from "@/components/layout/currency-provider";
+import { exactFractionDigits } from "@/lib/money-fraction";
 
 /*
  * Money as this visitor reads it: the amount a vendor published, in the currency they published
@@ -27,6 +28,26 @@ export function useMoney() {
       style: "currency",
       currency: shown.currency,
       maximumFractionDigits: 0,
+    });
+  };
+}
+
+/**
+ * The same, to the cent wherever there are cents: for the booking flow, where the figure is what
+ * the customer is charged or owes rather than an advertised price.
+ */
+export function useExactMoney() {
+  const format = useFormatter();
+  const convert = useConvertPrice();
+
+  return (amountMinor: number, currency = "EUR") => {
+    const shown = convert(amountMinor, currency);
+    const digits = exactFractionDigits(shown.amountMinor);
+    return format.number(shown.amountMinor / 100, {
+      style: "currency",
+      currency: shown.currency,
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
     });
   };
 }

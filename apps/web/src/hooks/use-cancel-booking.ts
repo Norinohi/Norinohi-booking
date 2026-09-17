@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { orpc } from "@/utils/orpc";
+import { cancelBookingMutationOptions, cancelledBookingStaleKeys } from "@/lib/api/queries";
 
 /**
  * Cancels a booking, then refreshes both surfaces that show its state: My Bookings, whose card
@@ -23,16 +23,11 @@ import { orpc } from "@/utils/orpc";
 export function useCancelBooking() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.booking.cancel.mutationOptions({
-      onSuccess: () =>
-        Promise.all([
-          queryClient.invalidateQueries({ queryKey: orpc.booking.list.key() }),
-          queryClient.invalidateQueries({ queryKey: orpc.booking.get.key() }),
-          queryClient.invalidateQueries({ queryKey: orpc.availability.constraints.key() }),
-          queryClient.invalidateQueries({ queryKey: orpc.availability.calendar.key() }),
-          queryClient.invalidateQueries({ queryKey: orpc.listings.get.key() }),
-        ]),
-    }),
-  );
+  return useMutation({
+    ...cancelBookingMutationOptions(),
+    onSuccess: () =>
+      Promise.all(
+        cancelledBookingStaleKeys().map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+      ),
+  });
 }

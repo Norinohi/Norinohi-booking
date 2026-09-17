@@ -2,17 +2,13 @@
 
 import { useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import type { Coordinates } from "@/components/shared/overlay/marina-popover";
-
-import MapPopup from "@/components/shared/data-display/map-popup";
-import MapCanvas, {
-  type MapInstance,
-  type MapViewState,
-} from "@/components/shared/data-display/map-canvas";
-import MapMarker from "@/components/shared/data-display/map-marker";
-import { boundsOf } from "../../lib/map-camera";
+import { boundsOf, type Coordinates } from "@/components/shared/map/geometry";
+import LineLayer, { type LineStroke } from "@/components/shared/map/line-layer";
+import MapCanvas, { type MapInstance, type MapViewState } from "@/components/shared/map/map-canvas";
+import MapMarker from "@/components/shared/map/map-marker";
+import MapPopup from "@/components/shared/map/map-popup";
 import {
   arrivalOf,
   ROUTE_DRAW_MS,
@@ -33,10 +29,11 @@ const ROUTE_SOURCE = "route-curve";
  * water instead. `line-dasharray` is in multiples of the layer's own width, so the two patterns are
  * scaled to land on the same pixels and the casing reads as a halo around each dash.
  */
-const ROUTE_LAYERS = [
-  { id: "route-curve-casing", color: "#ffffff", opacity: 0.9, width: 3, dash: [3, 2, 0.5, 2] },
-  { id: "route-curve-line", color: "#2f80ed", opacity: 1, width: 1.5, dash: [6, 4, 1, 4] },
+const ROUTE_STROKES: LineStroke[] = [
+  { color: "#ffffff", opacity: 0.9, width: 3, dash: [3, 2, 0.5, 2] },
+  { color: "#2f80ed", opacity: 1, width: 1.5, dash: [6, 4, 1, 4] },
 ];
+const ROUTE_FADE_RANGE = 0.08;
 const FIT_PADDING = 80;
 const ZOOM_OUT_LIMIT = 1;
 /* Constructed this much wider than it settles at, so opening reads as easing in rather than a cut. */
@@ -69,7 +66,7 @@ function RouteStopPopup({
 }) {
   return (
     <MapPopup coordinates={coordinates} map={map} className="w-72">
-      <div className="relative flex flex-col gap-1.5 rounded-2xl bg-card p-4 shadow-[4px_4px_15px_rgba(47,128,237,0.15)]">
+      <div className="relative flex flex-col gap-1.5 rounded-2xl bg-card p-4 shadow-brand-glow">
         {stops.map((stop) => (
           <div key={stop.day} className="flex flex-col gap-1.5">
             <p className="text-base leading-5.5 font-bold text-foreground">{stop.title}</p>
@@ -104,60 +101,40 @@ function settleOnStops(map: MapInstance, stops: Stop[], animate: boolean) {
 /**
  * Lays the itinerary on the map and draws it in.
  *
- * `line-trim-offset` is a paint property, so the reveal costs one property write per frame rather
- * than a re-upload of the geometry; `line-trim-fade-range` softens the leading edge so the line
- * runs on rather than being cut off.
+ * `line-trim-fade-range` softens the leading edge so the line runs on rather than being cut off.
+ *
+ * Mounted with the map's children, which is on its first idle rather than on load: the markers
+ * mount then, and satellite tiles can put seconds between the two - starting earlier would have
+ * the line arrive at stops that are not drawn yet.
  */
-function drawRoute(map: MapInstance, curve: RouteCurve, animate: boolean) {
-  if (curve.points.length < 2 || map.getSource(ROUTE_SOURCE)) return;
+function RouteLine({ curve, animate }: { curve: RouteCurve; animate: boolean }) {
+  const [progress, setProgress] = useState(animate ? 0 : 1);
 
-  map.addSource(ROUTE_SOURCE, {
-    type: "geojson",
-    lineMetrics: true,
-    data: {
-      type: "Feature",
-      properties: {},
-      geometry: {
-        type: "LineString",
-        coordinates: curve.points.map((point) => [point.lng, point.lat]),
-      },
-    },
-  });
+  useEffect(() => {
+    if (!animate) return;
 
-  for (const layer of ROUTE_LAYERS) {
-    map.addLayer({
-      id: layer.id,
-      type: "line",
-      source: ROUTE_SOURCE,
-      layout: { "line-cap": "round", "line-join": "round" },
-      paint: {
-        "line-color": layer.color,
-        "line-opacity": layer.opacity,
-        "line-width": layer.width,
-        "line-dasharray": layer.dash,
-        "line-trim-offset": animate ? [0, 1] : [1, 1],
-        "line-trim-fade-range": [0, 0.08],
-      },
-    });
-  }
-
-  if (!animate) return;
-
-  /* On idle, not on load: the markers mount then, and satellite tiles can put seconds between the
-     two — starting earlier would have the line arrive at stops that are not drawn yet. */
-  map.once("idle", () => {
     const started = performance.now();
+    let frame = 0;
     const step = () => {
-      if (!map.getLayer(ROUTE_LAYERS[0].id)) return;
-
-      const progress = Math.min((performance.now() - started) / ROUTE_DRAW_MS, 1);
-      for (const layer of ROUTE_LAYERS) {
-        map.setPaintProperty(layer.id, "line-trim-offset", [progress, 1]);
-      }
-      if (progress < 1) requestAnimationFrame(step);
+      const next = Math.min((performance.now() - started) / ROUTE_DRAW_MS, 1);
+      setProgress(next);
+      if (next < 1) frame = requestAnimationFrame(step);
     };
-    requestAnimationFrame(step);
-  });
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [animate]);
+
+  /* A style swap re-adds the line at whatever this holds, so one that lands mid-reveal carries on
+     from where it was rather than starting over. */
+  return (
+    <LineLayer
+      id={ROUTE_SOURCE}
+      coordinates={curve.points}
+      strokes={ROUTE_STROKES}
+      progress={animate ? progress : 1}
+      fadeRange={ROUTE_FADE_RANGE}
+    />
+  );
 }
 
 /** The places, not the days: two days at one marina are one marker carrying both numbers. */
@@ -187,16 +164,15 @@ export default function RouteMap({ stops }: { stops: Stop[] }) {
       onReady={(instance) => {
         setMap(instance);
         settleOnStops(instance, stops, !reduced);
-        drawRoute(instance, curve, !reduced);
       }}
-      /* A style swap drops the route's source and layers, so they go back on — already drawn,
-         since the visitor has watched it once and is now looking at the map, not the reveal. */
-      onStyleChange={(instance) => drawRoute(instance, curve, false)}
       onBackgroundPress={() => setSelected(null)}
     >
+      <RouteLine curve={curve} animate={!reduced} />
+
       {points.map((point, index) => (
         <MapMarker
           key={`${point.lat},${point.lng}`}
+          variant="pin"
           coordinates={{ lat: point.lat, lng: point.lng }}
           label={pointLabel(point)}
           caption={routeCaption(point, stops, words)}

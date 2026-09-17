@@ -1,0 +1,964 @@
+[
+  {
+    "routeId": "srt_popular_central_dalmatia",
+    "stops": [
+      {
+        "name": "Split",
+        "lat": 43.5026,
+        "lng": 16.43,
+        "note": {
+          "en": "Check-in at the charter base, with Diocletian's Palace an evening's walk away.",
+          "uk": "Реєстрація на чартерній базі, а до палацу Діоклетіана - вечірня прогулянка.",
+          "de": "Check-in an der Charterbasis, der Diokletianpalast ist einen Abendspaziergang entfernt.",
+          "es": "Check-in en la base de chárter, con el palacio de Diocleciano a un paseo."
+        }
+      },
+      {
+        "name": "Šolta",
+        "lat": 43.3961,
+        "lng": 16.2072,
+        "note": {
+          "en": "The nearest island to Split: quiet coves, olive groves and a working fishing harbour.",
+          "uk": "Найближчий до Спліта острів: тихі бухти, оливкові гаї та діюча рибальська гавань.",
+          "de": "Die nächste Insel vor Split: stille Buchten, Olivenhaine und ein aktiver Fischerhafen.",
+          "es": "La isla más cercana a Split: calas tranquilas, olivares y un puerto pesquero en activo."
+        }
+      },
+      {
+        "name": "Vis",
+        "lat": 43.0603,
+        "lng": 16.1836,
+        "note": {
+          "en": "Closed to visitors until 1989, and still the least built-up of the big islands.",
+          "uk": "До 1989 року був закритий для гостей і досі найменш забудований серед великих островів.",
+          "de": "Bis 1989 für Besucher gesperrt und noch immer die am wenigsten bebaute der großen Inseln.",
+          "es": "Cerrada a los visitantes hasta 1989 y aún la menos urbanizada de las islas grandes."
+        }
+      },
+      {
+        "name": "Hvar",
+        "lat": 43.1729,
+        "lng": 16.4414,
+        "note": {
+          "en": "Lavender fields, a Venetian old town and the busiest nightlife in Dalmatia.",
+          "uk": "Лавандові поля, венеційське старе місто й найжвавіше нічне життя Далмації.",
+          "de": "Lavendelfelder, eine venezianische Altstadt und das lebhafteste Nachtleben Dalmatiens.",
+          "es": "Campos de lavanda, un casco antiguo veneciano y la noche más animada de Dalmacia."
+        }
+      },
+      {
+        "name": "Pakleni Islands",
+        "lat": 43.1583,
+        "lng": 16.3833,
+        "note": {
+          "en": "A string of wooded islets off Hvar town, with Palmižana the anchorage to aim for.",
+          "uk": "Низка лісистих острівців навпроти міста Хвар, а найкраща стоянка - Палміжана.",
+          "de": "Eine Kette bewaldeter Inselchen vor Hvar-Stadt, Palmižana ist der Ankerplatz der Wahl.",
+          "es": "Una hilera de islotes boscosos frente a Hvar, con Palmižana como fondeadero de referencia."
+        }
+      },
+      {
+        "name": "Brač",
+        "lat": 43.3272,
+        "lng": 16.4497,
+        "note": {
+          "en": "The Zlatni Rat beach shifts with the current; the island's white stone built Split.",
+          "uk": "Пляж Златні Рат змінює форму за течією, а з місцевого білого каменю збудований Спліт.",
+          "de": "Der Strand Zlatni Rat verschiebt sich mit der Strömung; aus dem weißen Stein wurde Split gebaut.",
+          "es": "La playa de Zlatni Rat cambia con la corriente; con su piedra blanca se construyó Split."
+        }
+      },
+      {
+        "name": "Split",
+        "lat": 43.5026,
+        "lng": 16.43,
+        "note": {
+          "en": "Back at the base: the boat is handed over in the morning.",
+          "uk": "Повернення на базу: яхту здають уранці.",
+          "de": "Zurück an der Basis: Das Boot wird am Morgen übergeben.",
+          "es": "De vuelta en la base: el barco se entrega por la mañana."
+        }
+      }
+    ]
+  },
+  {
+    "routeId": "srt_popular_ionian",
+    "stops": [
+      {
+        "name": "Lefkada",
+        "lat": 38.8339,
+        "lng": 20.7119,
+        "note": {
+          "en": "Check-in at the marina behind the canal, the base for the whole Ionian.",
+          "uk": "Реєстрація в марині за каналом, це база для всього Іонічного моря.",
+          "de": "Check-in in der Marina hinter dem Kanal, der Basis für das ganze Ionische Meer.",
+          "es": "Check-in en la marina tras el canal, la base de todo el Jónico."
+        }
+      },
+      {
+        "name": "Meganisi",
+        "lat": 38.6664,
+        "lng": 20.7825,
+        "note": {
+          "en": "Sheltered bays and small harbours, several with tavernas and yacht moorings.",
+          "uk": "Захищені бухти й невеликі гавані, у кількох із них є таверни та причали для яхт.",
+          "de": "Geschützte Buchten und kleine Häfen, mehrere davon mit Tavernen und Liegeplätzen für Yachten.",
+          "es": "Bahías resguardadas y pequeños puertos, varios con tabernas y amarres para yates."
+        }
+      },
+      {
+        "name": "Fiskardo",
+        "lat": 38.4581,
+        "lng": 20.5761,
+        "note": {
+          "en": "A historic harbour in northern Kefalonia where much of the older architecture survived the 1953 earthquake.",
+          "uk": "Історична гавань на півночі Кефалонії, де збереглася значна частина старої забудови після землетрусу 1953 року.",
+          "de": "Ein historischer Hafen im Norden Kefalonias, in dem ein großer Teil der älteren Bebauung das Erdbeben von 1953 überstand.",
+          "es": "Un puerto histórico del norte de Cefalonia donde gran parte de la arquitectura antigua sobrevivió al terremoto de 1953."
+        }
+      },
+      {
+        "name": "Ithaca",
+        "lat": 38.4478,
+        "lng": 20.6903,
+        "note": {
+          "en": "Odysseus's island: steep green hills and the small harbour at Kioni.",
+          "uk": "Острів Одіссея: круті зелені пагорби й невелика гавань Кіоні.",
+          "de": "Die Insel des Odysseus: steile grüne Hügel und der kleine Hafen von Kioni.",
+          "es": "La isla de Odiseo: colinas verdes y escarpadas y el pequeño puerto de Kioni."
+        }
+      },
+      {
+        "name": "Kastos",
+        "lat": 38.5783,
+        "lng": 20.9078,
+        "note": {
+          "en": "One village, a few hundred metres of quay and almost no cars.",
+          "uk": "Одне село, кількасот метрів причалу й майже жодного автомобіля.",
+          "de": "Ein Dorf, ein paar hundert Meter Kai und fast keine Autos.",
+          "es": "Un pueblo, unos cientos de metros de muelle y casi ningún coche."
+        }
+      },
+      {
+        "name": "Kalamos",
+        "lat": 38.6247,
+        "lng": 20.9269,
+        "note": {
+          "en": "The harbour taverna takes lines from arriving boats, as it has for decades.",
+          "uk": "Таверна в гавані приймає швартови від яхт, що заходять, як і десятиліттями до того.",
+          "de": "Die Hafentaverne nimmt seit Jahrzehnten die Leinen ankommender Boote an.",
+          "es": "La taberna del puerto recoge las amarras de los barcos, como hace décadas."
+        }
+      },
+      {
+        "name": "Lefkada",
+        "lat": 38.8339,
+        "lng": 20.7119,
+        "note": {
+          "en": "Back at the base: the boat is handed over in the morning.",
+          "uk": "Повернення на базу: яхту здають уранці.",
+          "de": "Zurück an der Basis: Das Boot wird am Morgen übergeben.",
+          "es": "De vuelta en la base: el barco se entrega por la mañana."
+        }
+      }
+    ]
+  },
+  {
+    "routeId": "srt_popular_gocek_fethiye",
+    "stops": [
+      {
+        "name": "Göcek",
+        "lat": 36.7536,
+        "lng": 28.9408,
+        "note": {
+          "en": "A small town whose bays hold more anchorages than berths.",
+          "uk": "Невелике містечко, у бухтах якого більше якірних стоянок, ніж причалів.",
+          "de": "Ein kleiner Ort, dessen Buchten mehr Ankerplätze als Liegeplätze bieten.",
+          "es": "Un pueblo pequeño cuyas bahías tienen más fondeaderos que amarres."
+        }
+      },
+      {
+        "name": "Fethiye",
+        "lat": 36.622,
+        "lng": 29.104,
+        "note": {
+          "en": "Rock tombs cut into the cliff above the town and its market.",
+          "uk": "Скельні гробниці, вирубані в кручі над містом і його ринком.",
+          "de": "In die Felswand über Stadt und Markt gehauene Felsengräber.",
+          "es": "Tumbas excavadas en el acantilado sobre el pueblo y su mercado."
+        }
+      },
+      {
+        "name": "Gemiler",
+        "lat": 36.554,
+        "lng": 29.065,
+        "note": {
+          "en": "A hillside of Byzantine church ruins, best seen in the evening light.",
+          "uk": "Схил із руїнами візантійських церков, найкраще видимими у вечірньому світлі.",
+          "de": "Ein Hang voller byzantinischer Kirchenruinen, am schönsten im Abendlicht.",
+          "es": "Una ladera con ruinas de iglesias bizantinas, mejor con la luz del atardecer."
+        }
+      },
+      {
+        "name": "Ölüdeniz",
+        "lat": 36.5486,
+        "lng": 29.1156,
+        "note": {
+          "en": "The lagoon is a protected park; paragliders come down off the mountain all day.",
+          "uk": "Лагуна - заповідний парк, а параплани цілий день спускаються з гори.",
+          "de": "Die Lagune ist Schutzgebiet; den ganzen Tag schweben Gleitschirme vom Berg herab.",
+          "es": "La laguna es parque protegido; los parapentes bajan de la montaña todo el día."
+        }
+      },
+      {
+        "name": "Göcek Bays",
+        "lat": 36.66,
+        "lng": 28.829,
+        "note": {
+          "en": "Twelve islands and as many bays, most with a jetty and a kitchen.",
+          "uk": "Дванадцять островів і стільки ж бухт, у більшості - причал і кухня.",
+          "de": "Zwölf Inseln und ebenso viele Buchten, die meisten mit Steg und Küche.",
+          "es": "Doce islas y otras tantas bahías, casi todas con pantalán y cocina."
+        }
+      },
+      {
+        "name": "Tersane",
+        "lat": 36.6825,
+        "lng": 28.915,
+        "note": {
+          "en": "An abandoned Greek village around a boatyard bay.",
+          "uk": "Покинуте грецьке село навколо бухти зі старою верф'ю.",
+          "de": "Ein verlassenes griechisches Dorf rund um eine Werftbucht.",
+          "es": "Un pueblo griego abandonado en torno a una bahía con astillero."
+        }
+      },
+      {
+        "name": "Göcek",
+        "lat": 36.7536,
+        "lng": 28.9408,
+        "note": {
+          "en": "Back at the base: the boat is handed over in the morning.",
+          "uk": "Повернення на базу: яхту здають уранці.",
+          "de": "Zurück an der Basis: Das Boot wird am Morgen übergeben.",
+          "es": "De vuelta en la base: el barco se entrega por la mañana."
+        }
+      }
+    ]
+  },
+  {
+    "routeId": "srt_popular_sardinia",
+    "stops": [
+      {
+        "name": "Portisco",
+        "lat": 41.0346,
+        "lng": 9.5185,
+        "note": {
+          "en": "Check-in on the Costa Smeralda, with La Maddalena an afternoon away.",
+          "uk": "Реєстрація на Смарагдовому узбережжі, до Ла-Маддалени - півдня ходу.",
+          "de": "Check-in an der Costa Smeralda, La Maddalena ist einen Nachmittag entfernt.",
+          "es": "Check-in en la Costa Esmeralda, con La Maddalena a una tarde de navegación."
+        }
+      },
+      {
+        "name": "Porto Cervo",
+        "lat": 41.1353,
+        "lng": 9.5378,
+        "note": {
+          "en": "One of the Mediterranean's best-known and most expensive marinas, in the heart of the Costa Smeralda.",
+          "uk": "Одна з найвідоміших і найдорожчих марин Середземномор'я, у центрі Смарагдового узбережжя.",
+          "de": "Eine der bekanntesten und teuersten Marinas des Mittelmeers, im Herzen der Costa Smeralda.",
+          "es": "Una de las marinas más conocidas y caras del Mediterráneo, en el corazón de la Costa Esmeralda."
+        }
+      },
+      {
+        "name": "La Maddalena",
+        "lat": 41.214,
+        "lng": 9.407,
+        "note": {
+          "en": "A national park of granite islands between Sardinia and Corsica.",
+          "uk": "Національний парк із гранітних островів між Сардинією та Корсикою.",
+          "de": "Ein Nationalpark aus Granitinseln zwischen Sardinien und Korsika.",
+          "es": "Un parque nacional de islas de granito entre Cerdeña y Córcega."
+        }
+      },
+      {
+        "name": "Caprera",
+        "lat": 41.2186,
+        "lng": 9.4744,
+        "note": {
+          "en": "Garibaldi's island, with Cala Coticcio on its eastern shore.",
+          "uk": "Острів Гарібальді, з бухтою Кала-Котіччо на східному березі.",
+          "de": "Garibaldis Insel, mit der Cala Coticcio an ihrer Ostküste.",
+          "es": "La isla de Garibaldi, con Cala Coticcio en su costa este."
+        }
+      },
+      {
+        "name": "Spargi",
+        "lat": 41.2417,
+        "lng": 9.3417,
+        "note": {
+          "en": "An uninhabited island; anchoring is by permit inside the park.",
+          "uk": "Безлюдний острів, і якірна стоянка в парку - за дозволом.",
+          "de": "Eine unbewohnte Insel; das Ankern im Park ist genehmigungspflichtig.",
+          "es": "Una isla deshabitada; fondear dentro del parque requiere permiso."
+        }
+      },
+      {
+        "name": "Bonifacio",
+        "lat": 41.3872,
+        "lng": 9.1592,
+        "note": {
+          "en": "The harbour hides in a cleft under the chalk cliffs, invisible from the sea.",
+          "uk": "Гавань ховається в розколині під крейдяними скелями, з моря її не видно.",
+          "de": "Der Hafen versteckt sich in einer Spalte unter den Kreidefelsen, von See unsichtbar.",
+          "es": "El puerto se esconde en una grieta bajo los acantilados de creta, invisible desde el mar."
+        }
+      },
+      {
+        "name": "Portisco",
+        "lat": 41.0346,
+        "lng": 9.5185,
+        "note": {
+          "en": "Back at the base: the boat is handed over in the morning.",
+          "uk": "Повернення на базу: яхту здають уранці.",
+          "de": "Zurück an der Basis: Das Boot wird am Morgen übergeben.",
+          "es": "De vuelta en la base: el barco se entrega por la mañana."
+        }
+      }
+    ]
+  },
+  {
+    "routeId": "srt_popular_ibiza_formentera",
+    "stops": [
+      {
+        "name": "Ibiza",
+        "lat": 38.9136,
+        "lng": 1.445,
+        "note": {
+          "en": "Check-in below the walls of Dalt Vila, the old town on the hill.",
+          "uk": "Реєстрація під мурами Дальт-Віли, старого міста на пагорбі.",
+          "de": "Check-in unterhalb der Mauern von Dalt Vila, der Altstadt auf dem Hügel.",
+          "es": "Check-in bajo las murallas de Dalt Vila, el casco antiguo sobre la colina."
+        }
+      },
+      {
+        "name": "Formentera",
+        "lat": 38.7339,
+        "lng": 1.4167,
+        "note": {
+          "en": "Anchor over sand, not seagrass: the meadows here are protected and patrolled.",
+          "uk": "Якір кидають на пісок, а не на морську траву: тутешні луки під охороною й патрулюються.",
+          "de": "Auf Sand ankern, nicht auf Seegras: Die Wiesen hier sind geschützt und werden kontrolliert.",
+          "es": "Fondear en arena, no sobre posidonia: las praderas están protegidas y vigiladas."
+        }
+      },
+      {
+        "name": "Espalmador",
+        "lat": 38.7867,
+        "lng": 1.4308,
+        "note": {
+          "en": "A private island with a mud pool behind the beach and no buildings.",
+          "uk": "Приватний острів із грязьовою купіллю за пляжем і без жодної забудови.",
+          "de": "Eine Privatinsel mit einem Schlammteich hinter dem Strand und ohne Bebauung.",
+          "es": "Una isla privada con una charca de lodo tras la playa y ningún edificio."
+        }
+      },
+      {
+        "name": "Es Vedrà",
+        "lat": 38.88,
+        "lng": 1.223,
+        "note": {
+          "en": "A rock rising 400 metres out of the sea, best at sunset from Cala d'Hort.",
+          "uk": "Скеля, що здіймається на 400 метрів із моря, найкраща на заході сонця з Кала-д'Орт.",
+          "de": "Ein 400 Meter aus dem Meer ragender Fels, am schönsten bei Sonnenuntergang von Cala d'Hort.",
+          "es": "Una roca que se alza 400 metros sobre el mar, mejor al atardecer desde Cala d'Hort."
+        }
+      },
+      {
+        "name": "Cala Comte",
+        "lat": 38.9589,
+        "lng": 1.2244,
+        "note": {
+          "en": "West-facing coves over white sand, the last light of the day on the water.",
+          "uk": "Бухти, звернені на захід, над білим піском, і останнє денне світло на воді.",
+          "de": "Nach Westen gerichtete Buchten über weißem Sand, das letzte Tageslicht auf dem Wasser.",
+          "es": "Calas orientadas al oeste sobre arena blanca, con la última luz del día en el agua."
+        }
+      },
+      {
+        "name": "Ibiza",
+        "lat": 38.9136,
+        "lng": 1.445,
+        "note": {
+          "en": "Back at the base: the boat is handed over in the morning.",
+          "uk": "Повернення на базу: яхту здають уранці.",
+          "de": "Zurück an der Basis: Das Boot wird am Morgen übergeben.",
+          "es": "De vuelta en la base: el barco se entrega por la mañana."
+        }
+      }
+    ]
+  },
+  {
+    "routeId": "srt_popular_lofoten",
+    "stops": [
+      {
+        "name": "Svolvær",
+        "lat": 68.2342,
+        "lng": 14.5683,
+        "note": {
+          "en": "Check-in in the Lofoten's main town, under the peaks that rise straight from the sea.",
+          "uk": "Реєстрація в головному місті Лофотенів, під вершинами, що здіймаються просто з моря.",
+          "de": "Check-in in der Hauptstadt der Lofoten, unter Gipfeln, die direkt aus dem Meer steigen.",
+          "es": "Check-in en la principal ciudad de Lofoten, bajo picos que surgen directos del mar."
+        }
+      },
+      {
+        "name": "Henningsvær",
+        "lat": 68.1519,
+        "lng": 14.2025,
+        "note": {
+          "en": "A fishing village spread over several islets, joined by bridges.",
+          "uk": "Рибальське селище, розкидане по кількох острівцях і з'єднане мостами.",
+          "de": "Ein Fischerdorf über mehrere Inselchen verteilt, durch Brücken verbunden.",
+          "es": "Un pueblo pesquero repartido por varios islotes, unidos por puentes."
+        }
+      },
+      {
+        "name": "Nusfjord",
+        "lat": 68.035,
+        "lng": 13.35,
+        "note": {
+          "en": "One of the oldest preserved fishing villages in Norway, in a narrow inlet.",
+          "uk": "Одне з найдавніших збережених рибальських селищ Норвегії, у вузькій бухті.",
+          "de": "Eines der ältesten erhaltenen Fischerdörfer Norwegens, in einer schmalen Bucht.",
+          "es": "Uno de los pueblos pesqueros mejor conservados de Noruega, en una cala estrecha."
+        }
+      },
+      {
+        "name": "Reine",
+        "lat": 67.9328,
+        "lng": 13.0886,
+        "note": {
+          "en": "Red cabins on stilts under the Reinebringen ridge, the postcard of the islands.",
+          "uk": "Червоні будиночки на палях під хребтом Райнебрінген - листівка цих островів.",
+          "de": "Rote Pfahlhütten unter dem Reinebringen-Grat, das Postkartenmotiv der Inseln.",
+          "es": "Cabañas rojas sobre pilotes bajo la cresta de Reinebringen, la postal de las islas."
+        }
+      },
+      {
+        "name": "Å",
+        "lat": 67.8811,
+        "lng": 12.9789,
+        "note": {
+          "en": "The road ends here, at the last village on the archipelago.",
+          "uk": "Тут закінчується дорога - це останнє село архіпелагу.",
+          "de": "Hier endet die Straße, im letzten Dorf des Archipels.",
+          "es": "Aquí se acaba la carretera, en el último pueblo del archipiélago."
+        }
+      },
+      {
+        "name": "Skrova",
+        "lat": 68.1544,
+        "lng": 14.6497,
+        "note": {
+          "en": "A small island community on the way back, with clear water and few visitors.",
+          "uk": "Невелика острівна громада дорогою назад, із прозорою водою й небагатьма гостями.",
+          "de": "Eine kleine Inselgemeinde auf dem Rückweg, mit klarem Wasser und wenigen Gästen.",
+          "es": "Una pequeña comunidad isleña de regreso, con aguas claras y pocos visitantes."
+        }
+      },
+      {
+        "name": "Svolvær",
+        "lat": 68.2342,
+        "lng": 14.5683,
+        "note": {
+          "en": "Back at the base: the boat is handed over in the morning.",
+          "uk": "Повернення на базу: яхту здають уранці.",
+          "de": "Zurück an der Basis: Das Boot wird am Morgen übergeben.",
+          "es": "De vuelta en la base: el barco se entrega por la mañana."
+        }
+      }
+    ]
+  },
+  {
+    "routeId": "srt_popular_corsica_west",
+    "stops": [
+      {
+        "name": "Ajaccio",
+        "lat": 41.9192,
+        "lng": 8.7386,
+        "note": {
+          "en": "Check-in in Napoleon's birthplace, at the head of a wide gulf.",
+          "uk": "Реєстрація на батьківщині Наполеона, у глибині широкої затоки.",
+          "de": "Check-in in Napoleons Geburtsstadt, am Ende eines weiten Golfs.",
+          "es": "Check-in en la ciudad natal de Napoleón, al fondo de un amplio golfo."
+        }
+      },
+      {
+        "name": "Îles Sanguinaires",
+        "lat": 41.8869,
+        "lng": 8.59,
+        "note": {
+          "en": "Four red islets at the mouth of the gulf, named for the evening light on them.",
+          "uk": "Чотири червоні острівці на вході в затоку, названі за вечірнім світлом на них.",
+          "de": "Vier rote Eilande an der Golfmündung, benannt nach dem Abendlicht auf ihnen.",
+          "es": "Cuatro islotes rojos en la bocana del golfo, llamados así por la luz del atardecer."
+        }
+      },
+      {
+        "name": "Cargèse",
+        "lat": 42.135,
+        "lng": 8.597,
+        "note": {
+          "en": "A village founded by Greek refugees, with a Greek and a Latin church facing each other.",
+          "uk": "Село, засноване грецькими біженцями, де грецька й латинська церкви стоять навпроти.",
+          "de": "Ein von griechischen Flüchtlingen gegründetes Dorf, mit griechischer und lateinischer Kirche gegenüber.",
+          "es": "Un pueblo fundado por refugiados griegos, con una iglesia griega y otra latina enfrentadas."
+        }
+      },
+      {
+        "name": "Girolata",
+        "lat": 42.3478,
+        "lng": 8.6153,
+        "note": {
+          "en": "No road reaches the village: everything arrives by boat or on foot.",
+          "uk": "До села не веде жодна дорога: усе прибуває морем або пішки.",
+          "de": "Keine Straße führt ins Dorf: Alles kommt per Boot oder zu Fuß.",
+          "es": "Ninguna carretera llega al pueblo: todo entra por barco o a pie."
+        }
+      },
+      {
+        "name": "Scandola",
+        "lat": 42.3667,
+        "lng": 8.5667,
+        "note": {
+          "en": "A UNESCO reserve of red porphyry cliffs; landing is not allowed.",
+          "uk": "Заповідник ЮНЕСКО з червоних порфірових скель, висаджуватися заборонено.",
+          "de": "Ein UNESCO-Reservat aus rotem Porphyr; Anlandung ist untersagt.",
+          "es": "Reserva de la UNESCO de acantilados de pórfido rojo; está prohibido desembarcar."
+        }
+      },
+      {
+        "name": "Calvi",
+        "lat": 42.5667,
+        "lng": 8.7575,
+        "note": {
+          "en": "A Genoese citadel above a bay with six kilometres of sand behind it.",
+          "uk": "Генуезька цитадель над затокою, за якою - шість кілометрів піску.",
+          "de": "Eine genuesische Zitadelle über einer Bucht mit sechs Kilometern Sand dahinter.",
+          "es": "Una ciudadela genovesa sobre una bahía con seis kilómetros de arena detrás."
+        }
+      },
+      {
+        "name": "Ajaccio",
+        "lat": 41.9192,
+        "lng": 8.7386,
+        "note": {
+          "en": "Back at the base: the boat is handed over in the morning.",
+          "uk": "Повернення на базу: яхту здають уранці.",
+          "de": "Zurück an der Basis: Das Boot wird am Morgen übergeben.",
+          "es": "De vuelta en la base: el barco se entrega por la mañana."
+        }
+      }
+    ]
+  },
+  {
+    "routeId": "srt_popular_bvi",
+    "stops": [
+      {
+        "name": "Tortola",
+        "lat": 18.426,
+        "lng": -64.619,
+        "note": {
+          "en": "Check-in at Road Town, the busiest charter base in the Caribbean.",
+          "uk": "Реєстрація в Роуд-Тауні, найзавантаженішій чартерній базі Карибів.",
+          "de": "Check-in in Road Town, der meistfrequentierten Charterbasis der Karibik.",
+          "es": "Check-in en Road Town, la base chárter más concurrida del Caribe."
+        }
+      },
+      {
+        "name": "Norman Island",
+        "lat": 18.317,
+        "lng": -64.618,
+        "note": {
+          "en": "The Bight, with caves at the western end said to have held pirate treasure.",
+          "uk": "Бухта Байт, а печери на західному краю, кажуть, ховали піратські скарби.",
+          "de": "Die Bight, mit Höhlen am Westende, in denen Piratenschätze gelegen haben sollen.",
+          "es": "La bahía de Bight, con cuevas al oeste donde se dice que hubo tesoro pirata."
+        }
+      },
+      {
+        "name": "Cooper Island",
+        "lat": 18.387,
+        "lng": -64.513,
+        "note": {
+          "en": "A single beach club on the shore and mooring balls off it.",
+          "uk": "Один пляжний клуб на березі й швартові бочки навпроти.",
+          "de": "Ein einziger Beach Club am Ufer und davor Festmachertonnen.",
+          "es": "Un único club de playa en la orilla y boyas de amarre enfrente."
+        }
+      },
+      {
+        "name": "Virgin Gorda",
+        "lat": 18.429,
+        "lng": -64.443,
+        "note": {
+          "en": "The Baths: house-sized granite boulders forming pools and tunnels on the beach.",
+          "uk": "The Baths: гранітні валуни завбільшки з будинок утворюють на пляжі купелі й тунелі.",
+          "de": "The Baths: hausgroße Granitblöcke bilden am Strand Becken und Tunnel.",
+          "es": "The Baths: bloques de granito del tamaño de una casa que forman pozas y túneles."
+        }
+      },
+      {
+        "name": "Anegada",
+        "lat": 18.727,
+        "lng": -64.333,
+        "note": {
+          "en": "A low coral island ringed by reefs, with an approach that requires careful navigation.",
+          "uk": "Низький кораловий острів, оточений рифами; підхід вимагає уважної навігації.",
+          "de": "Eine flache Koralleninsel, von Riffen umgeben; die Ansteuerung verlangt sorgfältige Navigation.",
+          "es": "Una isla coralina baja rodeada de arrecifes, cuyo acceso exige una navegación cuidadosa."
+        }
+      },
+      {
+        "name": "Jost Van Dyke",
+        "lat": 18.443,
+        "lng": -64.753,
+        "note": {
+          "en": "Beach bars on the sand at Great Harbour and White Bay.",
+          "uk": "Пляжні бари просто на піску в Грейт-Гарбор і Вайт-Бей.",
+          "de": "Strandbars im Sand von Great Harbour und White Bay.",
+          "es": "Chiringuitos sobre la arena en Great Harbour y White Bay."
+        }
+      },
+      {
+        "name": "Tortola",
+        "lat": 18.426,
+        "lng": -64.619,
+        "note": {
+          "en": "Back at the base: the boat is handed over in the morning.",
+          "uk": "Повернення на базу: яхту здають уранці.",
+          "de": "Zurück an der Basis: Das Boot wird am Morgen übergeben.",
+          "es": "De vuelta en la base: el barco se entrega por la mañana."
+        }
+      }
+    ]
+  },
+  {
+    "routeId": "srt_popular_inner_seychelles",
+    "stops": [
+      {
+        "name": "Mahé",
+        "lat": -4.62,
+        "lng": 55.47,
+        "note": {
+          "en": "Check-in at Eden Island, the base for every inner-island route.",
+          "uk": "Реєстрація на Еден-Айленді, базі для всіх маршрутів внутрішніми островами.",
+          "de": "Check-in auf Eden Island, der Basis für alle Routen der inneren Inseln.",
+          "es": "Check-in en Eden Island, la base de todas las rutas por las islas interiores."
+        }
+      },
+      {
+        "name": "Sainte Anne",
+        "lat": -4.61,
+        "lng": 55.49,
+        "note": {
+          "en": "A marine park twenty minutes from the base, and the usual first night.",
+          "uk": "Морський парк за двадцять хвилин від бази і зазвичай перша ніч.",
+          "de": "Ein Meerespark zwanzig Minuten von der Basis, meist die erste Nacht.",
+          "es": "Un parque marino a veinte minutos de la base y, por costumbre, la primera noche."
+        }
+      },
+      {
+        "name": "Praslin",
+        "lat": -4.345,
+        "lng": 55.763,
+        "note": {
+          "en": "The Vallée de Mai grows the coco de mer, found nowhere else in the world.",
+          "uk": "У Валле-де-Ме росте коко-де-мер, якого більше немає ніде у світі.",
+          "de": "Im Vallée de Mai wächst die Coco de Mer, die es sonst nirgends gibt.",
+          "es": "En el Valle de Mai crece el coco de mar, que no existe en ningún otro lugar."
+        }
+      },
+      {
+        "name": "Curieuse",
+        "lat": -4.283,
+        "lng": 55.728,
+        "note": {
+          "en": "Giant tortoises walk free on the island, which was once a leper colony.",
+          "uk": "Островом вільно ходять гігантські черепахи, а колись тут була колонія прокажених.",
+          "de": "Riesenschildkröten laufen frei über die Insel, einst eine Leprakolonie.",
+          "es": "Las tortugas gigantes campan libres por la isla, antaño una colonia de leprosos."
+        }
+      },
+      {
+        "name": "La Digue",
+        "lat": -4.358,
+        "lng": 55.826,
+        "note": {
+          "en": "Bicycles and ox carts instead of cars, and the granite of Anse Source d'Argent.",
+          "uk": "Замість автомобілів - велосипеди й воли, а ще граніт Анс-Сурс-д'Аржан.",
+          "de": "Fahrräder und Ochsenkarren statt Autos, dazu der Granit von Anse Source d'Argent.",
+          "es": "Bicicletas y carros de bueyes en vez de coches, y el granito de Anse Source d'Argent."
+        }
+      },
+      {
+        "name": "Félicité",
+        "lat": -4.32,
+        "lng": 55.86,
+        "note": {
+          "en": "Granite slabs and clear water, with the Sisters islands close by.",
+          "uk": "Гранітні плити й прозора вода, а поруч - острови Сестри.",
+          "de": "Granitplatten und klares Wasser, die Sisters-Inseln ganz in der Nähe.",
+          "es": "Losas de granito y agua clara, con las islas Sisters muy cerca."
+        }
+      },
+      {
+        "name": "Mahé",
+        "lat": -4.62,
+        "lng": 55.47,
+        "note": {
+          "en": "Back at the base: the boat is handed over in the morning.",
+          "uk": "Повернення на базу: яхту здають уранці.",
+          "de": "Zurück an der Basis: Das Boot wird am Morgen übergeben.",
+          "es": "De vuelta en la base: el barco se entrega por la mañana."
+        }
+      }
+    ]
+  },
+  {
+    "routeId": "srt_popular_phuket_andaman",
+    "stops": [
+      {
+        "name": "Phuket",
+        "lat": 8.068,
+        "lng": 98.437,
+        "note": {
+          "en": "Check-in on the north-east coast, an hour from the limestone bays.",
+          "uk": "Реєстрація на північно-східному березі, за годину від вапнякових бухт.",
+          "de": "Check-in an der Nordostküste, eine Stunde von den Kalksteinbuchten entfernt.",
+          "es": "Check-in en la costa noreste, a una hora de las bahías de caliza."
+        }
+      },
+      {
+        "name": "Phang Nga Bay",
+        "lat": 8.275,
+        "lng": 98.501,
+        "note": {
+          "en": "Limestone towers straight out of shallow green water, hundreds of them.",
+          "uk": "Вапнякові стовпи просто з мілкої зеленої води, їх тут сотні.",
+          "de": "Kalksteintürme direkt aus flachem grünem Wasser, Hunderte davon.",
+          "es": "Torres de caliza que emergen de aguas verdes y someras, a cientos."
+        }
+      },
+      {
+        "name": "Koh Hong",
+        "lat": 8.2117,
+        "lng": 98.665,
+        "note": {
+          "en": "A hidden lagoon entered by dinghy through a gap in the rock at low tide.",
+          "uk": "Прихована лагуна, до якої на відпливі заходять тендером через щілину в скелі.",
+          "de": "Eine versteckte Lagune, per Dinghi durch einen Felsspalt bei Niedrigwasser.",
+          "es": "Una laguna escondida a la que se entra en auxiliar por una grieta con marea baja."
+        }
+      },
+      {
+        "name": "Railay",
+        "lat": 8.011,
+        "lng": 98.839,
+        "note": {
+          "en": "Climbing cliffs above a beach with no road behind it.",
+          "uk": "Скелі для скелелазіння над пляжем, за яким немає дороги.",
+          "de": "Kletterfelsen über einem Strand, hinter dem keine Straße liegt.",
+          "es": "Acantilados de escalada sobre una playa sin carretera detrás."
+        }
+      },
+      {
+        "name": "Phi Phi",
+        "lat": 7.74,
+        "lng": 98.77,
+        "note": {
+          "en": "Two islands around a shallow bay; anchor on the quieter east side.",
+          "uk": "Два острови навколо мілкої затоки, а якір краще кидати на тихішому східному боці.",
+          "de": "Zwei Inseln um eine flache Bucht; ankern auf der ruhigeren Ostseite.",
+          "es": "Dos islas en torno a una bahía somera; fondear en el lado este, más tranquilo."
+        }
+      },
+      {
+        "name": "Koh Yao",
+        "lat": 8.118,
+        "lng": 98.608,
+        "note": {
+          "en": "Two farming islands in the middle of the bay, with almost no tourism.",
+          "uk": "Два фермерські острови посеред затоки, майже без туризму.",
+          "de": "Zwei landwirtschaftliche Inseln mitten in der Bucht, fast ohne Tourismus.",
+          "es": "Dos islas agrícolas en medio de la bahía, casi sin turismo."
+        }
+      },
+      {
+        "name": "Phuket",
+        "lat": 8.068,
+        "lng": 98.437,
+        "note": {
+          "en": "Back at the base: the boat is handed over in the morning.",
+          "uk": "Повернення на базу: яхту здають уранці.",
+          "de": "Zurück an der Basis: Das Boot wird am Morgen übergeben.",
+          "es": "De vuelta en la base: el barco se entrega por la mañana."
+        }
+      }
+    ]
+  },
+  {
+    "routeId": "srt_popular_kotor_adriatic",
+    "stops": [
+      {
+        "name": "Tivat",
+        "lat": 42.433,
+        "lng": 18.693,
+        "note": {
+          "en": "Check-in at Porto Montenegro, a superyacht marina on a former naval base.",
+          "uk": "Реєстрація в Порто-Монтенегро, марині суперяхт на місці колишньої військової бази.",
+          "de": "Check-in in Porto Montenegro, einer Superyacht-Marina auf einem ehemaligen Marinestützpunkt.",
+          "es": "Check-in en Porto Montenegro, una marina de superyates sobre una antigua base naval."
+        }
+      },
+      {
+        "name": "Perast",
+        "lat": 42.486,
+        "lng": 18.698,
+        "note": {
+          "en": "Two islets off the town: one natural, one built by sailors dropping stones for centuries.",
+          "uk": "Два острівці навпроти міста: один природний, другий моряки століттями насипали камінням.",
+          "de": "Zwei Eilande vor der Stadt: eines natürlich, eines von Seeleuten über Jahrhunderte aufgeschüttet.",
+          "es": "Dos islotes frente al pueblo: uno natural y otro levantado por marineros arrojando piedras durante siglos."
+        }
+      },
+      {
+        "name": "Kotor",
+        "lat": 42.4247,
+        "lng": 18.7712,
+        "note": {
+          "en": "A walled town at the head of the bay, with the fortress wall climbing the cliff behind it.",
+          "uk": "Обнесене мурами місто в глибині затоки, а фортечна стіна піднімається скелею позаду.",
+          "de": "Eine ummauerte Stadt am Ende der Bucht, dahinter klettert die Festungsmauer den Fels hinauf.",
+          "es": "Una ciudad amurallada al fondo de la bahía, con la muralla trepando por el acantilado."
+        }
+      },
+      {
+        "name": "Herceg Novi",
+        "lat": 42.4531,
+        "lng": 18.5375,
+        "note": {
+          "en": "Stepped streets above the water at the entrance to the bay.",
+          "uk": "Вулиці-сходи над водою біля входу в затоку.",
+          "de": "Treppengassen über dem Wasser an der Einfahrt zur Bucht.",
+          "es": "Calles escalonadas sobre el agua, en la entrada de la bahía."
+        }
+      },
+      {
+        "name": "Luštica",
+        "lat": 42.39,
+        "lng": 18.6167,
+        "note": {
+          "en": "A peninsula of olive groves and small bays, with few roads to any of them.",
+          "uk": "Півострів оливкових гаїв і невеликих бухт, куди майже не ведуть дороги.",
+          "de": "Eine Halbinsel aus Olivenhainen und kleinen Buchten, kaum durch Straßen erschlossen.",
+          "es": "Una península de olivares y pequeñas bahías, a las que apenas llegan carreteras."
+        }
+      },
+      {
+        "name": "Budva",
+        "lat": 42.278,
+        "lng": 18.837,
+        "note": {
+          "en": "A walled old town on a headland, with the coast's busiest beaches either side.",
+          "uk": "Старе місто в мурах на мисі, а обабіч - найлюдніші пляжі узбережжя.",
+          "de": "Eine ummauerte Altstadt auf einer Landzunge, beidseits die vollsten Strände der Küste.",
+          "es": "Un casco antiguo amurallado sobre un cabo, con las playas más concurridas a ambos lados."
+        }
+      },
+      {
+        "name": "Sveti Stefan",
+        "lat": 42.256,
+        "lng": 18.892,
+        "note": {
+          "en": "An island village turned hotel, joined to the shore by a sand causeway.",
+          "uk": "Острівне село, перетворене на готель, з'єднане з берегом піщаною косою.",
+          "de": "Ein zum Hotel gewordenes Inseldorf, über eine Sanddammstraße mit dem Ufer verbunden.",
+          "es": "Un pueblo isla convertido en hotel, unido a la costa por un istmo de arena."
+        }
+      },
+      {
+        "name": "Tivat",
+        "lat": 42.433,
+        "lng": 18.693,
+        "note": {
+          "en": "Back at the base: the boat is handed over in the morning.",
+          "uk": "Повернення на базу: яхту здають уранці.",
+          "de": "Zurück an der Basis: Das Boot wird am Morgen übergeben.",
+          "es": "De vuelta en la base: el barco se entrega por la mañana."
+        }
+      }
+    ]
+  },
+  {
+    "routeId": "srt_popular_society_leeward",
+    "stops": [
+      {
+        "name": "Raiatea",
+        "lat": -16.752,
+        "lng": -151.47,
+        "note": {
+          "en": "Check-in at Apooiti, the charter base for the Leeward Islands.",
+          "uk": "Реєстрація в Апооїті, чартерній базі Підвітряних островів.",
+          "de": "Check-in in Apooiti, der Charterbasis für die Inseln unter dem Winde.",
+          "es": "Check-in en Apooiti, la base chárter de las islas de Sotavento."
+        }
+      },
+      {
+        "name": "Taha'a",
+        "lat": -16.628,
+        "lng": -151.488,
+        "note": {
+          "en": "Vanilla plantations ashore and a coral garden you drift through on the current.",
+          "uk": "Ванільні плантації на березі й кораловий сад, крізь який несе течією.",
+          "de": "Vanilleplantagen an Land und ein Korallengarten, durch den die Strömung treibt.",
+          "es": "Plantaciones de vainilla en tierra y un jardín de coral por el que te lleva la corriente."
+        }
+      },
+      {
+        "name": "Bora Bora",
+        "lat": -16.501,
+        "lng": -151.742,
+        "note": {
+          "en": "A single peak inside a turquoise lagoon, the pass on the western side.",
+          "uk": "Єдина вершина посеред бірюзової лагуни, а прохід - із західного боку.",
+          "de": "Ein einzelner Gipfel in einer türkisfarbenen Lagune, der Pass liegt im Westen.",
+          "es": "Un único pico dentro de una laguna turquesa, con el paso en el lado oeste."
+        }
+      },
+      {
+        "name": "Taha'a",
+        "lat": -16.628,
+        "lng": -151.488,
+        "note": {
+          "en": "Vanilla plantations ashore and a coral garden you drift through on the current.",
+          "uk": "Ванільні плантації на березі й кораловий сад, крізь який несе течією.",
+          "de": "Vanilleplantagen an Land und ein Korallengarten, durch den die Strömung treibt.",
+          "es": "Plantaciones de vainilla en tierra y un jardín de coral por el que te lleva la corriente."
+        }
+      },
+      {
+        "name": "Raiatea",
+        "lat": -16.752,
+        "lng": -151.47,
+        "note": {
+          "en": "Back at the base: the boat is handed over in the morning.",
+          "uk": "Повернення на базу: яхту здають уранці.",
+          "de": "Zurück an der Basis: Das Boot wird am Morgen übergeben.",
+          "es": "De vuelta en la base: el barco se entrega por la mañana."
+        }
+      }
+    ]
+  }
+]

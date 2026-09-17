@@ -1,5 +1,6 @@
 import { booking, providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import { eq } from "drizzle-orm";
+import { log } from "evlog";
 
 import type { Database } from "../registry";
 import type { ProviderKey } from "../types";
@@ -189,7 +190,13 @@ export function createReservationEventRecorder(
      * it in silence is what let a broken join go unnoticed for a month of checkouts.
      */
     if (!row) {
-      console.warn(`Dropped a ${providerKey} ${kind} event: no booking holds quote ${quoteId}.`);
+      log.warn({
+        action: "reservation_event.dropped",
+        reason: "no booking holds the quote",
+        provider: providerKey,
+        kind,
+        quoteId,
+      });
       return;
     }
 

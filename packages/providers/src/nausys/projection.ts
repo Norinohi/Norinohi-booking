@@ -6,6 +6,7 @@ import { CONTENT_LOCALES } from "@yacht-charter/db/search/localize";
 
 import { toLocaleMap } from "../shared/international-text";
 import { decimalStringToMinor } from "../shared/money";
+import { isPlaceholderBuilder } from "../shared/placeholder-builders";
 import { mergeYachtTitle } from "../shared/yacht-title";
 import type { JsonField, JsonObject } from "../shared/json";
 import {
@@ -97,7 +98,8 @@ export function projectNausysCatalogue(
   const locations = parseAll(records, "location", restLocationSchema);
   const companies = parseAll(records, "company", restCharterCompanySchema);
   const bases = parseAll(records, "base", restCharterBaseSchema);
-  const builders = parseAll(records, "builder", restYachtBuilderSchema);
+  const allBuilders = parseAll(records, "builder", restYachtBuilderSchema);
+  const builders = allBuilders.filter((item) => !isPlaceholderBuilder(item.name));
   const models = parseAll(records, "model", restYachtModelSchema);
   const categories = parseAll(records, "category", restYachtCategorySchema);
   const equipmentCategories = parseAll(records, "equipment_category", restEquipmentCategorySchema);
@@ -110,6 +112,9 @@ export function projectNausysCatalogue(
   const countryNameById = new Map(countries.map((item) => [String(item.id), name(item.name)]));
   const locationNameById = new Map(locations.map((item) => [String(item.id), name(item.name)]));
   const modelById = new Map(models.map((item) => [String(item.id), item]));
+  const placeholderBuilders = new Set(
+    allBuilders.filter((item) => isPlaceholderBuilder(item.name)).map((item) => String(item.id)),
+  );
   const knownEquipment = new Set(equipment.map((item) => String(item.id)));
   /* Extras are named from these; an id that resolves to nothing is not offered. */
   const equipmentNameById = new Map(
@@ -174,6 +179,7 @@ export function projectNausysCatalogue(
     .map((yacht) =>
       projectYacht(yacht, {
         modelById,
+        placeholderBuilders,
         knownEquipment,
         sailTypeById,
         equipmentNameById,
@@ -232,8 +238,7 @@ export function projectNausysCatalogue(
     })),
     models: models.map((item) => ({
       externalId: String(item.id),
-      externalBuilderId:
-        item.yachtBuilderId === undefined ? undefined : String(item.yachtBuilderId),
+      externalBuilderId: builderIdOf(item, placeholderBuilders),
       name: item.name,
     })),
     categories: categories.map((item) => ({
@@ -276,10 +281,18 @@ type ExtraNaming = {
   priceMeasureById: Map<string, string>;
 };
 
+/* A model filed under a placeholder builder has no builder, rather than one called "Unknown". */
+function builderIdOf(model: RestYachtModel, placeholderBuilders: Set<string>): string | undefined {
+  if (model.yachtBuilderId === undefined) return undefined;
+  const id = String(model.yachtBuilderId);
+  return placeholderBuilders.has(id) ? undefined : id;
+}
+
 function projectYacht(
   yacht: RestYacht,
   context: {
     modelById: Map<string, RestYachtModel>;
+    placeholderBuilders: Set<string>;
     knownEquipment: Set<string>;
     sailTypeById: Map<string, string>;
   } & ExtraNaming,
@@ -313,7 +326,7 @@ function projectYacht(
     // An unknown model or builder is left unset rather than fabricated; the writer
     // stores a listing with a null model, which is a gap, not a corruption.
     externalBuilderId:
-      model?.yachtBuilderId === undefined ? undefined : String(model.yachtBuilderId),
+      model === undefined ? undefined : builderIdOf(model, context.placeholderBuilders),
     externalModelId: model === undefined ? undefined : modelId,
     // Category is a property of the model, not of the boat: `RestYacht` has no
     // category field at all, so an unresolved model also costs the category.

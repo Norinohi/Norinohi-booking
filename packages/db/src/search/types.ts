@@ -2,6 +2,9 @@ import type { faqCategory } from "../schema/content";
 import type { facetMediaKind } from "../schema/facet-media";
 import type { AmenityGroup } from "./amenity-groups";
 import type { CrewType } from "./crew";
+import type { SuggestedRoute } from "../routes/types";
+
+export type { SuggestedRoute };
 
 export type FaqCategory = (typeof faqCategory)["enumValues"][number];
 
@@ -91,6 +94,8 @@ export type ListingSearchInput = {
    * either basis on its own.
    */
   priceBasis?: PriceBasis;
+  /** Only these listings: a saved list priced for a searched period, never set from the URL. */
+  listingIds?: readonly string[];
   cursor?: string;
   limit?: number;
   page?: number;
@@ -165,6 +170,8 @@ export type ListingSearchDoc = {
    * reads this.
    */
   amenityKeys?: string[];
+  /** `category` in its stored English group name, set only where `category` was translated. */
+  categoryKey?: string | null;
   priceFromMinor: number | null;
   /**
    * Whether `priceFromMinor` prices the advertised charter or starts from the season. See the
@@ -189,6 +196,11 @@ export type ListingSearchDoc = {
   basePriceFromMinorEur: number | null;
   /** The offer this card's price, dates and terms describe. Null when nothing is sellable. */
   bestOfferId: string | null;
+  /**
+   * That offer's operator confirms each booking by hand, so the card is quoted and taken as a
+   * booking request rather than held and paid for online.
+   */
+  requiresOperatorConfirmation: boolean;
   /** How many vendors sell this hull. */
   offerCount: number;
   availableFrom: string | null;
@@ -210,38 +222,54 @@ export type ListingSearchDoc = {
    */
   sellsRequestedPeriod: boolean;
   /*
+   * On a dated search, whether the price is for exactly the charter the card names: the dates
+   * asked for, or the nearby ones a flexible search shows instead. Absent on an undated search and
+   * on every other read.
+   */
+  pricedForDates?: boolean;
+  /*
+   * Who priced those dates: the vendor itself, the operator's published list rate for that week,
+   * which is before the discounts both vendors sell at, or for a charter of any other length an
+   * estimate from that list, a seventh of the weekly rate per night, sourced by how the card may
+   * caption it (`priceListEstimateSource`). Null on a dated search where none did; absent wherever `pricedForDates` is.
+   */
+  priceSource?: PeriodPriceSource | null;
+  /*
+   * Whether that price is for the nearby charter a flexible search shows instead of the dates
+   * asked for. Ranks below a price for those dates; absent wherever `pricedForDates` is.
+   */
+  pricedForNearbyDates?: boolean;
+  /**
+   * The operator's weekly list rate for the week the shown charter starts in, on a dated search
+   * where nothing priced the charter. A reference only; absent wherever `pricedForDates` is.
+   */
+  weeklyRateMinor?: number | null;
+  weeklyRateCurrency?: string | null;
+  /*
    * The charter nearest the searched dates that this listing would actually sell, when the
    * searched one is not it. Null on an undated search, and on a listing with no sellable
    * charter left in the horizon.
    */
   nearestCheckIn: string | null;
   nearestCheckOut: string | null;
+  /*
+   * On a length with no date, how the card will be priced (`lengthPriceTier`), which ranks it.
+   * Absent everywhere else.
+   */
+  lengthPriceTier?: number;
 };
+
+export type PeriodPriceSource =
+  | "vendor"
+  | "price-list"
+  | "price-list-estimate"
+  | "price-list-estimate-from"
+  | "price-list-estimate-before-discounts";
 
 export type ListingSearchResult = {
   items: ListingSearchDoc[];
   nextCursor?: string;
   pagination?: ListingSearchPagination;
-};
-
-/**
- * A hand-authored itinerary, read from the route library rather than composed here.
- *
- * Every field is somebody's editorial text and every coordinate is the place itself, so nothing
- * in it is translated or derived - which is also why the whole thing is nullable. Most bases have
- * no route, and the section renders only where one exists.
- */
-export type SuggestedRoute = {
-  title: string;
-  description: string | null;
-  stops: {
-    /** Position in the itinerary, from 1. Not a calendar date: a route is not a charter. */
-    day: number;
-    name: string;
-    note: string | null;
-    lat: number;
-    lng: number;
-  }[];
 };
 
 export type ListingDetail = ListingSearchDoc & {
@@ -494,7 +522,8 @@ export type ListingSuggestion = {
    * ticked in the filter panel are the same selection rather than two spellings of it.
    */
   value: string;
-  kind: "country" | "region" | "location" | "base";
+  /* Named for the search filter the value goes into: `city` is the town, not the vendor's location. */
+  kind: "country" | "region" | "city" | "base";
   /**
    * Whether this row came from the curated popular list rather than from matching what was
    * typed. Only the empty field produces them, so a typeahead result is never marked.
@@ -585,6 +614,11 @@ export type OfferConstraints = {
     /** The provider priced this exact period on request, rather than us inferring it. */
     confirmed: boolean;
   }[];
+  /**
+   * Exact charters the vendor priced as free, from today's notice floor on. `rangeStatus` lets
+   * these outrank the rules, which are our transcription of what the vendor sells.
+   */
+  confirmed: { startDate: string; endDate: string }[];
   /** Periods the boat may be dropped at a different base. Null dates mean "always". */
   oneWay: {
     startDate: string | null;

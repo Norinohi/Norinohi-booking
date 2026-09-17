@@ -27,6 +27,7 @@ import {
 import { MAX_MONEY_MINOR, newId } from "@yacht-charter/db/schema/_shared";
 import { CONTENT_LOCALES, normalizedKey } from "@yacht-charter/db/search/localize";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { log } from "evlog";
 
 import type { Database } from "../registry";
 import { canonicalAmenityName } from "../shared/amenity-names";
@@ -236,7 +237,7 @@ export async function writeCanonicalCatalogue(
   for (const item of catalogue.locations) {
     const regionId = regionIds.get(item.externalRegionId);
     if (!regionId) continue;
-    const id = await ensureLocation(db, regionId, item.name);
+    const id = await ensureLocation(db, regionId, item.name, item.city ?? null);
     if (id) locationIds.set(item.externalId, id);
   }
 
@@ -618,11 +619,17 @@ async function ensureLocation(
   db: Database,
   regionId: string,
   name: string,
+  city: string | null,
 ): Promise<string | null> {
+  // A vendor's town fills an empty `city` and never overwrites one, which may be curated.
   const [created] = await db
     .insert(location)
-    .values({ regionId, name })
-    .onConflictDoNothing({ target: [location.regionId, location.name] })
+    .values({ regionId, name, city })
+    .onConflictDoUpdate({
+      target: [location.regionId, location.name],
+      set: { city: sql`excluded.city` },
+      setWhere: sql`${location.city} is null and excluded.city is not null`,
+    })
     .returning({ id: location.id });
   if (created) return created.id;
 
@@ -1490,9 +1497,12 @@ function priceableExtras(listingId: string, item: CanonicalListing) {
       Number.isSafeInteger(extra.priceMinor) && Math.abs(extra.priceMinor) <= MAX_MONEY_MINOR,
   );
   if (extras.length !== item.extras.length) {
-    console.warn(
-      `[catalogue] listing ${listingId}: dropped ${item.extras.length - extras.length} extra(s) priced beyond price_minor`,
-    );
+    log.warn({
+      action: "catalogue.extras_dropped",
+      reason: "priced beyond price_minor",
+      listingId,
+      dropped: item.extras.length - extras.length,
+    });
   }
   return extras;
 }
@@ -1587,9 +1597,7 @@ async function dropUnreviewableCandidates(
   }
 
   if (dropped > 0) {
-    console.info(
-      `[catalogue] dropped ${dropped} sister-ship duplicate candidate(s) from the queue`,
-    );
+    log.info({ action: "catalogue.sister_ship_candidates_dropped", dropped });
   }
 }
 

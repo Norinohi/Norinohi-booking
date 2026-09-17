@@ -29,7 +29,8 @@ export function toSortValue(value: string | null): SortValue {
 export interface ResultsHeaderProps {
   chips: FilterChip[];
   onRemoveChip: (chip: FilterChip) => void;
-  total: number;
+  /** Absent until the first answer, so the header never claims "0 yachts found" while loading. */
+  total?: number;
   sort: SortValue;
   onSortChange: (sort: SortValue) => void;
   priceBasis: PriceBasisOption;
@@ -71,8 +72,13 @@ export default function ResultsHeader({
           </div>
         ) : null}
 
-        <p className="text-sm font-medium leading-[1.3] text-natural-500">
-          {t("resultsCount", { count: total })}
+        <p
+          className={cn(
+            "text-sm font-medium leading-[1.3] text-natural-500",
+            total === undefined && "invisible",
+          )}
+        >
+          {t("resultsCount", { count: total ?? 0 })}
         </p>
       </div>
 

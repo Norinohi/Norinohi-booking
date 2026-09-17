@@ -2,7 +2,12 @@ import { z } from "zod";
 
 import { paginationInputDefault, paginationInputSchema, paginationSchema } from "./primitives";
 
-export const leadKindSchema = z.enum(["quote_request", "charter_expert", "consultation"]);
+export const leadKindSchema = z.enum([
+  "quote_request",
+  "charter_expert",
+  "consultation",
+  "booking_request",
+]);
 export type LeadKind = z.infer<typeof leadKindSchema>;
 export const leadStatusSchema = z.enum(["new", "contacted", "closed"]);
 
@@ -25,10 +30,10 @@ export const leadCreateInputSchema = z
     context: z.record(z.string(), z.unknown()).optional(),
   })
   .superRefine((value, ctx) => {
-    if (value.kind === "quote_request" && !value.listingId) {
+    if ((value.kind === "quote_request" || value.kind === "booking_request") && !value.listingId) {
       ctx.addIssue({
         code: "custom",
-        message: "listingId is required when requesting a quote for a yacht",
+        message: "listingId is required when asking about a yacht",
         path: ["listingId"],
       });
     }

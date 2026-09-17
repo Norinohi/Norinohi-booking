@@ -1,0 +1,207 @@
+{
+  "backToSearch": "Volver a la búsqueda",
+  "breadcrumbSearch": "Búsqueda",
+  "share": "Compartir",
+  "linkCopied": "Enlace copiado",
+  "seeOnMap": "Ver en el mapa",
+  "addToWishlist": "Añadir a favoritos",
+  "removeFromWishlist": "Quitar de favoritos",
+  "included": "Incluido",
+  "amenities": {
+    "groups": {
+      "navigation-and-safety": "Navegación y seguridad",
+      "deck-and-cockpit": "Cubierta y bañera",
+      "interior-and-cabins": "Salón y camarotes",
+      "galley": "Cocina",
+      "entertainment-and-water-toys": "Ocio y juguetes acuáticos",
+      "systems-and-power": "Sistemas y energía",
+      "other": "Otro equipamiento"
+    },
+    "itemCount": "{count, plural, one {# elemento} other {# elementos}}",
+    "allIncluded": "Todo el equipamiento indicado está incluido en el precio del chárter.",
+    "dismissNote": "Cerrar"
+  },
+  "importantInfo": {
+    "charterCompany": "Empresa de chárter",
+    "pickUpAddress": "Dirección de recogida del yate",
+    "pickUp": "Recogida del yate",
+    "dropOff": "Entrega del yate",
+    "policies": "Condiciones de cancelación y pago",
+    "securityDeposit": "Fianza reembolsable",
+    "securityDepositNote": "La base la retiene en la entrada y la devuelve tras una entrega sin daños.",
+    "securityDepositInsured": "Se reduce a {amount} si contratas el seguro de fianza de la base.",
+    "license": "Titulación náutica",
+    "pets": "Mascotas",
+    "paymentMethods": "Métodos de pago aceptados por la empresa",
+    "marinaInfo": "Información sobre la marina",
+    "policiesVariesBySelection": "Las condiciones de cancelación y de pago anticipado varían según la opción elegida. Se confirman al generar el presupuesto y la reserva.",
+    "licenseRequired": "Se requiere una titulación náutica válida o su equivalente local.",
+    "licenseNotRequired": "No se necesita titulación al reservar con tripulación o patrón.",
+    "petsAllowedWithConfirmation": "Se admiten mascotas en este barco con la confirmación de la empresa de chárter.",
+    "petsAskBase": "La política de mascotas la fija la base de chárter: consúltala antes de reservar.",
+    "marinaInfoText": "{marina} se encuentra en {location}, {country}. Los horarios de entrada y salida los indica la base de chárter.",
+    "paymentMethod": {
+      "card": "Tarjeta",
+      "bank_transfer": "Transferencia bancaria",
+      "cash": "Efectivo"
+    }
+  },
+  "popular": {
+    "from": "Desde",
+    "perPeriod": "/ {days, plural, one {# día} other {# días}}",
+    "seeAll": "Ver todos los yates",
+    "previous": "Yates anteriores",
+    "next": "Yates siguientes"
+  },
+  "route": {
+    "start": "Inicio",
+    "finish": "Fin",
+    "day": "Día {day}",
+    "stopTitle": "Día {day} - {place}",
+    "disclaimer": "Ruta orientativa. El itinerario final y los fondeos nocturnos dependen del tiempo, la disponibilidad y la decisión del patrón."
+  },
+  "review": {
+    "count": "({count, plural, one {# opinión} other {# opiniones}})",
+    "summary": "Mostrando {shown} de {total}",
+    "empty": "Aún no hay opiniones escritas",
+    "operatorRated": "La puntuación procede de {count, plural, one {# valoración} other {# valoraciones}} de huéspedes recogidas por la empresa chárter."
+  },
+  "sidebar": {
+    "crew": "Tripulación",
+    "people": "Personas",
+    "datesPlaceholder": "Selecciona fechas",
+    "selectDates": "Por favor, selecciona las fechas para ver el precio",
+    "unavailable": "Este yate no tiene fechas disponibles",
+    "unavailableHint": "Consúltanos por otras fechas o un yate similar.",
+    "slotRefused": "Esas fechas no se pueden reservar. Elige otro periodo.",
+    "searchedPeriodRefused": "Del {from} al {to} no está disponible para este yate. Elige otro periodo o usa las fechas mostradas.",
+    "loadFailed": "No pudimos cargar el precio de esta reserva.",
+    "loadRetry": "Reintentar",
+    "pricingUnavailable": "Ahora mismo el proveedor del yate no ha podido darnos un precio para estas fechas. Suele ser algo temporal.",
+    "prepayment": "Anticipo del {percent}%",
+    "boatPrice": "Precio del barco",
+    "boatPriceHint": "Precio total del alquiler",
+    "deposit": "Fianza reembolsable",
+    "howItWorks": "Ver cómo funciona",
+    "scheduleDetails": "Qué cubre este pago",
+    "scheduleIncludes": "Incluye",
+    "scheduleSplit": "Repartido entre los dos pagos",
+    "groups": {
+      "mandatory": "Extras obligatorios",
+      "selectedExtras": "Extras seleccionados",
+      "crew": "Tripulación"
+    },
+    "payNow": "Anticipo (pagar ahora)",
+    "payAt": "Pago: {date}",
+    "payAtCheckIn": "Pago en la entrega: {date}",
+    "firstPayment": "{amount} (1.er pago)",
+    "fullPayment": "{amount} (pago íntegro)",
+    "secondPayment": "{amount} (2.º pago)",
+    "extrasPayment": "{amount} (extras)",
+    "depositNote": "+ {amount} (fianza reembolsable)",
+    "totalPrice": "Precio total",
+    "discountsHeading": "Ya incluido en el precio de arriba",
+    "dueNow": "A pagar ahora",
+    "payNowCta": "Pagar {amount}",
+    "requestBookingCta": "Enviar solicitud de reserva",
+    "requestBookingHint": "El operador de este yate confirma cada reserva personalmente. Le consultaremos tus fechas y te responderemos. No se cobra nada ahora.",
+    "requestQuote": "Solicitar presupuesto",
+    "promo": {
+      "label": "Código promocional",
+      "placeholder": "Introduce el código",
+      "apply": "Aplicar",
+      "remove": "Quitar",
+      "applied": "{amount} de descuento",
+      "rejected": {
+        "unknown_code": "No reconocemos ese código.",
+        "inactive": "Ese código ya no está activo.",
+        "not_started": "Ese código aún no es válido.",
+        "expired": "Ese código ha caducado.",
+        "usage_limit_reached": "Ese código ya se ha canjeado por completo.",
+        "not_applicable": "Ese código no se aplica a este yate."
+      }
+    },
+    "credit": {
+      "label": "Crédito de referidos",
+      "available": "{amount} disponible en esta reserva",
+      "applied": "{amount} aplicado",
+      "apply": "Aplicar",
+      "remove": "Quitar"
+    },
+    "onRequest": "Este yate se cotiza a petición",
+    "onRequestHint": "Tenemos fechas para este barco, pero ninguna tarifa publicada las cubre. Dinos cuándo te gustaría navegar y te daremos un precio.",
+    "dropOff": "Puerto de entrega",
+    "pickUp": "Recogida: {marina}",
+    "boatPriceHintDiscounted": "Precio de alquiler con descuento",
+    "depositWhenInsured": "o {amount} con la exención de daños"
+  },
+  "panels": {
+    "details": "Detalles del yate",
+    "booking": "Resumen de la reserva"
+  },
+  "tabs": {
+    "overview": "Resumen",
+    "amenities": "Comodidades",
+    "mandatory-extras": "Extras obligatorios",
+    "optional-extras": "Extras opcionales",
+    "description": "Descripción",
+    "important-info": "Información importante",
+    "suggested-route": "Ruta",
+    "review": "Opiniones",
+    "faq": "Preguntas",
+    "popular-yachts": "Yates populares"
+  },
+  "sections": {
+    "overview": "Resumen",
+    "amenities": "Comodidades",
+    "mandatoryExtras": "Extras obligatorios",
+    "optionalExtras": "Extras opcionales",
+    "description": "Descripción",
+    "media": "Vídeo y visita",
+    "importantInfo": "Información importante",
+    "suggestedRoute": "Ruta recomendada",
+    "review": "Opiniones",
+    "faq": "Preguntas frecuentes",
+    "popularYachts": "Otros yates populares"
+  },
+  "faqCategories": {
+    "booking": "Reservas",
+    "payment": "Pago",
+    "prices": "Precios",
+    "licences": "Licencias",
+    "travel": "Viaje",
+    "cancellation": "Cancelación"
+  },
+  "overview": {
+    "location": "Ubicación",
+    "mainsail": "Tipo de mayor",
+    "year": "Año",
+    "draught": "Calado",
+    "boatType": "Tipo de barco",
+    "beam": "Manga",
+    "cabins": "Camarotes",
+    "fuelTank": "Depósito de combustible",
+    "bathrooms": "Baños",
+    "waterTank": "Depósito de agua",
+    "length": "Eslora",
+    "engine": "Motor",
+    "showers": "Duchas",
+    "notSpecified": "Sin especificar"
+  },
+  "bookingRequestDialog": {
+    "title": "Solicitar esta reserva",
+    "description": "El operador confirma personalmente cada chárter de este yate. Déjanos tus datos y un experto en chárter confirmará estas fechas con él y te responderá en un día laborable.",
+    "submit": "Enviar solicitud de reserva",
+    "success": "¡Gracias! Hemos enviado tu solicitud y te contactaremos pronto."
+  },
+  "quoteDialog": {
+    "title": "Solicita un presupuesto",
+    "description": "Déjanos tus datos y un experto en chárter te enviará un presupuesto a medida para estas fechas.",
+    "submit": "Enviar solicitud",
+    "success": "¡Gracias! Nos pondremos en contacto pronto."
+  },
+  "media": {
+    "video": "Ver el vídeo",
+    "tour": "Visita 360°"
+  }
+}

@@ -1,4 +1,6 @@
 import { env } from "@yacht-charter/env/server";
+import { thrownFields } from "@yacht-charter/providers/shared/log-fields";
+import { log, parseError } from "evlog";
 import { sendEnquiryAnswerEmail, sendLeadFollowUpEmail } from "@yacht-charter/transactional";
 
 import type { LeadKind } from "../contracts/lead";
@@ -21,6 +23,7 @@ const KIND_LABELS = {
   quote_request: "quote request",
   charter_expert: "expert enquiry",
   consultation: "consultation request",
+  booking_request: "booking request",
 } satisfies Record<LeadKind, string>;
 
 export type LeadReceivedEmail = {
@@ -30,6 +33,8 @@ export type LeadReceivedEmail = {
   message?: string;
   /** The listing the enquiry names, or the one the planner recommended. */
   yacht?: { title: string; slug: string; mainImage: string | null };
+  /** The charter the sidebar was showing, which a booking request is for. */
+  charter?: { checkIn: string; checkOut: string; guests?: number; totalLabel?: string };
 };
 
 export async function notifyLeadReceived(lead: LeadReceivedEmail): Promise<void> {
@@ -48,7 +53,12 @@ export async function notifyLeadReceived(lead: LeadReceivedEmail): Promise<void>
       supportUrl: appUrl("/support"),
     });
   } catch (cause) {
-    console.error(`[email] lead follow-up to ${lead.to} failed`, cause);
+    log.error({
+      action: "email.failed",
+      email: "lead_follow_up",
+      to: lead.to,
+      ...thrownFields(parseError(cause)),
+    });
   }
 
   await notifyStaff({
@@ -57,6 +67,17 @@ export async function notifyLeadReceived(lead: LeadReceivedEmail): Promise<void>
       { label: "From", value: `${lead.name} (${lead.to})` },
       { label: "Kind", value: KIND_LABELS[lead.kind] },
       ...(lead.yacht ? [{ label: "Yacht", value: lead.yacht.title }] : []),
+      ...(lead.charter
+        ? [
+            { label: "Dates", value: `${lead.charter.checkIn} to ${lead.charter.checkOut}` },
+            ...(lead.charter.guests
+              ? [{ label: "Guests", value: String(lead.charter.guests) }]
+              : []),
+            ...(lead.charter.totalLabel
+              ? [{ label: "Quoted", value: lead.charter.totalLabel }]
+              : []),
+          ]
+        : []),
     ],
     body: lead.message,
     path: "/inbox",
@@ -90,6 +111,11 @@ export async function notifyLeadAnswered(lead: LeadAnswered): Promise<void> {
         : undefined,
     });
   } catch (cause) {
-    console.error(`[email] lead answer to ${lead.to} failed`, cause);
+    log.error({
+      action: "email.failed",
+      email: "lead_answer",
+      to: lead.to,
+      ...thrownFields(parseError(cause)),
+    });
   }
 }

@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import Supercluster, { type PointFeature } from "supercluster";
 
 import type { MapMarinaData } from "../api/queries";
-import type { MapInstance } from "@/components/shared/data-display/map-canvas";
+import type { MapInstance } from "@/components/shared/map/map-canvas";
+
+import { snapToSameHarbour } from "../lib/same-harbour";
 
 const CLUSTER_RADIUS = 60;
 /*
@@ -83,9 +85,9 @@ function hasEscaped(current: Viewport | null, next: Viewport): boolean {
 /*
  * Groups the search's marinas with supercluster so a stretch of coast reads as one count pill
  * instead of a scatter of overlapping pins. The index is rebuilt only when the marina set changes;
- * `getClusters` returns cluster features and lone-point features for the current bounds, `map-screen`
- * renders each accordingly and keeps the `supercluster` instance to expand a cluster (zoom) or list
- * its boats (tight marina).
+ * `getClusters` returns cluster features and lone-point features for the current bounds, `MarinaLayer`
+ * renders each accordingly and `useMapSelection` keeps the `supercluster` instance to expand a cluster
+ * (zoom) or list its boats (tight marina).
  *
  * The viewport is read while the camera moves rather than after it stops. Waiting for `zoomend` meant
  * a pinch ran its whole length against clusters built for the zoom it started at, and they all jumped
@@ -110,7 +112,7 @@ export function useMapClusters(marinas: MapMarinaData[], map: MapInstance | null
         accumulated.count += props.count;
       },
     });
-    const points: PointFeature<MapMarinaData>[] = marinas.map((marina) => ({
+    const points: PointFeature<MapMarinaData>[] = snapToSameHarbour(marinas).map((marina) => ({
       type: "Feature",
       properties: marina,
       geometry: { type: "Point", coordinates: [marina.lng, marina.lat] },

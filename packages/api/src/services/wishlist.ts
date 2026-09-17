@@ -1,12 +1,13 @@
-import { ORPCError } from "@orpc/server";
 import { wishlist, wishlistItem } from "@yacht-charter/db/schema/account";
 import { listing } from "@yacht-charter/db/schema/listing";
-import { listListingsByIds } from "@yacht-charter/db/search";
+import { listListingsByIds, localizeSearchDocs } from "@yacht-charter/db/search";
 import { and, count, desc, eq, inArray } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database } from "../context";
+import { listingSearchInputSchema, type savedListingCardInputSchema } from "../contracts/catalog";
 import type {
+  wishlistEntrySchema,
   wishlistIdsSchema,
   wishlistListInputSchema,
   wishlistListSchema,
@@ -14,13 +15,18 @@ import type {
   wishlistToggleSchema,
 } from "../contracts/wishlist";
 import { presentListingSummary } from "../presenters/listing";
+import { getAmenityRanks } from "./amenity-ranks";
+import { CATALOGUE_DEFAULT_BASIS, searchCharterResults } from "./charter-search";
 import { paginationFor } from "./pagination";
+import { InternalError, NotFoundError } from "../errors";
 type ListInput = z.infer<typeof wishlistListInputSchema>;
 
 type ListResult = z.infer<typeof wishlistListSchema>;
 type ToggleResult = z.infer<typeof wishlistToggleSchema>;
 type IdsResult = z.infer<typeof wishlistIdsSchema>;
 type MergeResult = z.infer<typeof wishlistMergeSchema>;
+type SavedCardOptions = z.infer<typeof savedListingCardInputSchema>;
+type SavedCard = Omit<z.infer<typeof wishlistEntrySchema>, "savedAt">;
 
 export async function listWishlist(
   db: Database,
@@ -50,14 +56,15 @@ export async function listWishlist(
   ]);
 
   const savedAtById = new Map(rows.map((row) => [row.listingId, row.savedAt.toISOString()]));
-  const docs = await listListingsByIds(
+  const listings = await presentSavedListings(
     db,
     rows.map((row) => row.listingId),
+    input,
   );
 
-  const items = docs.map((doc) => ({
-    listing: presentListingSummary(doc),
-    savedAt: savedAtById.get(doc.listingId) ?? new Date(0).toISOString(),
+  const items = listings.map((card) => ({
+    ...card,
+    savedAt: savedAtById.get(card.listing.id) ?? new Date(0).toISOString(),
   }));
 
   return {
@@ -73,6 +80,63 @@ export async function listWishlist(
   };
 }
 
+/**
+ * Saved listings as the catalogue's own cards, for the signed-in wishlist and the guest one.
+ *
+ * Priced, ranked and labelled the way a search result is. The wishlist used to present the
+ * all-in figure while the card captioned it "Boat price" as search does, so My Affair read
+ * EUR 1,433 there against EUR 1,113 in search, the gap being exactly its obligatory extras,
+ * with the line naming them missing.
+ *
+ * Given the period the visitor last searched, the boats that sell it come from that same search,
+ * narrowed to these ids, so the card carries the dates and the price (vendor, list rate, estimate
+ * or on request) the search showed for them. Without one, or for a boat that search would not
+ * list, the card prices the boat's own nearest charter: a saved week quoted at EUR 945 beside a
+ * EUR 1,000 search result for the same boat was two answers to one question.
+ */
+export async function presentSavedListings(
+  db: Database,
+  listingIds: readonly string[],
+  options: SavedCardOptions,
+): Promise<SavedCard[]> {
+  if (listingIds.length === 0) return [];
+  const [docs, amenityRanks, searched] = await Promise.all([
+    listListingsByIds(db, listingIds),
+    getAmenityRanks(db),
+    searchedPeriodCards(db, listingIds, options),
+  ]);
+  const localized = await localizeSearchDocs(db, docs, options.locale);
+  const basis = options.priceBasis ?? CATALOGUE_DEFAULT_BASIS;
+  return localized.map(
+    (doc) =>
+      searched.get(doc.listingId) ?? {
+        listing: presentListingSummary(doc, basis, amenityRanks),
+        checkIn: null,
+        checkOut: null,
+        periodIsAlternative: false,
+      },
+  );
+}
+
+async function searchedPeriodCards(
+  db: Database,
+  listingIds: readonly string[],
+  options: SavedCardOptions,
+): Promise<Map<string, SavedCard>> {
+  if (!options.startDate || !options.duration) return new Map();
+  const results = await searchCharterResults(db, {
+    ...listingSearchInputSchema.parse({
+      startDate: options.startDate,
+      duration: options.duration,
+      priceBasis: options.priceBasis,
+      locale: options.locale,
+      page: 1,
+      pageSize: listingIds.length,
+    }),
+    listingIds,
+  });
+  return new Map(results.items.map((item) => [item.listing.id, item]));
+}
 export async function listWishlistIds(db: Database, userId: string): Promise<IdsResult> {
   const wishlistId = await findWishlistId(db, userId);
   if (!wishlistId) return { listingIds: [] };
@@ -96,7 +160,7 @@ export async function addWishlistItem(
     .where(eq(listing.id, listingId))
     .limit(1);
 
-  if (!exists) throw new ORPCError("NOT_FOUND", { message: "Unknown listing" });
+  if (!exists) throw new NotFoundError({ message: "Unknown listing" });
 
   const wishlistId = await getOrCreateWishlistId(db, userId);
 
@@ -200,7 +264,7 @@ async function getOrCreateWishlistId(db: Database, userId: string): Promise<stri
   const raced = await findWishlistId(db, userId);
   if (raced) return raced;
 
-  throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Could not create a wishlist" });
+  throw new InternalError({ message: "Could not create a wishlist" });
 }
 
 function emptyPagination(input: ListInput) {

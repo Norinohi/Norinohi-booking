@@ -10,11 +10,12 @@ import { providerRecord, syncError, syncRun } from "@yacht-charter/db/schema/pro
 import { MAX_MONEY_MINOR } from "@yacht-charter/db/schema/_shared";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
 import { and, eq, gte, inArray, isNotNull, lt, lte, or, sql } from "drizzle-orm";
+import { log } from "evlog";
 import { z } from "zod";
 
 import { describeErrorChain } from "../shared/error-chain";
 
-import type { InventoryProvider } from "../provider";
+import { type InventoryProvider, supportsAvailabilitySync } from "../provider";
 import type { Database } from "../registry";
 import { AuthError, ContractError, ProviderError, toSyncErrorType } from "../shared/errors";
 import { chunked, ROW_CHUNK } from "../shared/chunks";
@@ -226,15 +227,7 @@ export interface AvailabilitySource {
  * Seasonal prices used to hang off this interface. They are catalogue data on a
  * catalogue cadence now - see `sync/price-writer.ts` for why.
  */
-export interface AvailabilitySyncProvider {
-  createAvailabilitySource(options: { resume?: JsonValue }): AvailabilitySource;
-}
-
-export function supportsAvailabilitySync(
-  provider: InventoryProvider,
-): provider is InventoryProvider & AvailabilitySyncProvider {
-  return "createAvailabilitySource" in provider;
-}
+export { type AvailabilitySyncProvider, supportsAvailabilitySync } from "../provider";
 
 /* ------------------------------------------------------------------- store */
 
@@ -1491,9 +1484,11 @@ export function createDrizzleAvailabilitySyncStore(
 
     async closeRun(input) {
       if (unstorablePrices > 0) {
-        console.warn(
-          `[availability] ${unstorablePrices} vendor amount(s) exceeded price_minor and were not stored`,
-        );
+        log.warn({
+          action: "availability.amounts_not_stored",
+          reason: "exceeded price_minor",
+          count: unstorablePrices,
+        });
       }
 
       await db

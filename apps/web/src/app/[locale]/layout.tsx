@@ -2,7 +2,7 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import { env } from "@yacht-charter/env/web";
 import type { Metadata, Viewport } from "next";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { Manrope } from "next/font/google";
 import { notFound } from "next/navigation";
 import Script from "next/script";
@@ -14,6 +14,7 @@ import { FooterGate } from "@/components/layout/footer-gate";
 import NavigationBar from "@/components/layout/navigation-bar";
 import Providers from "@/components/layout/providers";
 import QueryErrorLabels from "@/components/layout/query-error-labels";
+import { publicClientMessages } from "@/i18n/messages";
 import { routing } from "@/i18n/routing";
 import { CONSENT_BOOTSTRAP } from "@/lib/consent";
 import { getCopyrightYear } from "@/lib/copyright-year";
@@ -87,6 +88,8 @@ export default async function RootLayout({
   // separated out afterwards. No id means no tag and no banner — see packages/env/src/web.ts.
   const gaId = env.NEXT_PUBLIC_GA_ID;
 
+  const messages = publicClientMessages(await getMessages());
+
   return (
     <html lang={locale} className="light motion-safe:scroll-smooth" data-scroll-behavior="smooth">
       <body className={`${manrope.variable} antialiased`}>
@@ -105,7 +108,7 @@ export default async function RootLayout({
         <noscript>
           <style>{`[style*="opacity:0"]{opacity:1!important;transform:none!important}`}</style>
         </noscript>
-        <NextIntlClientProvider>
+        <NextIntlClientProvider messages={messages}>
           <Providers>
             <QueryErrorLabels />
             {/* Before the page content, not after: the banner is `fixed`, so DOM order costs it

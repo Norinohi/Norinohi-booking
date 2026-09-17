@@ -6,14 +6,21 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 
-import { useMoney } from "@/hooks/use-money";
-import { useQuoteLineLabel } from "@/hooks/use-quote-line-label";
+import { useExactMoney } from "@/hooks/use-money";
+import { Link } from "@/i18n/navigation";
 import { dayToDisplay } from "@/lib/date";
 
+import { useLineRateLabel } from "../../hooks/use-line-rate-label";
+import { useQuoteLineLabel } from "../../hooks/use-quote-line-label";
 import type { BookingValues } from "../../lib/booking-form";
+import { dayWithHandover } from "../../lib/handover";
 import { useBooking } from "../booking-provider";
+import { ScheduleBreakdown } from "../summary/payment-schedule";
 
 const CONSENTS = ["terms", "cancellation"] as const;
+
+/* A new tab, so reading the document does not throw away the booking form behind it. */
+const CONSENT_DOCUMENTS = { terms: "/terms", cancellation: "/cancellation-policy" } as const;
 
 /** Payment-schedule `kind` to the message that names it. Mirrors the yacht page's own map. */
 const SCHEDULE_LABEL = {
@@ -62,17 +69,23 @@ export default function ReviewAndBookStep() {
   const t = useTranslations("Booking.review");
   const tCard = useTranslations("Common.boatCard");
   const tCrew = useTranslations("Common.crewTypes");
-  const money = useMoney();
+  const money = useExactMoney();
   const format = useFormatter();
   const { control } = useFormContext<BookingValues>();
   const { listing, quote } = useBooking();
   const labelOf = useQuoteLineLabel();
+  const rateOf = useLineRateLabel(
+    listing ? [...listing.mandatoryExtras, ...listing.optionalExtras] : undefined,
+  );
 
   const day = (date: string) => format.dateTime(dayToDisplay(date), "dayShort");
+  /* The same handover the sidebar shows beside these dates: the offer's, else the base's. */
+  const checkInTime = quote?.checkInTime ?? listing?.base.checkInTime;
+  const checkOutTime = quote?.checkOutTime ?? listing?.base.checkOutTime;
 
   const base = quote?.lines.find((line) => line.kind === "base");
   const optionalNames = (quote?.lines ?? [])
-    .filter((line) => line.group === "optional")
+    .filter((line) => line.group === "optional" || line.group === "requested")
     .map((line) => labelOf(line))
     .join(", ");
 
@@ -119,7 +132,10 @@ export default function ReviewAndBookStep() {
   const rows: SummaryRow[] = quote
     ? [
         { label: t("yacht"), value: listing?.title ?? "" },
-        { label: t("dates"), value: `${day(quote.checkIn)} \u2192 ${day(quote.checkOut)}` },
+        {
+          label: t("dates"),
+          value: `${dayWithHandover(day(quote.checkIn), checkInTime)} \u2192 ${dayWithHandover(day(quote.checkOut), checkOutTime)}`,
+        },
         { label: t("crew"), value: quote.crewType ? tCrew(quote.crewType) : "" },
         { label: t("people"), value: String(quote.guests) },
         { label: t("extras"), value: optionalNames || t("noExtras") },
@@ -127,10 +143,21 @@ export default function ReviewAndBookStep() {
           label: t("boatPrice"),
           value: money((base ?? quote.lines[0])?.amount.amountMinor ?? 0, quote.total.currency),
         },
-        ...priced.map((line) => ({
-          label: labelOf(line),
-          value: money(line.amount.amountMinor, line.amount.currency),
-        })),
+        ...priced.map((line) => {
+          const rate = rateOf(line);
+          const total = money(line.amount.amountMinor, line.amount.currency);
+          return {
+            label: labelOf(line),
+            value: rate ? (
+              <span className="flex flex-col">
+                {total}
+                <span className="text-sm leading-[1.3] font-medium text-natural-500">{rate}</span>
+              </span>
+            ) : (
+              total
+            ),
+          };
+        }),
         {
           label: t("totalPrice"),
           value: money(quote.total.amountMinor, quote.total.currency),
@@ -147,7 +174,12 @@ export default function ReviewAndBookStep() {
         ...depositRows,
         ...schedule.map((entry) => ({
           label: scheduleLabel(entry),
-          value: money(entry.amount.amountMinor, entry.amount.currency),
+          value: (
+            <span className="inline-flex items-center gap-1.5">
+              {money(entry.amount.amountMinor, entry.amount.currency)}
+              <ScheduleBreakdown entry={entry} lines={quote.lines} />
+            </span>
+          ),
         })),
         {
           label: t("dueNow"),
@@ -206,7 +238,18 @@ export default function ReviewAndBookStep() {
                     aria-invalid={fieldState.error ? true : undefined}
                   />
                   <span className="min-w-0 flex-1 text-base leading-[1.4] text-foreground">
-                    {t.rich(consent, { b: (chunks) => <b className="font-bold">{chunks}</b> })}
+                    {t.rich(consent, {
+                      link: (chunks) => (
+                        <Link
+                          href={CONSENT_DOCUMENTS[consent]}
+                          target="_blank"
+                          rel="noopener"
+                          className="font-bold text-brand underline underline-offset-2"
+                        >
+                          {chunks}
+                        </Link>
+                      ),
+                    })}
                   </span>
                 </label>
                 {fieldState.error ? (

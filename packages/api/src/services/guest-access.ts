@@ -1,10 +1,10 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
-import { ORPCError } from "@orpc/server";
 import { booking } from "@yacht-charter/db/schema/booking";
 import { eq } from "drizzle-orm";
 
 import type { Database } from "../context";
+import { NotFoundError, UnauthorizedError } from "../errors";
 
 /*
  * How someone who never signed in reaches their own booking.
@@ -50,7 +50,7 @@ export async function resolveBookingActor(
   if (sessionUserId) return sessionUserId;
 
   if (!accessToken) {
-    throw new ORPCError("UNAUTHORIZED", {
+    throw new UnauthorizedError({
       message: "Sign in, or use the link from your booking confirmation",
     });
   }
@@ -64,7 +64,7 @@ export async function resolveBookingActor(
   // Same answer for an unknown booking and a wrong token: distinguishing them turns
   // this into an oracle for which booking ids exist.
   if (!row?.tokenHash || !matches(row.tokenHash, accessToken)) {
-    throw new ORPCError("NOT_FOUND", { message: "Unknown booking" });
+    throw new NotFoundError({ message: "Unknown booking" });
   }
 
   return row.userId;

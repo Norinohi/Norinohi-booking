@@ -11,7 +11,7 @@ import { cva, type VariantProps } from "class-variance-authority";
  * start/end slots hold 24px icons or a control (Checkbox, Radio…).
  */
 const menuItemVariants = cva(
-  "flex w-full items-center gap-2 text-sm font-semibold capitalize tracking-[0.02em] outline-none [&_svg]:size-6",
+  "flex w-full items-center gap-2 text-sm font-semibold tracking-[0.02em] outline-none [&_svg]:size-6",
   {
     variants: {
       variant: {
@@ -51,7 +51,7 @@ function Menu({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="menu"
       className={cn(
-        "flex min-w-50 flex-col gap-2 rounded-lg border border-input bg-popover px-4 py-3 text-popover-foreground shadow-[4px_4px_10px_rgba(0,0,0,0.1)]",
+        "flex min-w-50 flex-col gap-2 rounded-lg border border-input bg-popover px-4 py-3 text-popover-foreground shadow-popover",
         className,
       )}
       {...props}

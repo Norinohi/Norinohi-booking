@@ -2,6 +2,8 @@ import "dotenv/config";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
+import { PROVIDER_KEYS } from "./providers";
+
 export const env = createEnv({
   server: {
     DATABASE_URL: z.string().min(1),
@@ -41,7 +43,7 @@ export const env = createEnv({
     OPENAPI_SERVER_URL: z.url().optional(),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
     PORT: z.coerce.number().int().positive().default(3000),
-    PROVIDER_MODE: z.enum(["mock", "booking_manager", "nausys"]).default("mock"),
+    PROVIDER_MODE: z.enum(PROVIDER_KEYS).default("mock"),
     // Optional as a pair: the Google sign-in button only works when both are set,
     // and packages/auth registers the provider only when both are present.
     GOOGLE_CLIENT_ID: z.string().min(1).optional(),
@@ -253,6 +255,14 @@ export const env = createEnv({
     // MMK support confirmed (Aug 2026) every non-/offers datetime is a fixed CET
     // clock that observes daylight saving, so this must stay a real IANA zone.
     BOOKING_MANAGER_TIMEZONE: z.string().min(1).default("Europe/Zagreb"),
+    /*
+     * The nightly price-weeks job (docs/scheduled-jobs.md): how many Saturday weeks ahead it
+     * asks both vendors to price for the whole fleet, and the wall clock it may spend doing so
+     * (45 minutes) before it stops and leaves the rest to the next night. The budget includes
+     * any wait for the availability sweep to release its lock.
+     */
+    PRICE_WEEKS_COUNT: z.coerce.number().int().min(1).max(104).default(26),
+    PRICE_WEEKS_BUDGET_MS: z.coerce.number().int().positive().default(2_700_000),
   },
   runtimeEnv: process.env,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

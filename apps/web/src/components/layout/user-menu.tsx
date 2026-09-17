@@ -15,9 +15,15 @@ import {
 import { User } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { Fragment } from "react";
 
-import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
-import { ACCOUNT_NAV_HREFS, ADMIN_NAV, type AccountNavItem } from "./account-nav";
+import { authClient } from "@/lib/auth-client";
+import {
+  ACCOUNT_NAV_HREFS,
+  type AccountNavItem,
+  canSeeNavSection,
+  NAV_SECTIONS,
+} from "./account-nav";
 
 /*
  * UserMenu — Figma "Dropdowns" account menu (972:53920). A bare User icon opens a white
@@ -33,12 +39,12 @@ import { ACCOUNT_NAV_HREFS, ADMIN_NAV, type AccountNavItem } from "./account-nav
  */
 
 const ITEM =
-  "w-full cursor-pointer rounded-none px-0 py-2 text-sm leading-[1.2] font-semibold tracking-[0.02em] text-foreground capitalize focus:bg-transparent focus:text-brand";
+  "w-full cursor-pointer rounded-none px-0 py-2 text-sm leading-[1.2] font-semibold tracking-[0.02em] text-foreground focus:bg-transparent focus:text-brand";
 
 /* The submenu wears the same card as the menu it grew out of, so a nested list reads as the
    same surface one step across rather than a differently-styled popover. */
 const PANEL =
-  "flex w-52.75 flex-col gap-2 rounded-lg border border-natural-100 bg-card px-4 py-3 shadow-[4px_4px_10px_rgba(0,0,0,0.1)] ring-0";
+  "flex w-52.75 flex-col gap-2 rounded-lg border border-natural-100 bg-card px-4 py-3 shadow-popover ring-0";
 
 /* Admin rows whose page doesn't exist yet have no href and are simply left out here — the
    dropdown has no inert-row treatment, and a menu entry that goes nowhere is worse than absent. */
@@ -58,7 +64,11 @@ export default function UserMenu() {
   const tAdmin = useTranslations("Layout.Sidebar");
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
-  const isStaff = isStaffRole(userRole(session?.user));
+  /* The account rows are written out below with this menu's own labels, so only the
+   * role-gated sections come from the shared list. */
+  const roleSections = NAV_SECTIONS.filter(
+    (section) => section.key !== "account" && canSeeNavSection(section, session?.user),
+  );
 
   /* The trigger is the same icon signed in or out, so it must not wait on the session:
    * SSR renders with isPending true while the client resolves it from the cookie cache
@@ -87,10 +97,10 @@ export default function UserMenu() {
             <DropdownMenuItem className={ITEM} onClick={() => router.push("/profile/credits")}>
               {t("credits")}
             </DropdownMenuItem>
-            {isStaff ? (
-              <>
+            {roleSections.map((section) => (
+              <Fragment key={section.key}>
                 <DropdownMenuSeparator className="mx-0 my-0 bg-natural-100" />
-                {ADMIN_NAV.map((entry) =>
+                {section.entries.map((entry) =>
                   entry.kind === "group" ? (
                     <DropdownMenuSub key={entry.group}>
                       <DropdownMenuSubTrigger className={ITEM}>
@@ -106,8 +116,8 @@ export default function UserMenu() {
                     <AdminItem key={entry.item} item={entry.item} label={tAdmin(entry.item)} />
                   ),
                 )}
-              </>
-            ) : null}
+              </Fragment>
+            ))}
             <DropdownMenuItem
               className={`${ITEM} text-error-500 focus:text-error-600`}
               onClick={() =>

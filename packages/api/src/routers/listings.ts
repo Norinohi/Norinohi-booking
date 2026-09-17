@@ -4,7 +4,6 @@ import {
   getListingDetailByIdOrSlug,
   getMergedListingTarget,
   listListingReviews,
-  listListingsByIds,
   listSimilarListings,
   type PriceBasis,
 } from "@yacht-charter/db/search";
@@ -12,6 +11,7 @@ import { z } from "zod";
 
 import {
   listingDetailSchema,
+  listingResultItemSchema,
   listingSummarySchema,
   listingsByIdsInputSchema,
   recordListingViewInputSchema,
@@ -23,6 +23,7 @@ import { getAmenityRanks } from "../services/amenity-ranks";
 import { presentListingDetail, presentListingSummary } from "../presenters/listing";
 import { getMarketplaceSettings } from "../services/marketplace-settings";
 import { recordListingView } from "../services/listing-view";
+import { presentSavedListings } from "../services/wishlist";
 
 const idInputSchema = z.object({
   id: z.string(),
@@ -100,7 +101,7 @@ export const listingsRouter = {
       operationId: "listListingsByIds",
       summary: "List listing summaries by id",
       description:
-        "Hydrates card-ready listing summaries for an explicit set of listing IDs, in the order requested. Backs the guest wishlist, which stores only IDs in the browser. IDs that no longer resolve to a published listing are dropped from the response rather than failing the call.",
+        "Hydrates card-ready listing summaries for an explicit set of listing IDs, in the order requested. Backs the guest wishlist, which stores only IDs in the browser. Priced on priceBasis (the boat alone by default) and labelled in locale, exactly as the search results are. With startDate and duration, a listing that sells that period is priced and dated for it as the search for it would be; the rest keep their own nearest charter. IDs that no longer resolve to a published listing are dropped from the response rather than failing the call.",
       tags: ["Listings"],
       successDescription: "Listing summaries for the IDs that still resolve, in request order.",
       spec: withJsonBodyExample({
@@ -108,15 +109,8 @@ export const listingsRouter = {
       }),
     })
     .input(listingsByIdsInputSchema)
-    .output(z.array(listingSummarySchema))
-    .handler(async ({ context, input }) => {
-      const docs = await listListingsByIds(context.db, input.listingIds);
-      const [basis, amenityRanks] = await Promise.all([
-        catalogueBasis(context.db),
-        getAmenityRanks(context.db),
-      ]);
-      return docs.map((doc) => presentListingSummary(doc, basis, amenityRanks));
-    }),
+    .output(z.array(listingResultItemSchema))
+    .handler(({ context, input }) => presentSavedListings(context.db, input.listingIds, input)),
   recordView: publicProcedure
     .route({
       method: "POST",

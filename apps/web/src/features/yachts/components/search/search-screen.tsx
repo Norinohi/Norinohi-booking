@@ -2,15 +2,25 @@
 
 import { buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
+import { useBreakpoint } from "@yacht-charter/ui/hooks/use-breakpoint";
+import { cn } from "@yacht-charter/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type ReactNode, Suspense, useMemo } from "react";
+import {
+  type ReactNode,
+  type RefObject,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import { type AppPathname, Link, useRouter } from "@/i18n/navigation";
-import { parseAsInteger, parseAsStringLiteral, useQueryState } from "nuqs";
+import { createParser, parseAsStringLiteral, useQueryState } from "nuqs";
 
-import BoatCard from "@/components/shared/data-display/boat-card";
+import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
 import { Image } from "@/components/shared/data-display/image";
 import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
@@ -36,6 +46,15 @@ import ResultsHeader, { SORT_OPTIONS, type SortValue } from "./results-header";
 import SearchBar from "./search-bar";
 
 const YACHTS_MAP_HREF = "/yachts/map";
+
+/* `page=0` went to the API as is and came back a 400, which the screen read as no yachts. */
+const parseAsPage = createParser({
+  parse: (query: string) => {
+    const page = Number(query);
+    return Number.isSafeInteger(page) && page >= 1 ? page : null;
+  },
+  serialize: String,
+});
 
 /* The page container every other screen uses — the navigation bar and footer included, which is
    what keeps the search bar and the results grid on the same edges as the header at every width. */
@@ -79,7 +98,10 @@ function useResultOrder() {
     "sort",
     parseAsStringLiteral(SORT_OPTIONS).withDefault("recommended"),
   );
-  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
+  const [page, setPage] = useQueryState(
+    "page",
+    parseAsPage.withDefault(1).withOptions({ history: "push" }),
+  );
 
   return {
     sort,
@@ -131,10 +153,7 @@ function MapCardLink({ href }: { href: AppPathname }) {
   const t = useTranslations("Yachts");
 
   return (
-    <Link
-      href={href}
-      className={buttonVariants({ variant: "neutral", className: "relative capitalize" })}
-    >
+    <Link href={href} className={buttonVariants({ variant: "neutral", className: "relative" })}>
       <Search />
       {t("searchByMap")}
     </Link>
@@ -161,22 +180,66 @@ function FilteredMapCardLink({ locked }: { locked?: LockedFilters }) {
   return <MapCardLink href={query ? `${YACHTS_MAP_HREF}?${query}` : YACHTS_MAP_HREF} />;
 }
 
-function SearchBarSection({ locked }: { locked?: LockedFilters }) {
+function SearchBarSection({
+  locked,
+  resultsRef,
+  pendingFlexibility,
+  clearPendingFlexibility,
+}: {
+  locked?: LockedFilters;
+  resultsRef: RefObject<HTMLDivElement | null>;
+  /* A flexibility picked in the panel and not applied there, which this submit carries. */
+  pendingFlexibility: string | null;
+  clearPendingFlexibility: () => void;
+}) {
   const { filters, applyFilters } = useApplyFilters(locked);
+  /* Where the results column stops sitting beside the search bar and drops below the map card. */
+  const resultsBesideBar = useBreakpoint("lg");
 
-  return <SearchBar value={filters} onSearch={applyFilters} />;
+  /* Below `lg` the results start a screen further down, so a search changed nothing the visitor
+     could see and read as a button that did not work. */
+  function search(next: FiltersState) {
+    applyFilters(
+      pendingFlexibility === null ? next : { ...next, dateFlexibility: pendingFlexibility },
+    );
+    clearPendingFlexibility();
+    if (!resultsBesideBar) {
+      resultsRef.current?.scrollIntoView({ block: "start" });
+    }
+  }
+
+  return <SearchBar value={filters} onSearch={search} />;
 }
 
-function FiltersAside({ locked }: { locked?: LockedFilters }) {
+function FiltersAside({
+  locked,
+  onDateFlexibilityChange,
+  clearPendingFlexibility,
+}: {
+  locked?: LockedFilters;
+  onDateFlexibilityChange: (next: string) => void;
+  clearPendingFlexibility: () => void;
+}) {
   const { filters, applyFilters } = useApplyFilters(locked);
-  const filtersRef = useFillToFold("64rem");
+
+  function apply(next: FiltersState) {
+    applyFilters(next);
+    clearPendingFlexibility();
+  }
+  const filtersRef = useFillToFold("lg");
 
   return (
     <div
       ref={filtersRef}
       className="hidden lg:sticky lg:top-[calc(var(--header-h)+1.5rem)] lg:flex lg:max-h-[calc(100dvh-var(--header-h)-3rem)] lg:flex-col"
     >
-      <FiltersPanel scrollable className="min-h-0 flex-1" value={filters} onApply={applyFilters} />
+      <FiltersPanel
+        scrollable
+        className="min-h-0 flex-1"
+        value={filters}
+        onApply={apply}
+        onDateFlexibilityChange={onDateFlexibilityChange}
+      />
     </div>
   );
 }
@@ -185,15 +248,23 @@ function ResultsColumn({ locked }: { locked?: LockedFilters }) {
   const t = useTranslations("Yachts");
   useRememberSearch();
   const { filters, defaults, applyFilters } = useApplyFilters(locked);
-  const { sort, setSort, page, setPage, firstPage } = useResultOrder();
+  const { sort, setSort, page, setPage } = useResultOrder();
   const priceBasis = usePriceBasis();
 
   const { toCard } = useListingCards();
   const input = useSearchInput(filters, defaults, { sort, page });
-  const { data, isLoading } = useQuery(resultsQueryOptions(input));
+  const { data, isLoading, isPlaceholderData } = useQuery(resultsQueryOptions(input));
   const boats = data?.items.map((item) => toCard(item.listing, item)) ?? [];
   const pagination = data?.pagination;
   const chips = useFilterChips(filters);
+
+  /* A page past the end, from an old link or a search that shrank, lands on the last real one. */
+  const lastPage = pagination ? Math.ceil(pagination.totalItems / pagination.pageSize) : null;
+  useEffect(() => {
+    if (!isPlaceholderData && lastPage !== null && lastPage > 0 && page > lastPage) {
+      void setPage(lastPage);
+    }
+  }, [isPlaceholderData, lastPage, page, setPage]);
 
   function removeChip(chip: FilterChip) {
     applyFilters(clearFilterKeys(filters, chip.keys, defaults));
@@ -206,24 +277,36 @@ function ResultsColumn({ locked }: { locked?: LockedFilters }) {
       <ResultsHeader
         chips={chips}
         onRemoveChip={removeChip}
-        total={pagination?.totalItems ?? 0}
+        total={pagination?.totalItems}
         sort={sort}
         onSortChange={setSort}
         priceBasis={priceBasis.option}
         onPriceBasisChange={(next) => {
           /* The order and the price filter both read the basis, so page 3 of one is not page 3
-             of the other. */
+             of the other. A moved price slider is cleared rather than carried: its euros named
+             the other figure, and the obligatory extras differ per boat, so no conversion keeps
+             the same boats in. */
           void priceBasis.setOption(next);
-          firstPage();
+          applyFilters(clearFilterKeys(filters, ["price"], defaults));
         }}
       />
 
-      {isLoading ? (
+      {isLoading || (isPlaceholderData && boats.length === 0) ? (
         <Loader />
       ) : boats.length === 0 ? (
         <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
       ) : (
-        boats.map((boat, index) => <BoatCard key={boat.id} {...boat} priority={index === 0} />)
+        <div
+          aria-busy={isPlaceholderData}
+          className={cn(
+            "flex flex-col gap-5 transition-opacity",
+            isPlaceholderData && "opacity-60",
+          )}
+        >
+          {boats.map((boat, index) => (
+            <YachtCard key={boat.id} layout="row" {...boat} openInNewTab priority={index === 0} />
+          ))}
+        </div>
       )}
 
       {pagination && pagination.totalItems > 0 ? (
@@ -269,6 +352,9 @@ export default function SearchScreen({
   footer?: ReactNode;
 }) {
   const t = useTranslations("Yachts");
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const [pendingFlexibility, setPendingFlexibility] = useState<string | null>(null);
+  const clearPendingFlexibility = () => setPendingFlexibility(null);
 
   return (
     <div className="flex flex-col">
@@ -279,7 +365,12 @@ export default function SearchScreen({
               boundary all the same, or it never reaches the HTML a crawler receives. */}
           <h1 className="sr-only">{heading ?? t("heading")}</h1>
           <Suspense fallback={null}>
-            <SearchBarSection locked={locked} />
+            <SearchBarSection
+              locked={locked}
+              resultsRef={resultsRef}
+              pendingFlexibility={pendingFlexibility}
+              clearPendingFlexibility={clearPendingFlexibility}
+            />
           </Suspense>
         </div>
       </div>
@@ -311,11 +402,15 @@ export default function SearchScreen({
             </div>
 
             <Suspense fallback={null}>
-              <FiltersAside locked={locked} />
+              <FiltersAside
+                locked={locked}
+                onDateFlexibilityChange={setPendingFlexibility}
+                clearPendingFlexibility={clearPendingFlexibility}
+              />
             </Suspense>
           </aside>
 
-          <div className="flex min-w-0 flex-col gap-5">
+          <div ref={resultsRef} className="flex min-w-0 scroll-mt-(--header-h) flex-col gap-5">
             {/* `Loader` is the component's own pending UI, reused rather than a new skeleton. */}
             <Suspense fallback={resultsFallback ?? <Loader />}>
               <ResultsColumn locked={locked} />

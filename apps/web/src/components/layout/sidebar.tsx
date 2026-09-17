@@ -1,24 +1,30 @@
 "use client";
 
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@yacht-charter/ui/components/overlay/sheet";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Menu } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { usePathname } from "@/i18n/navigation";
 import { useEffect, useId, useState } from "react";
 
-import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 import {
-  ACCOUNT_NAV,
   ACCOUNT_NAV_HREFS,
-  ADMIN_NAV,
   type AccountNavItem,
   type AdminGroupKey,
-  type NavEntry,
+  canSeeNavSection,
+  NAV_SECTIONS,
+  type NavSection,
 } from "./account-nav";
 
 /*
- * Sidebar — Figma "Sidebar" (Reusable Sections, nodes 845:207497 User / 853:58498 Admin).
+ * Sidebar, Figma "Sidebar" (Reusable Sections, nodes 845:207497 User / 853:58498 Admin).
  * Account menu card: a greeting header over a soft wash, then rows with an active highlight
  * (brand-50 + brand text) and a destructive "Log Out". Admin adds "Inbox", "Payments",
  * "Yachts", "Content", "Discount Manager" and "Audit Log", the middle two expanding into
@@ -31,6 +37,10 @@ import {
  * The rows themselves stay identical - tinting the admin half would collide with the active
  * and hover states, which are the only colours in here that mean anything. A non-staff
  * session gets no headings at all: one group needs no name to be told apart from nothing.
+ *
+ * Below lg the page stacks, and a staff menu stacked above the content pushed every screen's
+ * title more than a full phone screen down. There the menu is a compact row naming the current
+ * page, opening the same menu in a sheet.
  */
 
 interface SidebarProps {
@@ -54,27 +64,24 @@ export default function Sidebar({
   /* Staff/admin sessions see the admin rows on every profile page, not only where a screen
    * passes variant="admin". */
   const { data: session } = authClient.useSession();
-  const isStaffUser = isStaffRole(userRole(session?.user));
   /* Role-driven rows only after hydration: the session atom is empty during SSR but may
    * already be filled on the first client render, and that difference is a hydration
    * mismatch. variant="admin" comes from the server, so it needs no gate. */
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
-  const isStaff = variant === "admin" || (hydrated && isStaffUser);
+  const reader = hydrated ? session?.user : null;
 
   /* Only the groups the reader has touched are recorded; the rest fall back to "open iff the
    * current page is inside it", so arriving on /listings shows where you are without a click
    * and collapsing it afterwards still sticks. */
   const [toggled, setToggled] = useState<Partial<Record<AdminGroupKey, boolean>>>({});
 
-  const headingId = useId();
-  const groups: readonly { key: "account" | "admin"; entries: readonly NavEntry[] }[] = isStaff
-    ? [
-        { key: "account", entries: ACCOUNT_NAV },
-        { key: "admin", entries: ADMIN_NAV },
-      ]
-    : [{ key: "account", entries: ACCOUNT_NAV }];
-  const showHeadings = groups.length > 1;
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const groups = NAV_SECTIONS.filter(
+    (section) =>
+      (variant === "admin" && section.key === "admin") || canSeeNavSection(section, reader),
+  );
 
   /* Longest match wins so /profile/bookings activates "bookings", not its /profile prefix. */
   const activeFromPath = [...ACCOUNT_NAV_HREFS]
@@ -82,23 +89,93 @@ export default function Sidebar({
     .sort(([, a], [, b]) => b.length - a.length)[0]?.[0];
   const active = activeFromPath ?? defaultActive;
 
+  const menu = (
+    <SidebarMenu
+      name={name}
+      groups={groups}
+      active={active}
+      toggled={toggled}
+      onToggle={(key, open) => setToggled((prev) => ({ ...prev, [key]: open }))}
+      onLogout={onLogout}
+      onNavigate={() => setSheetOpen(false)}
+    />
+  );
+
   return (
-    <nav
-      aria-label={t("menu")}
-      className={cn(
-        /* Sticky from lg (where it sits beside the content): pinned 96px below the top —
-           the 72px sticky navbar plus the page's 24px block padding (80px navbar at 2xl).
-           Capped to what is left of the viewport and scrolling inside that, because a staff
-           menu is ~976px tall: taller than the pin leaves, so without the cap `sticky` has
-           nothing to pin and the menu rides the page down. Someone reading the bottom of a
-           long table would have to scroll all the way back up to change screen.
-           `overflow-hidden` still governs the x axis, which is what keeps the header art
-           inside the rounded corners. */
-        "w-full max-w-83.5 overflow-hidden rounded-lg border border-border bg-card lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7.5rem)] lg:overflow-y-auto lg:scrollbar-thin 2xl:top-26 2xl:max-h-[calc(100dvh-8rem)]",
-        className,
-      )}
-    >
-      {/* Header — Figma Title frame is 151px tall: greeting sits at y104 over the art, 16px sides/bottom.
+    <>
+      <Sheet side="left" open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetTrigger
+          className={cn(
+            "flex w-full cursor-pointer items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left outline-none transition-colors hover:bg-natural-50 focus-visible:bg-natural-50 lg:hidden",
+            className,
+          )}
+        >
+          <Menu aria-hidden className="size-5 shrink-0 text-natural-500" />
+          <span className="flex min-w-0 flex-col">
+            <span className="text-xs leading-[1.4] font-semibold tracking-wide text-natural-500 uppercase">
+              {t("trigger")}
+            </span>
+            <span className="truncate text-base leading-[1.4] font-semibold text-foreground">
+              {t(active)}
+            </span>
+          </span>
+        </SheetTrigger>
+        <SheetContent showClose className="gap-0 p-0">
+          <SheetTitle className="sr-only">{t("menu")}</SheetTitle>
+          <nav aria-label={t("menu")} className="w-full bg-card">
+            {menu}
+          </nav>
+        </SheetContent>
+      </Sheet>
+
+      <nav
+        aria-label={t("menu")}
+        className={cn(
+          /* Sticky from lg (where it sits beside the content): pinned 96px below the top,
+             the 72px sticky navbar plus the page's 24px block padding (80px navbar at 2xl).
+             Capped to what is left of the viewport and scrolling inside that, because a staff
+             menu is ~976px tall: taller than the pin leaves, so without the cap `sticky` has
+             nothing to pin and the menu rides the page down. Someone reading the bottom of a
+             long table would have to scroll all the way back up to change screen.
+             `overflow-hidden` still governs the x axis, which is what keeps the header art
+             inside the rounded corners. */
+          "hidden w-full max-w-83.5 overflow-hidden rounded-lg border border-border bg-card lg:sticky lg:top-24 lg:block lg:max-h-[calc(100dvh-7.5rem)] lg:overflow-y-auto lg:scrollbar-thin 2xl:top-26 2xl:max-h-[calc(100dvh-8rem)]",
+          className,
+        )}
+      >
+        {menu}
+      </nav>
+    </>
+  );
+}
+
+interface SidebarMenuProps {
+  name: string;
+  groups: readonly NavSection[];
+  active: AccountNavItem;
+  toggled: Partial<Record<AdminGroupKey, boolean>>;
+  onToggle: (group: AdminGroupKey, open: boolean) => void;
+  onLogout?: () => void;
+  onNavigate: () => void;
+}
+
+/* Rendered once per place it can appear, so each copy mints its own heading and panel ids. */
+function SidebarMenu({
+  name,
+  groups,
+  active,
+  toggled,
+  onToggle,
+  onLogout,
+  onNavigate,
+}: SidebarMenuProps) {
+  const t = useTranslations("Layout.Sidebar");
+  const headingId = useId();
+  const showHeadings = groups.length > 1;
+
+  return (
+    <>
+      {/* Header, the Figma Title frame (151px tall): greeting sits at y104 over the art, 16px sides/bottom.
           The nautical line art is the Figma Title group (845:206855) cropped to its visible
           660x151 band via viewBox; a wash fades it out under the greeting like the mock. */}
       <div className="relative px-4 pt-26 pb-4">
@@ -141,18 +218,29 @@ export default function Sidebar({
                       panelId={`${headingId}-${entry.group}`}
                       isOpen={toggled[entry.group] ?? entry.items.includes(active)}
                       hasActiveChild={entry.items.includes(active)}
-                      onToggle={(open) => setToggled((prev) => ({ ...prev, [entry.group]: open }))}
+                      onToggle={(open) => onToggle(entry.group, open)}
                     >
                       {entry.items.map((item) => (
                         <li key={item}>
-                          <Row item={item} isActive={active === item} label={t(item)} nested />
+                          <Row
+                            item={item}
+                            isActive={active === item}
+                            label={t(item)}
+                            nested
+                            onNavigate={onNavigate}
+                          />
                         </li>
                       ))}
                     </ExpandableRow>
                   </li>
                 ) : (
                   <li key={entry.item}>
-                    <Row item={entry.item} isActive={active === entry.item} label={t(entry.item)} />
+                    <Row
+                      item={entry.item}
+                      isActive={active === entry.item}
+                      label={t(entry.item)}
+                      onNavigate={onNavigate}
+                    />
                   </li>
                 ),
               )}
@@ -168,7 +256,7 @@ export default function Sidebar({
           {t("logout")}
         </button>
       </div>
-    </nav>
+    </>
   );
 }
 
@@ -180,11 +268,13 @@ function Row({
   isActive,
   label,
   nested = false,
+  onNavigate,
 }: {
   item: AccountNavItem;
   isActive: boolean;
   label: string;
   nested?: boolean;
+  onNavigate: () => void;
 }) {
   const href = ACCOUNT_NAV_HREFS.get(item);
   const className = cn(
@@ -206,7 +296,12 @@ function Row({
   }
 
   return (
-    <Link href={href} aria-current={isActive ? "page" : undefined} className={className}>
+    <Link
+      href={href}
+      aria-current={isActive ? "page" : undefined}
+      className={className}
+      onClick={onNavigate}
+    >
       {label}
     </Link>
   );

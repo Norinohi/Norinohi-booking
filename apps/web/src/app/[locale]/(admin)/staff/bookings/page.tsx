@@ -1,9 +1,10 @@
 import { getLocale, getTranslations } from "next-intl/server";
 
 import Hydrated from "@/components/shared/layout/hydrated";
+import { getSessionUser } from "@/lib/auth/server";
 import { buildMetadata } from "@/lib/seo";
 
-import { BookingsScreen, getAdminUser, prefetchAdminBookings } from "@/features/admin";
+import { BookingsScreen, prefetchAdminBookings } from "@/features/admin";
 
 /*
  * Under /staff for the same reason its [id] sibling is: (admin) is URL-invisible, so filing
@@ -29,7 +30,7 @@ export async function generateMetadata() {
 export default async function StaffBookingsPage() {
   /* The (admin) layout already redirected anyone without the staff role, so this only reads
    * the cached session back for the sidebar greeting. */
-  const user = await getAdminUser();
+  const user = await getSessionUser();
 
   return (
     <Hydrated prefetch={prefetchAdminBookings}>

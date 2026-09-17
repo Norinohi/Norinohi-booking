@@ -1,0 +1,22 @@
+{
+  "title": "Meine Buchungen",
+  "history": "Verlauf",
+  "anyDates": "Beliebiger Zeitraum",
+  "clearDates": "Zeitraum löschen",
+  "emptyTitle": "Noch keine Yachten",
+  "emptyDescription": "Entdecken Sie Yachten und planen Sie Ihre erste Reise - Ihre Buchungen erscheinen hier.",
+  "cancel": {
+    "action": "Buchung stornieren",
+    "title": "Diese Buchung stornieren?",
+    "description": "Das lässt sich nicht rückgängig machen, und das Charterunternehmen wird benachrichtigt.",
+    "reasonLabel": "Grund (optional)",
+    "reasonPlaceholder": "Sagen Sie uns, warum Sie stornieren",
+    "confirm": "Buchung stornieren",
+    "keep": "Buchung behalten",
+    "success": "Ihre Buchung wurde storniert.",
+    "error": "Ihre Buchung konnte nicht storniert werden. Bitte versuchen Sie es erneut."
+  },
+  "statusCancelled": "Storniert",
+  "payBalance": "{amount} zahlen",
+  "completePayment": "Zahlung abschließen {amount}"
+}

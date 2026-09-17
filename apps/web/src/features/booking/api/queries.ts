@@ -1,6 +1,6 @@
 import type { AppRouterClient } from "@yacht-charter/api/routers/index";
 
-import { orpc } from "@/utils/orpc";
+import { client, orpc } from "@/utils/orpc";
 
 /*
  * The booking flow's live calls. A quote is a firm price frozen for a short window and checkout
@@ -82,12 +82,19 @@ export type BookingDetail = Awaited<ReturnType<AppRouterClient["booking"]["get"]
  */
 
 /** The held/confirmed booking behind the confirmation screen. */
-export const bookingDetailQueryOptions = (id: string, accessToken?: string) =>
-  orpc.booking.get.queryOptions({ input: { id, accessToken } });
+export const bookingDetailQueryOptions = (
+  id: string,
+  accessToken: string | undefined,
+  locale: string,
+) => orpc.booking.get.queryOptions({ input: { id, accessToken, locale } });
 
 /** The receipt for Download Receipt. */
 export const bookingReceiptQueryOptions = (id: string, accessToken?: string) =>
   orpc.booking.receipt.queryOptions({ input: { id, accessToken } });
+
+/* Download Receipt asks once per click and saves the answer as a file, so it bypasses the cache. */
+export const fetchBookingReceipt = (id: string, accessToken?: string) =>
+  client.booking.receipt({ id, accessToken });
 
 export type TravellerList = Awaited<ReturnType<AppRouterClient["booking"]["travellers"]["list"]>>;
 export type Traveller = TravellerList["travellers"][number];
@@ -137,8 +144,8 @@ export const bookingInvoiceQueryOptions = (id: string, accessToken?: string) =>
  * The signed-in customer's saved profile, for the one field checkout cannot read off the session:
  * better-auth holds the name and the address, the phone lives here.
  *
- * Declared in this feature rather than imported from Profile's, whose public index pulls in a
- * `server-only` prefetch module and so cannot be reached from a client component at all. The key
- * is oRPC's own, so both features read and invalidate the same cache entry regardless.
+ * Taken from `lib/api` rather than from Profile's public index, which pulls in a `server-only`
+ * prefetch module and so cannot be reached from a client component at all. Both features read and
+ * invalidate the same cache entry.
  */
-export const guestProfileQueryOptions = () => orpc.profile.get.queryOptions({ staleTime: 30_000 });
+export { profileQueryOptions as guestProfileQueryOptions } from "@/lib/api/queries";

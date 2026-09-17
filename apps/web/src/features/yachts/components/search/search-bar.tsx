@@ -15,11 +15,12 @@ import {
   labelOf,
   groupByPopularity,
   orderedValues,
+  type Option,
+  useCityOptions,
   useDraft,
   useFilterOptions,
 } from "@/components/shared/form/filters";
 import { addDays, dayFromNative, dayToNative, daysBetween } from "@/lib/date";
-import { slugToLabel } from "@/lib/slug-to-label";
 
 import type { Suggestion } from "../../api/queries";
 import { useNameSearchEnabled } from "../../hooks/use-search-ui-settings";
@@ -44,12 +45,11 @@ function toRange(value: FiltersState): DateRange {
  * Broad to specific, joined like every other multi-value trigger in the app. `query` stays as the
  * fallback so an older link that carries free text still shows something.
  */
-function destinationLabel(value: FiltersState, options: FilterOptions): string {
+function destinationLabel(value: FiltersState, options: FilterOptions, cities: Option[]): string {
   const labels = [
     ...value.country.map((item) => labelOf(options.countries, item)),
     ...value.sailingArea.map((item) => labelOf(options.sailingAreas, item)),
-    /* No option list of its own: a city arrives locked from a catalog path, never from a control. */
-    ...value.city.map(slugToLabel),
+    ...value.city.map((item) => labelOf(cities, item)),
     ...value.marina.map((item) => labelOf(options.marinas, item)),
   ];
 
@@ -82,7 +82,7 @@ function withDestination(current: FiltersState, next: Suggestion | null): Filter
       return { ...cleared, country: [next.value] };
     case "region":
       return { ...cleared, sailingArea: [next.value] };
-    case "location":
+    case "city":
       return { ...cleared, city: [next.value] };
     case "base":
       return { ...cleared, marina: [next.value] };
@@ -98,6 +98,7 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
   const t = useTranslations("Yachts.searchBar");
   const [draft, setDraft] = useDraft(value);
   const { options } = useFilterOptions();
+  const cityOptions = useCityOptions(draft.city);
   const [pending, setPending] = useState<DateRange | null>(null);
   const nameSearchEnabled = useNameSearchEnabled();
 
@@ -114,9 +115,15 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
     const from = next?.from;
     const to = next?.to;
 
+    /* The length came from the range being cleared, so it goes with it; one chosen in the
+       filters panel with no dates is left alone. */
     if (!from) {
       setPending(null);
-      setDraft((current) => ({ ...current, startDate: null }));
+      setDraft((current) => ({
+        ...current,
+        startDate: null,
+        duration: current.startDate ? "any" : current.duration,
+      }));
       return;
     }
 
@@ -129,13 +136,19 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
     setDraft((current) => ({
       ...current,
       startDate: dayFromNative(from),
-      duration: String(daysBetween(from, to)),
+      /* The same day twice is a day's charter. As zero nights it failed the URL parser, which
+         turned it into "any" without a word. */
+      duration: String(Math.max(daysBetween(from, to), 1)),
     }));
   }
 
+  /* A check-in picked without a check-out still says when: searching on the old dates instead
+     ignored the last thing the visitor did. */
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    onSearch(draft);
+    const from = pending?.from;
+    setPending(null);
+    onSearch(from ? { ...draft, startDate: dayFromNative(from) } : draft);
   }
 
   return (
@@ -145,7 +158,7 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
     >
       <div>
         <LocationSearch
-          value={destinationLabel(draft, options)}
+          value={destinationLabel(draft, options, cityOptions)}
           onSelect={(next) => setDraft((current) => withDestination(current, next))}
           placeholder={t("location")}
         />
@@ -172,6 +185,7 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
             }))
           }
           placeholder={t("anyBoat")}
+          clearLabel={t("clearBoatType")}
           icon={<Sailboat className="size-6 shrink-0 text-foreground" />}
         />
       </div>

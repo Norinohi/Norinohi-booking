@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { booking, bookingTraveller } from "@yacht-charter/db/schema/booking";
 import { asc, eq } from "drizzle-orm";
 import type { z } from "zod";
@@ -18,6 +17,7 @@ import type {
 import { decryptOptionalPii, encryptOptionalPii } from "../lib/pii";
 import { readOwnedBooking } from "./booking-read";
 import type { BookingStatus } from "./booking-state";
+import { ConflictError } from "../errors";
 
 type Traveller = z.infer<typeof travellerSchema>;
 type ListResult = z.infer<typeof travellerListSchema>;
@@ -145,7 +145,7 @@ export async function saveTravellers(
   const { booking: row, quote: quoted } = await readOwnedBooking(db, userId, input.bookingId);
 
   if (CLOSED.includes(row.status)) {
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message: `Cannot edit the crew list of a booking in ${row.status}`,
     });
   }

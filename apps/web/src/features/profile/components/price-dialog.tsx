@@ -169,7 +169,7 @@ export default function PriceDialog({ open, onOpenChange, listingId }: PriceDial
                     value={
                       row.basePrice
                         ? formatMoney(row.basePrice.amountMinor, row.basePrice.currency)
-                        : "—"
+                        : "-"
                     }
                     readOnly
                     tabIndex={-1}

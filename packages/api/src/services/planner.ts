@@ -1,7 +1,9 @@
+import { listCatalogueCountries } from "@yacht-charter/db/search/catalogue-countries";
 import { searchListings, valueForLabel } from "@yacht-charter/db/search";
 import type { z } from "zod";
 
 import type { Database } from "../context";
+import { countryFlag } from "../lib/country-flag";
 import type { PlannerAnswers, plannerRecommendationSchema } from "../contracts/planner";
 import { presentListingSummary, pricedPeriodDays, WEEKLY_RATE_DAYS } from "../presenters/listing";
 type Recommendation = z.infer<typeof plannerRecommendationSchema>;
@@ -27,12 +29,24 @@ type AnsweredKey<TAnswer extends keyof PlannerAnswers> = Exclude<
   "not-sure"
 >;
 
-const COUNTRIES = {
-  croatia: { country: "Croatia", flag: "🇭🇷" },
-  greece: { country: "Greece", flag: "🇬🇷" },
-  italy: { country: "Italy", flag: "🇮🇹" },
-  spain: { country: "Spain", flag: "🇪🇸" },
-} satisfies Record<AnsweredKey<"destination">, Destination>;
+/**
+ * The destination as the geography tables name it, flag included.
+ *
+ * The answer is a slug of the country's English name ("greece"), which is also how the search
+ * links filter by country, so the folded name is the whole lookup. Only the four slugs the
+ * contract accepts ever reach here; the list of them lives with the wizard's URL, not here.
+ */
+async function resolveDestination(
+  db: Database,
+  key: AnsweredKey<"destination">,
+): Promise<Destination> {
+  const [match] = await listCatalogueCountries(db, { name: key });
+  /* A catalogue without the country still gets a plan, only without a flag or boats in it. */
+  if (!match || valueForLabel(match.name) !== key) {
+    return { country: key.charAt(0).toUpperCase() + key.slice(1), flag: "" };
+  }
+  return { country: match.name, flag: countryFlag(match.code) };
+}
 
 const GROUP_SIZES = {
   "2-4": { guests: 4, minBerths: 4 },
@@ -45,6 +59,7 @@ const BUDGETS = {
   "300-600": { min: 30_000, max: 60_000 },
   "600-1000": { min: 60_000, max: 100_000 },
   "1000-1200": { min: 100_000, max: 120_000 },
+  "1200-2000": { min: 120_000, max: 200_000 },
   "2000-plus": { min: 200_000, max: null },
 } satisfies Record<AnsweredKey<"budget">, { min: number; max: number | null }>;
 
@@ -81,14 +96,15 @@ type TripBrief = {
   maxPriceMinor: number | null;
 };
 
-/** Turns the quiz's nine optional answers into a complete brief, defaults filled. */
-function resolveBrief(answers: PlannerAnswers): TripBrief {
-  const destinationKey =
-    answers.destination && answers.destination !== "not-sure"
-      ? answers.destination
-      : DEFAULT_DESTINATION;
-  const destination: Destination = COUNTRIES[destinationKey];
+/** The destination the brief is for, "not sure" and unanswered resolving to the default. */
+function destinationKeyOf(answers: PlannerAnswers): AnsweredKey<"destination"> {
+  return answers.destination && answers.destination !== "not-sure"
+    ? answers.destination
+    : DEFAULT_DESTINATION;
+}
 
+/** Turns the quiz's nine optional answers into a complete brief, defaults filled. */
+function resolveBrief(answers: PlannerAnswers, destination: Destination): TripBrief {
   const group =
     answers.groupSize && answers.groupSize !== "not-sure"
       ? GROUP_SIZES[answers.groupSize]
@@ -132,10 +148,20 @@ function resolveBrief(answers: PlannerAnswers): TripBrief {
   };
 }
 
+type SearchFilters = Parameters<typeof searchListings>[1];
+
 /**
- * Most specific first, widening a step at a time: drop the budget, then the
- * category the vibe implied, then the group and crew filters entirely. A visitor
- * always gets a boat rather than an empty result.
+ * Most specific first, widening a step at a time, and the budget held longest.
+ *
+ * The budget used to be the first thing dropped, so a crewed-sailing-yacht brief with nothing
+ * under EUR 2,400 went straight to the whole fleet in recommended order: a EUR 300-600 a head
+ * brief was answered with a EUR 5,600 Moody 54, and "similar" ran to EUR 12,320 a head. Now the
+ * vibe's category goes first, keeping the budget.
+ *
+ * Where nothing the group can sail fits the budget, the budget goes before the group and crew
+ * do, and the cheapest such yacht is the one recommended: the closest to what the visitor said
+ * they would spend. Keeping the budget by dropping the crew instead would hand a party with no
+ * licence a bareboat beside a panel that says they need a skipper.
  */
 async function findMatches(
   db: Database,
@@ -143,37 +169,44 @@ async function findMatches(
   locale: string | undefined,
 ): Promise<{
   result: Awaited<ReturnType<typeof searchListings>>;
-  filters: Parameters<typeof searchListings>[1];
+  filters: SearchFilters;
 } | null> {
-  const baseFilters = {
+  const broad = {
     locale,
     country: [brief.destination.country],
-    crew: brief.crew,
-    guests: brief.group?.guests,
-    minBerths: brief.group?.minBerths,
     duration: brief.durationDays,
     currency: CURRENCY,
+    /* The figure the per-person share and the card are read off, so the cap compares the same one. */
+    priceBasis: "all_in" as const,
     sort: "recommended" as const,
     pageSize: 24,
     page: 1,
   };
+  const grouped = {
+    ...broad,
+    crew: brief.crew,
+    guests: brief.group?.guests,
+    minBerths: brief.group?.minBerths,
+  };
+  const specific = { ...grouped, category: brief.category ?? undefined };
 
-  const attempts: Parameters<typeof searchListings>[1][] = [
-    {
-      ...baseFilters,
-      category: brief.category ?? undefined,
-      maxPriceMinor: brief.maxPriceMinor ?? undefined,
-    },
-    { ...baseFilters, category: brief.category ?? undefined },
-    { ...baseFilters },
-    {
-      country: [brief.destination.country],
-      locale,
-      duration: brief.durationDays,
-      currency: CURRENCY,
-      pageSize: 24,
-    },
-  ];
+  const ceiling = brief.maxPriceMinor;
+  const affordable = (filters: SearchFilters) => ({
+    ...filters,
+    maxPriceMinor: ceiling ?? undefined,
+  });
+  const cheapestFirst = (filters: SearchFilters) => ({ ...filters, sort: "price-asc" as const });
+  const attempts: SearchFilters[] =
+    ceiling === null
+      ? [specific, grouped, broad]
+      : [
+          affordable(specific),
+          affordable(grouped),
+          cheapestFirst(specific),
+          cheapestFirst(grouped),
+          affordable(broad),
+          cheapestFirst(broad),
+        ];
 
   for (const attempt of attempts) {
     const result = await searchListings(db, attempt);
@@ -194,7 +227,7 @@ export async function recommendTrip(
   db: Database,
   answers: PlannerAnswers,
 ): Promise<Recommendation> {
-  const brief = resolveBrief(answers);
+  const brief = resolveBrief(answers, await resolveDestination(db, destinationKeyOf(answers)));
   const { destination, category, durationDays, style, skipperRequired } = brief;
   const { difficulty, budget, guestsForMath } = brief;
 

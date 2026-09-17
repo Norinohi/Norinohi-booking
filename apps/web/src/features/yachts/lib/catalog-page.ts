@@ -64,7 +64,7 @@ export function findCatalogPage(
  * is the place and which is the type without carrying named fields through the contract.
  */
 export function catalogPageHeading(t: CatalogPageTranslator, page: CatalogPage): string {
-  const [first = "", second = "", third = "", fourth = ""] = page.labels;
+  const [first = "", second = "", third = ""] = page.labels;
 
   switch (page.kind) {
     case "country":
@@ -79,8 +79,6 @@ export function catalogPageHeading(t: CatalogPageTranslator, page: CatalogPage):
       return t("typeCountry", { type: first, place: second });
     case "type-geo":
       return t("typeGeo", { type: first, place: third, country: second });
-    case "type-marina":
-      return t("typeMarina", { type: first, place: fourth });
     case "builder":
       return t("builder", { brand: first });
     case "model":
@@ -94,18 +92,83 @@ export function catalogPageHeading(t: CatalogPageTranslator, page: CatalogPage):
  * A sitemap is an invitation; internal links are the signal. Siblings rather than children on
  * purpose: a country page linking its cities, and a city page linking the other cities, reaches
  * the whole level from anywhere in it.
+ *
+ * A marina is the exception, because a town rarely has two marinas with enough boats for a page:
+ * Marina Kaštela had no siblings at all. Its list is topped up with the other marina pages in the
+ * same country, the closest the enumeration comes to nearby, since it carries no coordinates.
  */
 export function catalogPageSiblings(pages: CatalogPage[], page: CatalogPage): CatalogPage[] {
-  const parent = page.segments.slice(0, -1).join("/");
+  const byCount = (a: CatalogPage, b: CatalogPage) => b.count - a.count;
+  const levelOf = (other: CatalogPage) =>
+    other.root === page.root &&
+    other.segments.length === page.segments.length &&
+    other.segments.join("/") !== page.segments.join("/");
+  const sharesPrefix = (other: CatalogPage, dropped: number) =>
+    other.segments.slice(0, -dropped).join("/") === page.segments.slice(0, -dropped).join("/");
 
+  const siblings = pages.filter((other) => levelOf(other) && sharesPrefix(other, 1)).sort(byCount);
+  if (page.kind !== "marina" || siblings.length >= SIBLING_LIMIT) {
+    return siblings.slice(0, SIBLING_LIMIT);
+  }
+
+  const sameCountry = pages
+    .filter(
+      (other) =>
+        levelOf(other) &&
+        other.kind === page.kind &&
+        !sharesPrefix(other, 1) &&
+        sharesPrefix(other, 2),
+    )
+    .sort(byCount);
+  return [...siblings, ...sameCountry].slice(0, SIBLING_LIMIT);
+}
+
+/**
+ * The region pages under a country page, busiest first.
+ *
+ * A country page's siblings are other countries, so without this its regions were reachable only
+ * from the sitemap. Cities stay out: they are the regions' own level of detail.
+ */
+export function catalogPageRegions(pages: CatalogPage[], page: CatalogPage): CatalogPage[] {
+  if (page.kind !== "country") return [];
+  const prefix = page.segments.join("/");
   return pages
     .filter(
       (other) =>
         other.root === page.root &&
-        other.segments.length === page.segments.length &&
-        other.segments.slice(0, -1).join("/") === parent &&
-        other.segments.join("/") !== page.segments.join("/"),
+        other.kind === "geo" &&
+        other.filters.region !== undefined &&
+        other.segments.length === page.segments.length + 1 &&
+        other.segments.slice(0, -1).join("/") === prefix,
     )
-    .sort((a, b) => b.count - a.count)
-    .slice(0, SIBLING_LIMIT);
+    .toSorted((a, b) => b.count - a.count);
+}
+
+/**
+ * One step of the trail. `name` is the page heading `BreadcrumbList` carries; `label` is the
+ * place, type or shipyard alone, which is what fits in a visible crumb.
+ */
+export type CatalogCrumb = { name: string; label: string; path: string; exists: boolean };
+
+/**
+ * The trail from the page's root-most ancestor down to the page, for both the visible
+ * breadcrumbs and `BreadcrumbList`. An ancestor the enumeration withholds (below the threshold,
+ * or not a real place) keeps its slug as the name, and the visible trail leaves it unlinked.
+ */
+export function catalogPageTrail(
+  t: CatalogPageTranslator,
+  pages: CatalogPage[],
+  page: CatalogPage,
+): CatalogCrumb[] {
+  return page.segments.map((_, index) => {
+    const trail = page.segments.slice(0, index + 1);
+    const crumb = findCatalogPage(pages, page.root, trail);
+    const slug = trail[index] ?? "";
+    return {
+      name: crumb ? catalogPageHeading(t, crumb) : slug,
+      label: crumb?.labels.at(-1) ?? slug,
+      path: `/${page.root}/${trail.join("/")}`,
+      exists: crumb !== undefined,
+    };
+  });
 }

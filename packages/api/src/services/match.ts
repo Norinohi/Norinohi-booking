@@ -1,4 +1,4 @@
-import { ORPCError } from "@orpc/server";
+import { mediaRankOf } from "@yacht-charter/env/providers";
 import { base, location } from "@yacht-charter/db/schema/geography";
 import {
   listing,
@@ -12,6 +12,7 @@ import { listingDuplicateCandidate, listingSource } from "@yacht-charter/db/sche
 import { operator } from "@yacht-charter/db/schema/operator";
 import { provider, providerRecord } from "@yacht-charter/db/schema/provider";
 import { amenity, builder, yachtCategory, yachtModel } from "@yacht-charter/db/schema/taxonomy";
+import { facetTranslator } from "@yacht-charter/db/search/localize";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
 import { resolveCanonicalListings } from "@yacht-charter/providers/sync/canonical-listing-writer";
 import { and, asc, count, countDistinct, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
@@ -38,6 +39,7 @@ import type {
 } from "../contracts/admin";
 import { writeAuditLog } from "./audit";
 import { paginatedQuery, totalFrom } from "./pagination";
+import { BadRequestError, ConflictError, NotFoundError } from "../errors";
 
 type QueueInput = z.infer<typeof duplicateQueueInputSchema>;
 type QueueResult = z.infer<typeof duplicateQueueSchema>;
@@ -58,17 +60,6 @@ type Metrics = z.infer<typeof duplicateMetricsSchema>;
 
 /** Every band, in the order the filter lists them, so an empty one is simply absent. */
 const BANDS: readonly ConfidenceBand[] = ["high", "medium", "low", "unknown"];
-
-/**
- * Media precedence from docs/backend-architecture.md §3: Booking Manager photos
- * win over NauSYS on a listing carrying both, everything else is a fallback.
- */
-const MEDIA_SOURCE_RANK = new Map([
-  ["booking_manager", 0],
-  ["nausys", 1],
-]);
-
-const UNRANKED_SOURCE = 2;
 
 export type MediaRow = {
   source: string | null;
@@ -91,8 +82,8 @@ export function pickPrimaryImage(media: readonly MediaRow[]): string | null {
 }
 
 function mediaOrder(row: MediaRow): number {
-  const sourceRank =
-    row.source === null ? UNRANKED_SOURCE : (MEDIA_SOURCE_RANK.get(row.source) ?? UNRANKED_SOURCE);
+  /* Media precedence from docs/backend-architecture.md §3, as the provider registry ranks it. */
+  const sourceRank = mediaRankOf(row.source);
   const roleRank = row.role === "main" ? 0 : row.role === "gallery" ? 1 : 2;
   return sourceRank * 1_000_000 + roleRank * 100_000 + Math.min(row.sortOrder, 99_999);
 }
@@ -436,14 +427,40 @@ export async function getDuplicateCandidateDetail(
     .where(eq(listingDuplicateCandidate.id, input.candidateId))
     .limit(1);
 
-  if (!candidate) throw new ORPCError("NOT_FOUND", { message: "Unknown duplicate candidate" });
+  if (!candidate) throw new NotFoundError({ message: "Unknown duplicate candidate" });
 
-  const sides = await loadDetailSides(db, [candidate.sourceAId, candidate.sourceBId]);
+  const [sides, translate] = await Promise.all([
+    loadDetailSides(db, [candidate.sourceAId, candidate.sourceBId]),
+    facetTranslator(db, input.locale),
+  ]);
+  const labelled = (side: DetailSide | undefined): DetailSide | undefined =>
+    side?.listing && translate
+      ? {
+          ...side,
+          listing: {
+            ...side.listing,
+            categoryName:
+              side.listing.categoryName === null
+                ? null
+                : translate("category", side.listing.categoryName),
+            crewType:
+              side.listing.crewType === null ? null : translate("crew", side.listing.crewType),
+            sailType:
+              side.listing.sailType === null ? null : translate("sail_type", side.listing.sailType),
+          },
+        }
+      : side;
 
   return {
     candidateId: candidate.id,
-    sideA: sides.get(candidate.sourceAId) ?? { sourceId: candidate.sourceAId, listing: null },
-    sideB: sides.get(candidate.sourceBId) ?? { sourceId: candidate.sourceBId, listing: null },
+    sideA: labelled(sides.get(candidate.sourceAId)) ?? {
+      sourceId: candidate.sourceAId,
+      listing: null,
+    },
+    sideB: labelled(sides.get(candidate.sourceBId)) ?? {
+      sourceId: candidate.sourceBId,
+      listing: null,
+    },
   };
 }
 
@@ -459,7 +476,9 @@ async function loadDetailSides(
       listingId: listing.id,
       title: listing.title,
       slug: listing.slug,
-      categoryName: yachtCategory.name,
+      categoryName: sql<
+        string | null
+      >`coalesce(${yachtCategory.canonicalName}, ${yachtCategory.name})`,
       builderName: builder.name,
       crewType: listing.crewType,
       securityDepositMinor: listing.securityDepositMinor,
@@ -675,14 +694,14 @@ export async function confirmDuplicateCandidate(
       sources.map((row) => row.listingId).filter((id): id is string => id !== null),
     );
     if (!listingIds.has(input.keepListingId)) {
-      throw new ORPCError("BAD_REQUEST", {
+      throw new BadRequestError({
         message: "keepListingId must be one of the two candidate listings",
       });
     }
 
     const losingListingId = [...listingIds].find((id) => id !== input.keepListingId) ?? null;
     if (!losingListingId) {
-      throw new ORPCError("CONFLICT", {
+      throw new ConflictError({
         message: "Both sources are already on this listing",
       });
     }
@@ -813,7 +832,7 @@ async function moveOffers(
   `);
 
   if (Number(clash.rows[0]?.count ?? 0) > 0) {
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message: "Both listings are sold through the same provider, so they are not one yacht",
       data: { code: "MERGE_SAME_PROVIDER" },
     });
@@ -942,7 +961,7 @@ export async function splitListingOffer(
       .for("update")
       .limit(1);
 
-    if (!offer) throw new ORPCError("NOT_FOUND", { message: "Unknown offer" });
+    if (!offer) throw new NotFoundError({ message: "Unknown offer" });
 
     const siblings = await tx
       .select({ total: count() })
@@ -950,7 +969,7 @@ export async function splitListingOffer(
       .where(eq(listingOffer.listingId, offer.listingId));
 
     if ((siblings[0]?.total ?? 0) < 2) {
-      throw new ORPCError("CONFLICT", {
+      throw new ConflictError({
         message: "This listing has only one offer, so there is nothing to split off",
         data: { code: "NOTHING_TO_SPLIT" },
       });
@@ -1075,7 +1094,7 @@ async function createListingForOffer(
   },
 ): Promise<string> {
   if (!offer.operatorId || !offer.homeBaseId) {
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message: "This offer names no operator or base, so it cannot stand on its own listing",
       data: { code: "OFFER_INCOMPLETE" },
     });
@@ -1237,9 +1256,9 @@ async function lockReopenableCandidate(tx: DatabaseExecutor, candidateId: string
     .limit(1)
     .for("update");
 
-  if (!candidate) throw new ORPCError("NOT_FOUND", { message: "Unknown duplicate candidate" });
+  if (!candidate) throw new NotFoundError({ message: "Unknown duplicate candidate" });
   if (candidate.decision === "pending") {
-    throw new ORPCError("CONFLICT", { message: "This candidate is already in the queue" });
+    throw new ConflictError({ message: "This candidate is already in the queue" });
   }
   if (candidate.decision !== "confirmed") return candidate;
 
@@ -1253,7 +1272,7 @@ async function lockReopenableCandidate(tx: DatabaseExecutor, candidateId: string
     if (first.listingId !== second.listingId) return candidate;
   }
 
-  throw new ORPCError("CONFLICT", {
+  throw new ConflictError({
     message: "Take the merged offer back out of the listing before reopening this pair",
   });
 }
@@ -1315,7 +1334,7 @@ async function lockDecidableCandidate(tx: DatabaseExecutor, candidateId: string)
     .limit(1)
     .for("update");
 
-  if (!candidate) throw new ORPCError("NOT_FOUND", { message: "Unknown duplicate candidate" });
+  if (!candidate) throw new NotFoundError({ message: "Unknown duplicate candidate" });
   /*
    * `deferred` is not a verdict — it is a reviewer saying "not now", and the only way back to
    * the pair is this row, since nothing re-proposes a candidate that already exists. Closing it
@@ -1345,5 +1364,5 @@ async function lockDecidableCandidate(tx: DatabaseExecutor, candidateId: string)
     }
   }
 
-  throw new ORPCError("CONFLICT", { message: "This candidate has already been reviewed" });
+  throw new ConflictError({ message: "This candidate has already been reviewed" });
 }

@@ -1,73 +1,7 @@
-import type { ListingSearchDoc } from "@yacht-charter/db/search";
-
 import { describe, expect, it } from "vitest";
 
 import { badgesFor, presentListingSummary } from "./listing";
-
-const doc = (over: Partial<ListingSearchDoc> = {}): ListingSearchDoc => ({
-  listingId: "ylst_1",
-  slug: "liburna-sunseeker",
-  name: "Liburna",
-  title: "Liburna Sunseeker",
-  category: "Motor yacht",
-  crewType: "full_crew",
-  builder: "Sunseeker",
-  model: "Predator 60",
-  modelCanonical: "Predator 60",
-  operator: "Alimos Charter",
-  operatorTermsAndConditions: null,
-  baseId: "base_1",
-  baseName: "Alimos Marina",
-  city: "Athens",
-  location: "Alimos",
-  region: "Attica",
-  country: "Greece",
-  lat: null,
-  lng: null,
-  baseEmail: null,
-  basePhone: null,
-  baseWebsite: null,
-  baseCheckInTime: "17:00",
-  baseCheckOutTime: "09:00",
-  lengthM: "15.50",
-  cabins: 3,
-  berths: 6,
-  heads: 2,
-  showers: 3,
-  yearBuilt: 2023,
-  sailType: null,
-  securityDepositMinor: 310_000,
-  securityDepositCurrency: "EUR",
-  securityDepositWhenInsuredMinor: null,
-  depositInsuranceIncluded: true,
-  petsAllowed: false,
-  bestValue: false,
-  rating: "5.00",
-  reviewCount: 4,
-  bookedThisMonth: 0,
-  viewedToday: 2,
-  mainImage: null,
-  gallery: [],
-  amenities: [],
-  bestOfferId: "loff_1",
-  offerCount: 1,
-  priceFromMinor: 1_240_000,
-  priceIsFrom: false,
-  listPriceFromMinor: null,
-  currency: "EUR",
-  priceFromMinorEur: 1_240_000,
-  basePriceFromMinor: 1_000_000,
-  basePriceFromMinorEur: 1_000_000,
-  availableFrom: "2026-06-13",
-  availableTo: "2026-08-29",
-  bookableFrom: null,
-  bookableTo: null,
-  temporaryHold: null,
-  sellsRequestedPeriod: true,
-  nearestCheckIn: null,
-  nearestCheckOut: null,
-  ...over,
-});
+import { doc } from "./listing.fixture";
 
 describe("presentListingSummary", () => {
   it("quotes the provider's own deposit rather than a share of the price", () => {
@@ -267,9 +201,49 @@ describe("presentListingSummary on the charter rate", () => {
     expect(card.allInPriceFrom?.amountMinor).toBe(1_240_000);
   });
 
+  it("strikes through the rate's own list price, not the all-in one", () => {
+    const card = presentListingSummary(doc({ listPriceFromMinor: 1_490_000 }), "base");
+    expect(card.priceFrom?.amountMinor).toBe(1_000_000);
+    expect(card.listPriceFrom?.amountMinor).toBe(1_250_000);
+  });
+
   it("falls back to the total where the rate is missing, rather than dropping the price", () => {
     const card = presentListingSummary(doc({ basePriceFromMinor: null }), "base");
     expect(card.priceFrom?.amountMinor).toBe(1_240_000);
     expect(card.basePriceFrom).toBeNull();
+  });
+});
+
+describe("presentListingSummary price source", () => {
+  const week = { bookableFrom: "2099-06-06", bookableTo: "2099-06-13" };
+
+  it("reads a stored charter price as the vendor's", () => {
+    expect(presentListingSummary(doc(week)).priceSource).toBe("vendor");
+  });
+
+  it("reads a season floor as one", () => {
+    expect(presentListingSummary(doc({ ...week, priceIsFrom: true })).priceSource).toBe(
+      "season-minimum",
+    );
+  });
+
+  it("reads a price whose charter has lapsed as a floor", () => {
+    expect(presentListingSummary(doc()).priceSource).toBe("season-minimum");
+  });
+
+  it("keeps a dated list rate as one", () => {
+    expect(presentListingSummary(doc({ ...week, priceSource: "price-list" })).priceSource).toBe(
+      "price-list",
+    );
+  });
+
+  it("keeps a dated estimate from the list as one", () => {
+    expect(
+      presentListingSummary(doc({ ...week, priceSource: "price-list-estimate" })).priceSource,
+    ).toBe("price-list-estimate");
+  });
+
+  it("has no source without a price", () => {
+    expect(presentListingSummary(doc({ ...week, priceFromMinor: null })).priceSource).toBeNull();
   });
 });

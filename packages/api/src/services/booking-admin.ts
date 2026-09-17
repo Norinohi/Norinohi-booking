@@ -1,9 +1,9 @@
-import { ORPCError } from "@orpc/server";
 import { booking, payment, paymentSchedule } from "@yacht-charter/db/schema/booking";
 import { invoiceRequest } from "@yacht-charter/db/schema/checkout";
 import { user } from "@yacht-charter/db/schema/auth";
 import { quote } from "@yacht-charter/db/schema/quote";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
+import { baseLabel, facetTranslator, localizeQuoteLines } from "@yacht-charter/db/search";
 import { and, asc, count, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import type { z } from "zod";
 
@@ -21,6 +21,7 @@ import type {
 import { type AuditEntry, writeAuditLog } from "./audit";
 import { readAnyBooking } from "./booking-read";
 import { paginatedQuery, totalFrom } from "./pagination";
+import { NotFoundError } from "../errors";
 
 /*
  * The staff view of bookings.
@@ -127,10 +128,14 @@ function present(row: {
  * is why staff could not open the bookings their own queues link to. The gate moves up to the
  * procedure — `adminProcedure` — instead of the query.
  */
-export async function getBookingForAdmin(db: Database, id: string): Promise<Detail> {
+export async function getBookingForAdmin(
+  db: Database,
+  id: string,
+  locale?: string,
+): Promise<Detail> {
   const row = await readAnyBooking(db, id);
 
-  const [customer, schedules, payments, invoices] = await Promise.all([
+  const [customer, schedules, payments, invoices, translate, lines] = await Promise.all([
     db.select().from(user).where(eq(user.id, row.booking.userId)).limit(1),
     db
       .select()
@@ -148,10 +153,12 @@ export async function getBookingForAdmin(db: Database, id: string): Promise<Deta
       .where(eq(invoiceRequest.bookingId, id))
       .orderBy(desc(invoiceRequest.createdAt))
       .limit(1),
+    facetTranslator(db, locale),
+    localizeQuoteLines(db, row.quote.listingId, row.quote.lines, locale),
   ]);
 
   const owner = customer[0];
-  if (!owner) throw new ORPCError("NOT_FOUND", { message: "Unknown booking" });
+  if (!owner) throw new NotFoundError({ message: "Unknown booking" });
 
   const paidMinor = payments
     .filter((entry) => entry.status === "succeeded")
@@ -175,11 +182,15 @@ export async function getBookingForAdmin(db: Database, id: string): Promise<Deta
     // or has to send them a set-password link.
     isGuestAccount: owner.provisionedAt !== null,
     base: {
-      name: snapshot.baseName,
-      locationName: snapshot.locationName,
-      countryName: snapshot.countryName,
+      name: translate
+        ? baseLabel(translate, snapshot.baseName, snapshot.locationName)
+        : snapshot.baseName,
+      locationName: translate
+        ? translate("location", snapshot.locationName)
+        : snapshot.locationName,
+      countryName: translate ? translate("country", snapshot.countryName) : snapshot.countryName,
     },
-    priceLines: row.quote.lines.map((line) => ({
+    priceLines: lines.map((line) => ({
       code: line.code,
       label: line.label,
       amount: { amountMinor: line.amountMinor, currency: line.currency },
@@ -261,7 +272,7 @@ export async function setBookingExcluded(
       .limit(1);
 
     if (!existing) {
-      throw new ORPCError("NOT_FOUND", { message: `Booking ${input.id} does not exist` });
+      throw new NotFoundError({ message: `Booking ${input.id} does not exist` });
     }
 
     const excludedAt = input.excluded ? new Date() : null;

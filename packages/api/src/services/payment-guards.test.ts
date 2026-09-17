@@ -1,7 +1,7 @@
-import { ORPCError } from "@orpc/server";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
+import { DomainError } from "../errors";
 import { assertHoldStillValid, assertIntentIsResumable, assertPayable } from "./payment-guards";
 
 /*
@@ -11,7 +11,7 @@ import { assertHoldStillValid, assertIntentIsResumable, assertPayable } from "./
  * an unmapped transition error surfaced to customers as a 500.
  */
 
-/** Each guard names its refusal in `data.code`; anything else falls back to the ORPC code. */
+/** Each guard names its refusal in `data.code`; anything else falls back to the error kind. */
 const failureDataSchema = z.object({ code: z.string() });
 
 function codeOf(run: () => void): string | undefined {
@@ -19,8 +19,8 @@ function codeOf(run: () => void): string | undefined {
     run();
     return undefined;
   } catch (error) {
-    if (!(error instanceof ORPCError)) throw error;
-    return failureDataSchema.safeParse(error.data).data?.code ?? error.code;
+    if (!(error instanceof DomainError)) throw error;
+    return failureDataSchema.safeParse(error.data).data?.code ?? error.kind;
   }
 }
 

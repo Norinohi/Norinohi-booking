@@ -3,7 +3,7 @@ import { faqCategory } from "@yacht-charter/db/schema/content";
 import { crewTypeSchema } from "@yacht-charter/providers";
 import { z } from "zod";
 
-import { currencySchema, moneySchema, paginationSchema } from "./primitives";
+import { currencySchema, dateStringSchema, moneySchema, paginationSchema } from "./primitives";
 
 const stringArrayParamSchema = z
   .union([z.string(), z.array(z.string())])
@@ -53,12 +53,22 @@ const numberRangeSchema = z.object({
   max: z.number(),
 });
 
-const dateStringSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/)
-  .refine((value) => !Number.isNaN(new Date(`${value}T00:00:00.000Z`).getTime()), {
-    message: "Invalid date",
-  });
+export { dateStringSchema };
+
+/** A hand-written itinerary for a charter base or its sailing region. */
+export const suggestedRouteSchema = z.object({
+  title: z.string(),
+  description: z.string().nullable(),
+  stops: z.array(
+    z.object({
+      day: z.number().int(),
+      name: z.string(),
+      note: z.string().nullable(),
+      lat: z.number(),
+      lng: z.number(),
+    }),
+  ),
+});
 
 export const includedItemSchema = z.object({
   code: z.string(),
@@ -157,6 +167,8 @@ export const listingSummarySchema = z.object({
     showers: z.number().int().nullable(),
     yearBuilt: z.number().int(),
     sailType: z.string().nullable(),
+    /* Decided on the English category group, since `category` arrives translated. */
+    hasMainsail: z.boolean(),
   }),
   policies: z.object({
     depositInsuranceIncluded: z.boolean(),
@@ -193,6 +205,12 @@ export const listingSummarySchema = z.object({
      * not known here: the stored figure belonged to the lapsed charter.
      */
     nextPeriod: z.object({ checkIn: z.string(), checkOut: z.string() }).nullable(),
+    /**
+     * The operator confirms each booking by hand, so the boat is quoted like any other but taken
+     * as a booking request: no online hold or payment, which the checkout refuses with
+     * OPERATOR_CONFIRMATION_REQUIRED.
+     */
+    requiresOperatorConfirmation: z.boolean(),
   }),
   rating: z.number(),
   reviewCount: z.number().int(),
@@ -215,6 +233,12 @@ export const listingSummarySchema = z.object({
   /* Null when the listing has no usable price. The UI quotes on request rather than a number. */
   priceFrom: moneySchema.nullable(),
   /**
+   * `priceFrom` in EUR, the figure the price sorts and filter compare on, where it is published in
+   * another currency and a fresh rate converts it. Null for a EUR price and wherever `priceFrom`
+   * is. Lets a card that shows the published currency say what it was ordered by.
+   */
+  comparablePriceFrom: moneySchema.nullable(),
+  /**
    * The two figures behind the headline, always both filled where a price exists.
    *
    * `priceFrom` is one of these, chosen by a marketplace setting: the all-in total the guest
@@ -230,11 +254,45 @@ export const listingSummarySchema = z.object({
    */
   priceIsFrom: z.boolean(),
   /**
+   * Who stands behind `priceFrom`, so the card can caption it honestly. Null with no price.
+   *
+   * - `vendor`: the vendor's own price for the charter beside it, which the quote will match.
+   * - `price-list`: on a dated search nobody quoted, the operator's published weekly rate for that
+   *   exact week. Before the discounts both vendors sell at, so the quote is usually lower.
+   * - `price-list-estimate`: on a dated search of four nights or more but not a week that nobody
+   *   quoted, an estimate from the operator's weekly list: a seventh of the rate covering each
+   *   night, summed, with Booking Manager's short-charter premium under a week. The quote can
+   *   differ either way.
+   * - `price-list-estimate-from`: the same for NauSYS under a week, where operators' premiums vary,
+   *   so the card reads it as a starting price.
+   * - `price-list-estimate-before-discounts`: the same for NauSYS beyond a week, before the
+   *   discounts it sells at, so the quote is the same or lower.
+   * - `season-minimum`: the cheapest week of the season, the figure `priceIsFrom` marks.
+   *
+   * Three nights or fewer get no estimate: the list prices them well below the vendor.
+   */
+  priceSource: z
+    .enum([
+      "vendor",
+      "price-list",
+      "price-list-estimate",
+      "price-list-estimate-from",
+      "price-list-estimate-before-discounts",
+      "season-minimum",
+    ])
+    .nullable(),
+  /**
    * The same charter before the operator's own discount, to be rendered struck through beside
    * `priceFrom`. Null unless there is a discount the vendor's own figures account for, which is
    * the ordinary case.
    */
   listPriceFrom: moneySchema.nullable(),
+  /**
+   * A week's price for this boat from another charter or the season floor, present only where a
+   * dated search has no price for the dates shown. The card captions it as a week "from" that
+   * figure next to its "on request", never as the price of those dates.
+   */
+  weeklyPriceFrom: moneySchema.nullable(),
   priceDetails: z.object({
     periodDays: z.number().int(),
     /** Refundable damage deposit collected at the base. Null when there is none. */
@@ -258,7 +316,35 @@ export const recordListingViewInputSchema = z.object({
   viewer: z.string().min(8).max(128),
 });
 
-export const listingsByIdsInputSchema = z.object({
+const MAX_CHARTER_NIGHTS = 365;
+
+/** A card and the charter it names, as the search results and the saved lists return it. */
+export const listingResultItemSchema = z.object({
+  listing: listingSummarySchema,
+  checkIn: z.string().nullable(),
+  checkOut: z.string().nullable(),
+  /*
+   * Set when the dates above are not the ones searched for. Search keeps a listing that is
+   * free across the window but turns around on another weekday, so rather than repeat a
+   * period the quote will refuse, the card carries the charter this boat would actually
+   * sell and says so.
+   */
+  periodIsAlternative: z.boolean(),
+});
+
+/*
+ * How a saved listing's card is priced and labelled, with the same defaults as the search results.
+ * `startDate` with `duration` is the period the visitor last searched: a saved boat that sells it
+ * is priced for it exactly as that search priced it.
+ */
+export const savedListingCardInputSchema = z.object({
+  priceBasis: z.enum(["base", "all_in"]).optional(),
+  locale: z.string().min(2).max(10).optional(),
+  startDate: dateStringSchema.optional(),
+  duration: z.coerce.number().int().positive().max(MAX_CHARTER_NIGHTS).optional(),
+});
+
+export const listingsByIdsInputSchema = savedListingCardInputSchema.extend({
   /* Mirrors wishlistMergeInputSchema's cap — this is the guest wishlist's hydration path. */
   listingIds: z.array(z.string().min(1)).max(50),
 });
@@ -336,21 +422,7 @@ export const listingDetailSchema = listingSummarySchema.extend({
   }),
   /* Null on most listings: a route exists only where somebody wrote one for the charter base or
      its sailing region, and the detail page drops the section rather than showing an empty one. */
-  suggestedRoute: z
-    .object({
-      title: z.string(),
-      description: z.string().nullable(),
-      stops: z.array(
-        z.object({
-          day: z.number().int(),
-          name: z.string(),
-          note: z.string().nullable(),
-          lat: z.number(),
-          lng: z.number(),
-        }),
-      ),
-    })
-    .nullable(),
+  suggestedRoute: suggestedRouteSchema.nullable(),
   reviews: z.array(reviewSchema),
   /* Site-wide entries carry one of the six categories the page groups under; a listing's own
      entries carry none and render ahead of the groups. */
@@ -379,7 +451,6 @@ export const catalogPageSchema = z.object({
     "type",
     "type-country",
     "type-geo",
-    "type-marina",
     "builder",
     "model",
   ]),
@@ -403,7 +474,6 @@ export const catalogPageSchema = z.object({
  * the duration to the start date, and an unbounded one walks the Date past its range, where
  * `toISOString` throws and the request answers 500 instead of a validation error.
  */
-const MAX_CHARTER_NIGHTS = 365;
 
 export const listingSearchInputBaseSchema = z.object({
   destination: z.string().optional(),
@@ -511,20 +581,7 @@ export const partialListingSearchInputSchema = listingSearchInputBaseSchema
   .superRefine(validateListingSearchInput);
 
 export const searchResultSchema = z.object({
-  items: z.array(
-    z.object({
-      listing: listingSummarySchema,
-      checkIn: z.string().nullable(),
-      checkOut: z.string().nullable(),
-      /*
-       * Set when the dates above are not the ones searched for. Search keeps a listing that is
-       * free across the window but turns around on another weekday, so rather than repeat a
-       * period the quote will refuse, the card carries the charter this boat would actually
-       * sell and says so.
-       */
-      periodIsAlternative: z.boolean(),
-    }),
-  ),
+  items: z.array(listingResultItemSchema),
   nextCursor: z.string().optional(),
   pagination: paginationSchema.optional(),
 });
@@ -602,7 +659,8 @@ export const suggestionSchema = z.object({
   label: z.string(),
   /* The filter value behind the label, identical to the matching facet option's. */
   value: z.string(),
-  kind: z.enum(["country", "region", "location", "base"]),
+  /* The search filter `value` goes into: `sailingArea` for a region, `marina` for a base. */
+  kind: z.enum(["country", "region", "city", "base"]),
   /* Set on the curated countries the empty field opens with, so the list can head them. */
   popular: z.boolean().optional(),
 });
@@ -677,6 +735,8 @@ export const offerConstraintsSchema = z.object({
       confirmed: z.boolean(),
     }),
   ),
+  /** Exact charters the vendor priced as free; they outrank the rules above. */
+  confirmed: z.array(z.object({ startDate: z.string(), endDate: z.string() })),
   /** Exact periods this provider declined to sell; matched on both ends, never by overlap. */
   refused: z.array(z.object({ startDate: z.string(), endDate: z.string() })),
   oneWay: z.array(

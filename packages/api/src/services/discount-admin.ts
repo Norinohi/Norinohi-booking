@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { discount, discountRedemption, discountTarget } from "@yacht-charter/db/schema/discount";
 import { listing } from "@yacht-charter/db/schema/listing";
 import { operator } from "@yacht-charter/db/schema/operator";
@@ -16,7 +15,9 @@ import type {
   discountUpdateInputSchema,
 } from "../contracts/admin";
 import { writeAuditLog } from "./audit";
+import { categoryGroupSql } from "./discount-targets";
 import { paginationFor } from "./pagination";
+import { ConflictError, InternalError, NotFoundError } from "../errors";
 
 type ListInput = z.infer<typeof discountListInputSchema>;
 type ListResult = z.infer<typeof discountListSchema>;
@@ -64,10 +65,10 @@ export async function listDiscounts(db: Database, input: ListInput): Promise<Lis
 
 export async function getDiscount(db: Database, id: string): Promise<Discount> {
   const [row] = await db.select().from(discount).where(eq(discount.id, id)).limit(1);
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown discount" });
+  if (!row) throw new NotFoundError({ message: "Unknown discount" });
 
   const [hydrated] = await hydrate(db, [row]);
-  if (!hydrated) throw new ORPCError("NOT_FOUND", { message: "Unknown discount" });
+  if (!hydrated) throw new NotFoundError({ message: "Unknown discount" });
   return hydrated;
 }
 
@@ -96,7 +97,7 @@ export async function createDiscount(
       })
       .returning({ id: discount.id });
 
-    if (!created) throw new ORPCError("INTERNAL_SERVER_ERROR");
+    if (!created) throw new InternalError();
 
     await tx.insert(discountTarget).values(
       input.targets.map((target) => ({
@@ -240,7 +241,6 @@ async function hydrate(db: Database, rows: DiscountRow[]): Promise<Discount[]> {
           ? null
           : { amountMinor: row.valueMinor, currency: row.currency ?? "EUR" },
       targets: rowTargets,
-      appliesToLabel: appliesToLabel(rowTargets),
       status: statusFor(row, today),
       startsAt: row.startsAt,
       endsAt: row.endsAt,
@@ -259,29 +259,6 @@ function statusFor(row: DiscountRow, today: string): Discount["status"] {
   return "active";
 }
 
-function appliesToLabel(targets: Discount["targets"]): string {
-  if (targets.length === 0) return "Nothing";
-  if (targets.some((target) => target.targetType === "all")) return "All yachts";
-
-  const named = targets.map(namedTarget);
-  // The table cell is narrow; beyond two names it reads better as a count.
-  if (named.length <= 2) return named.join(", ");
-  return `${named[0]} +${named.length - 1} more`;
-}
-
-/**
- * One target as staff should read it.
- *
- * A target whose row has since been deleted resolves to no label, and printing the bare id
- * reads as a broken cell rather than as the dangling reference it is. Naming the type keeps
- * the id useful for tracking down what the discount was pointed at.
- */
-function namedTarget(target: Discount["targets"][number]): string {
-  if (target.targetLabel) return target.targetLabel;
-  if (!target.targetId) return "Unknown";
-  return `Missing ${target.targetType} (${target.targetId})`;
-}
-
 /** One lookup per target type, so the "Applies to" cell never N+1s. */
 async function resolveTargetLabels(
   db: Database,
@@ -294,7 +271,7 @@ async function resolveTargetLabels(
     region: idsOfType(targets, "region"),
   };
 
-  const [listings, categories, operators, regions] = await Promise.all([
+  const [listings, categories, categoryGroups, operators, regions] = await Promise.all([
     byType.listing.length > 0
       ? db
           .select({ id: listing.id, label: listing.title })
@@ -306,6 +283,12 @@ async function resolveTargetLabels(
           .select({ id: yachtCategory.id, label: yachtCategory.name })
           .from(yachtCategory)
           .where(inArray(yachtCategory.id, byType.category))
+      : [],
+    byType.category.length > 0
+      ? db
+          .selectDistinct({ id: categoryGroupSql, label: categoryGroupSql })
+          .from(yachtCategory)
+          .where(inArray(categoryGroupSql, byType.category))
       : [],
     byType.operator.length > 0
       ? db
@@ -322,7 +305,9 @@ async function resolveTargetLabels(
   ]);
 
   return new Map(
-    [...listings, ...categories, ...operators, ...regions].map((row) => [row.id, row.label]),
+    [...listings, ...categories, ...categoryGroups, ...operators, ...regions].flatMap((row) =>
+      row.id === null || row.label === null ? [] : [[row.id, row.label]],
+    ),
   );
 }
 
@@ -343,7 +328,7 @@ async function assertCodeIsFree(db: Database, code: string, exceptId: string | n
     .limit(1);
 
   if (clash && clash.id !== exceptId) {
-    throw new ORPCError("CONFLICT", { message: `Discount code ${code} is already in use` });
+    throw new ConflictError({ message: `Discount code ${code} is already in use` });
   }
 }
 
@@ -358,17 +343,30 @@ async function assertTargetsExist(
     if (target.targetType === "all" || !target.targetId) continue;
     const targetId = target.targetId;
 
-    const exists = async (table: typeof listing | typeof yachtCategory, label: string) => {
-      const [row] = await db
-        .select({ id: table.id })
-        .from(table)
-        .where(eq(table.id, targetId))
-        .limit(1);
-      if (!row) throw new ORPCError("NOT_FOUND", { message: `Unknown ${label} ${targetId}` });
+    const ensureFound = (label: string) => (rows: { id: string }[]) => {
+      if (rows.length === 0) throw new NotFoundError({ message: `Unknown ${label} ${targetId}` });
     };
 
-    if (target.targetType === "listing") checks.push(exists(listing, "listing"));
-    if (target.targetType === "category") checks.push(exists(yachtCategory, "category"));
+    if (target.targetType === "listing") {
+      checks.push(
+        db
+          .select({ id: listing.id })
+          .from(listing)
+          .where(eq(listing.id, targetId))
+          .limit(1)
+          .then(ensureFound("listing")),
+      );
+    }
+    if (target.targetType === "category") {
+      checks.push(
+        db
+          .select({ id: yachtCategory.id })
+          .from(yachtCategory)
+          .where(or(eq(categoryGroupSql, targetId), eq(yachtCategory.id, targetId)))
+          .limit(1)
+          .then(ensureFound("category")),
+      );
+    }
   }
 
   await Promise.all(checks);

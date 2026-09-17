@@ -30,10 +30,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function StaffBookingPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  const [{ id }, locale] = await Promise.all([params, getLocale()]);
 
   return (
-    <Hydrated prefetch={(queryClient) => prefetchAdminBooking(queryClient, id)}>
+    <Hydrated prefetch={(queryClient) => prefetchAdminBooking(queryClient, id, locale)}>
       <StaffBookingScreen id={id} />
     </Hydrated>
   );

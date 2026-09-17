@@ -13,6 +13,7 @@ import type {
   AvailableOffer,
   BookingDraft,
   CanonicalCatalogue,
+  CatalogueProjectionContext,
   ListingPeriod,
   ProviderCapabilities,
   ProviderExtrasMutation,
@@ -33,11 +34,22 @@ import {
   parseBookingManagerCatalogueCursor,
 } from "./catalogue";
 import type { BookingManagerConfig } from "./config";
-import { coldStartNotice } from "./warmup";
+import { reportColdStart } from "./warmup";
 import { resolveBookingManagerConfig } from "./config";
 import { BookingManagerClient } from "./client";
 import { listAdvertisedCharterPeriods } from "@yacht-charter/db/search/read-model";
-import { ADVERTISED_PERIOD_LIMIT, sweepRotation } from "../shared/sweep-periods";
+import { listShortCharterPeriods } from "@yacht-charter/db/search/repository";
+import {
+  ADVERTISED_PERIOD_LIMIT,
+  SHORT_CHARTER_LENGTHS,
+  SHORT_PERIODS_PER_LENGTH,
+  type SweepPeriod,
+  sweepRotation,
+  withShortCharterPeriods,
+} from "../shared/sweep-periods";
+import { DEFAULT_RATE_LIMIT_PAUSE, priceWeeksSource } from "../shared/price-weeks";
+import { streamBookingManagerConfirmedOffers } from "./confirmed-offers";
+import { warmBookingManagerServers } from "./warmup";
 import { createBookingManagerAvailabilitySource } from "./occupancy";
 import { createBookingManagerSeasonalPriceLoader } from "./prices";
 import { projectBookingManagerCatalogue } from "./projection";
@@ -145,15 +157,15 @@ export class BookingManagerInventoryProvider
       resume: parseResume(options.resume),
       companyScope: this.config.companyScope,
       listImportedCompanyIds: () => this.resolver.listYachtCompanyScopeKeys(),
-      onWarmup: (result) => {
-        const notice = coldStartNotice(result);
-        if (notice) console.warn(notice);
-      },
+      onWarmup: reportColdStart,
     });
   }
 
-  projectCatalogue(records: ProviderRecordSet): CanonicalCatalogue {
-    return projectBookingManagerCatalogue(records);
+  projectCatalogue(
+    records: ProviderRecordSet,
+    context?: CatalogueProjectionContext,
+  ): CanonicalCatalogue {
+    return projectBookingManagerCatalogue(records, context);
   }
 
   createAvailabilitySource(options: { resume?: JsonField }): AvailabilitySource {
@@ -173,23 +185,64 @@ export class BookingManagerInventoryProvider
     return createBookingManagerAvailabilitySource({
       client: this.client,
       config: this.config,
-      companyIds: this.config.companyScope.include
-        .filter((id) => this.config.companyScope.inScope(id))
-        .map(Number)
-        .filter(Number.isFinite),
+      companyIds: this.allowlistedCompanyIds(),
       years: this.years,
       /*
        * Read when the pass starts rather than now, for the reason NauSYS reads its own here:
        * the advertised periods move as charters are sold and the read model re-mints them.
        */
-      loadAdvertisedPeriods: () =>
-        listAdvertisedCharterPeriods(this.db, {
-          providerCode: this.key,
-          limit: ADVERTISED_PERIOD_LIMIT,
-        }),
+      loadAdvertisedPeriods: async () => {
+        const [advertised, short] = await Promise.all([
+          listAdvertisedCharterPeriods(this.db, {
+            providerCode: this.key,
+            limit: ADVERTISED_PERIOD_LIMIT,
+          }),
+          /* The charters a length filter shows, which no stored week covers; see NauSYS. */
+          listShortCharterPeriods(this.db, {
+            providerCode: this.key,
+            lengths: SHORT_CHARTER_LENGTHS,
+            perLength: SHORT_PERIODS_PER_LENGTH,
+          }),
+        ]);
+        return withShortCharterPeriods(advertised, short);
+      },
       today: this.today,
       rotation: this.rotation,
     });
+  }
+
+  /**
+   * The `/offers` pass the availability sweep runs, over the given weeks for the whole scope.
+   *
+   * No currency, deliberately: the sweep asks without one, and the same week answered in two
+   * currencies would flip the stored price and its hash every time the two passes alternate.
+   */
+  createPriceWeeksSource(weeks: readonly SweepPeriod[]): AvailabilitySource {
+    return priceWeeksSource({
+      weeks,
+      warmUp: async () => reportColdStart(await warmBookingManagerServers(this.client)),
+      rateLimit: DEFAULT_RATE_LIMIT_PAUSE,
+      stream: (pending) =>
+        streamBookingManagerConfirmedOffers(
+          {
+            client: this.client,
+            config: this.config,
+            companyIds: this.allowlistedCompanyIds().map(String),
+            years: this.years,
+            weeks: pending,
+            today: this.today,
+          },
+          { weekIndex: 0 },
+        ),
+    });
+  }
+
+  /** The allowlist, narrowed by the exclusions; empty means the whole account. */
+  private allowlistedCompanyIds(): number[] {
+    return this.config.companyScope.include
+      .filter((id) => this.config.companyScope.inScope(id))
+      .map(Number)
+      .filter(Number.isFinite);
   }
 
   async searchAvailability(input: AvailabilitySearch): Promise<AvailableOffer[]> {

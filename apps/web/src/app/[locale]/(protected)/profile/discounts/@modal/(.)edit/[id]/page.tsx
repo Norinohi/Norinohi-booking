@@ -1,6 +1,7 @@
+import { STAFF_ROLES } from "@/lib/auth/roles";
+import { requireRole } from "@/lib/auth/server";
 import Hydrated from "@/components/shared/layout/hydrated";
 
-import { requireStaffPage } from "@/features/admin";
 import { DiscountRouteModal, prefetchDiscount } from "@/features/profile";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
@@ -9,7 +10,7 @@ export const instant = false;
 
 export default async function EditDiscountModal({ params }: { params: Promise<{ id: string }> }) {
   /* Same staff check as the hard-load twin in ../../../edit/[id]. */
-  await requireStaffPage();
+  await requireRole(...STAFF_ROLES);
   const { id } = await params;
 
   return (

@@ -1,6 +1,5 @@
 import { env } from "@yacht-charter/env/web";
 import { createAuthClient } from "better-auth/react";
-import { z } from "zod";
 
 import { isBrowser } from "@/utils/runtime";
 
@@ -35,18 +34,3 @@ export const authClient = createAuthClient({
 });
 
 export type SessionUser = typeof authClient.$Infer.Session.user;
-
-/*
- * The `role` column is not in the auth client's types, so it is read off the session user
- * through a schema rather than asserted (the same convention as the API's staffProcedure).
- */
-const roleSchema = z.object({ role: z.string() });
-
-export function userRole(user: SessionUser | null | undefined): string | null {
-  return user ? (roleSchema.safeParse(user).data?.role ?? null) : null;
-}
-
-/** The same staff/admin gate the API's staffProcedure applies. */
-export function isStaffRole(role: string | null): boolean {
-  return role === "staff" || role === "admin";
-}

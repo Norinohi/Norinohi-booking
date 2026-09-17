@@ -1,27 +1,26 @@
 "use client";
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
-import { BoatSmallCard } from "@yacht-charter/ui/components/data-display/card-boat-small";
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { ArrowRight, Clock, TrendingUp } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
+import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
+import { yachtCardPrice } from "@/components/shared/data-display/yacht-card/view-model";
 import EmptyState from "@/components/shared/feedback/empty-state";
-import { WishlistButton } from "@/features/wishlist";
 import { buildSearchHref } from "@/features/yachts";
 import { useMoney } from "@/hooks/use-money";
-import { boatCardPrice } from "@/lib/boat-card-fields";
+import { dayToDisplay } from "@/lib/date";
 import { DRAW, GROUP, RISE, SPARK_START, SPARKS } from "@/lib/motion";
 
 import { usePlannerRecommendation } from "../hooks/use-planner-recommendation";
 import { buildConsultationHref } from "../lib/build-consultation-href";
 import type { PlannerAnswers } from "../lib/search-params";
-import { toBoatCardProps } from "../lib/to-boat-card";
-import { Image } from "@/components/shared/data-display/image";
+import { toRecommendedTile } from "../lib/to-recommended-tile";
 
-/** No dedicated Spain photo exists yet — falls back to Greece, same as the backend's default. */
+/** No dedicated Spain photo exists yet, so it falls back to Greece, same as the backend's default. */
 const DEFAULT_DESTINATION_IMAGE = "/assets/home/destinations/greece.webp";
 const DESTINATION_IMAGES = new Map<string, string>([
   ["Croatia", "/assets/home/destinations/croatia.webp"],
@@ -37,7 +36,7 @@ const YACHT_TYPE_KEYS = new Map<string, "sailing" | "catamaran" | "gulet" | "mot
   ["Luxury yacht", "luxury"],
 ]);
 
-/** Result — "Your perfect yacht trip" (Figma node 959:344654), backed by `planner.recommend`. */
+/** Result: "Your perfect yacht trip" (Figma node 959:344654), backed by `planner.recommend`. */
 interface ResultScreenProps {
   answers: PlannerAnswers;
 }
@@ -87,7 +86,7 @@ export function ResultScreen({ answers }: ResultScreenProps) {
   const formatRange = (range: typeof perPerson) =>
     range.min.amountMinor === range.max.amountMinor
       ? formatMoney(range.min.amountMinor, range.min.currency)
-      : `${formatMoney(range.min.amountMinor, range.min.currency)} – ${formatMoney(range.max.amountMinor, range.max.currency)}`;
+      : `${formatMoney(range.min.amountMinor, range.min.currency)} - ${formatMoney(range.max.amountMinor, range.max.currency)}`;
 
   const stats = [
     { label: t("labels.yachtType"), value: yachtTypeLabel },
@@ -97,32 +96,28 @@ export function ResultScreen({ answers }: ResultScreenProps) {
   ];
 
   const listing = recommendation.listing;
-  const boatCard = listing
-    ? toBoatCardProps(
-        tBadge,
-        listing,
-        boatCardPrice(tCard, listing, formatMoney),
-        destinationLabel,
-        recommendation.period,
-      )
-    : null;
   /*
    * The charter this price covers, off the listing itself rather than off the trip length.
    * Most of the fleet sells the week the estimate is quoted in, but a few sell three days,
    * and captioning one of those "price for 7 days" prices a charter nobody is selling.
    *
-   * Where the two disagree the figure is captioned as the floor it is, rather than as a
-   * definite price for a charter of some third length: the panel beside it says "DURATION
-   * 7 days" and the card was answering with "Price for 1 day EUR 950", two claims about one
-   * trip that could not both be true. Nothing here can reprice the difference - the rate list
-   * does not survive being prorated into another length (see `read-model.ts`) - so the honest
-   * move is to stop naming a period the number does not price.
+   * Where the two disagree the caption names the charter the figure does price, rather than a
+   * length: the panel beside it says "DURATION 7 days" and the card was answering with "Price
+   * for 1 day EUR 950", two claims about one trip that could not both be true. Nothing here can
+   * reprice the difference - the rate list does not survive being prorated into another length
+   * (see `read-model.ts`). Only a true season floor, with no charter behind it, says so.
    */
-  const boatPriceLabel = listing
-    ? listing.priceIsFrom || listing.priceDetails.periodDays !== recommendation.durationDays
+  const pricedWeek = listing?.priceIsFrom ? null : listing?.availability.bookablePeriod;
+  const boatPriceLabel = !listing
+    ? ""
+    : !pricedWeek
       ? tCard("priceIndicative")
-      : tCard("priceFor", { days: listing.priceDetails.periodDays })
-    : "";
+      : listing.priceDetails.periodDays === recommendation.durationDays
+        ? tCard("priceFor", { days: listing.priceDetails.periodDays })
+        : tCard("priceForPeriod", {
+            from: dayToDisplay(pricedWeek.checkIn),
+            to: dayToDisplay(pricedWeek.checkOut),
+          });
   const boatPerPerson = recommendation.recommendedPerPerson
     ? t("price.perPerson", {
         price: formatMoney(
@@ -131,6 +126,14 @@ export function ResultScreen({ answers }: ResultScreenProps) {
         ),
       })
     : "";
+  const boatCard = listing
+    ? toRecommendedTile(tBadge, listing, destinationLabel, recommendation.period, {
+        price: yachtCardPrice(tCard, listing, formatMoney),
+        priceLabel: boatPriceLabel,
+        priceSuffix: <span className="block">{boatPerPerson}</span>,
+        actionLabel: t("viewDetails"),
+      })
+    : null;
   /*
    * Always a price per person, so it reads against the card's own second line rather than
    * against its total: the fleet's band where there is one, and the recommended charter's own
@@ -173,7 +176,10 @@ export function ResultScreen({ answers }: ResultScreenProps) {
     boatType: category ? [category] : [],
     crew,
     duration: String(durationDays),
-    ...(maxPriceMinor === null ? null : { price: [0, Math.round(maxPriceMinor / 100)] as const }),
+    /* The planner caps the whole charter, extras included, so the search has to bound that figure. */
+    ...(maxPriceMinor === null
+      ? null
+      : { price: [0, Math.round(maxPriceMinor / 100)] as const, pricing: "charter" as const }),
   });
 
   return (
@@ -205,7 +211,7 @@ export function ResultScreen({ answers }: ResultScreenProps) {
         variants={RISE}
         className="flex flex-col overflow-hidden rounded-2xl bg-brand-50 lg:flex-row"
       >
-        {/* Left — darkened destination photo with the recommended boat card floating on top.
+        {/* Left: darkened destination photo with the recommended boat card floating on top.
             Below xl the photo takes half the row; the fixed Figma width only applies once
             there is room for the summary beside it. */}
         <div className="relative flex items-center justify-center overflow-hidden p-6 lg:w-1/2 lg:shrink xl:w-163">
@@ -213,35 +219,7 @@ export function ResultScreen({ answers }: ResultScreenProps) {
           <img src={destinationImage} alt="" className="absolute inset-0 size-full object-cover" />
           <div className="absolute inset-0 bg-black/60" />
           {boatCard ? (
-            <BoatSmallCard
-              className="relative z-10 w-full max-w-83.5"
-              imageRender={
-                <Image
-                  src={boatCard.image}
-                  alt={boatCard.imageAlt}
-                  fill
-                  sizes="334px"
-                  className="object-cover"
-                />
-              }
-              location={boatCard.location}
-              title={
-                <Link
-                  href={boatCard.detailHref}
-                  className="rounded-sm outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/40"
-                >
-                  {boatCard.title}
-                </Link>
-              }
-              rating={boatCard.rating}
-              tags={boatCard.tags}
-              price={boatCard.price}
-              priceLabel={boatPriceLabel}
-              priceSuffix={<span className="block">{boatPerPerson}</span>}
-              actionLabel={t("viewDetails")}
-              actionRender={<Link href={boatCard.detailHref} />}
-              saveRender={<WishlistButton listingId={boatCard.id} />}
-            />
+            <YachtCard layout="tile" className="relative z-10 w-full max-w-83.5" {...boatCard} />
           ) : (
             <div className="relative z-10 flex w-full max-w-83.5 flex-col gap-3 rounded-2xl bg-card p-5 text-center">
               <p className="text-base font-semibold text-foreground">{t("noMatch.title")}</p>
@@ -259,7 +237,7 @@ export function ResultScreen({ answers }: ResultScreenProps) {
           )}
         </div>
 
-        {/* Right — trip summary */}
+        {/* Right: trip summary */}
         <div className="flex min-w-0 flex-1 flex-col gap-6 p-6 md:p-8">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">

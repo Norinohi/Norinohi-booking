@@ -1,17 +1,22 @@
-import { ORPCError } from "@orpc/server";
 import { booking, providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import { listing } from "@yacht-charter/db/schema/listing";
 import { quote } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider, ProviderReservation } from "@yacht-charter/providers";
 import { ProviderError } from "@yacht-charter/providers/shared/errors";
+import { parseError } from "evlog";
+import type { z } from "zod";
 
 import { reportProviderRefusal } from "../lib/provider-failure";
 import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 
 import type { Database, DatabaseExecutor } from "../context";
 import { getEnabledInventoryProviders } from "../context";
+import type { waitingOptionsInputSchema, waitingOptionsSchema } from "../contracts/maintenance";
 import type { BookingStatus } from "./booking-state";
+import { recordProviderFailure } from "./error-audit";
 import { enqueueOutbox } from "./outbox";
+import { providerForListing } from "./provider-routing";
+import { NotFoundError } from "../errors";
 
 type BookingRow = typeof booking.$inferSelect;
 
@@ -108,7 +113,9 @@ export async function releaseProviderOption(
     const refusal = error instanceof Error ? error : null;
     const reason = refusal?.message ?? "Provider refused the release";
 
-    reportProviderRefusal("release", refusal, { bookingId: row.id, provider: row.provider });
+    const subject = { bookingId: row.id, provider: row.provider };
+    reportProviderRefusal("release", refusal, subject);
+    await recordProviderFailure(db, "release", parseError(error), subject);
 
     // `provider_reservation_event_kind` has no cancel_failed; the sweeper reports
     // the same outcome the same way, as an attempted release that did not land.
@@ -151,7 +158,7 @@ export async function retryReleaseForBooking(
   bookingId: string,
 ): Promise<ProviderRelease> {
   const [row] = await db.select().from(booking).where(eq(booking.id, bookingId)).limit(1);
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown booking" });
+  if (!row) throw new NotFoundError({ message: "Unknown booking" });
 
   /*
    * A hold that has already lapsed holds nothing, so there is nothing to ask for.
@@ -305,4 +312,20 @@ export async function listUnreleasedOptions(db: Database): Promise<UnreleasedOpt
     failedAt: row.failedAt.toISOString(),
     reason: row.reason ?? "The vendor refused the release",
   }));
+}
+
+export async function getWaitingOptions(
+  db: Database,
+  fallback: InventoryProvider,
+  input: z.infer<typeof waitingOptionsInputSchema>,
+): Promise<z.infer<typeof waitingOptionsSchema>> {
+  const adapter = await providerForListing(db, fallback, input.listingId);
+  if (!adapter.getWaitingOptions) return { count: 0, queue: [], supported: false };
+
+  const answer = await adapter.getWaitingOptions({
+    listingId: input.listingId,
+    from: input.from,
+    to: input.to,
+  });
+  return { ...answer, supported: true };
 }

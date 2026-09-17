@@ -1,4 +1,5 @@
 import { and, eq, inArray, lte } from "drizzle-orm";
+import { log, parseError } from "evlog";
 
 import {
   IN_FLIGHT_SYNC_STATUSES,
@@ -9,6 +10,7 @@ import {
 } from "@yacht-charter/db/schema/provider";
 
 import type { Database } from "../registry";
+import { thrownFields } from "../shared/log-fields";
 
 /*
  * Opening a run lives here rather than in `runner.ts` because the availability
@@ -230,7 +232,7 @@ async function beat(): Promise<void> {
     } catch (error) {
       /* Bookkeeping must never be why a sync dies. A missed beat costs the run its lock at
          worst, and only after ten of them; the reaper closing it is the correct outcome. */
-      console.error("sync run heartbeat failed:", error);
+      log.error({ action: "sync_run.heartbeat_failed", ...thrownFields(parseError(error)) });
     }
   }
 }
@@ -286,7 +288,11 @@ async function closeRuns(owned: Map<Database, string[]>, signal: ShutdownSignal)
       await closeRunsOn(db, ids, signal, now);
     } catch (error) {
       /* The exit matters more than the tidy-up, and the reaper covers what is left behind. */
-      console.error("sync run shutdown close failed:", error);
+      log.error({
+        action: "sync_run.shutdown_close_failed",
+        signal,
+        ...thrownFields(parseError(error)),
+      });
     }
   }
 }

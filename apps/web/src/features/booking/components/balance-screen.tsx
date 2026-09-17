@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 
 import { Form } from "@yacht-charter/ui/components/form/form";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@yacht-charter/ui/components/navigation/tabs";
@@ -36,6 +36,7 @@ import {
 import RequestInvoice from "./steps/payment/request-invoice";
 import { usePayBooking } from "../hooks/use-pay-booking";
 import { guestAccessFor } from "../lib/guest-access";
+import { pendingHoldDeadline } from "../lib/hold-clock";
 import {
   ELEMENTS_APPEARANCE,
   ELEMENTS_FONTS,
@@ -46,6 +47,7 @@ import {
 } from "../lib/stripe";
 import BalancePaid from "./balance-paid";
 import ExpressCheckout from "./steps/payment/express-checkout";
+import { HoldExpiredLink, HoldNotice, useHoldRemaining } from "./steps/payment/hold-clock";
 import { PaymentTargetProvider } from "./payment-target";
 
 const POLL_INTERVAL_MS = 2000;
@@ -73,8 +75,9 @@ const settledParsers = { paidBefore: parseAsInteger };
  */
 export default function BalanceScreen({ bookingId }: { bookingId: string }) {
   const t = useTranslations("Booking.balance");
+  const locale = useLocale();
   const tPayment = useTranslations("Booking.payment");
-  const money = useMoney();
+  const money = useExactMoney();
   const format = useFormatter();
   const [{ paidBefore }] = useQueryStates(settledParsers);
   const settling = paidBefore !== null;
@@ -98,7 +101,7 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
    */
   const pollingSince = useRef(Date.now());
   const { data: booking, isLoading } = useQuery({
-    ...bookingDetailQueryOptions(bookingId, access?.token),
+    ...bookingDetailQueryOptions(bookingId, access?.token, locale),
     enabled: access !== null,
     refetchInterval: (query) => {
       const current = query.state.data;
@@ -107,6 +110,10 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
       return Date.now() - pollingSince.current > POLL_LIMIT_MS ? false : POLL_INTERVAL_MS;
     },
   });
+
+  /* The first payment on a held booking still races the operator's option, wherever it is opened. */
+  const holdDeadline = booking ? pendingHoldDeadline(booking) : null;
+  const holdLeft = useHoldRemaining(holdDeadline);
 
   if (isLoading || access === null) {
     return (
@@ -199,6 +206,21 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
     );
   }
 
+  const hold =
+    holdDeadline && holdLeft ? <HoldNotice expiresAt={holdDeadline} remaining={holdLeft} /> : null;
+
+  /* Lapsed while the page was open: the server would refuse the charge, so nothing offers one. */
+  if (holdLeft?.expired) {
+    return (
+      <Centered>
+        <div className="flex w-full max-w-201.5 flex-col items-start gap-4">
+          {hold}
+          <HoldExpiredLink slug={booking.listing.id} />
+        </div>
+      </Centered>
+    );
+  }
+
   return (
     <Centered>
       <article className="flex w-full max-w-201.5 flex-col gap-6 rounded-2xl border border-border bg-card p-5 md:p-8">
@@ -213,6 +235,8 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
             {t("reference", { reference: booking.reference })}
           </p>
         </header>
+
+        {hold}
 
         {/*
           The marina's share is listed even though nothing here can charge it. Without it the
@@ -328,7 +352,7 @@ function BalancePayment({
 }) {
   const t = useTranslations("Booking.balance");
   const locale = useLocale();
-  const money = useMoney();
+  const money = useExactMoney();
   const stripe = stripeLoader();
   const payBalance = useMutation(payBalanceMutationOptions());
 
@@ -389,7 +413,7 @@ function BalanceInvoice({
   currency: string;
 }) {
   const t = useTranslations("Booking.payment");
-  const money = useMoney();
+  const money = useExactMoney();
   const router = useRouter();
   const requestInvoice = useMutation(requestInvoiceMutationOptions());
   const refineInvoice = useInvoiceRefinement();

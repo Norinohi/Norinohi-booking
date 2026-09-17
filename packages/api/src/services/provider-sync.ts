@@ -1,6 +1,5 @@
-import { ORPCError } from "@orpc/server";
 import { provider as providerTable, syncError, syncRun } from "@yacht-charter/db/schema/provider";
-import type { InventoryProvider } from "@yacht-charter/providers";
+import type { InventoryProvider, ProviderKey } from "@yacht-charter/providers";
 import {
   HOT_WINDOW_CURSOR_SCOPE,
   openAvailabilitySyncRun,
@@ -18,6 +17,7 @@ import { and, count, desc, eq, sql } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database } from "../context";
+import { getEnabledInventoryProviders } from "../context";
 import type {
   syncRunListInputSchema,
   syncRunListSchema,
@@ -25,6 +25,7 @@ import type {
   syncRunStartedSchema,
 } from "../contracts/admin";
 import { paginatedQuery, totalFrom } from "./pagination";
+import { NotFoundError } from "../errors";
 
 type SyncRunStatus = z.infer<typeof syncRunStatusSchema>;
 type SyncRunStarted = z.infer<typeof syncRunStartedSchema>;
@@ -138,6 +139,37 @@ export async function startSyncForAll(
 }
 
 /**
+ * Which providers a sync request targets: the one named, or every enabled one.
+ *
+ * `context.provider` is not the answer here. It is whichever adapter
+ * `PROVIDER_MODE` selected for quoting and checkout, and importing from a vendor
+ * is a separate question from selling through it.
+ */
+export async function resolveSyncTargets(
+  requested: ProviderKey | undefined,
+): Promise<InventoryProvider[]> {
+  const providers = await getEnabledInventoryProviders();
+  if (!requested) return [...providers.values()];
+
+  const target = providers.get(requested);
+  if (!target) {
+    throw new NotFoundError({
+      message: `Provider "${requested}" is not enabled`,
+    });
+  }
+  return [target];
+}
+
+export async function resolveSyncProvider(
+  fallback: InventoryProvider,
+  requested: ProviderKey | undefined,
+): Promise<InventoryProvider> {
+  if (!requested) return fallback;
+  const [only] = await resolveSyncTargets(requested);
+  return only ?? fallback;
+}
+
+/**
  * Run history, newest first. `getCatalogueSyncStatus` answers "what is happening
  * now" for one provider; this is the record of what happened before it, which is
  * the only way to see a run that failed overnight and was superseded by the next.
@@ -231,7 +263,7 @@ export async function getCatalogueSyncStatus(
     .limit(1);
 
   if (!run) {
-    throw new ORPCError("NOT_FOUND", { message: "No catalogue sync run found" });
+    throw new NotFoundError({ message: "No catalogue sync run found" });
   }
 
   const errors = await db

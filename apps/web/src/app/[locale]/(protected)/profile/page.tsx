@@ -1,9 +1,7 @@
-import { headers } from "next/headers";
-import { redirect } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import Hydrated from "@/components/shared/layout/hydrated";
-import { authClient } from "@/lib/auth-client";
+import { requireSignedIn } from "@/lib/auth/server";
 import { buildMetadata } from "@/lib/seo";
 
 import { prefetchProfile, ProfileScreen } from "@/features/profile";
@@ -25,17 +23,7 @@ export async function generateMetadata() {
 }
 
 export default async function ProfilePage() {
-  const locale = await getLocale();
-  const session = await authClient.getSession({
-    fetchOptions: {
-      headers: await headers(),
-      throw: true,
-    },
-  });
-
-  if (!session?.user) {
-    return redirect({ href: "/login", locale });
-  }
+  await requireSignedIn();
 
   return (
     <Hydrated prefetch={prefetchProfile}>

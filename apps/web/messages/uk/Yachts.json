@@ -1,0 +1,29 @@
+{
+  "heading": "Пошук яхт в оренду",
+  "searchByMap": "Пошук на карті",
+  "emptyTitle": "За вашими фільтрами яхт не знайдено",
+  "emptyDescription": "Спробуйте змінити дати, бюджет або місце - ми допоможемо знайти відповідний варіант.",
+  "searchBar": {
+    "location": "Місце",
+    "startTyping": "Почніть вводити",
+    "searchCountries": "Пошук країн...",
+    "addDates": "Обрати дати",
+    "clearDates": "Очистити дати",
+    "anyBoat": "Будь-який човен",
+    "search": "Пошук",
+    "noLocations": "Немає збігів за напрямком",
+    "popularCountries": "Популярні країни",
+    "popularBoatTypes": "Популярні судна",
+    "allBoatTypes": "Усі судна",
+    "clearLocation": "Очистити напрямок",
+    "freeText": "Назва, модель або компанія",
+    "kinds": {
+      "country": "Країна",
+      "region": "Регіон",
+      "city": "Місто",
+      "base": "Марина"
+    },
+    "clearBoatType": "Очистити тип човна"
+  },
+  "paginationSummary": "Показано {from}-{to} з {total}"
+}

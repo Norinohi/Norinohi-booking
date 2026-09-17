@@ -2,9 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { orpc } from "@/utils/orpc";
-
-import { referralHistoryQueryOptions, referralSummaryQueryOptions } from "../api/queries";
+import {
+  referralHistoryQueryOptions,
+  referralSummaryKey,
+  referralSummaryQueryOptions,
+  rotateReferralCodeMutationOptions,
+} from "../api/queries";
 
 /** Share code, stat tiles and loyalty progress — server-prefetched, so it hydrates warm. */
 export function useReferralSummary() {
@@ -23,9 +26,8 @@ export function useReferralHistory(page = 1) {
 export function useRotateReferralCode() {
   const queryClient = useQueryClient();
 
-  return useMutation(
-    orpc.referral.rotateCode.mutationOptions({
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: orpc.referral.summary.key() }),
-    }),
-  );
+  return useMutation({
+    ...rotateReferralCodeMutationOptions(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: referralSummaryKey() }),
+  });
 }

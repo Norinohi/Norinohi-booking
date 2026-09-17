@@ -31,7 +31,7 @@ export default function ContactScreen() {
 
   return (
     <div className="flex flex-1 flex-col justify-center px-4 py-8 md:px-13.5 md:py-15 2xl:px-17.5">
-      <div className="relative mx-auto flex w-full max-w-175 shrink-0 flex-col overflow-hidden rounded-3xl bg-card px-6 pt-10 pb-6 shadow-[4px_4px_15px_rgba(0,0,0,0.03)] md:px-10 md:pt-10 md:pb-10">
+      <div className="relative mx-auto flex w-full max-w-175 shrink-0 flex-col overflow-hidden rounded-3xl bg-card px-6 pt-10 pb-6 shadow-card md:px-10 md:pt-10 md:pb-10">
         <div className="flex flex-col gap-4 md:gap-8">
           <div className="flex flex-col gap-4 text-center">
             <h1 className="text-h4 text-foreground">{t("title")}</h1>

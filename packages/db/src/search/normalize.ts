@@ -66,10 +66,39 @@ export function foldedLetters(value: string): string {
  * Built from the same constants rather than written out, so the pair cannot drift.
  */
 export function normalizedKeySql(column: SQL): SQL {
+  return sql`regexp_replace(${foldedLettersSql(column)}, '[^a-z0-9]+', '', 'g')`;
+}
+
+/*
+ * A marina's name as the set of words in it, for telling one marina apart from another.
+ *
+ * The two vendors order a base's name differently: NauSYS "Marina Zenta, Split", Booking Manager
+ * "Split / Marina Zenta". Folded whole those are two marinas, so the typeahead offered both, the
+ * map drew two pins 300 m apart and each filter found only one vendor's boats. The same words in
+ * another order are the same place; different words stay apart even a quay away.
+ */
+export function placeWordsKey(value: string): string {
+  return foldedLetters(value)
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+    .toSorted()
+    .join("");
+}
+
+/** `placeWordsKey` as SQL. `collate "C"` sorts by bytes, as the JavaScript sort does here. */
+export function placeWordsKeySql(column: SQL): SQL {
+  return sql`array_to_string(array(
+    select word
+    from regexp_split_to_table(${foldedLettersSql(column)}, '[^a-z0-9]+') as word
+    where word <> ''
+    order by word collate "C"
+  ), '')`;
+}
+
+export function foldedLettersSql(column: SQL): SQL {
   let expression = sql`lower(coalesce(${column}, ''))`;
   for (const [from, to] of MULTI_CHAR_FOLDS) {
     expression = sql`replace(${expression}, ${from}, ${to})`;
   }
-
-  return sql`regexp_replace(translate(${expression}, ${FOLD_FROM}, ${FOLD_TO}), '[^a-z0-9]+', '', 'g')`;
+  return sql`translate(${expression}, ${FOLD_FROM}, ${FOLD_TO})`;
 }

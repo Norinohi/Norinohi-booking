@@ -8,7 +8,7 @@ import { Controller, useFormContext } from "react-hook-form";
 
 import { useExtraPrice } from "@/hooks/use-extra-price";
 import { extraPriceKind } from "@/lib/extra-price-kind";
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 
 import type { BookingValues } from "../../lib/booking-form";
 import { useBooking } from "../booking-provider";
@@ -37,20 +37,23 @@ function ExtraRow({
   item,
   offered,
   note,
+  settledAtBase = false,
 }: {
   item: OptionalExtra;
   offered?: OfferedExtra | undefined;
   note?: string;
+  /** No vendor prices it, so the quote adds its catalogue rate to what is paid at check-in. */
+  settledAtBase?: boolean;
 }) {
   const tExtras = useTranslations("Common.extras");
-  const money = useMoney();
+  const money = useExactMoney();
   const extraPrice = useExtraPrice();
   const kind = extraPriceKind(item, offered);
   /* Whether it is settled at the base is the offer's answer where there is one; the two
      sources disagree on individual extras, and the offer is what will be charged. */
-  const atCheckIn = offered
-    ? offered.payWhen === "at_check_in"
-    : item.pricingType === "pay_at_check_in";
+  const atCheckIn =
+    settledAtBase ||
+    (offered ? offered.payWhen === "at_check_in" : item.pricingType === "pay_at_check_in");
   /*
    * An extra the charter price already covers is collected nowhere, so it carries no caption.
    * One with no published rate carries the opposite: the figure beside it is not a price, and
@@ -90,7 +93,7 @@ function ExtraRow({
 export default function ExtrasStep() {
   const t = useTranslations("Booking.extras");
   const tExtras = useTranslations("Common.extras");
-  const money = useMoney();
+  const money = useExactMoney();
   const { control } = useFormContext<BookingValues>();
   const { listing, quote, selectExtras, requestedExtras, requestExtras } = useBooking();
 
@@ -199,12 +202,12 @@ export default function ExtrasStep() {
               ))}
 
               {/*
-                Shown and tickable, but asked for rather than bought: nothing here can be
-                priced, so a box that reprices would take a choice and charge nothing for it.
-                Two separate reasons, and the note says which — the provider cannot price this
-                id space at all, or the operator did not put this extra on the offer for these
-                dates. Either way the tick is recorded on the quote and reaches the base as
-                special-request text when the booking is made.
+                Shown and tickable, but asked for rather than bought: the vendor will not book
+                these. Two separate reasons — the provider cannot price this id space at all,
+                or the operator did not put this extra on the offer for these dates. Either way
+                the tick is recorded on the quote and reaches the base as special-request text
+                when the booking is made. The first kind still counts toward the total: the
+                quote adds its catalogue rate as a charge paid at check-in.
 
                 Off the booking context rather than the form: these never reach `createHold`
                 as a field, and giving them one would put a second, unpriced list into a
@@ -212,7 +215,7 @@ export default function ExtrasStep() {
               */}
               {[
                 { items: notOnTheseDates, note: t("notOnTheseDatesAsk") },
-                { items: arrangeAtBase, note: t("arrangeAtBase") },
+                { items: arrangeAtBase, note: undefined },
               ].map(({ items, note }) =>
                 items.map((item) => (
                   <label
@@ -229,7 +232,7 @@ export default function ExtrasStep() {
                         )
                       }
                     />
-                    <ExtraRow item={item} note={note} />
+                    <ExtraRow item={item} note={note} settledAtBase={note === undefined} />
                   </label>
                 )),
               )}

@@ -1,3 +1,8 @@
+import type { CharterPeriod } from "@/components/shared/form/charter-date-field";
+import { addDays } from "@/lib/date";
+
+import { filterParsers } from "./search-params";
+
 /**
  * The search the visitor left behind, so a detail page can send them back to it.
  *
@@ -31,4 +36,23 @@ export function lastSearchHref(): string {
   } catch {
     return SEARCH_FALLBACK_HREF;
   }
+}
+
+/**
+ * The exact charter a remembered search asked for, so a page without dates of its own (the
+ * wishlist) can open a yacht on the week the visitor was looking at. Null for an undated search,
+ * one of any length, or one whose start has already passed.
+ */
+export function periodFromSearchHref(href: string, today: string): CharterPeriod | null {
+  const query = href.split("?")[1];
+  if (!query) return null;
+  const params = new URLSearchParams(query);
+  const checkIn = filterParsers.startDate.parse(params.get("startDate") ?? "");
+  const duration = filterParsers.duration.parse(params.get("duration") ?? "");
+  if (!checkIn || !duration || duration === "any" || checkIn < today) return null;
+  return { checkIn, checkOut: addDays(checkIn, Number(duration)) };
+}
+
+export function lastSearchedPeriod(today: string): CharterPeriod | null {
+  return periodFromSearchHref(lastSearchHref(), today);
 }

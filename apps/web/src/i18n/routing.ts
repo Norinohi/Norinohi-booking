@@ -14,10 +14,16 @@ import { defaultLocale, locales } from "./config";
  * pasted without a locale. next-intl writes it with no expiry, which makes it a session cookie:
  * a visitor who picked Ukrainian was back on their browser's language the next morning. A year
  * is what the choice is worth, and it holds nothing but a two-letter code.
+ *
+ * Only the language switcher writes it (next-intl's router sets it client-side on a locale
+ * change). The proxy drops the copy the middleware would write on every prefixed page load, so
+ * following an `/en/...` link from an ad does not overwrite a visitor's saved choice.
  */
+export const LOCALE_COOKIE = "NEXT_LOCALE";
+
 export const routing = defineRouting({
   locales,
   defaultLocale,
   localePrefix: "always",
-  localeCookie: { maxAge: 60 * 60 * 24 * 365 },
+  localeCookie: { name: LOCALE_COOKIE, maxAge: 60 * 60 * 24 * 365 },
 });

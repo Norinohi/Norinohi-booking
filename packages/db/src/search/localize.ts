@@ -114,12 +114,26 @@ export async function localizeSearchDocs<T extends ListingSearchDoc>(
     country: translate("country", doc.country),
     region: translate("region", doc.region),
     location: translate("location", doc.location),
-    baseName: translate("marina", doc.baseName),
+    baseName: baseLabel(translate, doc.baseName, doc.location),
     amenities: doc.amenities.map((amenity) => translate("equipment", amenity)),
     /* Kept beside the translated labels because curated rank, the amenity headings and the
        equipment filter are all keyed on the English value. See `amenityKeys` on the doc. */
     amenityKeys: doc.amenities,
+    categoryKey: doc.category,
   }));
+}
+
+/**
+ * A base's label, following its location's copy when the base is only named after it.
+ *
+ * NauSYS bases carry no name, so the projection copies the location in, and the two then took
+ * separate translations: es kept the marina "Lavrion - Olympic Marine" untranslated beside the
+ * location "Lavrion - Marina olímpica", and the address line printed the same place twice.
+ */
+export function baseLabel(translate: FacetTranslator, baseName: string, location: string): string {
+  const own = translate("marina", baseName);
+  if (own !== baseName || normalizedKey(baseName) !== normalizedKey(location)) return own;
+  return translate("location", location);
 }
 
 /*

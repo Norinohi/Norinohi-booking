@@ -24,12 +24,13 @@ export type CharterPeriod = { checkIn: string; checkOut: string };
  * The two reasons a greyed day is worth explaining, and how each is tinted.
  *
  * Only these two: a day the operator withheld for a service week or a regatta is its own
- * business and stays plain grey. The tint sits on top of the disabled treatment rather than
- * replacing it, so a marked day still reads as unclickable.
+ * business and stays plain grey. The 50 shades were near-white and then faded to 40% with every
+ * other disabled day, so nobody could see them; a booked day is also struck through, because
+ * red and yellow alone are the pair colour-blind visitors lose first.
  */
 const OCCUPANCY_TINT = {
-  booked: "bg-error-50 text-error-500",
-  held: "bg-warning-50 text-warning-600",
+  booked: "bg-error-200 text-error-800 line-through",
+  held: "bg-warning-200 text-warning-800",
 } as const;
 
 /*
@@ -37,9 +38,10 @@ const OCCUPANCY_TINT = {
  * calendar takes pointer events off every disabled day, and a tint nobody can hover over says
  * only that something is different about this date. Important because the rule it overrides is
  * a `disabled:` variant, which the cascade would otherwise apply last whatever the class order.
- * The cursor goes back to an arrow so the day still reads as unclickable, which it is.
+ * The cursor goes back to an arrow so the day still reads as unclickable, which it is. The
+ * opacity is restored the same way, or the disabled fade washes the tint back out.
  */
-const MARKED_DAY = "pointer-events-auto! cursor-default";
+const MARKED_DAY = "pointer-events-auto! cursor-default opacity-100!";
 
 /*
  * The date control for a charter, driven by what the listing's offers will sell rather than by
@@ -130,7 +132,10 @@ export default function CharterDateField({
    * the boat.
    */
   function dayModifier(date: Date) {
-    const status = occupancyStatusOn(dayFromNative(date), offers);
+    const day = dayFromNative(date);
+    /* A past day is unavailable anyway, and tinting it would pull the eye away from the season ahead. */
+    if (day < today) return undefined;
+    const status = occupancyStatusOn(day, offers);
     if (!status) return undefined;
     return { className: cn(OCCUPANCY_TINT[status], MARKED_DAY), label: t(`day.${status}`) };
   }
@@ -234,7 +239,10 @@ function OccupancyLegend() {
     <ul className="flex flex-wrap gap-x-4 gap-y-1 rounded-lg bg-natural-50 px-3 py-2 text-sm leading-[1.3] text-natural-600">
       {(["booked", "held"] as const).map((status) => (
         <li key={status} className="flex items-center gap-2">
-          <span aria-hidden className={cn("size-3 rounded-xs", OCCUPANCY_TINT[status])} />
+          <span
+            aria-hidden
+            className={cn("size-4 rounded-xs ring-1 ring-black/10", OCCUPANCY_TINT[status])}
+          />
           {t(`day.${status}`)}
         </li>
       ))}

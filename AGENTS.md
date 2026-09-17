@@ -17,6 +17,7 @@ pnpm build                   # turbo run build — next build + tsdown
 pnpm check-types             # turbo run check-types — 6 tasks: web, server, api, db, providers, @yacht-charter/ui
 pnpm check                   # oxlint && oxfmt --write — NOTE: --write mutates files
 pnpm test                    # turbo run test — vitest in api, db, providers
+pnpm test:db                 # database suites — needs `pnpm db:start`; see packages/db/AGENTS.md
 ```
 
 Database tasks all proxy to `@yacht-charter/db`; Postgres runs via `packages/db/docker-compose.yml`:
@@ -38,8 +39,8 @@ and fails trying to re-create them. Use `db:generate` + `db:migrate`. A database
 was built with `push` before this was understood has an empty migration ledger and
 needs `pnpm db:baseline --apply` once before `db:migrate` will run.
 
-**CI** runs on pull requests (`.github/workflows/ci.yml`): `check-types`, `oxlint`, `test`, and the
-instant-navigation e2e guards. A direct push to a Railway-watched branch still deploys without
+**CI** runs on pull requests (`.github/workflows/ci.yml`): `check-types`, `oxlint`, `test`, the
+database suites (`test:db`), and the instant-navigation e2e guards. A direct push to a Railway-watched branch still deploys without
 those checks, so the gate only protects work that goes through a PR.
 
 **The web build calls the API.** The public catalog routes cache their reads (docs/adr/0002), and a
@@ -62,6 +63,7 @@ Twelve pnpm workspace projects: two apps (`apps/web`, `apps/server`) and nine pa
 `packages/api` is the contract every other workspace depends on.
 
 - `packages/api/src/index.ts` defines `o` (the oRPC builder bound to `Context`), `publicProcedure`, and `protectedProcedure`. `protectedProcedure` applies a `requireAuth` middleware that throws `ORPCError("UNAUTHORIZED")` when `context.session?.user` is missing.
+- Services throw the domain errors in `packages/api/src/errors.ts` (`NotFoundError`, `ConflictError`, ...), never `ORPCError`. A middleware on every procedure (`packages/api/src/orpc-errors.ts`) turns them into the same `ORPCError` on the wire, so services stay callable from jobs and future agents without the HTTP layer. The vendored `orpc-contract` skill predates this and still shows `ORPCError` in services; follow this rule instead.
 - `packages/api/src/routers/index.ts` exports `appRouter` plus the `AppRouter` and `AppRouterClient` types.
 - `packages/api/src/context.ts` exports `createContext` and the `Context` type; it resolves the session via `auth.api.getSession`.
 - `apps/server/src/index.ts` mounts `RPCHandler` at prefix `/rpc` and `OpenAPIHandler` at `/api-reference`.
@@ -92,6 +94,8 @@ Adding a better-auth plugin that needs tables means editing `packages/db/src/sch
 ### Logging
 
 `evlog` is wired in three places: `initLogger` in `apps/server/src/index.ts`, `createEvlog`/`createInstrumentation` in `apps/web/src/lib/evlog.ts`, and `evlogMiddleware` in `apps/web/src/proxy.ts` (matcher `/api/:path*`). `apps/web/instrumentation.ts` defers to `src/lib/evlog`.
+
+Server-side code in `packages/api`, `packages/providers` and `apps/server` does not call `console.*`. It emits one flat event through evlog's global `log` (`log.warn({ action: "quote.unsellable", listingId, ... })`), so the line reaches the drain as well as the terminal. A caught value goes in through `...thrownFields(parseError(cause))` from `@yacht-charter/providers/shared/log-fields`, which flattens the cause chain and keeps a `ProviderError` to its sanitized context. Never put a raw request or response body on an event; pass it through `redactSecrets` first. Human-facing CLIs keep printing to stdout: `src/scripts/`, the `packages/db` seed, baseline and translation commands, and the job and seed entry points at the top of `apps/server/src/` (whose run-level event comes from `job.ts`).
 
 Sentry hangs off that, as an evlog drain rather than its own SDK: `packages/observability` turns the DSN into one batched drain, and each server registers it once (`apps/server/src/observability.ts`, `apps/web/src/lib/evlog.ts`). Register the drain on the _global_ logger only, never also on `createEvlog`, or the middleware sends every event twice. With no DSN set `createObservability` returns `drain: undefined` and logging is unchanged, so the integration is dormant rather than broken. Browser-side product analytics is GA4, mounted in `apps/web/src/app/[locale]/layout.tsx` via `@next/third-parties` and gated behind the consent banner in `src/components/layout/cookie-consent.tsx` — both render only where `NEXT_PUBLIC_GA_ID` is set, which is production alone. The Consent Mode bootstrap in `src/lib/consent.ts` must stay ahead of the tag: order is load-bearing. Browser error tracking is not wired at all.
 

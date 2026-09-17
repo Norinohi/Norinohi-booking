@@ -94,6 +94,8 @@ export default function DatePicker({
 }: DatePickerProps) {
   const format = useFormatter();
   const locale = useLocale();
+  /* Monday everywhere the site is read except English, whose visitors expect the Sunday column. */
+  const weekStartsOn = locale === "en" ? 0 : 1;
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isOpen = open ?? uncontrolledOpen;
 
@@ -128,7 +130,7 @@ export default function DatePicker({
    */
   function rangeLabel(from: Date, to: Date): string {
     const yearless = dateFormat === "dayShort" && from.getFullYear() === to.getFullYear();
-    return `${day(from, yearless ? "dayCompact" : dateFormat)} – ${day(to)}`;
+    return `${day(from, yearless ? "dayCompact" : dateFormat)} - ${day(to)}`;
   }
 
   const label =
@@ -167,6 +169,9 @@ export default function DatePicker({
             // Match the trigger width, but never below the calendar's own size (7 × 36px cells +
             // padding ≈ 284px) — a narrow trigger would otherwise squash and clip the month grid.
             "w-(--anchor-width) min-w-72 border-0 bg-transparent p-0 shadow-none",
+            /* One card around the rule, the month and its legend: drawn apart, the legend read as
+               a stray panel floating over the page. */
+            (hint || legend) && "rounded-lg border border-border bg-card p-4 shadow-popover",
             contentClassName,
           )}
         >
@@ -178,9 +183,13 @@ export default function DatePicker({
           ) : null}
           {props.mode === "range" ? (
             <Calendar
-              className="w-full"
+              className={cn(
+                "w-full",
+                (hint || legend) && "border-0 bg-transparent p-0 shadow-none",
+              )}
               mode="range"
               locale={locale}
+              weekStartsOn={weekStartsOn}
               defaultMonth={defaultMonth}
               disabled={isDayDisabled}
               dayModifier={dayModifier}
@@ -189,8 +198,12 @@ export default function DatePicker({
             />
           ) : (
             <Calendar
-              className="w-full"
+              className={cn(
+                "w-full",
+                (hint || legend) && "border-0 bg-transparent p-0 shadow-none",
+              )}
               locale={locale}
+              weekStartsOn={weekStartsOn}
               defaultMonth={defaultMonth}
               disabled={isDayDisabled}
               dayModifier={dayModifier}
@@ -198,7 +211,7 @@ export default function DatePicker({
               onSelect={selectDay}
             />
           )}
-          {legend ? <div className="mt-2">{legend}</div> : null}
+          {legend ? <div className="mt-3">{legend}</div> : null}
         </PopoverContent>
       </Popover>
 

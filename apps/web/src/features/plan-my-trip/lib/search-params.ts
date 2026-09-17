@@ -23,7 +23,7 @@ export type TripVibe = (typeof TRIP_VIBES)[number];
 export const DURATIONS = ["7", "14", "21", "21-plus"] as const;
 export type Duration = (typeof DURATIONS)[number];
 
-export const BUDGETS = ["300-600", "600-1000", "1000-1200", "2000-plus"] as const;
+export const BUDGETS = ["300-600", "600-1000", "1000-1200", "1200-2000", "2000-plus"] as const;
 export type Budget = (typeof BUDGETS)[number];
 
 export const plannerParsers = {

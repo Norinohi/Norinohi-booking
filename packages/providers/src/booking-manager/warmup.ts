@@ -1,3 +1,4 @@
+import { log } from "evlog";
 import { z } from "zod";
 
 import type { SyncReporter } from "../sync/runner";
@@ -55,6 +56,12 @@ export function coldStartNotice(result: BookingManagerWarmupResult): string | nu
     return null;
   }
   return `Booking Manager warm-up: ${result.warmed}/${result.attempted} answered, slowest ${result.slowestMs} ms; the sweep may still pay a cold start`;
+}
+
+/** Logs `coldStartNotice` as a warning event when there is one to give. */
+export function reportColdStart(result: BookingManagerWarmupResult): void {
+  const notice = coldStartNotice(result);
+  if (notice) log.warn({ action: "booking_manager.cold_start", ...result, notice });
 }
 
 export interface BookingManagerWarmupResult {

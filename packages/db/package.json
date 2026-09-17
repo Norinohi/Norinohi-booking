@@ -11,7 +11,8 @@
   },
   "scripts": {
     "check-types": "tsc -b --noEmit",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run --passWithNoTests --exclude \"**/*.db.test.ts\" --exclude \"**/node_modules/**\"",
+    "test:db": "vitest run .db.test.ts",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
@@ -22,6 +23,7 @@
     "db:stop": "docker compose stop",
     "db:down": "docker compose down",
     "translations:apply": "node --env-file-if-exists=../../apps/server/.env --import tsx src/apply-translations.ts",
+    "translations:missing-extras": "node --env-file-if-exists=../../apps/server/.env --import tsx src/missing-extra-labels.ts",
     "seed": "node --env-file-if-exists=../../apps/server/.env --import tsx src/seed-cli.ts"
   },
   "dependencies": {

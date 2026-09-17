@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 
 import { MarinaDetails } from "@/components/shared/overlay/marina-popover";
 import MapPreview from "@/components/shared/overlay/map-preview";
+import { useBooking } from "@/features/booking";
 import { useMoney } from "@/hooks/use-money";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
@@ -52,6 +53,7 @@ export default function ImportantInfoSection() {
   const tMethod = useTranslations("YachtDetail.importantInfo.paymentMethod");
   const money = useMoney();
   const { data } = useListingDetail();
+  const { quote } = useBooking();
 
   if (!data) return null;
 
@@ -69,8 +71,10 @@ export default function ImportantInfoSection() {
   const rows: Row[] = [
     { key: "charterCompany", value: info.charterCompany },
     { key: "pickUpAddress", value: info.yachtPickupAddress, mapPoint: info.map },
-    { key: "pickUp", value: info.yachtPickup.time ?? "" },
-    { key: "dropOff", value: info.yachtDropOff.time ?? "" },
+    /* The live offer's handover over the base's, as the sidebar reads it: NauSYS bases say
+       16:00/09:00 where the operator's offer for the same charter says 17:00/08:00. */
+    { key: "pickUp", value: quote?.checkInTime ?? info.yachtPickup.time ?? "" },
+    { key: "dropOff", value: quote?.checkOutTime ?? info.yachtDropOff.time ?? "" },
     { key: "policies", value: tInfo(POLICY_KEY[info.cancellationPaymentPolicies]) },
     ...(deposit
       ? [

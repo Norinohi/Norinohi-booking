@@ -7,7 +7,9 @@
     "build": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/check-api.mjs && next build",
     "build:test": "EXPOSE_TESTING_API=1 pnpm build",
     "check-types": "next typegen && tsc --noEmit",
+    "check-messages": "node scripts/check-messages.mjs",
     "start": "next start",
+    "test": "vitest run",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -58,6 +60,7 @@
     "@types/supercluster": "^7.1.3",
     "@yacht-charter/config": "workspace:*",
     "tailwindcss": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

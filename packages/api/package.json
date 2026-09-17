@@ -11,7 +11,8 @@
   },
   "scripts": {
     "check-types": "tsc -b",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests --exclude \"**/*.db.test.ts\" --exclude \"**/node_modules/**\"",
+    "test:db": "vitest run .db.test.ts"
   },
   "dependencies": {
     "@orpc/client": "catalog:",

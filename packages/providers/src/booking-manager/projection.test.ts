@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { JsonValue } from "../shared/json";
-import type { ProviderRecordSet } from "../types";
+import type { ProviderRecordSet, ProviderResourceType } from "../types";
 import { projectBookingManagerCatalogue } from "./projection";
 
 function records(countries: unknown[]): ProviderRecordSet {
@@ -216,29 +216,42 @@ describe("check-in rules", () => {
     ).toEqual([{ checkinWeekday: 6, checkoutWeekday: 6, minNights: 7, maxNights: undefined }]);
   });
 
-  it("narrows a yacht that claims every day to the turnaround we can price", () => {
-    /*
-     * The vendor writes this as defaultCheckInDay -1 plus a full list, and taking it
-     * literally is what broke listing five-o-sun-odyssey-509: seven paired rules, a
-     * charter-period line naming all seven, and mid-week starts on the calendar that
-     * /offers refused because /prices is only ever swept Saturday to Saturday.
-     */
+  /*
+   * The vendor writes "any day" as defaultCheckInDay -1 plus a full list. Measured against
+   * /offers, such a yacht sells from every day at its stated minimum, so it is one rule with no
+   * weekday rather than seven paired ones, or the Saturday this used to be narrowed to.
+   */
+  it("reads a yacht that takes every day as one rule with no weekday", () => {
     const rules = rulesOf({
       defaultCheckInDay: -1,
       allCheckInDays: [1, 2, 3, 4, 5, 6, 7],
-      minimumCharterDuration: 0,
+      minimumCharterDuration: 3,
     });
 
     expect(rules).toEqual([
-      { checkinWeekday: 6, checkoutWeekday: 6, minNights: undefined, maxNights: undefined },
+      { checkinWeekday: undefined, checkoutWeekday: undefined, minNights: 3, maxNights: undefined },
     ]);
   });
 
-  it("keeps the days a yacht offers when none of them is the turnaround", () => {
-    // No rate behind either day, so inventing a Saturday would be a different lie.
+  it("lets a charter start and end on any of the days a yacht lists", () => {
+    const rules = rulesOf({
+      defaultCheckInDay: 7,
+      allCheckInDays: [4, 7],
+      minimumCharterDuration: 3,
+    });
+
+    expect(rules).toEqual([
+      { checkinWeekday: 3, checkoutWeekday: 3, minNights: 3, maxNights: undefined },
+      { checkinWeekday: 3, checkoutWeekday: 6, minNights: 3, maxNights: undefined },
+      { checkinWeekday: 6, checkoutWeekday: 3, minNights: 3, maxNights: undefined },
+      { checkinWeekday: 6, checkoutWeekday: 6, minNights: 3, maxNights: undefined },
+    ]);
+  });
+
+  it("keeps the days a yacht offers when none of them is Saturday", () => {
     const rules = rulesOf({ defaultCheckInDay: -1, allCheckInDays: [2, 5] });
 
-    expect(rules?.map((rule) => rule.checkinWeekday)).toEqual([1, 4]);
+    expect([...new Set(rules?.map((rule) => rule.checkinWeekday))]).toEqual([1, 4]);
   });
 
   it("falls back to the default day when no list is sent", () => {
@@ -249,5 +262,157 @@ describe("check-in rules", () => {
     expect(rulesOf({ defaultCheckInDay: -1, minimumCharterDuration: 5 })).toEqual([
       { checkinWeekday: undefined, checkoutWeekday: undefined, minNights: 5, maxNights: undefined },
     ]);
+  });
+});
+
+type Payload = { id: number } & Record<string, JsonValue>;
+
+/** Keyed by vendor id, which is how the ingest files every record. */
+const recordSet = (entries: [ProviderResourceType, Payload[]][]): ProviderRecordSet =>
+  new Map(
+    entries.map(([resourceType, payloads]) => [
+      resourceType,
+      payloads.map((payload) => ({ externalId: String(payload.id), payload })),
+    ]),
+  );
+
+/*
+ * The vendor files a country under a world region ("Southern Europe") and a base under sailing
+ * areas that are coarser than our regions. The base belongs in the region the other vendor's
+ * boats around it already sail from, so both fleets answer one search filter.
+ */
+describe("geography", () => {
+  const referenceRegions = [
+    { countryCode: "HR", name: "Split region", points: [{ lat: 43.5089, lng: 16.4392 }] },
+    { countryCode: "HR", name: "Zadar region", points: [{ lat: 44.1194, lng: 15.2314 }] },
+    { countryCode: "HR", name: "Dubrovnik region", points: [{ lat: 42.6697, lng: 18.1246 }] },
+    { countryCode: "ME", name: "Montenegro", points: [{ lat: 42.4347, lng: 18.6961 }] },
+  ];
+
+  const geographyOf = (bases: Payload[]) =>
+    projectBookingManagerCatalogue(
+      recordSet([
+        [
+          "country",
+          [
+            { id: 191, name: "Croatia", shortName: "HR", worldRegion: 39 },
+            { id: 499, name: "Montenegro", shortName: "ME", worldRegion: 39 },
+            { id: 470, name: "Malta", shortName: "MT", worldRegion: 39 },
+          ],
+        ],
+        ["region", [{ id: 39, name: "Southern Europe" }]],
+        [
+          "location",
+          [
+            { id: 3, name: "Split" },
+            { id: 9, name: "Dubrovnik / Montenegro" },
+            { id: 44, name: "Malta" },
+          ],
+        ],
+        ["base", bases],
+      ]),
+      { referenceRegions },
+    );
+
+  it("places a Split base in our Split region, with its town as the location", () => {
+    const { regions, locations, bases } = geographyOf([
+      {
+        id: 1,
+        name: "ACI Marina Split",
+        city: "Split",
+        countryId: 191,
+        latitude: "43.5040",
+        longitude: "16.4300",
+        sailingAreas: [3],
+      },
+    ]);
+
+    expect(regions).toEqual([
+      { externalId: "region:191:Split region", externalCountryId: "191", name: "Split region" },
+    ]);
+    expect(locations).toEqual([
+      {
+        externalId: "location:191:Split region:Split",
+        externalRegionId: "region:191:Split region",
+        name: "Split",
+        city: "Split",
+      },
+    ]);
+    expect(bases[0]?.externalLocationId).toBe("location:191:Split region:Split");
+  });
+
+  it("places a base with no sailing area in the nearest region by coordinates", () => {
+    const { regions } = geographyOf([
+      {
+        id: 1,
+        name: "Marina Borik",
+        city: "Zadar",
+        countryId: 191,
+        latitude: "44.1330",
+        longitude: "15.2140",
+        sailingAreas: [],
+      },
+    ]);
+
+    expect(regions.map((item) => item.name)).toEqual(["Zadar region"]);
+  });
+
+  it("splits a sailing area that crosses a border by country", () => {
+    const { regions } = geographyOf([
+      { id: 1, name: "Port Gruž", countryId: 191, sailingAreas: [9] },
+      { id: 2, name: "Porto Montenegro", countryId: 499, sailingAreas: [9] },
+    ]);
+
+    expect(regions.map((item) => [item.externalCountryId, item.name])).toEqual([
+      ["191", "Dubrovnik region"],
+      ["499", "Montenegro"],
+    ]);
+  });
+
+  it("falls back to the sailing area, then the country, where no region of ours fits", () => {
+    const { regions } = geographyOf([
+      { id: 1, name: "Grand Harbour Marina", countryId: 470, sailingAreas: [44] },
+      { id: 2, name: "Somewhere", countryId: 470, sailingAreas: [] },
+    ]);
+
+    expect(regions.map((item) => item.name)).toEqual(["Malta"]);
+  });
+
+  it("never names a region after the world region", () => {
+    const { regions } = geographyOf([
+      { id: 1, name: "ACI Marina Split", countryId: 191, sailingAreas: [3] },
+      { id: 2, name: "Marina Punat", countryId: 191, sailingAreas: [] },
+      { id: 3, name: "Grand Harbour Marina", countryId: 470, sailingAreas: [44] },
+    ]);
+
+    expect(regions.map((item) => item.name)).not.toContain("Southern Europe");
+  });
+});
+
+describe("placeholder shipyards", () => {
+  it("leaves a yacht filed under a shipyard called Unknown without a builder", () => {
+    const yacht = { companyId: 225, homeBaseId: 7 };
+    const catalogue = projectBookingManagerCatalogue(
+      recordSet([
+        [
+          "builder",
+          [
+            { id: 1, name: "Unknown" },
+            { id: 2, name: "Bavaria" },
+          ],
+        ],
+        [
+          "yacht",
+          [
+            { ...yacht, id: 5001, name: "Nobody", model: "One-off", shipyardId: 1 },
+            { ...yacht, id: 5002, name: "Zaffiro", model: "Cruiser 46", shipyardId: 2 },
+          ],
+        ],
+      ]),
+    );
+
+    expect(catalogue.builders.map((item) => item.name)).toEqual(["Bavaria"]);
+    expect(catalogue.listings.map((item) => item.externalBuilderId)).toEqual([undefined, "2"]);
+    expect(catalogue.models.map((item) => item.externalBuilderId)).toEqual([undefined, "2"]);
   });
 });

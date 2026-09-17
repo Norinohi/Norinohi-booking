@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 
 import { defaultLocale } from "@/i18n/config";
 
-import { CatalogCards, CatalogSiblings, SearchScreen } from "@/features/yachts";
+import { CatalogBreadcrumbs, CatalogCards, CatalogSiblings, SearchScreen } from "@/features/yachts";
 import {
   prefetchCatalogPages,
   prefetchCatalogResults,
@@ -14,7 +14,9 @@ import {
   type CatalogPage,
   catalogPageHeading,
   catalogPageHref,
+  catalogPageRegions,
   catalogPageSiblings,
+  catalogPageTrail,
   findCatalogPage,
   prerenderedCatalogPages,
 } from "@/features/yachts/lib/catalog-page";
@@ -29,8 +31,6 @@ import { buildMetadata } from "@/lib/seo";
  */
 export const instant = false;
 
-/** As many boats as the page shows, and as many as its ItemList declares. */
-const PAGE_SIZE = 24;
 const ROOT = "yacht-charter";
 
 export async function generateStaticParams() {
@@ -95,30 +95,20 @@ export default async function CatalogPageRoute({
 
   /* The facets too: without them the filter controls have no options to match the pinned facet
    * against, and every control reads as empty while the chips already name it. */
-  const [results, facets] = await Promise.all([
-    prefetchCatalogResults(page.filters, locale, PAGE_SIZE),
+  const [{ listings, state: results }, facets] = await Promise.all([
+    prefetchCatalogResults(page.filters, locale),
     prefetchSearch(facetScopeOf(lockedFor(page))),
   ]);
-  const listings = results.items.map((item) => item.listing);
 
   const t = await getTranslations("Seo.CatalogPage");
   const heading = catalogPageHeading(t, page);
+  const trail = catalogPageTrail(t, pages, page);
 
   return (
     <>
       <JsonLd
         data={[
-          breadcrumbNode(
-            page.segments.map((_, index) => {
-              const trail = page.segments.slice(0, index + 1);
-              const crumb = findCatalogPage(pages, ROOT, trail);
-              return {
-                name: crumb ? catalogPageHeading(t, crumb) : (trail[index] ?? ""),
-                path: `/${ROOT}/${trail.join("/")}`,
-              };
-            }),
-            locale,
-          ),
+          breadcrumbNode(trail, locale),
           itemListNode({
             name: heading,
             items: listings.map((listing) => ({
@@ -129,12 +119,18 @@ export default async function CatalogPageRoute({
           }),
         ]}
       />
-      <Hydrated state={facets}>
+      <CatalogBreadcrumbs trail={trail} />
+      <Hydrated state={{ mutations: [], queries: [...facets.queries, ...results.queries] }}>
         <SearchScreen
           heading={heading}
           locked={lockedFor(page)}
           resultsFallback={<CatalogCards listings={listings} />}
-          footer={<CatalogSiblings siblings={catalogPageSiblings(pages, page)} />}
+          footer={
+            <CatalogSiblings
+              siblings={catalogPageSiblings(pages, page)}
+              regions={catalogPageRegions(pages, page)}
+            />
+          }
         />
       </Hydrated>
     </>

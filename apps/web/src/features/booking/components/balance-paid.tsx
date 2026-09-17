@@ -6,7 +6,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
 import { Image } from "@/components/shared/data-display/image";
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 import { GROUP, POP, RISE } from "@/lib/motion";
 
 import type { BookingDetail } from "../api/queries";
@@ -26,7 +26,7 @@ export default function BalancePaid({
   isGuest: boolean;
 }) {
   const t = useTranslations("Booking.balance");
-  const money = useMoney();
+  const money = useExactMoney();
   const format = useFormatter();
   const day = (date: string) => format.dateTime(new Date(date), "dayShort");
 

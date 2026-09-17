@@ -1,4 +1,8 @@
 import type { RouterClient } from "@orpc/server";
+import {
+  passwordResetTargetInputSchema,
+  passwordResetTargetSchema,
+} from "../contracts/password-reset";
 import { emptyInputSchema } from "../contracts/primitives";
 
 import {
@@ -7,8 +11,9 @@ import {
   profileUpdateInputSchema,
 } from "../contracts/profile";
 import { protectedProcedure, publicProcedure } from "../index";
+import { passwordResetTarget } from "../services/password-reset";
 import { deactivateProfile, getProfile, updateProfile } from "../services/profile";
-import { adminRouter } from "./admin";
+import { adminRouter } from "./admin/index";
 import { availabilityRouter } from "./availability";
 import { bookingRouter, checkoutRouter } from "./booking";
 import { charterSearchRouter } from "./charter-search";
@@ -114,6 +119,23 @@ export const appRouter = {
         await deactivateProfile(context.db, context.session.user.id);
         return { deactivated: true as const };
       }),
+  },
+  passwordReset: {
+    target: publicProcedure
+      .route({
+        method: "POST",
+        path: "/passwordReset/target",
+        operationId: "getPasswordResetTarget",
+        summary: "Identify the account behind a set-password link",
+        description:
+          "Returns the user id and email address a password reset or first-password token belongs to, or null when the token is unknown, already used or expired. The set-password screen uses it to warn a visitor who is signed in to a different account.",
+        tags: ["Profile"],
+        successDescription: "The account the token belongs to, or null.",
+        spec: withJsonBodyExample({ token: "TznxULN1GV6wsMDtbWqziklV" }),
+      })
+      .input(passwordResetTargetInputSchema)
+      .output(passwordResetTargetSchema)
+      .handler(({ context, input }) => passwordResetTarget(context.db, input.token)),
   },
   referral: referralRouter,
   credit: creditRouter,

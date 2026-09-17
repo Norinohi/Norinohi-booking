@@ -11,7 +11,7 @@ import {
   ComboboxTrigger,
 } from "@yacht-charter/ui/components/form/combobox";
 import { Anchor, Globe, Map as MapIcon, MapPin } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useState } from "react";
 
 import { type Suggestion, suggestionsQueryOptions } from "../../api/queries";
@@ -20,7 +20,7 @@ import { type Suggestion, suggestionsQueryOptions } from "../../api/queries";
 const KIND_ICON = {
   country: <Globe className="size-5 shrink-0 text-natural-400" />,
   region: <MapIcon className="size-5 shrink-0 text-natural-400" />,
-  location: <MapPin className="size-5 shrink-0 text-natural-400" />,
+  city: <MapPin className="size-5 shrink-0 text-natural-400" />,
   base: <Anchor className="size-5 shrink-0 text-natural-400" />,
 } satisfies Record<Suggestion["kind"], ReactNode>;
 
@@ -41,6 +41,7 @@ interface LocationSearchProps {
 
 export default function LocationSearch({ value, onSelect, placeholder }: LocationSearchProps) {
   const t = useTranslations("Yachts.searchBar");
+  const locale = useLocale();
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
 
@@ -49,7 +50,7 @@ export default function LocationSearch({ value, onSelect, placeholder }: Locatio
     return () => clearTimeout(id);
   }, [search]);
 
-  const { data } = useQuery(suggestionsQueryOptions(debounced));
+  const { data } = useQuery(suggestionsQueryOptions(debounced, locale));
   const items = data ?? [];
   /*
    * The empty field answers with the curated countries and marks every one of them; a typeahead
@@ -76,6 +77,8 @@ export default function LocationSearch({ value, onSelect, placeholder }: Locatio
         icon={<MapPin className="size-6 shrink-0 text-foreground" />}
         onClear={value ? () => onSelect(null) : undefined}
         clearLabel={t("clearLocation")}
+        /* A combobox takes no name from its content, so screen readers announced a bare control. */
+        aria-label={value ? `${placeholder}: ${value}` : placeholder}
       >
         {value || <span className="text-placeholder-foreground">{placeholder}</span>}
       </ComboboxTrigger>
@@ -92,6 +95,9 @@ export default function LocationSearch({ value, onSelect, placeholder }: Locatio
             <ComboboxItem key={`${item.kind}:${item.value}`} value={item}>
               {KIND_ICON[item.kind]}
               <span className="truncate">{item.label}</span>
+              <span className="ml-auto shrink-0 text-sm text-natural-500">
+                {t(`kinds.${item.kind}`)}
+              </span>
             </ComboboxItem>
           )}
         </ComboboxList>

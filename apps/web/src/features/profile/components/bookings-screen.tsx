@@ -1,11 +1,12 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { isClosedBooking } from "@yacht-charter/api/lib/closed-booking";
 import type { DateRange } from "@yacht-charter/ui/components/form/calendar";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 import { useRouter } from "@/i18n/navigation";
 import { useQueryStates } from "nuqs";
 
@@ -26,7 +27,7 @@ import BookingCard from "./booking-card";
  * BookingsScreen — the /profile/bookings layout: a "← Home" breadcrumb, then the account Sidebar
  * beside a "History" panel. The panel is a titled header (History + a date-range filter) over the
  * booking list and its pager, or the "No yachts yet" empty state. The list is `booking.list`; the
- * card is the shared BoatCard, fed by `booking.list`. Filter + page live in the URL (nuqs).
+ * card is the shared YachtCard, fed by `booking.list`. Filter + page live in the URL (nuqs).
  * Figma "My bookings" (972:54737).
  */
 
@@ -35,7 +36,8 @@ const CANCELLED_STATUSES = new Set(["CANCELLED", "REFUND_PENDING", "REFUNDED"]);
 
 export default function BookingsScreen({ user }: { user: { name: string; email: string } }) {
   const t = useTranslations("Bookings");
-  const formatMoney = useMoney();
+  const locale = useLocale();
+  const formatMoney = useExactMoney();
   const router = useRouter();
   const { toBookingCard } = useBookingCards();
   const [{ from, to, page }, setParams] = useQueryStates(bookingSearchParsers);
@@ -43,7 +45,7 @@ export default function BookingsScreen({ user }: { user: { name: string; email: 
   const logout = () => authClient.signOut({ fetchOptions: { onSuccess: () => router.push("/") } });
 
   const { data, isLoading } = useQuery({
-    ...bookingListQueryOptions({ page, from: from ?? undefined, to: to ?? undefined }),
+    ...bookingListQueryOptions({ page, from: from ?? undefined, to: to ?? undefined, locale }),
     placeholderData: keepPreviousData,
   });
 
@@ -111,7 +113,7 @@ export default function BookingsScreen({ user }: { user: { name: string; email: 
                          `balanceDue`, which counts the extras the base collects at the marina and
                          we must never offer to take. */
                       payBalanceHref={
-                        booking.payableNow.amountMinor > 0
+                        booking.payableNow.amountMinor > 0 && !isClosedBooking(booking.status)
                           ? `/bookings/${booking.id}/pay`
                           : undefined
                       }

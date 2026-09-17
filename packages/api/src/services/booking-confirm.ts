@@ -7,10 +7,12 @@ import { booking, payment, providerReservationEvent } from "@yacht-charter/db/sc
 import { quote } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider } from "@yacht-charter/providers";
 import { and, eq } from "drizzle-orm";
+import { parseError } from "evlog";
 
 import type { Database } from "../context";
 import { notifyBookingConfirmed } from "./booking-email";
 import { canTransition, type BookingStatus } from "./booking-state";
+import { recordProviderFailure } from "./error-audit";
 import { outstandingMinor } from "./checkout-amounts";
 import { awardReferralCredit } from "./loyalty";
 import { asCrewType, learnFromProviderRefusal } from "./quote";
@@ -116,6 +118,10 @@ export async function confirmBookingWithProvider(
     const refusal = error instanceof Error ? error : null;
     const failure = describeProviderFailure(refusal, "Provider rejected the booking");
     reportProviderRefusal("confirm", refusal, { bookingId, provider: row.provider });
+    await recordProviderFailure(db, "confirm", parseError(error), {
+      bookingId,
+      provider: row.provider,
+    });
     await markRejected(db, bookingId, row.provider, failure);
     /*
      * And take the week off the card, where the vendor said it is the week that is gone.

@@ -13,7 +13,8 @@ import { type Path, useFormContext, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { useDisplayCurrency } from "@/components/layout/currency-provider";
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
+import { exactFractionDigits } from "@/lib/money-fraction";
 
 import {
   askQuestionMutationOptions,
@@ -30,10 +31,12 @@ import {
   PAYMENT_METHOD_ORDER,
   stripeLoader,
 } from "../../../lib/stripe";
+import { useHoldDeadline } from "../../../hooks/use-hold-deadline";
 import { useBooking } from "../../booking-provider";
 import { PaymentTargetProvider } from "../../payment-target";
 import AskQuestion from "./ask-question";
 import CardPayButton from "./card-pay-button";
+import { HoldExpiredLink, HoldNotice, useHoldRemaining } from "./hold-clock";
 import PayByCard from "./pay-by-card";
 import RequestInvoice from "./request-invoice";
 
@@ -49,7 +52,9 @@ const TABS: PaymentMethod[] = ["card", "invoice", "question"];
  * when they press pay.
  */
 export default function PaymentStep() {
-  const { quote } = useBooking();
+  const { quote, slug, bookingId } = useBooking();
+  const { holdExpiresAt, closed } = useHoldDeadline(bookingId);
+  const holdLeft = useHoldRemaining(holdExpiresAt);
   const locale = useLocale();
   const stripe = stripeLoader();
   const dueNowMinor = quote?.deposit.amountMinor ?? 0;
@@ -78,13 +83,28 @@ export default function PaymentStep() {
     [dueNowMinor, currency, locale],
   );
 
+  const hold =
+    holdExpiresAt && holdLeft ? (
+      <HoldNotice expiresAt={holdExpiresAt} remaining={holdLeft} />
+    ) : null;
+
+  /* Every way to pay goes: the vendor has released the option, so there is nothing left to pay for. */
+  if (holdLeft?.expired || closed) {
+    return (
+      <div className="flex flex-col items-start gap-4 p-5">
+        {hold}
+        <HoldExpiredLink slug={slug} />
+      </div>
+    );
+  }
+
   /* Elements rejects a zero amount, so an unpriced quote falls back to the disabled panel. */
-  if (!stripe || dueNowMinor <= 0) return <PaymentMethods cardEnabled={false} />;
+  if (!stripe || dueNowMinor <= 0) return <PaymentMethods cardEnabled={false} hold={hold} />;
 
   return (
     <Elements stripe={stripe} options={options}>
       <CheckoutPaymentTarget>
-        <PaymentMethods cardEnabled />
+        <PaymentMethods cardEnabled hold={hold} />
       </CheckoutPaymentTarget>
     </Elements>
   );
@@ -116,17 +136,24 @@ function CheckoutPaymentTarget({ children }: { children: ReactNode }) {
   return <PaymentTargetProvider value={target}>{children}</PaymentTargetProvider>;
 }
 
-function PaymentMethods({ cardEnabled }: { cardEnabled: boolean }) {
+function PaymentMethods({ cardEnabled, hold }: { cardEnabled: boolean; hold: ReactNode }) {
   const t = useTranslations("Booking.payment");
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const money = useMoney();
+  const money = useExactMoney();
   const format = useFormatter();
   const { display } = useDisplayCurrency();
 
   /* Unconverted on purpose: this is the vendor's own figure in the vendor's own currency. */
-  const formatCharge = (amount: number, currency: string) =>
-    format.number(amount, { style: "currency", currency, maximumFractionDigits: 0 });
+  const formatCharge = (amountMinor: number, currency: string) => {
+    const digits = exactFractionDigits(amountMinor);
+    return format.number(amountMinor / 100, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    });
+  };
   const { control, trigger, getValues, setValue } = useFormContext<BookingValues>();
   const { quote, bookingId } = useBooking();
   /* Undefined for a signed-in customer, whose session cookie authorises these calls instead. */
@@ -156,7 +183,7 @@ function PaymentMethods({ cardEnabled }: { cardEnabled: boolean }) {
     quote && display && display !== quote.deposit.currency
       ? t("chargedIn", {
           currency: quote.deposit.currency,
-          amount: formatCharge(quote.deposit.amountMinor / 100, quote.deposit.currency),
+          amount: formatCharge(quote.deposit.amountMinor, quote.deposit.currency),
         })
       : null;
   const pending = requestInvoice.isPending || askQuestion.isPending;
@@ -216,6 +243,7 @@ function PaymentMethods({ cardEnabled }: { cardEnabled: boolean }) {
     <>
       <div className="flex flex-col gap-4 p-5">
         <h3 className="py-2 text-xl leading-[1.3] font-bold text-foreground">{t("heading")}</h3>
+        {hold}
 
         <Tabs
           variant="segmented"

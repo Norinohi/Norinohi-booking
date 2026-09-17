@@ -1,0 +1,124 @@
+{
+  "Footer": {
+    "tagline": "Entdecken Sie die Welt per Yacht.",
+    "description": "Über 30.000 Boote weltweit - bereit für Ihre nächste Reise.",
+    "columns": {
+      "destinations": "Reiseziele",
+      "charterTypes": "Charterarten",
+      "explore": "Entdecken"
+    },
+    "links": {
+      "croatia": "Kroatien",
+      "greece": "Griechenland",
+      "italy": "Italien",
+      "turkey": "Türkei",
+      "caribbean": "Karibik",
+      "thailand": "Thailand",
+      "catamaran": "Katamaran",
+      "sailingYacht": "Segelyacht",
+      "motorYacht": "Motoryacht",
+      "bareboat": "Ohne Crew",
+      "skippered": "Mit Skipper",
+      "planTrip": "Reise planen lassen",
+      "popularYachts": "Beliebte Yachten",
+      "customerReviews": "Das sagen unsere Kunden",
+      "howItWorks": "So funktioniert's",
+      "contact": "Kontakt"
+    },
+    "privacy": "Datenschutz",
+    "terms": "Nutzungsbedingungen",
+    "copyright": "© {year} YachtSkanner Platform. Alle Rechte vorbehalten."
+  },
+  "Nav": {
+    "boatTypes": "Bootstypen",
+    "closeMenu": "Menü schließen",
+    "destinations": "Reiseziele",
+    "findByBudget": "Nach Budget suchen",
+    "findYacht": "Yacht finden",
+    "helpPlan": "Reise planen lassen",
+    "language": "Sprache",
+    "openMenu": "Menü öffnen",
+    "popularRoutes": "Beliebte Routen",
+    "saved": "Merkliste",
+    "tryIt": "Ausprobieren"
+  },
+  "Sidebar": {
+    "menu": "Kontomenü",
+    "trigger": "Menü",
+    "greeting": "Hallo, {name}!",
+    "profile": "Mein Profil",
+    "bookings": "Meine Buchungen",
+    "referrals": "Empfehlungen",
+    "credits": "Guthaben & Saldo",
+    "discount": "Rabattverwaltung",
+    "logout": "Abmelden",
+    "commission": "Provisionssätze",
+    "duplicates": "Duplikatprüfung",
+    "sync": "Sync-Verlauf",
+    "audit": "Audit-Log",
+    "inbox": "Posteingang",
+    "staffBookings": "Buchungen",
+    "users": "Benutzer",
+    "payments": "Zahlungen",
+    "listings": "Inserate",
+    "routes": "Routenvorschläge",
+    "sections": {
+      "account": "Konto",
+      "admin": "Admin"
+    },
+    "faq": "FAQ",
+    "groups": {
+      "fleet": "Yachten",
+      "content": "Website-Inhalte"
+    },
+    "settings": "Marktplatz-Einstellungen",
+    "popular": "Beliebte Auswahl",
+    "popularYachts": "Beliebte Yachten"
+  },
+  "UserMenu": {
+    "account": "Konto",
+    "signIn": "Anmelden",
+    "signOut": "Abmelden",
+    "profile": "Mein Profil",
+    "bookings": "Meine Buchungen",
+    "referrals": "Empfehlungen",
+    "credits": "Guthaben & Saldo"
+  },
+  "description": "Yachten und Katamarane weltweit chartern. Vergleichen Sie Boote, Termine und Preise und buchen Sie Ihren nächsten Segeltörn in wenigen Minuten.",
+  "title": "YachtSkanner - Yacht- & Katamaran-Charter weltweit",
+  "CookieConsent": {
+    "title": "Cookies",
+    "description": "Wir verwenden Analyse-Cookies, um zu sehen, wie die Seite genutzt wird, und sie zu verbessern. Bis Sie zustimmen, wird nichts erfasst.",
+    "manage": "Einstellungen",
+    "accept": "Akzeptieren",
+    "decline": "Ablehnen",
+    "footerLink": "Cookies",
+    "dialog": {
+      "title": "Ihre Privatsphäre",
+      "description": "Wählen Sie, welche Cookies diese Seite verwenden darf. Ihre Wahl wird auf diesem Gerät gespeichert und lässt sich jederzeit über den Link im Footer ändern.",
+      "close": "Schließen",
+      "alwaysActive": "Immer aktiv",
+      "necessary": {
+        "title": "Notwendig",
+        "description": "Halten Sie angemeldet, schützen Zahlungen vor Betrug und merken sich diese Cookie-Entscheidung. Ohne sie funktioniert die Seite nicht."
+      },
+      "functional": {
+        "title": "Funktional",
+        "description": "Merken sich gespeicherte Boote und zählen einen erneuten Aufruf eines Angebots nur einmal. Bleiben in Ihrem Browser."
+      },
+      "analytics": {
+        "title": "Analyse",
+        "description": "Google Analytics, damit wir sehen, welche Seiten genutzt werden und wo es hakt. Keine Werbung, kein Profiling."
+      },
+      "save": "Auswahl speichern",
+      "acceptAll": "Alle akzeptieren"
+    }
+  },
+  "Legal": {
+    "terms": "Allgemeine Geschäftsbedingungen",
+    "privacy": "Datenschutzerklärung",
+    "cancellation": "Stornierungsbedingungen",
+    "pending": "Dieses Dokument wird gerade erstellt und hier in Kürze veröffentlicht. Wenn Sie bis dahin Fragen dazu haben, hilft Ihnen unser Support-Team gern weiter.",
+    "contact": "Support kontaktieren"
+  }
+}

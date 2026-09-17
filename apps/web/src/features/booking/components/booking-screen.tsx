@@ -7,13 +7,14 @@ import { useTranslations } from "next-intl";
 import { useQueryStates } from "nuqs";
 import { useForm } from "react-hook-form";
 
-import BoatCard from "@/components/shared/data-display/boat-card";
+import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
 import SplitPanels from "@/components/shared/layout/split-panels";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
-import { useListingCards, useListingDetail } from "@/features/yachts";
+import { serializeDetailPeriod, useListingCards, useListingDetail } from "@/features/yachts";
 import type { AppPathname } from "@/i18n/navigation";
 
 import { useGuestDraft } from "../hooks/use-guest-draft";
+import { useSearchedPeriod } from "../hooks/use-searched-period";
 import { BOOKING_DEFAULTS, type BookingValues, useBookingSchema } from "../lib/booking-form";
 import { bookingParsers } from "../lib/search-params";
 import { BookingProvider } from "./booking-provider";
@@ -27,6 +28,7 @@ export default function BookingScreen() {
   const { data: listing } = useListingDetail();
   const { toCard } = useListingCards();
   const [{ quoteId }] = useQueryStates(bookingParsers);
+  const searchedPeriod = useSearchedPeriod();
 
   /* onTouched: silent until the first blur, live on every change after it — so a field stops
    * being red the moment it turns valid, without shouting at someone still typing. */
@@ -41,8 +43,9 @@ export default function BookingScreen() {
   const boat = listing ? toCard(listing) : null;
 
   /* SAFETY: /yachts/[id] is a real route; typedRoutes only recognises it when the segment is a
-     literal, and the slug is only known at request time. */
-  const backHref = `/yachts/${slug}` as AppPathname;
+     literal, and the slug is only known at request time. The period rides along, written into
+     this URL by the sidebar, so going back reopens the yacht on the week being booked. */
+  const backHref = serializeDetailPeriod(`/yachts/${slug}`, searchedPeriod ?? {}) as AppPathname;
 
   return (
     <div className="flex flex-col">
@@ -61,7 +64,7 @@ export default function BookingScreen() {
               labels={{ main: t("panels.main"), aside: t("panels.aside") }}
               main={
                 <>
-                  {boat ? <BoatCard {...boat} summary priority /> : null}
+                  {boat ? <YachtCard layout="summary" {...boat} priority /> : null}
                   <BookingSteps />
                 </>
               }

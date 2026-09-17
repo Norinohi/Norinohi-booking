@@ -1,0 +1,187 @@
+{
+  "Commissions": {
+    "title": "Tasas de comisión",
+    "description": "Lo que {brand} gana a través de cada proveedor."
+  },
+  "Yachts": {
+    "title": "Buscador de alquiler de yates",
+    "description": "Busca yates y catamaranes de alquiler por el Mediterráneo y otros destinos. Filtra por destino, fechas, huéspedes y precio."
+  },
+  "YachtsMap": {
+    "title": "Yates en el mapa",
+    "description": "Explora yates y catamaranes disponibles en un mapa interactivo. Descubre marinas y destinos, y filtra por fechas, huéspedes y precio."
+  },
+  "YachtDetail": {
+    "title": "Detalles del yate",
+    "description": "Consulta fotos, características, opciones de tripulación y precios de este yate, y comprueba la disponibilidad para tus fechas.",
+    "titleAtPlace": "Alquiler de {boat} en {place}",
+    "titlePlain": "Alquiler de {boat}",
+    "metaSpecs": "{category} con {cabins, plural, one {# camarote} other {# camarotes}} para hasta {guests} huéspedes.",
+    "metaPlace": "{crew}. Base: {place}.",
+    "metaPriceFrom": "Desde {price}.",
+    "metaPriceForDays": "{price} por {days, plural, one {# día} other {# días}}.",
+    "metaCta": "Comprueba la disponibilidad para tus fechas."
+  },
+  "Booking": {
+    "title": "Reserva tu yate",
+    "description": "Completa la reserva de tu chárter - datos de huéspedes, extras y pago seguro."
+  },
+  "BookingConfirmation": {
+    "title": "Reserva confirmada",
+    "description": "Tu reserva de chárter está confirmada. Revisa los detalles de tu viaje y los siguientes pasos."
+  },
+  "PlanMyTrip": {
+    "title": "Planea mi viaje",
+    "description": "Cuéntanos cómo sería tu viaje ideal y te sugeriremos los yates, rutas y fechas adecuados."
+  },
+  "Login": {
+    "title": "Iniciar sesión",
+    "description": "Inicia sesión en tu cuenta de YachtSkanner para gestionar reservas y yates guardados."
+  },
+  "Register": {
+    "title": "Crear cuenta",
+    "description": "Crea una cuenta de YachtSkanner para reservar yates, guardar favoritos y gestionar tus viajes."
+  },
+  "Wishlist": {
+    "title": "Tus favoritos",
+    "description": "Los yates y catamaranes que has guardado. Compara tus favoritos y consulta la disponibilidad para tus fechas."
+  },
+  "Profile": {
+    "title": "Tu perfil",
+    "description": "Gestiona los datos de tu cuenta de YachtSkanner, tu información de contacto y tus preferencias."
+  },
+  "Bookings": {
+    "title": "Mis reservas",
+    "description": "Consulta tus reservas de chárter, los detalles de cada viaje y tu historial de reservas."
+  },
+  "Referrals": {
+    "title": "Tus referidos",
+    "description": "Sigue a los amigos que has invitado a YachtSkanner y las recompensas que has conseguido."
+  },
+  "Credits": {
+    "title": "Créditos y saldo",
+    "description": "Consulta tu crédito de referidos disponible, lo que caduca pronto y cada movimiento de tu saldo."
+  },
+  "Discounts": {
+    "title": "Gestor de descuentos y precios",
+    "description": "Gestiona los códigos promocionales y los precios de tus yates."
+  },
+  "Duplicates": {
+    "title": "Revisión de duplicados",
+    "description": "Revisa y fusiona los anuncios de yates propuestos por la sincronización del catálogo."
+  },
+  "Sync": {
+    "title": "Historial de sincronización",
+    "description": "Ejecuciones de sincronización de catálogo y disponibilidad con sus recuentos y errores."
+  },
+  "Listings": {
+    "title": "Anuncios",
+    "description": "Revisa los anuncios de yates importados y publica los borradores en el catálogo."
+  },
+  "Routes": {
+    "title": "Rutas sugeridas",
+    "description": "Redacta los itinerarios de navegación que aparecen en la página de un anuncio, base por base."
+  },
+  "Audit": {
+    "title": "Registro de auditoría",
+    "description": "Cada acción del personal registrada sobre una reserva, un anuncio, un descuento o una consulta."
+  },
+  "Invoice": {
+    "title": "Factura",
+    "description": "La factura de tu reserva de chárter, con los datos de pago."
+  },
+  "ForgotPassword": {
+    "title": "Olvidé mi contraseña",
+    "description": "Restablece la contraseña de tu cuenta de YachtSkanner."
+  },
+  "ResetPassword": {
+    "title": "Restablecer contraseña",
+    "description": "Elige una nueva contraseña para tu cuenta de YachtSkanner."
+  },
+  "SetPassword": {
+    "title": "Establecer contraseña",
+    "description": "Elige una contraseña para tu cuenta de YachtSkanner."
+  },
+  "Balance": {
+    "title": "Paga tu saldo",
+    "description": "Liquida el importe restante de tu reserva de chárter."
+  },
+  "BookingDetail": {
+    "title": "Tu reserva",
+    "description": "Detalles, pagos y documentos de tu reserva de chárter."
+  },
+  "Inbox": {
+    "title": "Bandeja de entrada",
+    "description": "Preguntas y consultas de clientes pendientes de respuesta."
+  },
+  "Payments": {
+    "title": "Pagos",
+    "description": "Solicitudes de factura y reembolsos pendientes."
+  },
+  "StaffBooking": {
+    "title": "Reserva (personal)",
+    "description": "Vista de personal de una reserva."
+  },
+  "StaffBookings": {
+    "title": "Reservas (personal)",
+    "description": "Todas las reservas de la plataforma, para el personal."
+  },
+  "Users": {
+    "title": "Usuarios",
+    "description": "Todas las cuentas de la plataforma, para el personal."
+  },
+  "CatalogPage": {
+    "country": "Alquiler de yates en {place}",
+    "geo": "Alquiler de yates en {place}, {country}",
+    "marina": "Alquiler de yates en {place}",
+    "type": "Alquiler de {type}",
+    "typeCountry": "Alquiler de {type} en {place}",
+    "typeGeo": "Alquiler de {type} en {place}, {country}",
+    "builder": "Alquiler de yates {brand}",
+    "model": "Alquiler de {model}",
+    "intro": "{count, plural, one {# barco disponible} other {# barcos disponibles}}, desde {price} por semana.",
+    "introNoPrice": "{count, plural, one {# barco disponible} other {# barcos disponibles}}.",
+    "description": "Compara {count, plural, one {# yate} other {# yates}} de alquiler. Filtra por fechas, huéspedes, camarotes y precio, y comprueba la disponibilidad.",
+    "siblings": "También te puede interesar",
+    "regions": "Regiones",
+    "empty": "Ahora mismo no hay barcos que coincidan. Prueba el catálogo completo."
+  },
+  "Support": {
+    "title": "Soporte",
+    "description": "Pregúntanos lo que quieras sobre tu reserva."
+  },
+  "Consultation": {
+    "title": "Contáctanos",
+    "description": "Reserva una llamada o envíanos un mensaje sobre tu viaje."
+  },
+  "Faq": {
+    "title": "Preguntas frecuentes",
+    "description": "Escribe y traduce las preguntas que aparecen en las páginas de yates."
+  },
+  "Popular": {
+    "title": "Selección popular",
+    "description": "Elija qué valores encabezan los filtros y la página de inicio."
+  },
+  "PopularYachts": {
+    "title": "Yates populares",
+    "description": "Configura cómo se compone el carrusel de yates populares de la página de inicio."
+  },
+  "Contact": {
+    "title": "Contacto",
+    "description": "Habla con un experto en chárter sobre tu próximo viaje."
+  },
+  "Legal": {
+    "terms": {
+      "title": "Términos y condiciones",
+      "description": "Los términos y el contrato de alquiler de los chárteres reservados en YachtSkanner."
+    },
+    "privacy": {
+      "title": "Política de privacidad",
+      "description": "Cómo trata YachtSkanner sus datos personales."
+    },
+    "cancellation": {
+      "title": "Política de cancelación",
+      "description": "Qué ocurre cuando se cancela un chárter reservado en YachtSkanner."
+    }
+  }
+}

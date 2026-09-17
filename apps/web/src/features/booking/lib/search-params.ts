@@ -6,6 +6,8 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 /** The quote the wizard is booking — minted on the detail page, revalidated on entry. */
 export const bookingParsers = {
   quoteId: parseAsString,
+  /** The booking Confirm made, so a reload reopens its payment step rather than losing it. */
+  bookingId: parseAsString,
 };
 
 export const serializeBooking = createSerializer(bookingParsers);

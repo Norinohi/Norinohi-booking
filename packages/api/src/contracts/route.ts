@@ -104,6 +104,8 @@ export const routeListInputSchema = z
     /** The country the route's base or region sits in — the client authors country by country. */
     countryId: z.string().min(1).optional(),
     active: z.boolean().optional(),
+    /* Names the target's places in this locale; the stored names are the vendor's English. */
+    locale: z.string().min(2).max(10).optional(),
     ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: DEFAULT_PAGE_SIZE }),
   })
   .default(paginationInputDefault(DEFAULT_PAGE_SIZE));
@@ -254,6 +256,7 @@ export const geographyOptionsInputSchema = z
     countryId: z.string().min(1).optional(),
     query: z.string().trim().max(200).optional(),
     limit: z.coerce.number().int().min(1).max(200).default(50),
+    locale: z.string().min(2).max(10).optional(),
   })
   .default({ limit: 50 });
 

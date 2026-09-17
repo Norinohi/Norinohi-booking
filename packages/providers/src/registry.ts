@@ -1,5 +1,6 @@
 import type * as dbSchema from "@yacht-charter/db/schema/index";
 import { provider as providerTable } from "@yacht-charter/db/schema/provider";
+import { providerMeta } from "@yacht-charter/env/providers";
 import { env } from "@yacht-charter/env/server";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
@@ -52,7 +53,9 @@ export function syncCandidateKeys(
 ): ProviderKey[] {
   const disabled = new Set(rows.filter((row) => !row.enabled).map((row) => row.code));
 
-  return providerKeySchema.options.filter((key) => key !== "mock" && !disabled.has(key));
+  return providerKeySchema.options.filter(
+    (key) => !providerMeta(key).fixture && !disabled.has(key),
+  );
 }
 
 /**

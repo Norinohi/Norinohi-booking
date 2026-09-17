@@ -5,8 +5,20 @@ import { orpc } from "@/utils/orpc";
 
 export type ResultsInput = Parameters<AppRouterClient["charterSearch"]["results"]>[0];
 
+/** Matches the `hours` tier the server caches this on, so hydration does not immediately refetch. */
+const ONE_HOUR = 60 * 60 * 1000;
+
+/*
+ * A dated search takes a second or more, so the cards on screen stay until the next set lands. The
+ * hour is for the catalog pages, which seed page one from an `hours` cache entry older than the
+ * app's default minute; the quote re-prices whatever a card shows.
+ */
 export const resultsQueryOptions = (input: ResultsInput) =>
-  orpc.charterSearch.results.queryOptions({ input });
+  orpc.charterSearch.results.queryOptions({
+    input,
+    staleTime: ONE_HOUR,
+    placeholderData: keepPreviousData,
+  });
 
 export type Suggestion = Awaited<
   ReturnType<AppRouterClient["charterSearch"]["suggestions"]>
@@ -16,9 +28,9 @@ export type Suggestion = Awaited<
  * Destination typeahead behind the search bar's Location field. Fires on the empty query too, where
  * the server answers with the most-stocked countries as default suggestions.
  */
-export const suggestionsQueryOptions = (query: string) =>
+export const suggestionsQueryOptions = (query: string, locale: string) =>
   orpc.charterSearch.suggestions.queryOptions({
-    input: { query },
+    input: { query, locale },
     staleTime: 5 * 60 * 1000,
     // Keep the current list on screen while the next query loads, so switching queries never flashes
     // the "no matches" empty state between the old and new results.
@@ -55,7 +67,7 @@ export type MapMarinaData = Awaited<
  * see `marinaListingsQueryOptions`.
  */
 export const mapMarinasQueryOptions = (input: MarinasInput) =>
-  orpc.charterSearch.mapMarinas.queryOptions({ input });
+  orpc.charterSearch.mapMarinas.queryOptions({ input, placeholderData: keepPreviousData });
 
 /** How many cards a page of a marina's boats carries; the popup pages through them. */
 export const MARINA_PAGE_SIZE = 20;
@@ -67,7 +79,8 @@ export const MARINA_PAGE_SIZE = 20;
  * enough that no zoom separates them, and the count on the pin is their sum. Asking for one of them
  * made the pager count to a smaller number than the pin had promised.
  *
- * `marina` matches a base by name *or* id, so the ids from the markers address them exactly.
+ * The pin passes names, not ids: one pin can be two vendors' bases for the same marina, and only
+ * the normalised name joins them. `marina` matches a base by name or id either way.
  * Previous data is kept while the next page loads, so paging the card never blanks it.
  */
 export const marinaListingsQueryOptions = (input: ResultsInput, marinas: string[], page: number) =>
@@ -79,9 +92,6 @@ export const marinaListingsQueryOptions = (input: ResultsInput, marinas: string[
 /** Card-ready summaries for an explicit set of ids, which is how a deep link finds its one boat. */
 export const listingSummariesQueryOptions = (listingIds: string[]) =>
   orpc.listings.byIds.queryOptions({ input: { listingIds }, enabled: listingIds.length > 0 });
-
-/** Matches the `hours` tier the server caches this on, so hydration does not immediately refetch. */
-const ONE_HOUR = 60 * 60 * 1000;
 
 /* `locale` is part of the input, so it is part of the key — server prefetch and client hook must
  * pass the same one or the hydrated cache misses and the page refetches in English. */

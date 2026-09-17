@@ -4,10 +4,9 @@ import { env } from "@yacht-charter/env/web";
 import type { MetadataRoute } from "next";
 import { cacheLife, cacheTag } from "next/cache";
 
-import { prefetchCatalogPages } from "@/features/yachts/api/server";
+import { prefetchCatalogPages, readCatalogResultsPage } from "@/features/yachts/api/server";
 import { defaultLocale, locales } from "@/i18n/config";
 import { CATALOG_TAG } from "@/lib/cache-tags";
-import { publicClient } from "@/utils/orpc";
 
 /*
  * Shared by the sitemap index and each of its children.
@@ -98,7 +97,7 @@ export async function listingPaths(): Promise<string[]> {
   cacheTag(CATALOG_TAG);
 
   const readPage = async (page: number) => {
-    const result = await publicClient.charterSearch.results({ pageSize: PAGE_SIZE, page });
+    const result = await readCatalogResultsPage(page, PAGE_SIZE);
     return result;
   };
 

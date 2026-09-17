@@ -19,7 +19,7 @@ export const paymentScheduleKindSchema = z.enum([
 ]);
 
 /** Mirrors the quote line's `group`: which booking-summary section shows a line. */
-export const lineGroupSchema = z.enum(["mandatory", "optional", "crew"]);
+export const lineGroupSchema = z.enum(["mandatory", "optional", "crew", "requested"]);
 
 export const paymentStatusSchema = z.enum([
   "requires_payment",
@@ -73,6 +73,7 @@ export const bookingSummarySchema = z.object({
       showers: z.number().int().nullable(),
       yearBuilt: z.number().int(),
       sailType: z.string().nullable(),
+      hasMainsail: z.boolean(),
     }),
     /** The full list — the card takes the first three itself. */
     amenities: z.array(z.string()),
@@ -139,12 +140,16 @@ export const bookingSummarySchema = z.object({
 
 const DEFAULT_PAGE_SIZE = 10;
 
+const bookingLocaleSchema = z.string().min(2).max(10).optional();
+
 export const bookingListInputSchema = z
   .object({
     /** The "Any dates" filter; matched against the charter period, not booked-on. */
     from: z.iso.date().optional(),
     to: z.iso.date().optional(),
     status: z.array(bookingStatusSchema).optional(),
+    /** The language the boat's facet labels (country, category, sail type, amenities) come back in. */
+    locale: bookingLocaleSchema,
     ...paginationInputSchema({ maxPageSize: 50, defaultPageSize: DEFAULT_PAGE_SIZE }),
   })
   .default(paginationInputDefault(DEFAULT_PAGE_SIZE))
@@ -163,6 +168,8 @@ export const bookingIdInputSchema = z.object({
   id: idSchema,
   accessToken: guestAccessTokenSchema.optional(),
 });
+
+export const bookingGetInputSchema = bookingIdInputSchema.extend({ locale: bookingLocaleSchema });
 
 /*
  * The three repeated blocks of a booking's money, named so the customer detail view and the
@@ -665,6 +672,10 @@ export const invoiceRequestSchema = z.object({
  */
 /** Staff address a booking by id alone — no guest token, and no ownership to prove. */
 export const adminBookingIdInputSchema = z.object({ id: idSchema });
+
+export const adminBookingGetInputSchema = adminBookingIdInputSchema.extend({
+  locale: bookingLocaleSchema,
+});
 
 export const bookingAdminDetailSchema = bookingAdminRowSchema.extend({
   provider: z.string(),

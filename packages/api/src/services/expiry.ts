@@ -4,9 +4,11 @@ import { quote } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider } from "@yacht-charter/providers";
 import { reapStaleSyncRuns } from "@yacht-charter/providers/sync/run";
 import { and, eq, gt, inArray, isNotNull, lte, ne, notExists, sql } from "drizzle-orm";
+import { parseError } from "evlog";
 
 import type { Database } from "../context";
 import { reportProviderRefusal } from "../lib/provider-failure";
+import { recordProviderFailure } from "./error-audit";
 import { providerByKey } from "./provider-routing";
 import {
   DEAD_QUOTE_SWEEP,
@@ -206,6 +208,7 @@ async function expireHolds(
     // walks every booking regardless of provider, so releasing it through the
     // configured adapter would call the wrong vendor with an id it never issued.
     const releaseError = await releaseOption(
+      db,
       await providerByKey(provider, candidate.providerName),
       candidate,
       releaseFailures,
@@ -277,6 +280,7 @@ async function expireBookingsWithDeadQuotes(db: Database, now: Date): Promise<nu
  * chasing a slot that is still blocked upstream will look.
  */
 async function releaseOption(
+  db: Database,
   provider: InventoryProvider,
   candidate: {
     id: string;
@@ -304,10 +308,9 @@ async function releaseOption(
      * about to call the booking expired while the vendor goes on holding the week -- so it is
      * announced the same way a refused hold is.
      */
-    reportProviderRefusal("release", refusal, {
-      bookingId: candidate.id,
-      provider: candidate.providerName,
-    });
+    const subject = { bookingId: candidate.id, provider: candidate.providerName };
+    reportProviderRefusal("release", refusal, subject);
+    await recordProviderFailure(db, "release", parseError(error), subject);
     failures.push({ bookingId: candidate.id, message });
     return message;
   }
@@ -413,6 +416,7 @@ async function expireAbandonedPayments(
     // Same reason as the hold sweep: the option belongs to the vendor that issued
     // it, not to whichever adapter this process was configured with.
     const releaseError = await releaseOption(
+      db,
       await providerByKey(provider, candidate.providerName),
       candidate,
       releaseFailures,

@@ -2,11 +2,11 @@
 
 import { type ReactNode, useState } from "react";
 
-import MapCanvas from "@/components/shared/data-display/map-canvas";
-import MapPopup from "@/components/shared/data-display/map-popup";
-import MapMarker from "@/components/shared/data-display/map-marker";
+import MapCanvas from "@/components/shared/map/map-canvas";
+import MapPopup from "@/components/shared/map/map-popup";
+import MapMarker from "@/components/shared/map/map-marker";
 
-import type { Coordinates } from "./marina-popover";
+import type { Coordinates } from "@/components/shared/map/geometry";
 
 /** None: a visitor opened this to read the harbour off the imagery. */
 const DIALOG_DIM_OPACITY = 0;
@@ -39,7 +39,13 @@ export default function MapDialogCanvas({
       onReady={setMap}
       onBackgroundPress={() => setOpen(false)}
     >
-      <MapMarker coordinates={point} label={title} selected={open} onSelect={() => setOpen(true)} />
+      <MapMarker
+        variant="pin"
+        coordinates={point}
+        label={title}
+        selected={open}
+        onSelect={() => setOpen(true)}
+      />
 
       {popup && open ? (
         <MapPopup coordinates={point} map={map}>

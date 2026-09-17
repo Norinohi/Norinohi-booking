@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl";
 import type { Ref } from "react";
 import { useState } from "react";
 
+import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
 import Loader from "@/components/shared/feedback/loader";
 import type { FiltersState } from "@/components/shared/form/filters";
 
@@ -16,7 +17,6 @@ import { resultsQueryOptions } from "../../api/queries";
 import { useListingCards } from "../../hooks/use-listing-cards";
 import { useSearchInput } from "../../hooks/use-search-input";
 import { SORT_OPTIONS, type SortValue, toSortValue } from "../search/results-header";
-import MapBoatCard from "./map-boat-card";
 
 export type MapListPanelProps = {
   filters: FiltersState;
@@ -28,7 +28,7 @@ export type MapListPanelProps = {
 
 export default function MapListPanel({ filters, defaults, className, ref }: MapListPanelProps) {
   const t = useTranslations("Common");
-  const { toMapCard } = useListingCards();
+  const { toCard } = useListingCards();
   const [sort, setSort] = useState<SortValue>("recommended");
   const [page, setPage] = useState(1);
 
@@ -45,8 +45,8 @@ export default function MapListPanel({ filters, defaults, className, ref }: MapL
   }
 
   const input = useSearchInput(filters, defaults, { sort, page });
-  const { data, isLoading } = useQuery(resultsQueryOptions(input));
-  const boats = data?.items.map((item) => toMapCard(item.listing, item)) ?? [];
+  const { data, isLoading, isPlaceholderData } = useQuery(resultsQueryOptions(input));
+  const boats = data?.items.map((item) => toCard(item.listing, item, true)) ?? [];
   const pagination = data?.pagination;
 
   return (
@@ -58,7 +58,12 @@ export default function MapListPanel({ filters, defaults, className, ref }: MapL
       )}
     >
       <div className="flex shrink-0 flex-col gap-3 border-b border-border p-4">
-        <p className="text-sm font-medium leading-[1.3] text-natural-500">
+        <p
+          className={cn(
+            "text-sm font-medium leading-[1.3] text-natural-500",
+            !pagination && "invisible",
+          )}
+        >
           {t("resultsCount", { count: pagination?.totalItems ?? 0 })}
         </p>
 
@@ -72,8 +77,18 @@ export default function MapListPanel({ filters, defaults, className, ref }: MapL
       </div>
 
       <ScrollArea className="min-h-0 flex-1">
-        <div className="flex flex-col gap-3 p-4">
-          {isLoading ? <Loader /> : boats.map((boat) => <MapBoatCard key={boat.id} {...boat} />)}
+        <div
+          aria-busy={isPlaceholderData}
+          className={cn(
+            "flex flex-col gap-3 p-4 transition-opacity",
+            isPlaceholderData && "opacity-60",
+          )}
+        >
+          {isLoading || (isPlaceholderData && boats.length === 0) ? (
+            <Loader />
+          ) : (
+            boats.map((boat) => <YachtCard key={boat.id} layout="compact" {...boat} openInNewTab />)
+          )}
         </div>
       </ScrollArea>
 

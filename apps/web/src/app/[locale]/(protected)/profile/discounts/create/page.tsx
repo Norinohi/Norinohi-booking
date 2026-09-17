@@ -1,8 +1,9 @@
 import { getLocale, getTranslations } from "next-intl/server";
 
+import { STAFF_ROLES } from "@/lib/auth/roles";
+import { requireRole } from "@/lib/auth/server";
 import { buildMetadata } from "@/lib/seo";
 
-import { requireStaffPage } from "@/features/admin";
 import { DiscountRouteModal } from "@/features/profile";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
@@ -25,7 +26,7 @@ export async function generateMetadata() {
 /* Hard-load fallback of the intercepted /create overlay: same staff/admin gate as the list;
  * closing navigates to the list instead of history-back. */
 export default async function CreateDiscountPage() {
-  await requireStaffPage();
+  await requireRole(...STAFF_ROLES);
 
   return <DiscountRouteModal standalone />;
 }

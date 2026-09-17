@@ -31,6 +31,16 @@ export type SweepPeriod = {
    * charter at all, which is who it exists to rescue. Each caller attaches its own.
    */
   yachtIds?: readonly string[];
+  /**
+   * False where a hull missing from the answer must not be read as the vendor refusing it.
+   *
+   * The writer stores a refusal for every asked hull the vendor leaves out, and a refusal
+   * blocks every longer charter that contains it (`wasRefused`). That is right for a week. For
+   * a three-night charter it is not: a vendor that sells the hull by the week says no to the
+   * three nights for that reason alone, and the refusal would then retire the week around them.
+   * So a short period the sweep asks about only to price it keeps its prices and judges nobody.
+   */
+  judgesSilence?: boolean;
 };
 
 /**
@@ -55,12 +65,43 @@ export const ADVERTISED_PERIOD_LIMIT = 400;
 export const ADVERTISED_HEAD_LIMIT = 60;
 
 /**
+ * The charter lengths the duration filter offers below a week, whose cards name a charter of
+ * their own that the stored week never covers; see `listShortCharterPeriods`.
+ */
+export const SHORT_CHARTER_LENGTHS = [1, 2, 3, 4, 5, 6] as const;
+
+/**
+ * How many periods of each short length a run adds. Twenty per length was 114 NauSYS periods
+ * covering 2,495 of 3,011 short cards on the local fleet, with a few hulls each, so they cost
+ * about what the advertised tail does per period and ride its rotation rather than the budget.
+ */
+export const SHORT_PERIODS_PER_LENGTH = 20;
+
+type CountedPeriod = SweepPeriod & { listings: number };
+
+/**
+ * The advertised weeks and the short charters in one most-advertised-first list, which is the
+ * order `sweepPlan` rations by: a short period naming fifty cards belongs in the head ahead of
+ * a week naming two, and one naming two belongs in the rotating tail beside that week.
+ *
+ * The short ones judge nobody; see `SweepPeriod.judgesSilence`.
+ */
+export function withShortCharterPeriods(
+  advertised: readonly CountedPeriod[],
+  short: readonly CountedPeriod[],
+): SweepPeriod[] {
+  return [...advertised, ...short.map((period) => ({ ...period, judgesSilence: false }))]
+    .sort((a, b) => b.listings - a.listings)
+    .map(({ listings: _listings, ...period }) => period);
+}
+
+/**
  * How many of the periods behind the head one run may add.
  *
  * The tail is a backlog, not a freshness surface: its periods carry one to five cards each, and
  * what they need is to be asked about at all rather than asked about hourly. So a run takes a
  * bounded slice and the next takes the following one, walking the whole 234-period NauSYS tail
- * in two runs and the 44-period Booking Manager one in a single run, on the hourly schedule in
+ * in two runs and the 44-period Booking Manager one in a single run, on the half-hourly schedule in
  * docs/scheduled-jobs.md.
  *
  * The size is set by what the grid can spare, because the grid queues behind this and the pass
@@ -85,7 +126,9 @@ export const ADVERTISED_HEAD_LIMIT = 60;
 export const ADVERTISED_TAIL_PER_RUN = 120;
 
 /** The sweep's cadence, which is what one step of the tail rotation means. */
-const ROTATION_MS = 60 * 60 * 1000;
+/* Matches `cronSchedule` in apps/server/railway.cron-availability.json. At an hour, the two runs
+   inside each hour took the same slice of the tail and the second re-asked what the first had. */
+const ROTATION_MS = 30 * 60 * 1000;
 
 /**
  * Which slice of the tail this run takes, counted off the clock rather than off a cursor.
@@ -166,6 +209,7 @@ export function sweepPlan(
         endDate: period.endDate,
         source,
         ...(period.yachtIds ? { yachtIds: period.yachtIds } : null),
+        ...(period.judgesSilence === false ? { judgesSilence: false } : null),
       });
     }
   }

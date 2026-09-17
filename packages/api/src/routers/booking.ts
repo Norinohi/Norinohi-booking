@@ -6,6 +6,7 @@ import {
   bookingCancelInputSchema,
   bookingCancelSchema,
   bookingDetailSchema,
+  bookingGetInputSchema,
   bookingIdInputSchema,
   bookingListInputSchema,
   bookingListSchema,
@@ -107,7 +108,7 @@ export const bookingRouter = {
       operationId: "listBookings",
       summary: "List the current user's bookings",
       description:
-        "Returns the authenticated user's booking history, newest first, with numbered pagination. The optional from/to window filters on the charter period rather than when the booking was made. Cards render from each booking's frozen commercial snapshot, so they stay correct after a listing changes or is withdrawn.",
+        "Returns the authenticated user's booking history, newest first, with numbered pagination. The optional from/to window filters on the charter period rather than when the booking was made. Cards render from each booking's frozen commercial snapshot, so they stay correct after a listing changes or is withdrawn. Pass locale to get the country, marina, category, sail type and equipment labels in that language.",
       tags: ["Booking"],
       successDescription: "A page of bookings.",
       spec: withJsonBodyExample({ page: 1, pageSize: 10 }),
@@ -122,15 +123,20 @@ export const bookingRouter = {
       operationId: "getBooking",
       summary: "Get one booking",
       description:
-        "Returns full detail for one booking, including the price breakdown, extras, payment schedule and payments. Reachable by the signed-in owner, or by a guest presenting the accessToken their checkout returned. Crew and passenger details are never returned by this endpoint.",
+        "Returns full detail for one booking, including the price breakdown, extras, payment schedule and payments. Reachable by the signed-in owner, or by a guest presenting the accessToken their checkout returned. Crew and passenger details are never returned by this endpoint. Pass locale to get the boat and base labels in that language.",
       tags: ["Booking"],
       successDescription: "The requested booking.",
       spec: withJsonBodyExample({ id: "bkg_example" }),
     })
-    .input(bookingIdInputSchema)
+    .input(bookingGetInputSchema)
     .output(bookingDetailSchema)
     .handler(async ({ context, input }) =>
-      getBooking(context.db, await actorFor(context, input.id, input.accessToken), input.id),
+      getBooking(
+        context.db,
+        await actorFor(context, input.id, input.accessToken),
+        input.id,
+        input.locale,
+      ),
     ),
   cancel: protectedProcedure
     .route({

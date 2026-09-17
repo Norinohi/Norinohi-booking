@@ -1,3 +1,4 @@
+import { DEFAULT_TRANSACTING_PREFERENCE } from "@yacht-charter/env/providers";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
 import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
 import { eq } from "drizzle-orm";
@@ -7,9 +8,11 @@ import { marketplaceSetting } from "@yacht-charter/db/schema/admin";
 
 import { displayCurrencyDefaultSchema, providerKeyOutputSchema } from "../contracts/admin";
 import type { Database, DatabaseExecutor } from "../context";
+import { writeAuditLog } from "./audit";
 import { DEFAULT_PAYMENT_SETTINGS, type MarketplacePaymentSettings } from "./pricing";
 
 const SINGLETON_ID = "singleton";
+const ENTITY_TYPE = "marketplace_settings";
 
 /**
  * The order vendors are preferred in when nothing else separates them, most preferred first.
@@ -21,7 +24,7 @@ const SINGLETON_ID = "singleton";
 /** Restated here so an unwritten settings row prices exactly as a written default one does. */
 export const DEFAULT_RELIABILITY_WINDOW_DAYS = 30;
 
-export const DEFAULT_TRANSACTING_PREFERENCE = ["booking_manager", "nausys", "mock"] as const;
+export { DEFAULT_TRANSACTING_PREFERENCE };
 
 export type ProviderCode = z.infer<typeof providerKeyOutputSchema>;
 export type DisplayCurrency = z.infer<typeof displayCurrencyDefaultSchema>;
@@ -160,7 +163,7 @@ export interface UpdateMarketplaceSettingsInput {
   displayCurrencyDefault: DisplayCurrency;
   displayCurrencyByCountry: CurrencyOverrides;
   nameSearchEnabled: boolean;
-  actorUserId: string | null;
+  actorUserId: string;
 }
 
 /**
@@ -196,15 +199,28 @@ export async function updateMarketplaceSettings(
     updatedByUserId: input.actorUserId,
   };
 
-  await db
-    .insert(marketplaceSetting)
-    .values({ id: SINGLETON_ID, ...values })
-    .onConflictDoUpdate({
-      target: marketplaceSetting.id,
-      set: { ...values, updatedAt: new Date() },
+  const saved = await db.transaction(async (tx) => {
+    await tx
+      .insert(marketplaceSetting)
+      .values({ id: SINGLETON_ID, ...values })
+      .onConflictDoUpdate({
+        target: marketplaceSetting.id,
+        set: { ...values, updatedAt: new Date() },
+      });
+
+    const written = await getMarketplaceSettings(tx);
+
+    await writeAuditLog(tx, {
+      actorUserId: input.actorUserId,
+      action: "update",
+      entityType: ENTITY_TYPE,
+      entityId: SINGLETON_ID,
+      before: auditedSettings(before),
+      after: auditedSettings(written),
     });
 
-  const saved = await getMarketplaceSettings(db);
+    return written;
+  });
 
   if (!sameOrder(before.transactingPreference, saved.transactingPreference)) {
     startPreferenceRebuild(db);
@@ -221,6 +237,15 @@ export async function updateMarketplaceSettings(
   }
 
   return saved;
+}
+
+/* The stamp columns change on every save, so leaving them in would make each entry look like a change. */
+function auditedSettings({
+  updatedAt: _updatedAt,
+  updatedByUserId: _updatedBy,
+  ...settings
+}: MarketplaceSettings) {
+  return settings;
 }
 
 function sameOrder(left: readonly string[], right: readonly string[]): boolean {

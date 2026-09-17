@@ -4,20 +4,23 @@ import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 
-import type { Coordinates } from "@/components/shared/overlay/marina-popover";
+import type { Coordinates } from "@/components/shared/map/geometry";
+import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
+import type { YachtCardData } from "@/components/shared/data-display/yacht-card/types";
 import { Link } from "@/i18n/navigation";
 
-import MapBoatCard, { type MapBoatCardProps } from "./map-boat-card";
-import type { MapInstance } from "@/components/shared/data-display/map-canvas";
-import MapPopup, { PIN_CLEARANCE, RECENTRE_MS } from "@/components/shared/data-display/map-popup";
-import { paddingOf } from "../../lib/map-camera";
+import type { MapInstance } from "@/components/shared/map/map-canvas";
+import MapPopup, { PIN_CLEARANCE, RECENTRE_MS } from "@/components/shared/map/map-popup";
+import { paddingOf } from "@/components/shared/map/camera";
 
 // On a phone, leave just this gap under the popup so the pager clears the map attribution/edge.
 const BOTTOM_SAFE = 32;
 // Below this container width we treat the map as a phone and pin the popup to the bottom.
 const MOBILE_MAX = 768;
+// The least room kept above the card, so its photo and name are never pushed off the top.
+const TOP_SAFE = 12;
 
-type PopupBoat = Omit<MapBoatCardProps, "layout" | "className"> & { id: string };
+type PopupBoat = YachtCardData & { id: string };
 
 export interface MapBoatPopupProps {
   coordinates: Coordinates;
@@ -111,10 +114,17 @@ export default function MapBoatPopup({
     const claimed = paddingOf(map);
     const centreY = claimed.top + (viewportH - claimed.top - claimed.bottom) / 2;
 
-    const pinY =
+    /*
+     * Never so low that the card's top leaves the map. On a short window (601x435) the bottom
+     * pinning alone put the photo 186px above the viewport; the card is capped to the window's
+     * height below, and this keeps whatever is left of a mismatch at the bottom instead.
+     */
+    const pinY = Math.max(
       container.clientWidth < MOBILE_MAX
         ? viewportH - BOTTOM_SAFE - PIN_CLEARANCE - height
-        : centreY - PIN_CLEARANCE - height / 2;
+        : centreY - PIN_CLEARANCE - height / 2,
+      TOP_SAFE - PIN_CLEARANCE,
+    );
 
     const center: [number, number] = [coordinates.lng, coordinates.lat];
     const offset: [number, number] = [0, pinY - centreY];
@@ -138,14 +148,16 @@ export default function MapBoatPopup({
       onOpen={recentre}
       className="flex flex-col items-center gap-2"
     >
-      <div className="relative w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl shadow-[4px_4px_15px_rgba(0,0,0,0.08)] md:w-150.25">
+      {/* Capped to the window with room for the pager, and scrolled inside when taller: a phone
+          card is a photo over its details, which is more than a short landscape screen holds. */}
+      <div className="relative max-h-[calc(100dvh-8rem)] w-72 max-w-[calc(100vw-2rem)] overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl shadow-[4px_4px_15px_rgba(0,0,0,0.08)] md:max-h-[calc(100dvh-var(--header-h)-8rem)] md:w-150.25">
         <div
           className="flex transition-transform duration-300 ease-out"
           style={{ transform: `translateX(-${shown * 100}%)` }}
         >
           {boats.map((item) => (
             <div key={item.id} className="w-full shrink-0">
-              <MapBoatCard layout="popup" {...item} className="border-0 shadow-none" />
+              <YachtCard layout="popup" {...item} openInNewTab className="border-0 shadow-none" />
             </div>
           ))}
         </div>
@@ -186,7 +198,7 @@ export default function MapBoatPopup({
           {catalogueHref ? (
             <Link
               href={catalogueHref}
-              className="flex h-10 items-center gap-1.5 rounded-full bg-brand px-4 text-sm font-semibold text-brand-foreground shadow-[4px_4px_15px_rgba(47,128,237,0.15)] transition-colors outline-none hover:bg-brand/90 focus-visible:ring-2 focus-visible:ring-ring/40"
+              className="flex h-10 items-center gap-1.5 rounded-full bg-brand px-4 text-sm font-semibold text-brand-foreground shadow-brand-glow transition-colors outline-none hover:bg-brand/90 focus-visible:ring-2 focus-visible:ring-ring/40"
             >
               {t("allInCatalogue", { count })}
               <ArrowRight className="size-4" />

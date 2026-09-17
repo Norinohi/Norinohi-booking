@@ -1,171 +1,41 @@
 "use client";
 
-import { Button, buttonVariants } from "@yacht-charter/ui/components/actions/button";
-import { Chip } from "@yacht-charter/ui/components/data-display/chip";
+import { buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, List, X } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
-import { throttle, useQueryStates } from "nuqs";
 import { useSearchParams } from "next/navigation";
+import { useState } from "react";
+
+import type { MapInstance } from "@/components/shared/map/map-canvas";
 import { Link } from "@/i18n/navigation";
-import { useEffect, useRef, useState } from "react";
 
 import {
-  clearFilterKeys,
-  type FilterChip,
-  FiltersPanel,
-  FiltersPopover,
-  useFilterChips,
-} from "@/components/shared/form/filters";
-
-import {
-  listingSummariesQueryOptions,
   MARINA_PAGE_SIZE,
-  type MapMarinaData,
   mapMarinasQueryOptions,
   marinaListingsQueryOptions,
 } from "../../api/queries";
+import { useFitSearchResults } from "../../hooks/use-fit-search-results";
 import { useListingCards } from "../../hooks/use-listing-cards";
+import { useMapCameraUrl, useWriteCameraToUrl } from "../../hooks/use-map-camera-url";
 import { useMapClusters } from "../../hooks/use-map-clusters";
+import { useMapPadding } from "../../hooks/use-map-padding";
+import { useMapSelection } from "../../hooks/use-map-selection";
 import { useRememberSearch } from "../../hooks/use-remember-search";
 import { useSearchFilters } from "../../hooks/use-search-filters";
 import { useSearchInput } from "../../hooks/use-search-input";
-import { MAP_MARINA_ZOOM } from "@/lib/mapbox";
-import { boundsOf, paddingOf } from "../../lib/map-camera";
-import { mapCameraParsers, serializeSearch } from "../../lib/search-params";
+import { serializeSearch } from "../../lib/search-params";
 import MapBoatPopup from "./map-boat-popup";
-import type { MapInstance } from "@/components/shared/data-display/map-canvas";
-import MapClusterMarker from "./map-cluster-marker";
-import MapListPanel from "./map-list-panel";
-import MapMarker from "@/components/shared/data-display/map-marker";
+import MapChrome from "./map-chrome";
+import MapStatus from "./map-status";
+import MarinaLayer from "./marina-layer";
 
-/*
- * How long a descent takes, per zoom level it has to cross.
- *
- * A fixed number cannot serve it. The 800ms that reads as deliberate over the two or three levels a
- * splitting cluster moves is a snap over the six or seven between a coastline view and a berth, and
- * the duration that suits the six drags over the two. Matching the rate instead — near enough the
- * rate the splitting flight runs at — keeps every camera move on this screen feeling like the same
- * hand, whatever zoom it started from.
- */
-const DESCENT_MS_PER_ZOOM = 210;
-
-/* Bounds on it: a press from almost on top of a marina should still move rather than cut, and a
-   descent from the far end of the range should not become a tour. Mapbox's own pacing, which is
-   what this replaced, ran past four seconds on the longest of them. */
-const DESCENT_MIN_MS = 400;
-const DESCENT_MAX_MS = 1600;
-
-// Breathing room the camera keeps around whatever it frames, so a marker on the outermost boat is
-// inside the picture rather than balanced on its edge.
-const MARKER_CLEARANCE = 80;
-
-/*
- * How far the cluster fit is pulled back once the boats are framed.
- *
- * A fit puts the outermost of them exactly on that margin, which on a spread cluster reads as two
- * markers pinned to opposite edges — on screen, and easy to miss entirely. Half a zoom level shows
- * about a third more water each way, which is what makes the group read as a group.
- */
-const CLUSTER_FIT_EASE = 0.5;
-
-/*
- * How long the camera takes to open a cluster.
- *
- * Longer than mapbox's 500ms default because this flight is the biggest one the map makes — several
- * zoom levels at once — and at the default pace the boats have replaced the pill before the eye has
- * registered that anything moved.
- */
-const CLUSTER_FLIGHT_MS = 800;
-
-// The camera is written to the URL on every settle; this is the ceiling on how often that reaches
-// the address bar while somebody is working the map.
-const CAMERA_WRITE_MS = 500;
-
-/*
- * How long the map takes to give up the width a panel has just claimed, or to take it back.
- *
- * `setPadding` moves the camera the instant it is called, so opening the list made the map flinch
- * sideways by half the panel. Close to the 200ms the chrome around it fades in, so the two read as
- * one movement rather than a panel arriving and the map reacting to it.
- */
-const PANEL_SHIFT_MS = 250;
-
-type Descent = { focusZoom: number; focusDurationMs: number };
-
-/**
- * The descent to a place the visitor has named: down to the marina, timed by how far it has to come.
- *
- * Nothing when the camera is already there or closer — pressing a marina from further in must not
- * pull the view back out — which is also the ordinary case for "See on map" now that the link
- * carries its own camera: there is no flight to make, only the card to slide in.
- */
-function descentTo(map: MapInstance): Descent | null {
-  const levels = MAP_MARINA_ZOOM - map.getZoom();
-  if (levels <= 0) return null;
-
-  return {
-    focusZoom: MAP_MARINA_ZOOM,
-    focusDurationMs: Math.min(
-      Math.max(levels * DESCENT_MS_PER_ZOOM, DESCENT_MIN_MS),
-      DESCENT_MAX_MS,
-    ),
-  };
-}
-
-/**
- * The marina whose card is open, and the descent that opened it.
- *
- * Its boats are not here: a marina can hold hundreds and they arrive a page at a time, keyed by the
- * card the visitor is looking at.
- */
-type OpenMarina = {
-  /** Every base under the pin. One usually; several where marinas sit a stone's throw apart. */
-  baseIds: string[];
-  /** The same marinas as `marina` filter values, for handing them to the list and the catalogue. */
-  values: string[];
-  lat: number;
-  lng: number;
-  /** Boats across all of them, which is the number the pin itself was showing. */
-  count: number;
-  /** Set where the camera still has to come down to the marina; the popup's own opening does it. */
-  focusZoom?: number;
-  /** Paired with it: how long that descent runs, scaled to how far it has to come. */
-  focusDurationMs?: number;
-};
-
-const MapCanvas = dynamic(() => import("@/components/shared/data-display/map-canvas"), {
+const MapCanvas = dynamic(() => import("@/components/shared/map/map-canvas"), {
   ssr: false,
   loading: () => <div className="size-full bg-natural-50" />,
 });
-
-function CloseListButton({
-  onClick,
-  label,
-  className,
-}: {
-  onClick: () => void;
-  label: string;
-  className?: string;
-}) {
-  return (
-    <Button
-      type="button"
-      variant="neutral"
-      size="icon"
-      aria-label={label}
-      onClick={onClick}
-      className={cn(
-        "pointer-events-auto size-12 shadow-[4px_4px_15px_rgba(47,128,237,0.15)] md:size-11",
-        className,
-      )}
-    >
-      <X />
-    </Button>
-  );
-}
 
 export default function MapScreen() {
   useRememberSearch();
@@ -173,325 +43,54 @@ export default function MapScreen() {
   /* The same URL state the list screen runs on, so filters survive a reload and travel with a link
      instead of dying with the component. */
   const { filters, setFilters, defaults, searchParams } = useSearchFilters();
-  const [camera, setCamera] = useQueryStates(mapCameraParsers, {
-    limitUrlUpdates: throttle(CAMERA_WRITE_MS),
-  });
   const [listOpen, setListOpen] = useState(false);
-  const [selectedListingId, setSelectedListingId] = useState<string | null>(focusListingId);
-  const [openMarina, setOpenMarina] = useState<OpenMarina | null>(null);
-  /** Which of the open marina's boats is on screen, counted across all of them, not per page. */
-  const [marinaIndex, setMarinaIndex] = useState(0);
-  /* The descent owed to a boat the visitor pressed, held the same way a cluster holds its own. */
-  const [selectedDescent, setSelectedDescent] = useState<Descent | null>(null);
   const [map, setMap] = useState<MapInstance | null>(null);
-  const [focusDone, setFocusDone] = useState(false);
-
-  const shellRef = useRef<HTMLDivElement>(null);
-  const filtersRef = useRef<HTMLFormElement>(null);
-  const listRef = useRef<HTMLElement>(null);
-  /* False until the map has been given its first padding, which is the one that must not animate:
-     the visitor has not opened anything yet, they are just arriving. */
-  const panelsSettled = useRef(false);
-
-  /*
-   * Where a newly built map opens, read live from the URL rather than frozen at first render.
-   *
-   * `initialViewState` is consumed once, when mapbox is constructed, and ignored for the rest of
-   * that map's life — so handing it the current value costs nothing while the visitor is driving.
-   * Freezing it did cost something: Next keeps this route mounted after a visit (Activity), and the
-   * map is torn down and rebuilt on the way back, so a frozen value reopened the view somebody left
-   * days ago. Following "See on map" landed on that stale water and then flew to the boat from it.
-   */
-  const openingView =
-    camera.zoom != null && camera.centre
-      ? { longitude: camera.centre.lng, latitude: camera.centre.lat, zoom: camera.zoom }
-      : undefined;
 
   const t = useTranslations("YachtsMap");
   const common = useTranslations("Common");
-  const { toMapCard } = useListingCards();
-  const chips = useFilterChips(filters);
+  const { toCard } = useListingCards();
+
+  const { openingView, hasCamera, setCamera } = useMapCameraUrl();
 
   const input = useSearchInput(filters, defaults, { sort: "recommended", page: 1 });
-  const { data, isPending, isError, refetch } = useQuery(mapMarinasQueryOptions(input));
+  const { data, isPending, isPlaceholderData, isError, refetch } = useQuery(
+    mapMarinasQueryOptions(input),
+  );
   const searchKey = JSON.stringify(input);
-  const framedSearch = useRef<{
-    map: MapInstance;
-    key: string;
-    done: boolean;
-    preserve: boolean;
-  } | null>(null);
   const marinas = data?.marinas ?? [];
 
+  /* Effects run in the order these are called, and the order is load-bearing: the padding has to
+     be on the map before the search is framed against it, and the camera writer attached only
+     after that framing, so an arrival's jump is not written to the URL. */
   const { clusters, supercluster } = useMapClusters(marinas, map);
+  const { shellRef, filtersRef, listRef, controlsRef } = useMapPadding(map, listOpen);
+  /* The previous search's pins stay up while the next loads, but framing them would use up this
+     search's one fit before its own answer arrived. */
+  useFitSearchResults(
+    map,
+    searchKey,
+    isPlaceholderData ? undefined : data?.marinas,
+    hasCamera || Boolean(focusListingId),
+  );
+  useWriteCameraToUrl(map, setCamera);
+  const selection = useMapSelection(map, supercluster, focusListingId, searchKey);
+  const { selected, openMarina } = selection;
 
   /* The page holding the card on screen. Only that page is fetched, so opening a marina of three
      hundred costs the same as opening one of three. */
-  const marinaPage = Math.floor(marinaIndex / MARINA_PAGE_SIZE) + 1;
-  const { data: marinaBoats } = useQuery({
+  const marinaPage = Math.floor(selection.marinaIndex / MARINA_PAGE_SIZE) + 1;
+  const {
+    data: marinaBoats,
+    isError: marinaBoatsFailed,
+    refetch: refetchMarinaBoats,
+  } = useQuery({
     /* By name, the way the pin was grouped: one marina can be two vendors' bases. */
     ...marinaListingsQueryOptions(input, openMarina?.values ?? [], marinaPage),
     enabled: Boolean(openMarina),
   });
 
-  /*
-   * A deep link names a boat, and the map only knows places — so the boat is fetched by name rather
-   * than looked for among the marinas. That is also what keeps the link working when the search it
-   * lands in excludes that boat, which used to leave the visitor on an empty map.
-   */
-  const { data: linked } = useQuery(
-    listingSummariesQueryOptions(selectedListingId ? [selectedListingId] : []),
-  );
-  const selected = linked?.[0];
-
   // A popup covers the top-left controls on small screens, so we fade them out while one is open.
   const popupOpen = Boolean(selected || openMarina);
-
-  /*
-   * The box the camera composes within: the container, less the panels lying over it and less a
-   * margin all round.
-   *
-   * Held on the map itself rather than passed per call, because mapbox reads it into every camera
-   * move — a cluster opening, a popup recentring, the opening view — and because `fitBounds` writes
-   * whatever padding it was given back onto the map. Given the standing value it writes back the
-   * same number; given a fresh sum it would grow the margins a little on every click.
-   */
-  useEffect(() => {
-    const shell = shellRef.current;
-    if (!map || !shell) return;
-
-    /* Seeded from the map so a first pass that changes nothing does not jump the camera, which
-       would put a `zoom` and a `centre` in the URL of a visitor who never touched the map. */
-    let applied = paddingOf(map);
-
-    const apply = (animate: boolean) => {
-      const box = shell.getBoundingClientRect();
-      if (box.width === 0) return;
-
-      const claimed = (panel: Element | null) => {
-        if (!panel) return 0;
-        const rect = panel.getBoundingClientRect();
-        if (rect.width === 0) return 0;
-        const right = rect.right - box.left;
-        /* Only a panel hugging the left edge narrows the map sideways. A full-width sheet on a
-           phone covers the bottom instead, which the popup answers with its own offset. */
-        return right < box.width / 2 ? right : 0;
-      };
-
-      /* Kept well inside the container: mapbox abandons a fit whose padding leaves it no room,
-         and a flat 80 a side very nearly does that on a phone. */
-      const clearance = Math.min(MARKER_CLEARANCE, box.width / 6, box.height / 6);
-      const next = {
-        top: clearance,
-        right: clearance,
-        bottom: clearance,
-        left: Math.max(claimed(filtersRef.current), claimed(listRef.current)) + clearance,
-      };
-
-      if (
-        next.top === applied.top &&
-        next.right === applied.right &&
-        next.bottom === applied.bottom &&
-        next.left === applied.left
-      ) {
-        return;
-      }
-
-      applied = next;
-
-      /* Eased where a panel opened or closed, because that is a movement the visitor caused and
-         should be able to follow. Jumped on the first pass and on a resize, where the map is
-         already being rebuilt around them and an animation would only lag behind the drag. */
-      if (animate) map.easeTo({ padding: next, duration: PANEL_SHIFT_MS });
-      else map.setPadding(next);
-    };
-
-    apply(panelsSettled.current);
-    panelsSettled.current = true;
-
-    const observer = new ResizeObserver(() => apply(false));
-    observer.observe(shell);
-    return () => observer.disconnect();
-  }, [map, listOpen]);
-
-  // Fit each new search once; panning and background refetches keep the visitor's camera.
-  useEffect(() => {
-    if (!map) return;
-    const previous = framedSearch.current;
-    const newVisit = previous?.map !== map;
-    if (newVisit || previous.key !== searchKey) {
-      framedSearch.current = {
-        map,
-        key: searchKey,
-        done: false,
-        preserve: newVisit && Boolean((camera.zoom != null && camera.centre) || focusListingId),
-      };
-      if (!newVisit) {
-        setSelectedListingId(null);
-        setOpenMarina(null);
-        setSelectedDescent(null);
-      }
-    }
-    const frame = framedSearch.current;
-    if (!frame || frame.done || !data) return;
-    frame.done = true;
-    if (frame.preserve || data.marinas.length === 0) return;
-    map.fitBounds(boundsOf(data.marinas), {
-      padding: paddingOf(map),
-      maxZoom: MAP_MARINA_ZOOM,
-      duration: newVisit ? 0 : CLUSTER_FLIGHT_MS,
-    });
-  }, [map, data, searchKey, camera.zoom, camera.centre, focusListingId]);
-
-  // Written once the camera settles, so a reload — or a link sent to somebody — opens on the same
-  // water. Replaced rather than pushed, or every nudge of the map is a step of the back button.
-  useEffect(() => {
-    if (!map) return;
-
-    const write = () => {
-      const centre = map.getCenter();
-      void setCamera({
-        zoom: Number(map.getZoom().toFixed(2)),
-        centre: { lat: centre.lat, lng: centre.lng },
-      });
-    };
-
-    map.on("moveend", write);
-    return () => {
-      map.off("moveend", write);
-    };
-  }, [map, setCamera]);
-
-  /*
-   * Opens whatever the visitor pressed, and brings the camera down to it.
-   *
-   * Takes a list because a pin is not always one marina: two of them can share a spot too tightly
-   * for any zoom to separate, and then the pin counts both. The card has to count both as well, or
-   * the pager promises a number the marina cannot reach.
-   *
-   * The descent matters as much as the card. Without it the visitor read a marina's name and price
-   * over the coastline they pressed from, with no idea which of the bays below it sits in.
-   */
-  function openPlace(bases: MapMarinaData[], lng: number, lat: number) {
-    setSelectedListingId(null);
-    setSelectedDescent(null);
-    setMarinaIndex(0);
-
-    const opened: OpenMarina = {
-      baseIds: bases.map((base) => base.baseId),
-      values: [...new Set(bases.map((base) => base.value))],
-      lat,
-      lng,
-      count: bases.reduce((total, base) => total + base.count, 0),
-    };
-
-    const descent = map ? descentTo(map) : null;
-    if (descent) {
-      opened.focusZoom = descent.focusZoom;
-      opened.focusDurationMs = descent.focusDurationMs;
-    }
-
-    setOpenMarina(opened);
-  }
-
-  function dismissOverlays() {
-    setSelectedListingId(null);
-    setOpenMarina(null);
-    setSelectedDescent(null);
-  }
-
-  /*
-   * Clicking a cluster frames the boats it actually holds.
-   *
-   * The boats decide the zoom, rather than a fixed step above the current one: a step overshoots a
-   * tight cluster and undershoots a spread one, and neither lands with the group filling the screen.
-   * Called from the marker's onClick (after touchend), so mapbox no longer cancels the flight.
-   *
-   * A cluster is split whenever any zoom the map allows would split it, and the ceiling asked for
-   * is the map's own. A lower one used to stand here, from when the points were boats sharing a
-   * marina's coordinate; against marinas it made the map give up early, answering a pin that read
-   * "170" with a card for one of the two places behind it. The visitor could see both by zooming in
-   * by hand, which is the map admitting it should have done that itself.
-   *
-   * The card is for what nothing separates: several bases on all but the same spot. It rides the
-   * popup's own opening rather than being flown separately, or the two fight for the camera and the
-   * card ends up somewhere the visitor is not looking.
-   */
-  function pressCluster(clusterId: number, lng: number, lat: number) {
-    setSelectedListingId(null);
-    const leaves = supercluster.getLeaves(clusterId, Infinity).map((leaf) => leaf.properties);
-    const expansionZoom = supercluster.getClusterExpansionZoom(clusterId);
-
-    const ceiling = map?.getMaxZoom() ?? MAP_MARINA_ZOOM;
-
-    if (map && expansionZoom <= ceiling) {
-      setOpenMarina(null);
-
-      /* Asked for rather than flown, so the zoom can be eased off before the camera commits. No
-         padding of its own: without one mapbox falls back to the map's, which already describes the
-         panels and the margin. */
-      const bounds = boundsOf(leaves);
-      const camera = map.cameraForBounds(bounds, { maxZoom: ceiling });
-
-      if (camera?.zoom == null) {
-        map.fitBounds(bounds, { maxZoom: ceiling, duration: CLUSTER_FLIGHT_MS });
-        return;
-      }
-
-      map.easeTo({
-        ...camera,
-        /* Never eased below the zoom that actually breaks the cluster apart, or backing off would
-           land on the same pill the visitor just pressed. */
-        zoom: Math.min(Math.max(camera.zoom - CLUSTER_FIT_EASE, expansionZoom), ceiling),
-        duration: CLUSTER_FLIGHT_MS,
-      });
-      return;
-    }
-
-    /* A cluster no zoom can break apart is several marinas on all but the same spot. Open them
-       together: the pin counted them together, and the card has to agree with the pin. */
-    openPlace(leaves, lng, lat);
-  }
-
-  /*
-   * What is open on the map follows the URL, re-read every time a map is built.
-   *
-   * Next keeps this route mounted once it has been visited (Activity), so the `useState` initialisers
-   * above do not run again on the way back — and an effect watching only the parameter does not fire
-   * either, because a parameter that is absent both times has not changed. A card opened on one visit
-   * therefore came back on the next, hanging over a URL that named no boat at all.
-   *
-   * The map instance is the honest signal for "this is a new visit": it is torn down on the way out
-   * and rebuilt on the way in, exactly once each. Its children only render once that new map is idle,
-   * which is after this has run, so the stale card never gets a frame to appear in.
-   */
-  useEffect(() => {
-    if (!map) return;
-    setSelectedListingId(focusListingId);
-    setOpenMarina(null);
-    setSelectedDescent(null);
-    setFocusDone(false);
-  }, [map, focusListingId]);
-
-  /*
-   * Deep link from a listing's "See on map": the target boat's popup opens (selectedListingId is
-   * seeded from the URL) and, the first time it does, its open animation also zooms in — one motion,
-   * instead of a flyTo that the popup's own recenter would immediately override. Consumed once so a
-   * later tap on the same boat doesn't yank the zoom back out.
-   *
-   * The button that sends visitors here now writes the camera into the link, so ordinarily the map
-   * has already opened on the boat and `descentTo` finds nothing left to do. This is what covers the
-   * rest: a `?selected=` URL that was bookmarked or passed on before the camera rode along.
-   *
-   * Spent by the card once it has actually ordered the flight, not by an effect watching this value.
-   * The card opens only after the map has settled, and the markers can arrive before that — so a
-   * flag cleared on render was routinely cleared first, and the deep link then merely panned.
-   */
-  const detailDescent =
-    map && !focusDone && focusListingId && selected?.id === focusListingId ? descentTo(map) : null;
-
-  /* One card, two ways of arriving at it: followed here by a link, or pressed on the map. */
-  const selectedFocus = detailDescent ?? selectedDescent;
 
   /*
    * With a marina open, the list and the catalogue link narrow to its boats. "Show all list" used
@@ -504,10 +103,6 @@ export default function MapScreen() {
     openMarina ? { ...searchParams, marina: openMarina.values } : searchParams,
   );
   const catalogueLabel = openMarina ? t("viewInCatalogue") : t("backToSearch");
-
-  function removeChip(chip: FilterChip) {
-    setFilters(clearFilterKeys(filters, chip.keys, defaults));
-  }
 
   return (
     <div className="flex h-dvh min-h-0 flex-col md:h-[calc(100dvh-var(--header-h))]">
@@ -531,66 +126,24 @@ export default function MapScreen() {
           locateControl
           initialViewState={openingView}
           onReady={setMap}
-          onBackgroundPress={dismissOverlays}
+          onBackgroundPress={selection.dismiss}
         >
-          {clusters.map((feature, index) => {
-            const [lng, lat] = feature.geometry.coordinates;
-            /*
-             * The marina case is taken first, and by the absence of `cluster` rather than by its
-             * presence: a cluster's properties are an intersection now that they carry a tally, and
-             * an intersection is not a discriminant TypeScript will narrow a compound test through.
-             */
-            const props = feature.properties;
-
-            if (!("cluster" in props)) {
-              /* A marina holding several boats keeps the count pill it wore when those boats were
-                 separate points; one holding a single boat stays a bare pin, as it always was. */
-              return props.count > 1 ? (
-                <MapClusterMarker
-                  key={props.baseId}
-                  coordinates={{ lat, lng }}
-                  count={props.count}
-                  label={t("clusterCount", { count: props.count })}
-                  order={index}
-                  onSelect={() => openPlace([props], lng, lat)}
-                />
-              ) : (
-                <MapMarker
-                  key={props.baseId}
-                  coordinates={{ lat, lng }}
-                  label={props.name}
-                  selected={openMarina?.baseIds.includes(props.baseId) === true}
-                  order={index}
-                  onSelect={() => openPlace([props], lng, lat)}
-                />
-              );
-            }
-
-            const { cluster_id: clusterId, count } = props;
-            return (
-              <MapClusterMarker
-                key={`cluster-${clusterId}`}
-                coordinates={{ lat, lng }}
-                count={count}
-                label={t("clusterCount", { count })}
-                order={index}
-                onSelect={() => pressCluster(clusterId, lng, lat)}
-              />
-            );
-          })}
+          <MarinaLayer
+            clusters={clusters}
+            openBaseIds={openMarina?.baseIds ?? []}
+            onOpenPlace={selection.openPlace}
+            onPressCluster={selection.pressCluster}
+          />
 
           {selected ? (
             <MapBoatPopup
               key={selected.id}
               coordinates={{ lat: selected.base.lat, lng: selected.base.lng }}
-              boats={[toMapCard(selected)]}
+              boats={[toCard(selected, undefined, true)]}
               map={map}
-              focusZoom={selectedFocus?.focusZoom}
-              focusDurationMs={selectedFocus?.focusDurationMs}
-              onFocusApplied={() => {
-                setFocusDone(true);
-                setSelectedDescent(null);
-              }}
+              focusZoom={selection.selectedFocus?.focusZoom}
+              focusDurationMs={selection.selectedFocus?.focusDurationMs}
+              onFocusApplied={selection.focusApplied}
             />
           ) : openMarina && marinaBoats ? (
             /* Held back until the first page is in hand: an empty card with a pager reading "1 / 300"
@@ -598,10 +151,10 @@ export default function MapScreen() {
             <MapBoatPopup
               key={openMarina.baseIds.join()}
               coordinates={{ lat: openMarina.lat, lng: openMarina.lng }}
-              boats={marinaBoats.items.map((item) => toMapCard(item.listing, item))}
+              boats={marinaBoats.items.map((item) => toCard(item.listing, item, true))}
               total={openMarina.count}
               pageStart={(marinaPage - 1) * MARINA_PAGE_SIZE}
-              onActiveIndex={setMarinaIndex}
+              onActiveIndex={selection.setMarinaIndex}
               map={map}
               focusZoom={openMarina.focusZoom}
               focusDurationMs={openMarina.focusDurationMs}
@@ -610,114 +163,41 @@ export default function MapScreen() {
           ) : null}
         </MapCanvas>
 
-        {!popupOpen && (isPending || isError || data?.marinas.length === 0) && (
-          <div
-            role="status"
-            className="absolute inset-x-3 top-28 mx-auto w-fit max-w-full rounded-xl bg-card p-3 text-center text-sm shadow-md md:top-auto md:bottom-24"
-          >
-            {isError ? common("errors.requestFailed") : isPending ? t("loading") : t("noResults")}
-            {isError && (
-              <Button variant="subtle" size="sm" onClick={() => refetch()}>
-                {common("errors.retry")}
-              </Button>
-            )}
-          </div>
+        {/* A pin whose boats failed to load used to do nothing at all, which reads as a dead
+            click rather than as a request worth retrying. */}
+        {openMarina && !marinaBoats && marinaBoatsFailed && (
+          <MapStatus onRetry={() => refetchMarinaBoats()} retryLabel={common("errors.retry")}>
+            {common("errors.requestFailed")}
+          </MapStatus>
         )}
-
-        <div className="pointer-events-none absolute inset-0 flex flex-col gap-3 px-3 pt-3 pb-8 md:gap-5 md:pt-6 md:px-13.5 2xl:flex-row 2xl:items-start 2xl:px-17.5 2xl:pb-17.5">
-          <div
-            className={cn(
-              "flex flex-wrap items-start gap-2 transition-opacity duration-200 md:flex-nowrap md:gap-5 2xl:contents",
-              // Popup covers these on phones (< 768px): fade out and disable there, keep them from md up.
-              popupOpen &&
-                "pointer-events-none opacity-0 **:pointer-events-none md:pointer-events-auto md:opacity-100 md:**:pointer-events-auto",
-            )}
-          >
-            <Link
-              href={catalogueHref}
-              aria-label={catalogueLabel}
-              className={buttonVariants({
-                variant: "neutral",
-                size: "icon",
-                className: "pointer-events-auto shrink-0 md:hidden",
-              })}
+        {!popupOpen &&
+          (isPending || isPlaceholderData || isError || data?.marinas.length === 0) && (
+            <MapStatus
+              onRetry={isError ? () => refetch() : undefined}
+              retryLabel={common("errors.retry")}
             >
-              <ArrowLeft />
-            </Link>
-            <FiltersPanel
-              ref={filtersRef}
-              scrollable
-              value={filters}
-              onApply={setFilters}
-              className="pointer-events-auto hidden max-h-full w-83.5 shrink-0 2xl:flex"
-            />
-            <FiltersPopover
-              variant="primary"
-              value={filters}
-              onApply={setFilters}
-              className="pointer-events-auto w-auto 2xl:hidden"
-            />
+              {isError
+                ? common("errors.requestFailed")
+                : isPending || isPlaceholderData
+                  ? t("loading")
+                  : t("noResults")}
+            </MapStatus>
+          )}
 
-            <div
-              className={cn(
-                "ml-auto grid items-start gap-2 md:contents",
-                listOpen ? "grid-cols-[minmax(0,1fr)_auto]" : "grid-cols-1",
-              )}
-            >
-              <Button
-                type="button"
-                variant="neutral"
-                onClick={() => setListOpen((open) => !open)}
-                className={cn(
-                  "pointer-events-auto w-auto shadow-[4px_4px_15px_rgba(47,128,237,0.15)]",
-                  listOpen && "2xl:hidden",
-                )}
-              >
-                <List className="md:hidden" />
-                <span className="sr-only md:not-sr-only">{t("showAllList")}</span>
-              </Button>
-              {listOpen ? (
-                <CloseListButton
-                  onClick={() => setListOpen(false)}
-                  label={t("closeList")}
-                  className="md:hidden"
-                />
-              ) : null}
-            </div>
-
-            {chips.length > 0 && (
-              <div className="flex w-full items-start gap-2 overflow-x-auto pb-1 md:w-auto md:min-w-0 md:flex-1 md:flex-wrap md:justify-end 2xl:order-last 2xl:justify-start *:pointer-events-auto *:shrink-0">
-                {chips.map((chip) => (
-                  <Chip
-                    key={chip.id}
-                    variant="outline"
-                    onRemove={() => removeChip(chip)}
-                    removeLabel={common("removeFilter", { label: chip.label })}
-                    className="bg-card"
-                  >
-                    {chip.label}
-                  </Chip>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {listOpen ? (
-            <div className="flex min-h-0 flex-1 items-start gap-4 2xl:contents">
-              <MapListPanel
-                ref={listRef}
-                filters={listFilters}
-                defaults={defaults}
-                className="pointer-events-auto max-h-full"
-              />
-              <CloseListButton
-                onClick={() => setListOpen(false)}
-                label={t("closeList")}
-                className="hidden md:inline-flex"
-              />
-            </div>
-          ) : null}
-        </div>
+        <MapChrome
+          filters={filters}
+          defaults={defaults}
+          onFiltersChange={setFilters}
+          listFilters={listFilters}
+          listOpen={listOpen}
+          onListOpenChange={setListOpen}
+          popupOpen={popupOpen}
+          catalogueHref={catalogueHref}
+          catalogueLabel={catalogueLabel}
+          filtersRef={filtersRef}
+          listRef={listRef}
+          controlsRef={controlsRef}
+        />
       </div>
     </div>
   );

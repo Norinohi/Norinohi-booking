@@ -15,6 +15,8 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : [["list"]],
+  /* CI serves a placeholder Mapbox token, so a spec needing a rendered map cannot pass there. */
+  grepInvert: process.env.CI ? /@live-map/ : undefined,
 
   use: {
     baseURL: BASE_URL,

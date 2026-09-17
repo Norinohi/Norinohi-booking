@@ -13,7 +13,7 @@ import {
   streamBookingManagerConfirmedOffers,
 } from "./confirmed-offers";
 import type { BookingManagerClient } from "./client";
-import { coldStartNotice, warmBookingManagerServers } from "./warmup";
+import { reportColdStart, warmBookingManagerServers } from "./warmup";
 import type { BookingManagerConfig } from "./config";
 import type { SweepPeriod } from "../shared/sweep-periods";
 import { parseBookingManagerDate, parseBookingManagerDateTime } from "./dates";
@@ -301,8 +301,7 @@ export function createBookingManagerAvailabilitySource(
      * outcome worth acting on.
      */
     async warmUp() {
-      const notice = coldStartNotice(await warmBookingManagerServers(client));
-      if (notice) console.warn(notice);
+      reportColdStart(await warmBookingManagerServers(client));
     },
 
     listScopes(): Promise<AvailabilityScope[]> {

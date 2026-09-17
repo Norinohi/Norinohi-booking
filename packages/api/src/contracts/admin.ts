@@ -1,3 +1,4 @@
+import { PROVIDER_KEYS } from "@yacht-charter/env/providers";
 import { z } from "zod";
 
 import {
@@ -13,7 +14,7 @@ import {
 
 /* ------------------------------------------------------------ provider sync */
 
-export const providerKeyOutputSchema = z.enum(["mock", "booking_manager", "nausys"]);
+export const providerKeyOutputSchema = z.enum(PROVIDER_KEYS);
 
 /** Returned the moment the run row exists; the work itself outlives the request. */
 export const syncRunStartedSchema = z.object({
@@ -437,7 +438,11 @@ export const duplicateDetailSideSchema = z.object({
   listing: duplicateDetailListingSchema.nullable(),
 });
 
-export const duplicateDetailInputSchema = z.object({ candidateId: idSchema });
+export const duplicateDetailInputSchema = z.object({
+  candidateId: idSchema,
+  /* Category, crew and rig read in the public site's words for this locale. */
+  locale: z.string().min(2).max(10).optional(),
+});
 
 export const duplicateDetailSchema = z.object({
   candidateId: z.string(),
@@ -454,6 +459,20 @@ export const auditActionSchema = z.enum([
   "sync",
   "merge",
   "price_adjustment",
+  "error",
+]);
+
+/**
+ * Where a recorded failure came from. Only `error` rows carry one, in `metadata.source`:
+ * a staff action that failed, a 5xx from any procedure, a vendor refusing a booking call, the
+ * Stripe webhook, or a scheduled job.
+ */
+export const auditErrorSourceSchema = z.enum([
+  "admin_action",
+  "server",
+  "provider",
+  "stripe_webhook",
+  "job",
 ]);
 
 const AUDIT_PAGE_SIZE = 20;
@@ -463,6 +482,7 @@ export const auditListInputSchema = z
     entityType: z.string().trim().max(100).optional(),
     entityId: z.string().trim().max(200).optional(),
     action: auditActionSchema.optional(),
+    source: auditErrorSourceSchema.optional(),
     ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: AUDIT_PAGE_SIZE }),
   })
   .default(paginationInputDefault(AUDIT_PAGE_SIZE));
@@ -566,11 +586,22 @@ export const commissionSetActiveInputSchema = z.object({
 
 /** Backs the operator picker in the commission form. */
 export const operatorOptionsInputSchema = z
-  .object({ query: z.string().trim().max(200).optional() })
+  .object({
+    query: z.string().trim().max(200).optional(),
+    /** Only operators this vendor sells yachts for. */
+    provider: providerKeyOutputSchema.optional(),
+  })
   .default({});
 
 export const operatorOptionsSchema = z.object({
-  items: z.array(z.object({ id: z.string(), name: z.string() })),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      /** The vendors selling this operator's yachts, so two companies with one name can be told apart. */
+      providers: z.array(providerKeyOutputSchema),
+    }),
+  ),
 });
 
 /* ---------------------------------------------------------------- discounts */
@@ -603,8 +634,6 @@ export const discountSchema = z.object({
   valuePct: z.number().nullable(),
   value: moneySchema.nullable(),
   targets: z.array(discountTargetSchema),
-  /** Server-rendered "Applies to" cell, so the table does not reassemble targets. */
-  appliesToLabel: z.string(),
   status: discountStatusSchema,
   startsAt: z.string().nullable(),
   endsAt: z.string().nullable(),

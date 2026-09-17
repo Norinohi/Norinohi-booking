@@ -10,7 +10,7 @@ import {
 /*
  * The authoring contract for the FAQ.
  *
- * The public read (packages/db/src/search/repository.ts) matches `locale` exactly with no
+ * The public read (packages/db/src/search/listing-detail.ts) matches `locale` exactly with no
  * fallback, so the same question is four rows — one per locale — and an entry present in three
  * of them is a hole in one page rather than a partial translation. Everything here is therefore
  * expressed in *groups*: a group is one question in every locale that has it, and the editor

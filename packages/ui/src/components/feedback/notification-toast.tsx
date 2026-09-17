@@ -26,7 +26,7 @@ function NotificationToast({
       {...props}
     >
       <div className="flex min-w-40 flex-col justify-center py-3">
-        <span className="text-sm font-semibold capitalize leading-[1.2] tracking-[0.02em] text-brand">
+        <span className="text-sm font-semibold leading-[1.2] tracking-[0.02em] text-brand">
           {title}
         </span>
         {description ? (

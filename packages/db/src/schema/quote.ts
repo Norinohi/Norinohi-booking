@@ -29,8 +29,9 @@ export type QuoteLine = {
   // Exactly one line is `base`, the charter price internal rules move.
   kind: "base" | "extra" | "fee" | "adjustment" | "discount" | "credit";
   // Which section of the booking summary shows it. Absent on the base, discounts
-  // and credit, which belong to no section.
-  group?: "mandatory" | "optional" | "crew";
+  // and credit, which belong to no section. `requested` is ours, never a vendor's:
+  // an extra the offer would not price, charged at the catalogue rate at check-in.
+  group?: "mandatory" | "optional" | "crew" | "requested";
 };
 
 export type QuotePaymentPolicy = {
@@ -85,9 +86,10 @@ export const quote = pgTable(
      * Booking Manager publishes optional extras in its catalogue and exposes none on the offer
      * it quotes from; NauSYS prices its `service` id space and not its `equipment` one. Ticking
      * one of those as an ordinary extra would send a code the adapter drops -- billed nothing,
-     * told nobody -- so they are carried here instead, priced by nothing and settled with the
-     * base. `createBooking` writes them into the booking's special requests, which is the one
-     * place a human on the other end reads.
+     * told nobody -- so they are carried here instead and settled with the base. The quote adds
+     * each one it can count at its catalogue rate as a `requested` line paid at check-in, so the
+     * total is the whole charter. `createBooking` writes them into the booking's special
+     * requests, which is the one place a human on the other end reads.
      *
      * Separate from `extras` rather than a flag inside it, because everything downstream of
      * `extras` is arithmetic: the lines, the deposit, the hash checkout re-validates against.
@@ -123,6 +125,13 @@ export const quote = pgTable(
      * comes back to a stored quote can still show the choice rather than losing it on reload.
      * A snapshot like `lines`, and just as stale-able: the quote's own TTL governs both.
      */
+    /**
+     * The handover times, "HH:mm" at the marina, the vendor put on this offer, or null where it
+     * stated none. Kept because the booking is built from this row after the live response is
+     * gone, and NauSYS names the times on the offer but not on the option the hold opens.
+     */
+    checkInTime: text("check_in_time"),
+    checkOutTime: text("check_out_time"),
     routeOptions: jsonb("route_options").$type<QuoteRouteOption[]>().default([]).notNull(),
     priceSourceHash: text("price_source_hash").notNull(),
     status: quoteStatus("status").default("active").notNull(),

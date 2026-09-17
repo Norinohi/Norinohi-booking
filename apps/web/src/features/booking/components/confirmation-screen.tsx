@@ -14,13 +14,17 @@ import { useEffect, useRef, useState } from "react";
 import { Image } from "@/components/shared/data-display/image";
 import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
-import { useMoney } from "@/hooks/use-money";
+import { useExactMoney } from "@/hooks/use-money";
 import { GROUP, POP, RISE } from "@/lib/motion";
-import { client } from "@/utils/orpc";
 
-import { bookingDetailQueryOptions, checkoutStatusQueryOptions } from "../api/queries";
+import {
+  bookingDetailQueryOptions,
+  checkoutStatusQueryOptions,
+  fetchBookingReceipt,
+} from "../api/queries";
 import { hasFailed, isSettling } from "../lib/checkout-status";
 import { guestAccessFor } from "../lib/guest-access";
+import { charterRange } from "../lib/handover";
 import { confirmationParsers } from "../lib/search-params";
 
 const CREW_KEYS = ["bareboat", "skipper", "full-crew"] as const;
@@ -136,7 +140,7 @@ export default function BookingConfirmationScreen() {
   const t = useTranslations("Booking.confirmation");
   const tCrew = useTranslations("Common.crewTypes");
   const locale = useLocale();
-  const money = useMoney();
+  const money = useExactMoney();
   const format = useFormatter();
   const [{ bookingId, method }] = useQueryStates(confirmationParsers);
   const [downloading, setDownloading] = useState(false);
@@ -150,7 +154,7 @@ export default function BookingConfirmationScreen() {
   const isGuest = Boolean(access?.token);
 
   const { data: booking, isLoading } = useQuery({
-    ...bookingDetailQueryOptions(bookingId ?? "", access?.token),
+    ...bookingDetailQueryOptions(bookingId ?? "", access?.token, locale),
     enabled: Boolean(bookingId) && access !== null,
   });
 
@@ -312,7 +316,7 @@ export default function BookingConfirmationScreen() {
 
   const rows: SummaryRow[] = [
     { label: t("summary.yacht"), value: booking.listing.title },
-    { label: t("summary.dates"), value: `${day(booking.checkIn)} → ${day(booking.checkOut)}` },
+    { label: t("summary.dates"), value: charterRange(day, booking.checkIn, booking.checkOut) },
     ...(crewLabel ? [{ label: t("summary.crew"), value: crewLabel }] : []),
     ...(mandatory.length
       ? [{ label: t("summary.mandatory"), value: mandatory.map((line) => line.label).join(", ") }]
@@ -375,7 +379,7 @@ export default function BookingConfirmationScreen() {
     if (!bookingId) return;
     setDownloading(true);
     try {
-      const receipt = await client.booking.receipt({ id: bookingId, accessToken: access?.token });
+      const receipt = await fetchBookingReceipt(bookingId, access?.token);
       const blob = new Blob([JSON.stringify(receipt, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");

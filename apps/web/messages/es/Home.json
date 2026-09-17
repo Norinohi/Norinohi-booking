@@ -1,0 +1,184 @@
+{
+  "BoatTypes": {
+    "heading": "Elige tu tipo de barco",
+    "previous": "Tipos de barco anteriores",
+    "next": "Tipos de barco siguientes"
+  },
+  "BudgetFinder": {
+    "heading": "Encuentra yates según tu presupuesto",
+    "viewResults": "Ver resultados",
+    "labels": {
+      "budget": "Presupuesto por persona",
+      "people": "Personas",
+      "skipper": "Patrón",
+      "destinations": "Destinos (opcional)"
+    },
+    "options": {
+      "any": "Cualquiera",
+      "budgetFrom": "Desde {from}",
+      "peopleNotSure": "No estoy seguro",
+      "skipperYes": "Sí",
+      "skipperNo": "No",
+      "destinationsAll": "Todos los destinos"
+    }
+  },
+  "EarnCta": {
+    "heading": "Gana con tu yate",
+    "description": "Publica tu yate en nuestra plataforma y empieza a recibir reservas de viajeros de todo el mundo. Nosotros nos ocupamos de la visibilidad, la demanda y las herramientas; tú mantienes el control de tu calendario y tus precios.",
+    "cta": "Publicar mi yate",
+    "dialog": {
+      "title": "Enviar solicitud",
+      "description": "Déjanos tus datos y nuestro equipo se pondrá en contacto contigo para publicar tu yate.",
+      "submit": "Enviar solicitud",
+      "success": "¡Gracias! Nos pondremos en contacto pronto."
+    }
+  },
+  "Hero": {
+    "tagline": "Más de 30.000 yates en 1.200 destinos. Chárter desde 120 €/día",
+    "heading": "Explora el mundo en yate",
+    "wherePlaceholder": "¿Adónde?",
+    "datesPlaceholder": "Cualquier fecha",
+    "clearDates": "Borrar fechas",
+    "boatPlaceholder": "Cualquier barco",
+    "captainPlaceholder": "Con patrón",
+    "search": "Buscar",
+    "dontKnow": "¿No sabes cuál elegir?",
+    "helpPlan": "Ayúdame a planificar mi viaje",
+    "options": {
+      "croatia": "Croacia",
+      "greece": "Grecia",
+      "italy": "Italia",
+      "turkey": "Turquía",
+      "caribbean": "Caribe",
+      "thailand": "Tailandia",
+      "catamaran": "Catamarán",
+      "sailingYacht": "Velero",
+      "motorYacht": "Yate a motor",
+      "gulet": "Gulet",
+      "luxuryYacht": "Yate de lujo",
+      "withCaptain": "Con patrón",
+      "bareboat": "Sin patrón",
+      "skippered": "Con patrón incluido"
+    },
+    "stats": {
+      "yachts": {
+        "label": "yates"
+      },
+      "destinations": {
+        "label": "destinos"
+      },
+      "travelers": {
+        "label": "viajeros satisfechos"
+      },
+      "rating": {
+        "label": "valoración media"
+      }
+    }
+  },
+  "HowItWorks": {
+    "heading": "Cómo funciona",
+    "intro": "Reservar un yate es más fácil de lo que crees.",
+    "introSecondLine": "Te acompañamos desde la elección del destino hasta el momento de subir a bordo, sin necesidad de experiencia.",
+    "cta": "Buscar yates",
+    "steps": {
+      "destination": {
+        "title": "Elige el destino",
+        "description": "Explora más de 1.200 destinos de navegación en todo el mundo. De Croacia al Caribe, elige el lugar que encaje con tu viaje."
+      },
+      "yacht": {
+        "title": "Elige tu yate",
+        "description": "Explora yates según el tamaño de tu grupo, tu presupuesto y tus preferencias. Compara opciones y encuentra la mejor."
+      },
+      "book": {
+        "title": "Reserva tu viaje",
+        "description": "Confirma las fechas, añade extras si los necesitas y formaliza la reserva online. Listo para zarpar."
+      }
+    }
+  },
+  "PlanTrip": {
+    "heading": "¿No sabes qué elegir? Planifica tu viaje en yate perfecto en 30 segundos",
+    "cta": "Ayúdame a planificar mi viaje",
+    "checklist": {
+      "questions": "Responde unas preguntas sencillas",
+      "recommendation": "Recibe una recomendación personalizada",
+      "explore": "Descubre los mejores yates para tu viaje"
+    },
+    "steps": {
+      "preferences": {
+        "title": "Elige tus preferencias",
+        "description": "Indica tus destinos ideales, desde las costas turquesas de Palawan hasta los puertos históricos de La Valeta."
+      },
+      "recommendation": {
+        "title": "Recibe la recomendación",
+        "description": "Te sugeriremos yates según las necesidades de tu grupo. Revisa nuestras propuestas y elige el yate perfecto."
+      },
+      "yachts": {
+        "title": "Consulta los yates",
+        "description": "Concreta los detalles, añade extras y reserva. Ya solo queda esperar tu inolvidable aventura náutica."
+      }
+    }
+  },
+  "PopularDestinations": {
+    "heading": "Destinos populares",
+    "previous": "Destinos anteriores",
+    "next": "Destinos siguientes",
+    "seeAll": "Ver todos los populares",
+    "showLess": "Ver menos",
+    "perPersonWeek": "Desde {price} por persona/semana",
+    "yachtCount": "{count, plural, one {# yate} other {# yates}}"
+  },
+  "PopularYachts": {
+    "heading": "Yates populares",
+    "previous": "Yates anteriores",
+    "next": "Yates siguientes",
+    "seeAll": "Ver todos los yates",
+    "from": "Desde",
+    "viewDetails": "Ver detalles",
+    "perDay": "/ por día"
+  },
+  "SailingRoutes": {
+    "heading": "Rutas de navegación populares",
+    "previous": "Rutas anteriores",
+    "next": "Rutas siguientes",
+    "seeAll": "Ver todos los populares",
+    "showLess": "Ver menos",
+    "exploreRoute": "Explorar ruta",
+    "days": "{count, plural, one {# día} other {# días}}",
+    "levels": {
+      "easy": "Fácil",
+      "moderate": "Media",
+      "advanced": "Avanzada"
+    }
+  },
+  "Testimonials": {
+    "heading": "Lo que dicen nuestros clientes",
+    "allReviews": "Todas las opiniones",
+    "comingSoon": "Próximamente",
+    "items": {
+      "weber": {
+        "quote": "Reservamos un yate en Croacia por primera vez y todo funcionó sin más. El proceso fue sencillo y el barco era exactamente lo que esperábamos.",
+        "location": "Alemania"
+      },
+      "martin": {
+        "quote": "No tenía experiencia navegando, pero la plataforma facilitó encontrar patrón y planificar todo el viaje. Fue como unas vacaciones normales, pero mejores.",
+        "location": "Francia"
+      },
+      "carter": {
+        "quote": "La transparencia en el precio fue la mayor sorpresa. Vimos el coste total por adelantado y lo repartimos entre amigos: muy cómodo.",
+        "location": "Reino Unido"
+      },
+      "rossi": {
+        "quote": "Comparamos varios yates y encontramos el perfecto para nuestro grupo. Las sugerencias de ruta ayudaron mucho: no tuvimos que planificar nada.",
+        "location": "Italia"
+      },
+      "kowalska": {
+        "quote": "Gran selección de barcos y filtros muy claros. Encontramos justo lo que necesitábamos en pocos minutos.",
+        "location": "Polonia"
+      },
+      "jensen": {
+        "quote": "Desde la reserva hasta el embarque todo fue sencillo. Comunicación clara, sin cargos ocultos y un barco que en persona era aún mejor.",
+        "location": "Dinamarca"
+      }
+    }
+  }
+}

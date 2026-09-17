@@ -1,9 +1,7 @@
-import { headers } from "next/headers";
-import { redirect } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import Hydrated from "@/components/shared/layout/hydrated";
-import { authClient } from "@/lib/auth-client";
+import { requireSignedIn } from "@/lib/auth/server";
 import { buildMetadata } from "@/lib/seo";
 
 import { prefetchReferrals, ReferralsScreen } from "@/features/profile";
@@ -25,21 +23,11 @@ export async function generateMetadata() {
 }
 
 export default async function ReferralsPage() {
-  const locale = await getLocale();
-  const session = await authClient.getSession({
-    fetchOptions: {
-      headers: await headers(),
-      throw: true,
-    },
-  });
-
-  if (!session?.user) {
-    return redirect({ href: "/login", locale });
-  }
+  const user = await requireSignedIn();
 
   return (
     <Hydrated prefetch={prefetchReferrals}>
-      <ReferralsScreen user={{ name: session.user.name, email: session.user.email }} />
+      <ReferralsScreen user={{ name: user.name, email: user.email }} />
     </Hydrated>
   );
 }

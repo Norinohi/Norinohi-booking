@@ -23,9 +23,22 @@ export interface RevalidateResult {
   reason?: string;
 }
 
+const localListeners = new Set<() => void>();
+
+/**
+ * Runs `listener` whenever this process revalidates the catalog, before the web app is told.
+ * For caches held in the API process itself; a revalidation from another process (a sync
+ * script) never reaches them, so they still need a short lifetime of their own.
+ */
+export function onCatalogRevalidate(listener: () => void): void {
+  localListeners.add(listener);
+}
+
 export async function revalidateCatalogCache(
   tags: string[] = [CATALOG_TAG],
 ): Promise<RevalidateResult> {
+  for (const listener of localListeners) listener();
+
   const secret = env.REVALIDATE_SECRET;
   if (!secret) {
     return { attempted: false, ok: false, reason: "REVALIDATE_SECRET is not set" };
