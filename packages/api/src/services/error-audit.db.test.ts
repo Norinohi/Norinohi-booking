@@ -1,7 +1,9 @@
 import "../test-support/checkout-env";
 
 import { call } from "@orpc/server";
+import { auth } from "@yacht-charter/auth";
 import { auditLog } from "@yacht-charter/db/schema/admin";
+import { user } from "@yacht-charter/db/schema/auth";
 import { booking } from "@yacht-charter/db/schema/booking";
 import { createTestDatabase, type TestDatabase } from "@yacht-charter/db/test-support/database";
 import type { MockInventoryProvider } from "@yacht-charter/providers/mock/provider";
@@ -28,8 +30,10 @@ import {
   type FakeStripe,
 } from "../test-support/fake-stripe";
 import { cancelBooking } from "./booking";
-import { recordErrorInAudit } from "./error-audit";
+import { recordCronRouteFailure, recordErrorInAudit } from "./error-audit";
+import { drainOutbox, enqueueOutbox } from "./outbox";
 import { confirmCheckout } from "./payment";
+import { handleStripeWebhook } from "./stripe-webhook";
 
 /*
  * What reaches `audit_log` as `action = error`, and what does not:
@@ -37,7 +41,9 @@ import { confirmCheckout } from "./payment";
  *   staff      any failure past the role check, with the staff user as actor
  *   server     a 5xx from any procedure, public ones included; a visitor's 4xx is not written
  *   provider   a vendor refusing a hold or a release, against the booking
- *   webhook    a Stripe event whose handler threw
+ *   webhook    a Stripe event whose handler threw, whose signature failed, or that could not be recorded
+ *   cron       an HTTP cron route that threw, under the job of the same name
+ *   outbox     a queued email that failed to send, under its message
  *   guard      one row a minute per source, operation, code, entity and actor
  *   isolation  a failing audit write leaves the original error exactly as thrown
  */
@@ -281,6 +287,110 @@ describe("stripe webhook", () => {
           operation: "stripe.payment_intent.amount_capturable_updated",
           message: "Stripe is unreachable",
           context: { eventType: "payment_intent.amount_capturable_updated" },
+        }),
+      }),
+    ]);
+  });
+});
+
+/* Never parsed as an intent: these events fail before any handler reads their object. */
+function rawEvent(id: string, type: string, intentId: string): string {
+  return JSON.stringify({ id, object: "event", type, data: { object: { id: intentId } } });
+}
+
+describe("stripe webhook before the handlers", () => {
+  it("records a rejected signature without the payload", async () => {
+    const outcome = await handleStripeWebhook(
+      test.db,
+      inventory,
+      rawEvent("evt_forged", "payment_intent.succeeded", "pi_forged"),
+      "t=1,v1=forged",
+    );
+
+    expect(outcome.handled).toBe(false);
+    const rows = await test.db
+      .select()
+      .from(auditLog)
+      .where(
+        and(
+          eq(auditLog.action, "error"),
+          sql`${auditLog.metadata}->>'operation' = 'stripe.signature'`,
+        ),
+      );
+    expect(rows).toEqual([
+      expect.objectContaining({
+        entityType: "stripe_event",
+        entityId: null,
+        metadata: expect.objectContaining({ source: "stripe_webhook", context: null }),
+      }),
+    ]);
+    expect(JSON.stringify(rows[0]?.metadata)).not.toContain("pi_forged");
+  });
+
+  it("records an event that could not be written and rethrows", async () => {
+    const insert = vi.spyOn(test.db, "insert").mockImplementationOnce(() => {
+      throw new Error("provider_webhook_event is unavailable");
+    });
+    const eventId = "evt_suite_unrecorded";
+    const body = rawEvent(eventId, "payment_intent.processing", "pi_unrecorded");
+
+    await expect(deliver(test.db, inventory, stripe, body)).rejects.toThrow(
+      "provider_webhook_event is unavailable",
+    );
+    insert.mockRestore();
+
+    expect(await errorRows(eventId)).toEqual([
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          source: "stripe_webhook",
+          operation: "stripe.record_event",
+          context: { eventType: "payment_intent.processing" },
+        }),
+      }),
+    ]);
+  });
+});
+
+describe("cron routes and the outbox", () => {
+  it("files a cron route failure under the job of the same name", async () => {
+    await recordCronRouteFailure(test.db, "drain-outbox", parseError(new Error("pool ended")));
+
+    expect(await errorRows("drain-outbox")).toEqual([
+      expect.objectContaining({
+        entityType: "job",
+        metadata: expect.objectContaining({
+          source: "job",
+          operation: "cron.drain-outbox",
+          message: "pool ended",
+          context: { route: "/api/cron/drain-outbox" },
+        }),
+      }),
+    ]);
+  });
+
+  it("records a failed email against its outbox message with kind and attempt", async () => {
+    const userId = await seedCustomer(test.db, "usr_erroutbox");
+    await test.db.update(user).set({ provisionedAt: new Date() }).where(eq(user.id, userId));
+    const reset = vi
+      .spyOn(auth.api, "requestPasswordReset")
+      .mockRejectedValueOnce(new Error("Resend refused the invitation"));
+    await enqueueOutbox(test.db, "account_invitation", userId);
+
+    expect(await drainOutbox(test.db)).toMatchObject({ retrying: 1 });
+    reset.mockRestore();
+
+    const rows = await test.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, "error"), eq(auditLog.entityType, "outbox_message")));
+    expect(rows).toEqual([
+      expect.objectContaining({
+        entityId: expect.any(String),
+        metadata: expect.objectContaining({
+          source: "job",
+          operation: "outbox.account_invitation",
+          message: "Resend refused the invitation",
+          context: { kind: "account_invitation", attempt: 1, subjectId: userId },
         }),
       }),
     ]);

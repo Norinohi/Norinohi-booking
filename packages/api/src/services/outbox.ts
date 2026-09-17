@@ -6,7 +6,7 @@ import { and, asc, eq, inArray, lte, sql } from "drizzle-orm";
 import type { Database } from "../context";
 import { sendAccountInvitation } from "./account-invitation";
 import { sendBookingReceivedNotice } from "./booking-received";
-import { recordErrorInAudit } from "./error-audit";
+import { recordErrorInAudit, recordOutboxFailure } from "./error-audit";
 import { retryOptionRelease } from "./provider-option";
 import { LEASE_MS, backoffMs, isExhausted } from "./outbox-retry";
 
@@ -142,6 +142,8 @@ async function deliver(db: Database, message: ClaimedMessage): Promise<keyof Dra
         entityId: message.subjectId,
         context: { outboxAttempt: message.attempts },
       });
+    } else {
+      await recordOutboxFailure(db, thrown, message);
     }
 
     const exhausted = isExhausted(message.attempts);

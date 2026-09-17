@@ -135,6 +135,41 @@ export function recordProviderFailure(
   });
 }
 
+/**
+ * An HTTP cron route that threw. Filed under the same `job` entity as the scheduled entry point of
+ * that name, so both ways of running a job read as one on the audit screen.
+ */
+export function recordCronRouteFailure(
+  db: Database,
+  route: string,
+  thrown: ParsedError,
+): Promise<ErrorAuditOutcome> {
+  return recordErrorInAudit(db, {
+    source: "job",
+    operation: `cron.${route}`,
+    thrown,
+    entityType: "job",
+    entityId: route,
+    context: { route: `/api/cron/${route}` },
+  });
+}
+
+/** A queued email or notice that failed to send, filed under its outbox message. */
+export function recordOutboxFailure(
+  db: Database,
+  thrown: ParsedError,
+  message: { id: string; kind: string; attempts: number; subjectId: string },
+): Promise<ErrorAuditOutcome> {
+  return recordErrorInAudit(db, {
+    source: "job",
+    operation: `outbox.${message.kind}`,
+    thrown,
+    entityType: "outbox_message",
+    entityId: message.id,
+    context: { kind: message.kind, attempt: message.attempts, subjectId: message.subjectId },
+  });
+}
+
 async function recentlyRecorded(
   db: Database,
   entry: ErrorAuditEntry,

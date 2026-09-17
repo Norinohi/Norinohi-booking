@@ -13,11 +13,12 @@ import {
   startCatalogueSync,
   startSyncForAll,
 } from "@yacht-charter/api/services/provider-sync";
+import { recordCronRouteFailure } from "@yacht-charter/api/services/error-audit";
 import { handleStripeWebhook } from "@yacht-charter/api/services/stripe-webhook";
 import { auth } from "@yacht-charter/auth";
 import { db } from "@yacht-charter/db";
 import { env } from "@yacht-charter/env/server";
-import { initLogger, log } from "evlog";
+import { initLogger, log, parseError } from "evlog";
 import { createAuthMiddleware, type BetterAuthInstance } from "evlog/better-auth";
 import { evlog, type EvlogVariables } from "evlog/hono";
 import { Hono } from "hono";
@@ -93,6 +94,14 @@ app.post("/api/stripe/webhook", async (c) => {
 // Scheduled maintenance. Above the oRPC dispatch for the same reason as the Stripe
 // route: that middleware matches "/*".
 const cronSecret = requireCronSecret(env.CRON_SECRET);
+
+/* Only records: the thrown error still reaches Hono's error handler and answers as before. */
+app.use("/api/cron/*", async (c, next) => {
+  await next();
+  if (c.error) {
+    await recordCronRouteFailure(db, c.req.path.replace("/api/cron/", ""), parseError(c.error));
+  }
+});
 
 app.post("/api/cron/sweep-expiries", cronSecret, async (c) => {
   return c.json(await sweepExpiries(db, inventoryProvider));

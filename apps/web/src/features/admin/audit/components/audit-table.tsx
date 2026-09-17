@@ -53,6 +53,7 @@ const ENTITY_TYPES = [
   "listing_duplicate_candidate",
   "maintenance",
   "marketplace_settings",
+  "outbox_message",
   "popular_yachts_config",
   "procedure",
   "provider",
