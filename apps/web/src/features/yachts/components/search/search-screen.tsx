@@ -3,6 +3,7 @@
 import { buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { useBreakpoint } from "@yacht-charter/ui/hooks/use-breakpoint";
+import { cn } from "@yacht-charter/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -208,7 +209,7 @@ function ResultsColumn({ locked }: { locked?: LockedFilters }) {
 
   const { toCard } = useListingCards();
   const input = useSearchInput(filters, defaults, { sort, page });
-  const { data, isLoading } = useQuery(resultsQueryOptions(input));
+  const { data, isLoading, isPlaceholderData } = useQuery(resultsQueryOptions(input));
   const boats = data?.items.map((item) => toCard(item.listing, item)) ?? [];
   const pagination = data?.pagination;
   const chips = useFilterChips(filters);
@@ -224,7 +225,7 @@ function ResultsColumn({ locked }: { locked?: LockedFilters }) {
       <ResultsHeader
         chips={chips}
         onRemoveChip={removeChip}
-        total={pagination?.totalItems ?? 0}
+        total={pagination?.totalItems}
         sort={sort}
         onSortChange={setSort}
         priceBasis={priceBasis.option}
@@ -236,14 +237,22 @@ function ResultsColumn({ locked }: { locked?: LockedFilters }) {
         }}
       />
 
-      {isLoading ? (
+      {isLoading || (isPlaceholderData && boats.length === 0) ? (
         <Loader />
       ) : boats.length === 0 ? (
         <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
       ) : (
-        boats.map((boat, index) => (
-          <YachtCard key={boat.id} layout="row" {...boat} openInNewTab priority={index === 0} />
-        ))
+        <div
+          aria-busy={isPlaceholderData}
+          className={cn(
+            "flex flex-col gap-5 transition-opacity",
+            isPlaceholderData && "opacity-60",
+          )}
+        >
+          {boats.map((boat, index) => (
+            <YachtCard key={boat.id} layout="row" {...boat} openInNewTab priority={index === 0} />
+          ))}
+        </div>
       )}
 
       {pagination && pagination.totalItems > 0 ? (

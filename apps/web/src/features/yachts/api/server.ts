@@ -12,7 +12,7 @@ import { CATALOG_TAG, listingTag } from "@/lib/cache-tags";
 import { getRootLocale } from "@/i18n/root-locale";
 import { publicClient } from "@/utils/orpc";
 
-import { listingDetailQueryOptions } from "./queries";
+import { listingDetailQueryOptions, type ResultsInput, resultsQueryOptions } from "./queries";
 
 type CatalogPage = Awaited<ReturnType<AppRouterClient["charterSearch"]["catalogPages"]>>[number];
 
@@ -180,28 +180,37 @@ export async function readCatalogResultsPage(page: number, pageSize: number) {
   return publicClient.charterSearch.results({ pageSize, page });
 }
 
-/** The page's own boats, rendered into the HTML rather than fetched by the browser. */
-export async function prefetchCatalogResults(
-  filters: CatalogPage["filters"],
-  locale: string,
-  pageSize: number,
-) {
+/**
+ * The page's own boats, rendered into the HTML and seeded into the browser's cache.
+ *
+ * The input is the one `toSearchInput` builds for the same page on the client, field for field and
+ * with no page size of its own, so the seeded entry is the one the results column reads. It used to
+ * ask for 24 cards without a currency, which no client key matched, so every visit ran the search
+ * twice.
+ */
+export async function prefetchCatalogResults(filters: CatalogPage["filters"], locale: string) {
   "use cache";
   cacheLife("hours");
   cacheTag(CATALOG_TAG);
 
-  return publicClient.charterSearch.results({
-    locale,
-    pageSize,
-    page: 1,
+  const input: ResultsInput = {
+    currency: "EUR",
     sort: "recommended",
+    page: 1,
+    locale,
     /* Arrays because the filters are multi-select; a catalog page pins exactly one of each. */
-    country: filters.country ? [filters.country] : undefined,
-    sailingArea: filters.region ? [filters.region] : undefined,
-    city: filters.city ? [filters.city] : undefined,
-    marina: filters.marina ? [filters.marina] : undefined,
-    boatType: filters.category ? [filters.category] : undefined,
-    builder: filters.builder ? [filters.builder] : undefined,
-    model: filters.model ? [filters.model] : undefined,
-  });
+    ...(filters.country ? { country: [filters.country] } : null),
+    ...(filters.region ? { sailingArea: [filters.region] } : null),
+    ...(filters.city ? { city: [filters.city] } : null),
+    ...(filters.marina ? { marina: [filters.marina] } : null),
+    ...(filters.category ? { boatType: [filters.category] } : null),
+    ...(filters.builder ? { builder: [filters.builder] } : null),
+    ...(filters.model ? { model: [filters.model] } : null),
+  };
+  const results = await publicClient.charterSearch.results(input);
+
+  const queryClient = new QueryClient();
+  queryClient.setQueryData(resultsQueryOptions(input).queryKey, results);
+
+  return { listings: results.items.map((item) => item.listing), state: dehydrate(queryClient) };
 }

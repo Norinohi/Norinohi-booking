@@ -29,8 +29,6 @@ import { buildMetadata } from "@/lib/seo";
  */
 export const instant = false;
 
-/** As many boats as the page shows, and as many as its ItemList declares. */
-const PAGE_SIZE = 24;
 const ROOT = "yacht-charter";
 
 export async function generateStaticParams() {
@@ -95,11 +93,10 @@ export default async function CatalogPageRoute({
 
   /* The facets too: without them the filter controls have no options to match the pinned facet
    * against, and every control reads as empty while the chips already name it. */
-  const [results, facets] = await Promise.all([
-    prefetchCatalogResults(page.filters, locale, PAGE_SIZE),
+  const [{ listings, state: results }, facets] = await Promise.all([
+    prefetchCatalogResults(page.filters, locale),
     prefetchSearch(facetScopeOf(lockedFor(page))),
   ]);
-  const listings = results.items.map((item) => item.listing);
 
   const t = await getTranslations("Seo.CatalogPage");
   const heading = catalogPageHeading(t, page);
@@ -129,7 +126,7 @@ export default async function CatalogPageRoute({
           }),
         ]}
       />
-      <Hydrated state={facets}>
+      <Hydrated state={{ mutations: [], queries: [...facets.queries, ...results.queries] }}>
         <SearchScreen
           heading={heading}
           locked={lockedFor(page)}

@@ -53,7 +53,9 @@ export default function MapScreen() {
   const { openingView, hasCamera, setCamera } = useMapCameraUrl();
 
   const input = useSearchInput(filters, defaults, { sort: "recommended", page: 1 });
-  const { data, isPending, isError, refetch } = useQuery(mapMarinasQueryOptions(input));
+  const { data, isPending, isPlaceholderData, isError, refetch } = useQuery(
+    mapMarinasQueryOptions(input),
+  );
   const searchKey = JSON.stringify(input);
   const marinas = data?.marinas ?? [];
 
@@ -62,7 +64,14 @@ export default function MapScreen() {
      after that framing, so an arrival's jump is not written to the URL. */
   const { clusters, supercluster } = useMapClusters(marinas, map);
   const { shellRef, filtersRef, listRef } = useMapPadding(map, listOpen);
-  useFitSearchResults(map, searchKey, data?.marinas, hasCamera || Boolean(focusListingId));
+  /* The previous search's pins stay up while the next loads, but framing them would use up this
+     search's one fit before its own answer arrived. */
+  useFitSearchResults(
+    map,
+    searchKey,
+    isPlaceholderData ? undefined : data?.marinas,
+    hasCamera || Boolean(focusListingId),
+  );
   useWriteCameraToUrl(map, setCamera);
   const selection = useMapSelection(map, supercluster, focusListingId, searchKey);
   const { selected, openMarina } = selection;
@@ -161,14 +170,19 @@ export default function MapScreen() {
             {common("errors.requestFailed")}
           </MapStatus>
         )}
-        {!popupOpen && (isPending || isError || data?.marinas.length === 0) && (
-          <MapStatus
-            onRetry={isError ? () => refetch() : undefined}
-            retryLabel={common("errors.retry")}
-          >
-            {isError ? common("errors.requestFailed") : isPending ? t("loading") : t("noResults")}
-          </MapStatus>
-        )}
+        {!popupOpen &&
+          (isPending || isPlaceholderData || isError || data?.marinas.length === 0) && (
+            <MapStatus
+              onRetry={isError ? () => refetch() : undefined}
+              retryLabel={common("errors.retry")}
+            >
+              {isError
+                ? common("errors.requestFailed")
+                : isPending || isPlaceholderData
+                  ? t("loading")
+                  : t("noResults")}
+            </MapStatus>
+          )}
 
         <MapChrome
           filters={filters}

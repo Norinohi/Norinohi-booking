@@ -5,8 +5,20 @@ import { orpc } from "@/utils/orpc";
 
 export type ResultsInput = Parameters<AppRouterClient["charterSearch"]["results"]>[0];
 
+/** Matches the `hours` tier the server caches this on, so hydration does not immediately refetch. */
+const ONE_HOUR = 60 * 60 * 1000;
+
+/*
+ * A dated search takes a second or more, so the cards on screen stay until the next set lands. The
+ * hour is for the catalog pages, which seed page one from an `hours` cache entry older than the
+ * app's default minute; the quote re-prices whatever a card shows.
+ */
 export const resultsQueryOptions = (input: ResultsInput) =>
-  orpc.charterSearch.results.queryOptions({ input });
+  orpc.charterSearch.results.queryOptions({
+    input,
+    staleTime: ONE_HOUR,
+    placeholderData: keepPreviousData,
+  });
 
 export type Suggestion = Awaited<
   ReturnType<AppRouterClient["charterSearch"]["suggestions"]>
@@ -55,7 +67,7 @@ export type MapMarinaData = Awaited<
  * see `marinaListingsQueryOptions`.
  */
 export const mapMarinasQueryOptions = (input: MarinasInput) =>
-  orpc.charterSearch.mapMarinas.queryOptions({ input });
+  orpc.charterSearch.mapMarinas.queryOptions({ input, placeholderData: keepPreviousData });
 
 /** How many cards a page of a marina's boats carries; the popup pages through them. */
 export const MARINA_PAGE_SIZE = 20;
@@ -80,9 +92,6 @@ export const marinaListingsQueryOptions = (input: ResultsInput, marinas: string[
 /** Card-ready summaries for an explicit set of ids, which is how a deep link finds its one boat. */
 export const listingSummariesQueryOptions = (listingIds: string[]) =>
   orpc.listings.byIds.queryOptions({ input: { listingIds }, enabled: listingIds.length > 0 });
-
-/** Matches the `hours` tier the server caches this on, so hydration does not immediately refetch. */
-const ONE_HOUR = 60 * 60 * 1000;
 
 /* `locale` is part of the input, so it is part of the key — server prefetch and client hook must
  * pass the same one or the hydrated cache misses and the page refetches in English. */
