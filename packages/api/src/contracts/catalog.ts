@@ -316,10 +316,32 @@ export const recordListingViewInputSchema = z.object({
   viewer: z.string().min(8).max(128),
 });
 
-/* How a saved listing's card is priced and labelled, with the same defaults as the search results. */
+const MAX_CHARTER_NIGHTS = 365;
+
+/** A card and the charter it names, as the search results and the saved lists return it. */
+export const listingResultItemSchema = z.object({
+  listing: listingSummarySchema,
+  checkIn: z.string().nullable(),
+  checkOut: z.string().nullable(),
+  /*
+   * Set when the dates above are not the ones searched for. Search keeps a listing that is
+   * free across the window but turns around on another weekday, so rather than repeat a
+   * period the quote will refuse, the card carries the charter this boat would actually
+   * sell and says so.
+   */
+  periodIsAlternative: z.boolean(),
+});
+
+/*
+ * How a saved listing's card is priced and labelled, with the same defaults as the search results.
+ * `startDate` with `duration` is the period the visitor last searched: a saved boat that sells it
+ * is priced for it exactly as that search priced it.
+ */
 export const savedListingCardInputSchema = z.object({
   priceBasis: z.enum(["base", "all_in"]).optional(),
   locale: z.string().min(2).max(10).optional(),
+  startDate: dateStringSchema.optional(),
+  duration: z.coerce.number().int().positive().max(MAX_CHARTER_NIGHTS).optional(),
 });
 
 export const listingsByIdsInputSchema = savedListingCardInputSchema.extend({
@@ -452,7 +474,6 @@ export const catalogPageSchema = z.object({
  * the duration to the start date, and an unbounded one walks the Date past its range, where
  * `toISOString` throws and the request answers 500 instead of a validation error.
  */
-const MAX_CHARTER_NIGHTS = 365;
 
 export const listingSearchInputBaseSchema = z.object({
   destination: z.string().optional(),
@@ -560,20 +581,7 @@ export const partialListingSearchInputSchema = listingSearchInputBaseSchema
   .superRefine(validateListingSearchInput);
 
 export const searchResultSchema = z.object({
-  items: z.array(
-    z.object({
-      listing: listingSummarySchema,
-      checkIn: z.string().nullable(),
-      checkOut: z.string().nullable(),
-      /*
-       * Set when the dates above are not the ones searched for. Search keeps a listing that is
-       * free across the window but turns around on another weekday, so rather than repeat a
-       * period the quote will refuse, the card carries the charter this boat would actually
-       * sell and says so.
-       */
-      periodIsAlternative: z.boolean(),
-    }),
-  ),
+  items: z.array(listingResultItemSchema),
   nextCursor: z.string().optional(),
   pagination: paginationSchema.optional(),
 });

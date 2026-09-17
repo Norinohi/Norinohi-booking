@@ -15,6 +15,7 @@ import {
   placeWordsKey,
   placeWordsKeySql,
 } from "./normalize";
+import { listingScope } from "./listing-scope";
 import { comparablePrice, pricedForDates } from "./pricing-sql";
 import {
   checkinRuleClause,
@@ -83,6 +84,7 @@ export function whereClause(
 ): SQL {
   const skip = new Set<FacetFilterKey>(ignored);
   const parts: SQL[] = [sql`true`];
+  if (input.listingIds) parts.push(listingScope(sql`doc.listing_id`, input.listingIds));
   if (!skip.has("destination") && input.destination) {
     const destination = input.destination;
     parts.push(sql`(

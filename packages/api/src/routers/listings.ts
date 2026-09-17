@@ -11,6 +11,7 @@ import { z } from "zod";
 
 import {
   listingDetailSchema,
+  listingResultItemSchema,
   listingSummarySchema,
   listingsByIdsInputSchema,
   recordListingViewInputSchema,
@@ -100,7 +101,7 @@ export const listingsRouter = {
       operationId: "listListingsByIds",
       summary: "List listing summaries by id",
       description:
-        "Hydrates card-ready listing summaries for an explicit set of listing IDs, in the order requested. Backs the guest wishlist, which stores only IDs in the browser. Priced on priceBasis (the boat alone by default) and labelled in locale, exactly as the search results are. IDs that no longer resolve to a published listing are dropped from the response rather than failing the call.",
+        "Hydrates card-ready listing summaries for an explicit set of listing IDs, in the order requested. Backs the guest wishlist, which stores only IDs in the browser. Priced on priceBasis (the boat alone by default) and labelled in locale, exactly as the search results are. With startDate and duration, a listing that sells that period is priced and dated for it as the search for it would be; the rest keep their own nearest charter. IDs that no longer resolve to a published listing are dropped from the response rather than failing the call.",
       tags: ["Listings"],
       successDescription: "Listing summaries for the IDs that still resolve, in request order.",
       spec: withJsonBodyExample({
@@ -108,7 +109,7 @@ export const listingsRouter = {
       }),
     })
     .input(listingsByIdsInputSchema)
-    .output(z.array(listingSummarySchema))
+    .output(z.array(listingResultItemSchema))
     .handler(({ context, input }) => presentSavedListings(context.db, input.listingIds, input)),
   recordView: publicProcedure
     .route({

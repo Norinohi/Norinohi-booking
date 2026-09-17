@@ -94,6 +94,8 @@ export type ListingSearchInput = {
    * either basis on its own.
    */
   priceBasis?: PriceBasis;
+  /** Only these listings: a saved list priced for a searched period, never set from the URL. */
+  listingIds?: readonly string[];
   cursor?: string;
   limit?: number;
   page?: number;

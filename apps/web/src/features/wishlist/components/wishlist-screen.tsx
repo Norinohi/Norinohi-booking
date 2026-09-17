@@ -10,7 +10,7 @@ import Loader from "@/components/shared/feedback/loader";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 
 import type { CharterPeriod } from "@/components/shared/form/charter-date-field";
-import { lastSearchedPeriod, serializeDetailPeriod, useListingCards } from "@/features/yachts";
+import { lastSearchedPeriod, useListingCards } from "@/features/yachts";
 import { dayFromNative } from "@/lib/date";
 
 import { useWishlistPage } from "../hooks/use-wishlist-page";
@@ -27,16 +27,19 @@ export default function WishlistScreen() {
   const { toCard } = useListingCards();
   const [page, setPage] = useState(1);
   /*
-   * A saved card prices the boat's own next charter, but the visitor saved it while looking at a
-   * week, so its link opens that week. Read after mount: session storage is not there to render
-   * against on the server.
+   * The visitor saved these while looking at a week, so a boat that sells it is priced, dated and
+   * linked for it as the search showed it; the rest keep their own next charter. Read after mount:
+   * session storage is not there to render against on the server.
    */
-  const [searchedPeriod, setSearchedPeriod] = useState<CharterPeriod | null>(null);
+  const [searchedPeriod, setSearchedPeriod] = useState<CharterPeriod | null>();
   useEffect(() => {
     setSearchedPeriod(lastSearchedPeriod(dayFromNative(new Date())));
   }, []);
 
-  const { isLoading, listings, totalItems, pageSize, hasStaleSaves } = useWishlistPage(page);
+  const { isLoading, cards, totalItems, pageSize, hasStaleSaves } = useWishlistPage(
+    page,
+    searchedPeriod,
+  );
 
   const pageCount = Math.max(Math.ceil(totalItems / pageSize), 1);
 
@@ -79,19 +82,11 @@ export default function WishlistScreen() {
                     </p>
                   ) : null}
 
-                  {listings.map((listing, index) => (
+                  {cards.map((card, index) => (
                     <YachtCard
-                      key={listing.id}
+                      key={card.listing.id}
                       layout="row"
-                      {...toCard(listing)}
-                      {...(searchedPeriod
-                        ? {
-                            detailHref: serializeDetailPeriod(
-                              `/yachts/${listing.slug}`,
-                              searchedPeriod,
-                            ),
-                          }
-                        : null)}
+                      {...toCard(card.listing, card)}
                       priority={index === 0}
                     />
                   ))}

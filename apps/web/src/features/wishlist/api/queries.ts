@@ -5,12 +5,12 @@ import { orpc } from "@/utils/orpc";
 export const WISHLIST_PAGE_SIZE = 10;
 
 /*
- * The basis and locale a saved card is priced and labelled in, which the search results take as
- * well. `priceBasis` only where the visitor picked one, so the key matches the server prefetch.
+ * The basis, locale and searched period a saved card is priced and labelled for, which the search
+ * results take as well. Each only where it is set, so the key matches the server prefetch.
  */
 export type SavedCardInput = Pick<
   Parameters<AppRouterClient["listings"]["byIds"]>[0],
-  "priceBasis" | "locale"
+  "priceBasis" | "locale" | "startDate" | "duration"
 >;
 
 export const wishlistIdsQueryOptions = () =>

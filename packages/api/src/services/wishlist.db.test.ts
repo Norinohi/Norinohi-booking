@@ -96,13 +96,13 @@ describe("saved listing cards", () => {
 
   it("follow a basis the visitor picked", async () => {
     const [card] = await presentSavedListings(test.db, [LISTING_ID], { priceBasis: "all_in" });
-    expect(card?.priceFrom).toEqual({ amountMinor: 143_300, currency: "EUR" });
+    expect(card?.listing.priceFrom).toEqual({ amountMinor: 143_300, currency: "EUR" });
   });
 
   it("label the card in the visitor's language", async () => {
     const [card] = await presentSavedListings(test.db, [LISTING_ID], { locale: "uk" });
     const searched = await searchCard({ locale: "uk" });
-    expect(card?.base.country).toBe("Хорватія");
-    expect(card?.base).toEqual(searched?.base);
+    expect(card?.listing.base.country).toBe("Хорватія");
+    expect(card?.listing.base).toEqual(searched?.base);
   });
 });

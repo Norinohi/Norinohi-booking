@@ -94,7 +94,7 @@ export const CATALOGUE_DEFAULT_BASIS: PriceBasis = "base";
 /** The catalogue results page: one card per matching listing, dated for the charter it names. */
 export async function searchCharterResults(
   db: Database,
-  input: SearchInput,
+  input: SearchInput & { listingIds?: readonly string[] },
 ): Promise<SearchResult> {
   const [priceBasis, amenityRanks] = await Promise.all([
     input.priceBasis ?? CATALOGUE_DEFAULT_BASIS,

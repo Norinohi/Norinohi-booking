@@ -61,7 +61,7 @@ export function useMapSelection(
   const { data: linked } = useQuery(
     listingSummariesQueryOptions(selectedListingId ? [selectedListingId] : []),
   );
-  const selected = linked?.[0];
+  const selected = linked?.[0]?.listing;
 
   function dismiss() {
     setSelectedListingId(null);
