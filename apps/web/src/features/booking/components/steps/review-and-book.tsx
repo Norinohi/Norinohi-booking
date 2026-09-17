@@ -12,6 +12,7 @@ import { dayToDisplay } from "@/lib/date";
 
 import { useQuoteLineLabel } from "../../hooks/use-quote-line-label";
 import type { BookingValues } from "../../lib/booking-form";
+import { dayWithHandover } from "../../lib/handover";
 import { useBooking } from "../booking-provider";
 import { ScheduleBreakdown } from "../summary/payment-schedule";
 
@@ -74,6 +75,9 @@ export default function ReviewAndBookStep() {
   const labelOf = useQuoteLineLabel();
 
   const day = (date: string) => format.dateTime(dayToDisplay(date), "dayShort");
+  /* The same handover the sidebar shows beside these dates: the offer's, else the base's. */
+  const checkInTime = quote?.checkInTime ?? listing?.base.checkInTime;
+  const checkOutTime = quote?.checkOutTime ?? listing?.base.checkOutTime;
 
   const base = quote?.lines.find((line) => line.kind === "base");
   const optionalNames = (quote?.lines ?? [])
@@ -124,7 +128,10 @@ export default function ReviewAndBookStep() {
   const rows: SummaryRow[] = quote
     ? [
         { label: t("yacht"), value: listing?.title ?? "" },
-        { label: t("dates"), value: `${day(quote.checkIn)} \u2192 ${day(quote.checkOut)}` },
+        {
+          label: t("dates"),
+          value: `${dayWithHandover(day(quote.checkIn), checkInTime)} \u2192 ${dayWithHandover(day(quote.checkOut), checkOutTime)}`,
+        },
         { label: t("crew"), value: quote.crewType ? tCrew(quote.crewType) : "" },
         { label: t("people"), value: String(quote.guests) },
         { label: t("extras"), value: optionalNames || t("noExtras") },

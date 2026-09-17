@@ -5,6 +5,7 @@ import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { ContractError } from "../shared/errors";
 import { exactJsonNumber } from "../shared/exact-json";
 import { toExactPositiveIntId } from "../shared/projection-helpers";
+import { wallClockTime } from "../shared/wall-clock";
 import {
   createReservationEventRecorder,
   type ReservationEventKind,
@@ -217,6 +218,8 @@ export function createBookingManagerBookingService(
       providerReservationId: reservationId,
       providerOptionId: reservationId,
       holdExpiresAt: holdExpiresAt(response),
+      checkInTime: wallClockTime(response.dateFrom),
+      checkOutTime: wallClockTime(response.dateTo),
     });
   }
 

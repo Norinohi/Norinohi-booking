@@ -151,6 +151,29 @@ describe("confirmBooking", () => {
   });
 });
 
+/*
+ * NB-TBV6TK43: the option came back 17:00 to 09:00 while the site showed the base's 12:00, filled
+ * from whichever yacht at that marina synced first. The option is the operator's own word.
+ */
+describe("createOption handover times", () => {
+  it("carries the times the vendor put on the option", async () => {
+    const reservation = await serviceAnswering(
+      `{"id":${CHARTER_ID},"status":2,"dateFrom":"2027-05-15 17:00:00","dateTo":"2027-05-22 09:00:00","expirationDate":"2027-04-01 23:59:14"}`,
+    ).createOption(draft);
+
+    expect(reservation).toMatchObject({ checkInTime: "17:00", checkOutTime: "09:00" });
+  });
+
+  it("states none where the option carries a bare date", async () => {
+    const reservation = await serviceAnswering(
+      `{"id":${CHARTER_ID},"status":2,"dateFrom":"2027-05-15","expirationDate":"2027-04-01 23:59:14"}`,
+    ).createOption(draft);
+
+    expect(reservation.checkInTime).toBeUndefined();
+    expect(reservation.checkOutTime).toBeUndefined();
+  });
+});
+
 /**
  * Which bases a reservation opens on.
  *

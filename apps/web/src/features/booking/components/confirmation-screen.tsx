@@ -24,6 +24,7 @@ import {
 } from "../api/queries";
 import { hasFailed, isSettling } from "../lib/checkout-status";
 import { guestAccessFor } from "../lib/guest-access";
+import { charterRange } from "../lib/handover";
 import { confirmationParsers } from "../lib/search-params";
 
 const CREW_KEYS = ["bareboat", "skipper", "full-crew"] as const;
@@ -315,7 +316,7 @@ export default function BookingConfirmationScreen() {
 
   const rows: SummaryRow[] = [
     { label: t("summary.yacht"), value: booking.listing.title },
-    { label: t("summary.dates"), value: `${day(booking.checkIn)} → ${day(booking.checkOut)}` },
+    { label: t("summary.dates"), value: charterRange(day, booking.checkIn, booking.checkOut) },
     ...(crewLabel ? [{ label: t("summary.crew"), value: crewLabel }] : []),
     ...(mandatory.length
       ? [{ label: t("summary.mandatory"), value: mandatory.map((line) => line.label).join(", ") }]

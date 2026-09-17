@@ -21,7 +21,7 @@ import {
   installFakeStripe,
   type FakeStripe,
 } from "../test-support/fake-stripe";
-import { getCheckoutStatus } from "./booking";
+import { getBooking, getCheckoutStatus } from "./booking";
 import { confirmCheckout } from "./payment";
 import { handleStripeWebhook } from "./stripe-webhook";
 
@@ -433,6 +433,45 @@ describe("provider refuses after the card was authorized", () => {
 
     expect((await bookingState(db, hold.bookingId)).booking.status).toBe("REFUNDED");
     expect(await weekOnSale(db, listingId)).toBe(true);
+  });
+});
+
+/*
+ * The booking pages read check-in and check-out off the snapshot. It starts from the base, whose
+ * times one sync fills for every fleet at the marina, so the option's own are written over them.
+ */
+describe("handover times", () => {
+  it("keeps the times the provider put on the option", async () => {
+    const { db } = test;
+    const { listingId } = await seedYacht(db, "handover");
+    const userId = await seedCustomer(db, "usr_handover");
+    const quote = await quoteWeek(db, inventory, listingId, userId);
+
+    const createOption = inventory.createOption.bind(inventory);
+    vi.spyOn(inventory, "createOption").mockImplementationOnce(async (draft) => ({
+      ...(await createOption(draft)),
+      checkInTime: "17:00",
+      checkOutTime: "09:00",
+    }));
+    const hold = await holdQuote(db, inventory, userId, quote.quoteId);
+
+    const { booking: row } = await bookingState(db, hold.bookingId);
+    expect(row.commercialSnapshot).toMatchObject({ checkInTime: "17:00", checkOutTime: "09:00" });
+
+    const detail = await getBooking(db, userId, hold.bookingId);
+    expect(detail.checkIn).toBe(`${quote.checkIn}T17:00:00.000Z`);
+    expect(detail.checkOut).toBe(`${quote.checkOut}T09:00:00.000Z`);
+  });
+
+  it("keeps the base's times where the option states none", async () => {
+    const { db } = test;
+    const { listingId } = await seedYacht(db, "handoverbase");
+    const userId = await seedCustomer(db, "usr_handoverbase");
+    const quote = await quoteWeek(db, inventory, listingId, userId);
+    const hold = await holdQuote(db, inventory, userId, quote.quoteId);
+
+    const { booking: row } = await bookingState(db, hold.bookingId);
+    expect(row.commercialSnapshot).toMatchObject({ checkInTime: null, checkOutTime: null });
   });
 });
 

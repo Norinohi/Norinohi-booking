@@ -584,6 +584,7 @@ async function holdOption(
         providerStatus: reservation.status,
         holdExpiresAt: reservation.holdExpiresAt ? new Date(reservation.holdExpiresAt) : null,
         crewListLink: reservation.crewListLink ?? null,
+        commercialSnapshot: withHandoverTimes(pending.commercialSnapshot, reservation),
       });
     } catch (error) {
       // booking_provider_option_uq: someone else already holds this exact option.
@@ -639,6 +640,25 @@ async function holdOption(
     await learnFromProviderRefusal(db, provider, priced, refusal);
     throw new ConflictError({ message: failure.customer, data: { code: failure.code } });
   }
+}
+
+/**
+ * The option's own check-in and check-out over the ones the snapshot took from the base.
+ *
+ * A base row is shared by every fleet at the marina and one sync fills it for all of them, so it
+ * can be another operator's turnaround. What the vendor wrote on the option is this charter's, and
+ * the booking pages read the snapshot from here on. Either end the option leaves out keeps the
+ * base's.
+ */
+function withHandoverTimes(
+  snapshot: CommercialSnapshot,
+  reservation: { checkInTime?: string; checkOutTime?: string },
+): CommercialSnapshot {
+  return {
+    ...snapshot,
+    checkInTime: reservation.checkInTime ?? snapshot.checkInTime,
+    checkOutTime: reservation.checkOutTime ?? snapshot.checkOutTime,
+  };
 }
 
 /**

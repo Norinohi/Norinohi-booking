@@ -40,6 +40,34 @@ function mappingFor(
   };
 }
 
+describe("mapOfferToProviderQuote handover times", () => {
+  it("reads the operator's check-in and check-out off the offer", () => {
+    const mapping = mappingFor({ id: "77", price: 150, obligatory: true });
+    const quote = mapOfferToProviderQuote({
+      ...mapping,
+      offer: { ...mapping.offer, dateFrom: "2026-06-01 17:00:00", dateTo: "2026-06-08 09:00:00" },
+    });
+
+    expect(quote).toMatchObject({
+      checkIn: "2026-06-01",
+      checkOut: "2026-06-08",
+      checkInTime: "17:00",
+      checkOutTime: "09:00",
+    });
+  });
+
+  it("leaves them unset where the offer carries only dates", () => {
+    const mapping = mappingFor({ id: "77", price: 150, obligatory: true });
+    const quote = mapOfferToProviderQuote({
+      ...mapping,
+      offer: { ...mapping.offer, dateFrom: "2026-06-01", dateTo: "2026-06-08" },
+    });
+
+    expect(quote.checkInTime).toBeUndefined();
+    expect(quote.checkOutTime).toBeUndefined();
+  });
+});
+
 describe("mapOfferToProviderQuote extras", () => {
   const cleaning = { id: "77", price: 150, obligatory: true };
 

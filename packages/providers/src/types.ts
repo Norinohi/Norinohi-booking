@@ -263,6 +263,16 @@ export const providerQuoteSchema = z.object({
   priceSourceHash: z.string(),
   expiresAt: z.string(),
   repriced: z.boolean(),
+  /**
+   * The handover times this offer was made for, "HH:mm" at the marina, where the vendor states
+   * them. Absent means the offer said nothing and the base's own times stand.
+   *
+   * Preferred over the base's because a base row is shared by every fleet at that marina, and
+   * Booking Manager fills it from whichever yacht synced first: the site said 12:00 for a charter
+   * the operator hands over at 17:00.
+   */
+  checkInTime: z.string().optional(),
+  checkOutTime: z.string().optional(),
 });
 export type ProviderQuote = z.infer<typeof providerQuoteSchema>;
 
@@ -402,6 +412,9 @@ export const providerReservationSchema = z.object({
    * value is an http(s) URL, and omits it otherwise.
    */
   crewListLink: z.string().optional(),
+  /** The handover times the vendor put on the reservation itself; see `checkInTime` on the quote. */
+  checkInTime: z.string().optional(),
+  checkOutTime: z.string().optional(),
 });
 export type ProviderReservation = z.infer<typeof providerReservationSchema>;
 

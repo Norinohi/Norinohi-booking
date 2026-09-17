@@ -79,8 +79,10 @@ export default function BookingSidebar({
         loadError={loadError}
         onRetryLoad={retryLoad}
         depositWhenInsured={listing?.priceDetails.securityDepositWhenInsured}
-        checkInTime={listing?.base.checkInTime}
-        checkOutTime={listing?.base.checkOutTime}
+        /* The offer's own handover where the vendor stated one; the base's is shared by every
+           fleet at the marina and can be another operator's. */
+        checkInTime={quote?.checkInTime ?? listing?.base.checkInTime}
+        checkOutTime={quote?.checkOutTime ?? listing?.base.checkOutTime}
         crewType={crewType}
         crewOptions={crewOptions}
         onCrewChange={setCrew}

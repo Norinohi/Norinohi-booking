@@ -37,6 +37,7 @@ import {
 } from "@/components/shared/data-display/yacht-card/view-model";
 
 import { type BookingDetail, bookingDetailQueryOptions } from "../api/queries";
+import { charterRange } from "../lib/handover";
 import { pendingHoldDeadline } from "../lib/hold-clock";
 import CrewListPanel from "./crew-list-panel";
 import { HoldNotice, useHoldRemaining } from "./steps/payment/hold-clock";
@@ -273,7 +274,7 @@ function Charter({
       {/* Two columns from `sm` up: a full-width panel with one column of key/value rows leaves
           the right half of the card empty. */}
       <dl className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
-        <Fact label={t("dates")} value={`${day(booking.checkIn)} → ${day(booking.checkOut)}`} />
+        <Fact label={t("dates")} value={charterRange(day, booking.checkIn, booking.checkOut)} />
         <Fact label={t("guestsLabel")} value={String(booking.guests)} />
         {booking.crewType ? (
           <Fact label={t("crew")} value={crewLabel(tCrew, booking.crewType)} />

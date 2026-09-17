@@ -8,6 +8,7 @@ import { DEFAULT_LINE_LABELS } from "../shared/generic-labels";
 import { decimalStringToMinor } from "../shared/money";
 import { toPositiveIntId } from "../shared/projection-helpers";
 import { stableSourceHash } from "../shared/raw-retention";
+import { wallClockTime } from "../shared/wall-clock";
 import {
   providerQuoteSchema,
   quoteRequestSchema,
@@ -415,6 +416,8 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
     // a reprice.
     repriced: false,
     expiresAt: input.expiresAt,
+    checkInTime: wallClockTime(yacht.checkIn),
+    checkOutTime: wallClockTime(yacht.checkOut),
   });
 }
 

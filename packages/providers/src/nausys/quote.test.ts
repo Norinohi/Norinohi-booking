@@ -136,6 +136,9 @@ describe("NauSYS live quote", () => {
       guests: 4,
       currency: "EUR",
       repriced: false,
+      // The offer's own handover, not the base's: see `checkInTime` on the quote schema.
+      checkInTime: "17:00",
+      checkOutTime: "08:00",
     });
     // 3340.00 charter + 150.00 + 70.00 obligatory extras.
     expect(priced.total).toEqual({ amountMinor: 356_000, currency: "EUR" });
