@@ -7,6 +7,7 @@ import { useState } from "react";
 
 import { serializeBooking } from "../lib/search-params";
 import { useBooking } from "./booking-provider";
+import PeriodUrlSync from "./period-url-sync";
 import QuoteRequestDialog from "./quote-request-dialog";
 
 /*
@@ -58,6 +59,7 @@ export default function BookingSidebar({
 
   return (
     <>
+      <PeriodUrlSync />
       <BookingSummary
         quote={quote}
         loading={isPending}

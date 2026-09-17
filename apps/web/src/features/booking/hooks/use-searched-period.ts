@@ -15,3 +15,8 @@ export function useSearchedPeriod(): CharterPeriod | null {
     ? { checkIn: carried.checkIn, checkOut: carried.checkOut }
     : null;
 }
+
+/** The same URL pair with its setter, for the sidebar writing a newly priced period back. */
+export function useSearchedPeriodState() {
+  return useQueryStates(detailPeriodParsers);
+}
