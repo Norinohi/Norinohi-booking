@@ -4,7 +4,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "../schema";
 import { valueForLabel } from "./filters";
 import { DEFAULT_LOCALE, facetTranslator } from "./localize";
-import { normalizedKey, normalizedKeySql } from "./normalize";
+import { normalizedKey, normalizedKeySql, placeWordsKeySql } from "./normalize";
 import type { FacetMediaKind, ListingSuggestion } from "./types";
 
 /*
@@ -114,7 +114,7 @@ export async function listSearchSuggestions(
               : sql``
           }
         )
-      group by ${normalizedKeySql(column)}`;
+      group by ${kind === "base" ? sql`doc.country, ${placeWordsKeySql(column)}` : normalizedKeySql(column)}`;
   });
 
   const rows = await db.execute<SuggestionRow & { boats: number }>(sql`

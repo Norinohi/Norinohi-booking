@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { facetMedia, facetMediaTranslation, listing, listingSearchDoc } from "../schema";
 import { createTestDatabase, type TestDatabase } from "../test-support/database";
 import { seedSearchWorld } from "../test-support/search-fixture";
-import { searchListings } from "./repository";
+import { listMapMarinas, searchListings } from "./repository";
 import { listSearchSuggestions } from "./suggestions";
 
 /*
@@ -40,6 +40,25 @@ const boats = [
     city: null,
     region: "Southern Europe",
   },
+  /* One marina, each vendor writing the town on its own side of the name, 300 m apart. */
+  {
+    slug: "ns-4",
+    baseName: "Marina Zenta, Split",
+    location: "Split",
+    city: "Split",
+    region: "Split region",
+    lat: 43.49955,
+    lng: 16.45676,
+  },
+  {
+    slug: "bm-2",
+    baseName: "Split / Marina Zenta",
+    location: "Split",
+    city: null,
+    region: "Split region",
+    lat: 43.50045,
+    lng: 16.46043,
+  },
 ];
 
 let test: TestDatabase;
@@ -68,6 +87,8 @@ beforeAll(async () => {
       city: boat.city,
       location: boat.location,
       region: boat.region,
+      lat: "lat" in boat ? boat.lat : null,
+      lng: "lng" in boat ? boat.lng : null,
       country: "Croatia",
       rating: "0",
       searchableText: boat.slug,
@@ -99,6 +120,7 @@ describe("listSearchSuggestions", () => {
       "region:split-region",
       "city:split",
       "base:aci-marina-split",
+      "base:marina-zenta-split",
       "base:port-of-split-west-harbour",
     ]);
   });
@@ -108,7 +130,22 @@ describe("listSearchSuggestions", () => {
       (suggestion) => suggestion.kind === "city",
     );
     const result = await searchListings(test.db, { city: [city!.value], locale: "en" });
-    expect(result.items.map((item) => item.slug).toSorted()).toEqual(["ns-1", "ns-2"]);
+    expect(result.items.map((item) => item.slug).toSorted()).toEqual(["ns-1", "ns-2", "ns-4"]);
+  });
+
+  it("offers one marina for two vendors' word orders, whose filter and pin hold both", async () => {
+    const marinas = (await listSearchSuggestions(test.db, "Zenta")).filter(
+      (suggestion) => suggestion.kind === "base",
+    );
+    expect(marinas.map(({ value }) => value)).toEqual(["marina-zenta-split"]);
+
+    const result = await searchListings(test.db, { marina: [marinas[0]!.value], locale: "en" });
+    expect(result.items.map((item) => item.slug).toSorted()).toEqual(["bm-2", "ns-4"]);
+
+    const pins = await listMapMarinas(test.db, { locale: "en" });
+    expect(pins.filter((pin) => pin.name.includes("Zenta"))).toMatchObject([
+      { count: 2, value: "marina-zenta-split" },
+    ]);
   });
 
   it("matches a town typed without its accents", async () => {

@@ -3,7 +3,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import type * as schema from "../schema";
 import { valueForLabel, whereClause } from "./filters";
-import { normalizedKeySql as normalizedSql } from "./normalize";
+import { placeWordsKeySql } from "./normalize";
 import { comparablePrice, pricedForDates, publishedPrice, searchDocs } from "./pricing-sql";
 import type { ListingSearchInput, MapMarinaMarker } from "./types";
 
@@ -19,7 +19,8 @@ import type { ListingSearchInput, MapMarinaMarker } from "./types";
  * vendors each file their own base for the same marina: Pula's "Marina Polesana" was two pins, 43
  * boats and 113, a kilometre and a half apart, and a visitor who opened one saw a third of the
  * marina and a catalogue link that disagreed with it. Every same-name pair in the catalogue sits
- * within 1.5 km, so the name is the marina. The coordinates are averaged over the boats, which
+ * within 1.5 km, so the name is the marina, read as its words in any order (`placeWordsKey`), since
+ * one vendor writes "Marina Zenta, Split" and the other "Split / Marina Zenta". The coordinates are averaged over the boats, which
  * lands the pin between the two vendors' readings of one quay.
  */
 export async function listMapMarinas(
@@ -45,7 +46,7 @@ export async function listMapMarinas(
       and doc.base_id is not null
       and doc.lat is not null
       and doc.lng is not null
-    group by doc.country, ${normalizedSql(sql`doc.base_name`)}
+    group by doc.country, ${placeWordsKeySql(sql`doc.base_name`)}
   `);
 
   return rows.rows.map((row) => ({ ...row, value: valueForLabel(row.name) }));

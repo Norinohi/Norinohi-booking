@@ -11,6 +11,8 @@ import {
   foldedLetters,
   normalizedKey as normalizedFilterValue,
   normalizedKeySql as normalizedSql,
+  placeWordsKey,
+  placeWordsKeySql,
 } from "./normalize";
 import { comparablePrice, pricedForDates } from "./pricing-sql";
 import {
@@ -101,7 +103,7 @@ export function whereClause(
   }
   if (!skip.has("marina") && input.marina?.length) {
     parts.push(
-      sql`(${normalizedIn(sql`doc.base_name`, input.marina)} or ${normalizedIn(sql`doc.base_id`, input.marina)})`,
+      sql`(${placeWordsIn(sql`doc.base_name`, input.marina)} or ${normalizedIn(sql`doc.base_id`, input.marina)})`,
     );
   }
   if (!skip.has("boatType") && input.boatType?.length) {
@@ -346,6 +348,17 @@ export function valueForLabel(label: string): string {
   return foldedLetters(label)
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+/* A marina matches by its words in any order, as the map and the typeahead group it. */
+function placeWordsIn(column: SQL, values: string[]): SQL {
+  const keys = values.map(placeWordsKey).filter(Boolean);
+  if (keys.length === 0) return sql`false`;
+
+  return sql`${placeWordsKeySql(column)} in (${sql.join(
+    keys.map((key) => sql`${key}`),
+    sql`, `,
+  )})`;
 }
 
 function normalizedIn(column: SQL, values: string[]): SQL {

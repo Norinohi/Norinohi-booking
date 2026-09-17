@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { sql } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 
-import { normalizedKey, normalizedKeySql } from "./normalize";
+import { normalizedKey, normalizedKeySql, placeWordsKey } from "./normalize";
 
 describe("normalizedKey", () => {
   it("folds punctuation and case the way the facet groups", () => {
@@ -52,5 +52,19 @@ describe("normalizedKeySql", () => {
     for (const [index, char] of [...from].entries()) {
       expect(normalizedKey(char)).toBe(to[index]);
     }
+  });
+});
+
+describe("placeWordsKey", () => {
+  it("reads one marina the same whichever side each vendor writes the town on", () => {
+    expect(placeWordsKey("Marina Zenta, Split")).toBe(placeWordsKey("Split / Marina Zenta"));
+    expect(placeWordsKey("Marina Spinut, Split")).toBe(placeWordsKey("Split / Marina Špinut"));
+    expect(placeWordsKey("marina-zenta-split")).toBe(placeWordsKey("Split / Marina Zenta"));
+  });
+
+  it("keeps marinas with different words apart", () => {
+    expect(placeWordsKey("Port of Split / West Harbour")).not.toBe(
+      placeWordsKey("Split, West Coast (Zapadna obala)"),
+    );
   });
 });

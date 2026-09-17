@@ -9,6 +9,7 @@ import { DEFAULT_LOCALE } from "./localize";
 import {
   normalizedKey as normalizedFilterValue,
   normalizedKeySql as normalizedSql,
+  placeWordsKeySql,
 } from "./normalize";
 import {
   comparablePrice,
@@ -137,6 +138,8 @@ type OptionFacet = {
   ignored: readonly FacetOwnFilter[];
   /* The facet_media kind that decorates the options, where one does. */
   kind: FacetMediaKind | null;
+  /* How two spellings are told to be one option, where not `normalizedKey`. */
+  fold?: (value: SQL) => SQL;
 };
 
 const OPTION_FACET_NAMES = [
@@ -161,7 +164,12 @@ const OPTION_FACETS = {
     kind: "region",
   },
   charterCompanies: { expression: sql`doc.operator`, ignored: ["charterCompany"], kind: null },
-  marinas: { expression: sql`doc.base_name`, ignored: ["marina", "destination"], kind: "marina" },
+  marinas: {
+    expression: sql`doc.base_name`,
+    ignored: ["marina", "destination"],
+    kind: "marina",
+    fold: placeWordsKeySql,
+  },
   boatTypes: { expression: sql`doc.category`, ignored: ["boatType", "category"], kind: "category" },
   models: {
     expression: sql`coalesce(doc.model, doc.builder)`,
@@ -349,6 +357,8 @@ function facetQuery(input: ListingSearchInput): SQL {
     foldedKeys(
       name,
       sql`select distinct ${OPTION_FACETS[name].expression} as value from candidate doc`,
+      sql`true`,
+      optionFold(name),
     ),
   );
   const flagsFor = (keys: readonly FacetOwnFilter[]) =>
@@ -489,13 +499,19 @@ function foldedKeysName(name: OptionFacetName | "equipment"): SQL {
  * groups the same rows for half the cost; `collate "C"` is safe on the group key because a
  * deterministic collation treats two strings as equal only when their bytes are.
  */
+function optionFold(name: OptionFacetName): (value: SQL) => SQL {
+  const facet: OptionFacet = OPTION_FACETS[name];
+  return facet.fold ?? normalizedSql;
+}
+
 function foldedKeys(
   name: OptionFacetName | "equipment",
   values: SQL,
   restriction = sql`true`,
+  fold: (value: SQL) => SQL = normalizedSql,
 ): SQL {
   return sql`${foldedKeysName(name)} as materialized (
-    select coalesce(jsonb_object_agg(spelling.value, ${normalizedSql(sql`spelling.value`)}), '{}') as keys
+    select coalesce(jsonb_object_agg(spelling.value, ${fold(sql`spelling.value`)}), '{}') as keys
     from (${values}) spelling
     where spelling.value is not null and ${restriction}
   )`;
