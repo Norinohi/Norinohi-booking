@@ -1129,6 +1129,13 @@
     "reorderDisabled": "Zum Sortieren eine Kategorie und eine Sprache wählen und Suche und Filter zurücksetzen.",
     "reordered": "Reihenfolge in allen Sprachen gespeichert.",
     "deleted": "{count, plural, one {# Übersetzung gelöscht.} other {# Übersetzungen gelöscht.}}",
+    "deleteDialog": {
+      "title": "Diese Frage löschen?",
+      "description": "„{question}“ wird in allen vorhandenen Sprachen gelöscht ({locales}). Das lässt sich nicht rückgängig machen. Um nur eine Sprache zu entfernen, öffnen Sie „Bearbeiten“ und nutzen Sie „Diese Übersetzung entfernen“.",
+      "cancel": "Abbrechen",
+      "confirm": "In allen Sprachen löschen",
+      "deleting": "Wird gelöscht..."
+    },
     "unpublished": "Noch auf keiner Seite",
     "noCategory": "Keine Kategorie",
     "noQuestion": "Ohne Titel",

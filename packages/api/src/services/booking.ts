@@ -43,6 +43,7 @@ import {
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
 import { appendRequestedExtras } from "./requested-extras";
 import { notifyBookingCancelled } from "./booking-email";
+import { type AuditEntry, writeAuditLog } from "./audit";
 import { amountDue, atCheckInMinor, outstandingMinor, payableNowFor } from "./checkout-amounts";
 import { enqueueOutbox, kickOutbox } from "./outbox";
 import { redeemDiscount } from "./discount-redemption";
@@ -651,12 +652,31 @@ export async function cancelBooking(
   const target: BookingStatus = current === "CONFIRMED" ? "REFUND_PENDING" : "CANCELLED";
 
   try {
-    const moved = await transition(db, row.booking, target, {
-      cancelReason: reason ?? null,
-      cancelledAt: new Date(),
-    });
+    const moved = await db.transaction(async (tx) => {
+      const cancelled = await transition(tx, row.booking, target, {
+        cancelReason: reason ?? null,
+        cancelledAt: new Date(),
+      });
 
-    await withdrawOpenInvoices(db, moved.id, reason);
+      await withdrawOpenInvoices(tx, cancelled.id, reason);
+
+      /* The audit log records staff actions; a customer cancelling their own booking is on the booking itself. */
+      if (actor.isAdmin) {
+        const entry: AuditEntry = {
+          actorUserId: actor.userId,
+          action: "update",
+          entityType: "booking",
+          entityId: cancelled.id,
+          before: { status: current },
+          after: { status: cancelled.status, cancelReason: cancelled.cancelReason },
+        };
+        if (reason) entry.metadata = { reason };
+
+        await writeAuditLog(tx, entry);
+      }
+
+      return cancelled;
+    });
 
     /* Nothing was ever held, so nothing is still held. */
     let release: ProviderRelease = { released: true, reason: null };
@@ -728,7 +748,7 @@ export async function cancelBooking(
  * sends to REFUND_PENDING.
  */
 async function withdrawOpenInvoices(
-  db: Database,
+  db: DatabaseExecutor,
   bookingId: string,
   reason: string | undefined,
 ): Promise<void> {

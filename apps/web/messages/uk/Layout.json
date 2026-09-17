@@ -44,6 +44,7 @@
   },
   "Sidebar": {
     "menu": "Меню акаунта",
+    "trigger": "Меню",
     "greeting": "Вітаємо, {name}!",
     "profile": "Мій профіль",
     "bookings": "Мої бронювання",

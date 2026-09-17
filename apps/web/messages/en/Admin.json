@@ -1129,6 +1129,13 @@
     "reorderDisabled": "Pick one category and one language, and clear the search and filters, to reorder.",
     "reordered": "Order saved, in every language.",
     "deleted": "{count, plural, one {# translation deleted.} other {# translations deleted.}}",
+    "deleteDialog": {
+      "title": "Delete this question?",
+      "description": "“{question}” will be deleted in every language it has ({locales}). This cannot be undone. To remove just one language, open Edit and use Remove this translation.",
+      "cancel": "Cancel",
+      "confirm": "Delete in all languages",
+      "deleting": "Deleting..."
+    },
     "unpublished": "On no page yet",
     "noCategory": "No category",
     "noQuestion": "Untitled",

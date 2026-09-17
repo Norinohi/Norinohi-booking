@@ -44,6 +44,7 @@
   },
   "Sidebar": {
     "menu": "Kontomenü",
+    "trigger": "Menü",
     "greeting": "Hallo, {name}!",
     "profile": "Mein Profil",
     "bookings": "Meine Buchungen",

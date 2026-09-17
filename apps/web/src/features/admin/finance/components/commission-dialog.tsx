@@ -1,6 +1,10 @@
 "use client";
 
-import { DEFAULT_TRANSACTING_PREFERENCE, PROVIDER_KEYS } from "@yacht-charter/env/providers";
+import {
+  DEFAULT_TRANSACTING_PREFERENCE,
+  PROVIDER_KEYS,
+  providerMeta,
+} from "@yacht-charter/env/providers";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import {
@@ -43,8 +47,8 @@ import type { ProviderKey } from "../../shared/types";
  * Overlaps are refused by the server rather than here: only it can see the other rates.
  */
 
-/* Real vendors ahead of the fixture, which is the default transacting order. */
-const PROVIDERS = DEFAULT_TRANSACTING_PREFERENCE;
+/* The mock fixture is not a vendor anybody negotiates a rate with, as on the settings screen. */
+const PROVIDERS = DEFAULT_TRANSACTING_PREFERENCE.filter((key) => !providerMeta(key).fixture);
 
 /* Sentinel for "every operator at this vendor" — an empty Select value shows the placeholder. */
 const ALL_OPERATORS = "all";
@@ -135,8 +139,13 @@ export default function CommissionDialog({ rate, open, onOpenChange }: Commissio
     return () => clearTimeout(timer);
   }, [search]);
 
-  const operatorOptions = useCommissionOperatorOptions(debouncedSearch);
+  const selectedProvider = form.watch("provider");
+  const operatorOptions = useCommissionOperatorOptions(debouncedSearch, selectedProvider);
   const selectedOperatorId = form.watch("operatorId");
+
+  /* A rate saved against the fixture before it was hidden still opens with its own provider. */
+  const providerChoices =
+    rate && !PROVIDERS.includes(rate.provider) ? [...PROVIDERS, rate.provider] : PROVIDERS;
 
   /*
    * The operator being edited may not be in the search results, and a Select whose value has no
@@ -145,7 +154,7 @@ export default function CommissionDialog({ rate, open, onOpenChange }: Commissio
    */
   const operatorChoices = [
     { value: ALL_OPERATORS, label: t("dialog.allOperators") },
-    ...(rate?.operatorId && rate.operatorName
+    ...(rate?.operatorId && rate.operatorName && rate.provider === selectedProvider
       ? [{ value: rate.operatorId, label: rate.operatorName }]
       : []),
     ...(operatorOptions.data?.items ?? [])
@@ -195,8 +204,15 @@ export default function CommissionDialog({ rate, open, onOpenChange }: Commissio
                       className="h-12"
                       ariaLabel={t("dialog.provider")}
                       value={field.value}
-                      onValueChange={field.onChange}
-                      options={PROVIDERS.map((key) => ({ value: key, label: tProviders(key) }))}
+                      onValueChange={(next) => {
+                        field.onChange(next);
+                        /* Operators belong to one vendor, so a picked one cannot follow the switch. */
+                        if (next !== field.value) form.setValue("operatorId", ALL_OPERATORS);
+                      }}
+                      options={providerChoices.map((key) => ({
+                        value: key,
+                        label: tProviders(key),
+                      }))}
                     />
                   </FormControl>
                   <FormMessage />

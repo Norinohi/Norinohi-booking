@@ -1129,6 +1129,13 @@
     "reorderDisabled": "Elige una categoría y un idioma, y quita la búsqueda y los filtros, para reordenar.",
     "reordered": "Orden guardado en todos los idiomas.",
     "deleted": "{count, plural, one {# traducción eliminada.} other {# traducciones eliminadas.}}",
+    "deleteDialog": {
+      "title": "¿Eliminar esta pregunta?",
+      "description": "«{question}» se eliminará en todos los idiomas que tiene ({locales}). No se puede deshacer. Para quitar solo un idioma, abre «Editar» y usa «Eliminar esta traducción».",
+      "cancel": "Cancelar",
+      "confirm": "Eliminar en todos los idiomas",
+      "deleting": "Eliminando..."
+    },
     "unpublished": "Todavía en ninguna página",
     "noCategory": "Sin categoría",
     "noQuestion": "Sin título",

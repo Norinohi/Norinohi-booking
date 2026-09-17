@@ -567,11 +567,22 @@ export const commissionSetActiveInputSchema = z.object({
 
 /** Backs the operator picker in the commission form. */
 export const operatorOptionsInputSchema = z
-  .object({ query: z.string().trim().max(200).optional() })
+  .object({
+    query: z.string().trim().max(200).optional(),
+    /** Only operators this vendor sells yachts for. */
+    provider: providerKeyOutputSchema.optional(),
+  })
   .default({});
 
 export const operatorOptionsSchema = z.object({
-  items: z.array(z.object({ id: z.string(), name: z.string() })),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      /** The vendors selling this operator's yachts, so two companies with one name can be told apart. */
+      providers: z.array(providerKeyOutputSchema),
+    }),
+  ),
 });
 
 /* ---------------------------------------------------------------- discounts */

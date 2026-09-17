@@ -19,12 +19,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import {
-  useDeleteFaqEntry,
-  useFaqList,
-  useFaqListingOptions,
-  useReorderFaq,
-} from "../hooks/use-faq";
+import { useFaqList, useFaqListingOptions, useReorderFaq } from "../hooks/use-faq";
 import {
   FAQ_CATEGORIES,
   FAQ_LOCALES,
@@ -35,6 +30,7 @@ import {
   type FaqTranslationState,
   faqTranslationState,
 } from "../types";
+import FaqDeleteDialog from "./faq-delete-dialog";
 import FaqEntryDialog from "./faq-entry-dialog";
 
 /*
@@ -85,8 +81,8 @@ export default function FaqTable() {
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<FaqGroupRow | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-
-  const deleteEntry = useDeleteFaqEntry();
+  const [deleting, setDeleting] = useState<FaqGroupRow | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const reorder = useReorderFaq();
 
   /* The ALL sentinel is in none of the lists, so each one drops out as `undefined`. */
@@ -157,20 +153,9 @@ export default function FaqTable() {
     );
   };
 
-  const remove = (group: FaqGroupRow) => {
-    const anchor = group.translations[0];
-    if (!anchor) return;
-
-    deleteEntry.mutate(
-      { id: anchor.id, allLocales: true },
-      {
-        onSuccess: (result) =>
-          toast.success(t("deleted", { count: result.ids.length }), {
-            description: result.cache.ok ? t("dialog.cacheRefreshing") : t("dialog.cacheStale"),
-          }),
-        onError: (error: Error) => toast.error(error.message),
-      },
-    );
+  const confirmRemove = (group: FaqGroupRow) => {
+    setDeleting(group);
+    setDeleteOpen(true);
   };
 
   const onFilterChange = (set: (next: string) => void) => (next: string) => {
@@ -410,8 +395,7 @@ export default function FaqTable() {
                                 variant="subtle"
                                 size="sm"
                                 className="text-error-500"
-                                disabled={deleteEntry.isPending}
-                                onClick={() => remove(group)}
+                                onClick={() => confirmRemove(group)}
                               >
                                 {t("actions.delete")}
                               </Button>
@@ -463,6 +447,12 @@ export default function FaqTable() {
       ) : null}
 
       <FaqEntryDialog group={editing} open={dialogOpen} onOpenChange={setDialogOpen} />
+      <FaqDeleteDialog
+        group={deleting}
+        question={(deleting && questionOf(deleting)?.question) || t("noQuestion")}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+      />
     </div>
   );
 }

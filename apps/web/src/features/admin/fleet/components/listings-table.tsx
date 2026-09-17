@@ -171,9 +171,13 @@ export default function ListingsTable() {
             onValueChange={onFilterChange(setOperatorId)}
             options={[
               { value: ALL, label: t("filters.allOperators") },
+              /* The syncs write one operator per vendor, so a company both sell reads twice. */
               ...(operators.data?.items ?? []).map((item) => ({
                 value: item.id,
-                label: item.name,
+                label:
+                  item.providers.length > 0
+                    ? `${item.name} (${item.providers.map((key) => tProviders(key)).join(", ")})`
+                    : item.name,
               })),
             ]}
           />

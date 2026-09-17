@@ -11,9 +11,10 @@
  */
 import { isProviderKey } from "@yacht-charter/env/providers";
 import { providerCommission } from "@yacht-charter/db/schema/commission";
+import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
 import { operator } from "@yacht-charter/db/schema/operator";
 import { provider } from "@yacht-charter/db/schema/provider";
-import { and, asc, count, desc, eq, ilike, isNull, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, isNull, ne, sql } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database } from "../context";
@@ -29,7 +30,7 @@ import type {
 } from "../contracts/admin";
 import { writeAuditLog } from "./audit";
 import { paginationFor } from "./pagination";
-import { ConflictError, InternalError, NotFoundError } from "../errors";
+import { BadRequestError, ConflictError, InternalError, NotFoundError } from "../errors";
 
 type ListInput = z.infer<typeof commissionListInputSchema>;
 type ListResult = z.infer<typeof commissionListSchema>;
@@ -40,6 +41,12 @@ type ProviderKey = z.infer<typeof providerKeyOutputSchema>;
 
 /** How many operators the picker offers at once. A search box, not a directory listing. */
 const OPERATOR_OPTIONS_LIMIT = 20;
+
+/* The left joins leave one null row for an operator with no offers, which the filter drops. */
+const operatorProviderCodes = sql<string[]>`coalesce(
+  array_agg(distinct ${provider.code}) filter (where ${provider.code} is not null),
+  '{}'
+)`;
 
 export async function listCommissions(db: Database, input: ListInput): Promise<ListResult> {
   const where = input.provider ? eq(provider.code, input.provider) : undefined;
@@ -87,6 +94,7 @@ export async function createCommission(
   input: CreateInput,
 ): Promise<Commission> {
   const providerId = await providerIdFor(db, input.provider);
+  await assertOperatorSoldBy(db, providerId, input.operatorId ?? null);
   await warnOnOverlap(db, { ...input, providerId, id: null });
 
   const id = await db.transaction(async (tx) => {
@@ -125,6 +133,14 @@ export async function updateCommission(
 ): Promise<Commission> {
   const before = await getCommission(db, input.id);
   const providerId = input.provider ? await providerIdFor(db, input.provider) : undefined;
+
+  if (input.provider !== undefined || input.operatorId !== undefined) {
+    await assertOperatorSoldBy(
+      db,
+      providerId ?? (await providerIdFor(db, before.provider)),
+      input.operatorId === undefined ? before.operatorId : input.operatorId,
+    );
+  }
 
   await db.transaction(async (tx) => {
     const patch: Partial<typeof providerCommission.$inferInsert> = {};
@@ -174,19 +190,44 @@ export async function setCommissionActive(
   return getCommission(db, id);
 }
 
-/** The operator picker's options: a search, since the table holds thousands. */
+/**
+ * The operator picker's options: a search, since the table holds thousands.
+ *
+ * An operator row carries no vendor. Each sync writes its own row per company, so the same
+ * charter company appears once per vendor under the same name, and the only link back to the
+ * vendor is the offers it sells through. An operator with no offers is left out when a vendor is
+ * asked for: no charter could ever match a rate against it.
+ */
 export async function listOperatorOptions(
   db: Database,
   input: z.infer<typeof operatorOptionsInputSchema>,
 ): Promise<z.infer<typeof operatorOptionsSchema>> {
   const rows = await db
-    .select({ id: operator.id, name: operator.name })
+    .select({
+      id: operator.id,
+      name: operator.name,
+      providers: operatorProviderCodes,
+    })
     .from(operator)
-    .where(input.query ? ilike(operator.name, `%${input.query}%`) : undefined)
-    .orderBy(asc(operator.name))
+    .leftJoin(listingOffer, eq(listingOffer.operatorId, operator.id))
+    .leftJoin(provider, eq(provider.id, listingOffer.providerId))
+    .where(
+      and(
+        input.query ? ilike(operator.name, `%${input.query}%`) : undefined,
+        input.provider ? eq(provider.code, input.provider) : undefined,
+      ),
+    )
+    .groupBy(operator.id)
+    .orderBy(asc(operator.name), asc(operator.id))
     .limit(OPERATOR_OPTIONS_LIMIT);
 
-  return { items: rows };
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      providers: row.providers.filter(isProviderKey),
+    })),
+  };
 }
 
 /* ------------------------------------------------------------------ helpers */
@@ -257,6 +298,32 @@ async function providerIdFor(db: Database, code: ProviderKey): Promise<string> {
     .limit(1);
   if (!row) throw new NotFoundError({ message: `Provider ${code} is not registered` });
   return row.id;
+}
+
+/**
+ * Refuses an operator-scoped rate the vendor could never apply: `resolveCommissionRate` matches
+ * on the offer's own vendor and operator, so a rate pairing a NauSYS vendor with a Booking
+ * Manager company is saved and then silently never used.
+ */
+async function assertOperatorSoldBy(
+  db: Database,
+  providerId: string,
+  operatorId: string | null,
+): Promise<void> {
+  if (operatorId === null) return;
+
+  const [offer] = await db
+    .select({ id: listingOffer.id })
+    .from(listingOffer)
+    .where(and(eq(listingOffer.providerId, providerId), eq(listingOffer.operatorId, operatorId)))
+    .limit(1);
+
+  if (!offer) {
+    throw new BadRequestError({
+      message: "This operator has no yachts with the chosen provider",
+      data: { code: "OPERATOR_NOT_SOLD_BY_PROVIDER" },
+    });
+  }
 }
 
 /**
