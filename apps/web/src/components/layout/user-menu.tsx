@@ -39,7 +39,7 @@ import {
  */
 
 const ITEM =
-  "w-full cursor-pointer rounded-none px-0 py-2 text-sm leading-[1.2] font-semibold tracking-[0.02em] text-foreground capitalize focus:bg-transparent focus:text-brand";
+  "w-full cursor-pointer rounded-none px-0 py-2 text-sm leading-[1.2] font-semibold tracking-[0.02em] text-foreground focus:bg-transparent focus:text-brand";
 
 /* The submenu wears the same card as the menu it grew out of, so a nested list reads as the
    same surface one step across rather than a differently-styled popover. */

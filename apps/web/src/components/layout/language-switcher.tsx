@@ -61,7 +61,7 @@ export default function LanguageSwitcher() {
             onClick={() => {
               switchTo(locale);
             }}
-            className="-mx-4 gap-2 px-4 py-2 text-sm font-semibold capitalize leading-[1.2] tracking-[0.02em] text-foreground focus:bg-natural-50 focus:text-foreground"
+            className="-mx-4 gap-2 px-4 py-2 text-sm font-semibold leading-[1.2] tracking-[0.02em] text-foreground focus:bg-natural-50 focus:text-foreground"
           >
             <span className="flex-1 truncate">{localeNames[locale]}</span>
             <Check
