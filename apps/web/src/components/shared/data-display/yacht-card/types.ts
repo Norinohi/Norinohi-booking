@@ -86,6 +86,8 @@ export type YachtCardData = {
   priceLabel: string;
   /** What qualifies an estimated or list price, behind an info icon beside the label. */
   priceHint?: string;
+  /** No price for the card's dates though the yacht sells them: the action says "get the price". */
+  getPrice?: boolean;
   price: string;
   /**
    * The same charter before the operator's discount, struck through beside the price. Absent

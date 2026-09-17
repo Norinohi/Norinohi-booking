@@ -60,7 +60,7 @@ export { normalizedKey as normalizedFilterValue } from "./normalize";
 export {
   comparablePrice,
   MIN_BASE_SHARE_OF_ALL_IN,
-  nightlyPriceOf,
+  shownPriceOf,
   priceAscSortValueOf,
   priceDescSortValueOf,
   recommendedSortValue,

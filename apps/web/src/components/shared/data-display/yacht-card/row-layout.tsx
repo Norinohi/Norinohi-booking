@@ -141,6 +141,7 @@ function Action({
   hold,
   end,
   priceLabel,
+  getPrice,
   priceHint,
   price,
   listPrice,
@@ -232,6 +233,7 @@ function Action({
         <YachtCardDetailsButton
           detailHref={detailHref}
           openInNewTab={openInNewTab}
+          getPrice={getPrice}
           className="w-full"
         />
         {footer}

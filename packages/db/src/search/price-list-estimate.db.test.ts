@@ -198,7 +198,7 @@ describe("a dated charter of another length estimated from the weekly list", () 
     expect(items.map((item) => item.slug)).toEqual(expected);
 
     const slugs: string[] = [];
-    let cursor: string | undefined = encodeSearchCursor({ value: 100, listingId: "~" });
+    let cursor: string | undefined = encodeSearchCursor({ value: 1000, listingId: "~" });
     do {
       const page = await searchListings(test.db, {
         ...sixNights,

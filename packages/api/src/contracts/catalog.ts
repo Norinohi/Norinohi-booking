@@ -287,6 +287,12 @@ export const listingSummarySchema = z.object({
    * the ordinary case.
    */
   listPriceFrom: moneySchema.nullable(),
+  /**
+   * A week's price for this boat from another charter or the season floor, present only where a
+   * dated search has no price for the dates shown. The card captions it as a week "from" that
+   * figure next to its "on request", never as the price of those dates.
+   */
+  weeklyPriceFrom: moneySchema.nullable(),
   priceDetails: z.object({
     periodDays: z.number().int(),
     /** Refundable damage deposit collected at the base. Null when there is none. */

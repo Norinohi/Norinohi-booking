@@ -87,8 +87,10 @@ function isCalendarDay(query: string) {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === query;
 }
 
+/* A start date already behind us searched nothing and said nothing; it reads as no date instead. */
 const dayParser = createParser({
-  parse: (query: string) => (isCalendarDay(query) ? query : null),
+  parse: (query: string) =>
+    isCalendarDay(query) && query >= new Date().toISOString().slice(0, 10) ? query : null,
   serialize: (value: string) => value,
 });
 

@@ -129,6 +129,7 @@ export function toYachtCard(
        self-explanatory: it appears exactly when there is something the price does not include. */
     priceExtras: yachtCardExtras(t, listing, formatMoney),
     priceIsLabel: !listing.priceFrom,
+    ...onRequestPrompt(t, listing, formatMoney),
     /*
      * The nightly rate, which is what "Price: low to high" orders on. The amounts above it price
      * charters of different lengths - three nights on one hull, a week on the next - so ordering
@@ -238,6 +239,26 @@ function withHint(caption: string): PriceCaption {
   return {
     priceLabel: caption.slice(0, at),
     priceHint: hint.charAt(0).toUpperCase() + hint.slice(1),
+  };
+}
+
+/*
+ * A card with dates the yacht sells but no price for them: the yacht page quotes the vendor live,
+ * so the card sends the visitor there. A week's figure, where there is one, stands in the price
+ * slot as a week "from", so the budget is legible without passing for these dates' price.
+ */
+function onRequestPrompt(
+  t: CardTranslator,
+  listing: ResultListing,
+  formatMoney: MoneyFormatter,
+): Partial<Pick<YachtCardData, "getPrice" | "price" | "priceLabel">> {
+  if (listing.priceFrom || !listing.availability.hasAvailableDates) return {};
+  const weekly = listing.weeklyPriceFrom;
+  if (!weekly) return { getPrice: true };
+  return {
+    getPrice: true,
+    price: t("weeklyPriceFrom", { price: formatMoney(weekly.amountMinor, weekly.currency) }),
+    priceLabel: t("priceForDatesOnPage"),
   };
 }
 

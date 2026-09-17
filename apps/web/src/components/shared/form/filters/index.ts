@@ -1,5 +1,6 @@
 export { default as FiltersPanel, type FiltersPanelProps } from "./components/filters-panel";
 export { default as FiltersPopover, type FiltersPopoverProps } from "./components/filters-popover";
+export { useCityOptions } from "./hooks/use-city-options";
 export { useDraft } from "./hooks/use-draft";
 export { useFilterChips } from "./hooks/use-filter-chips";
 export { EMPTY_OPTIONS, type FilterOptions, useFilterOptions } from "./hooks/use-filter-options";

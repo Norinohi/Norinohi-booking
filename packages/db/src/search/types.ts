@@ -237,6 +237,12 @@ export type ListingSearchDoc = {
    * asked for. Ranks below a price for those dates; absent wherever `pricedForDates` is.
    */
   pricedForNearbyDates?: boolean;
+  /**
+   * The operator's weekly list rate for the week the shown charter starts in, on a dated search
+   * where nothing priced the charter. A reference only; absent wherever `pricedForDates` is.
+   */
+  weeklyRateMinor?: number | null;
+  weeklyRateCurrency?: string | null;
   /*
    * The charter nearest the searched dates that this listing would actually sell, when the
    * searched one is not it. Null on an undated search, and on a listing with no sellable

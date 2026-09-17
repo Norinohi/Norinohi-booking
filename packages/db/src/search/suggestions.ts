@@ -3,8 +3,9 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import type * as schema from "../schema";
 import { valueForLabel } from "./filters";
-import { DEFAULT_LOCALE, facetTranslator } from "./localize";
+import { facetTranslator } from "./localize";
 import { normalizedKey, normalizedKeySql, placeWordsKeySql } from "./normalize";
+import { hasCyrillic, phoneticKey, phoneticKeySql } from "./phonetic-key";
 import type { FacetMediaKind, ListingSuggestion } from "./types";
 
 /*
@@ -88,7 +89,9 @@ export async function listSearchSuggestions(
 
   const pattern = `%${query.trim()}%`;
   const folded = normalizedKey(query);
-  const localizedKeys = await translatedMatches(db, locale, pattern);
+  /* Cities and marinas have no translations, so a Cyrillic query is matched by sound instead. */
+  const phonetic = hasCyrillic(query) ? phoneticKey(query) : "";
+  const localizedKeys = await translatedMatches(db, pattern);
 
   /*
    * One pass over the documents, counted per place, and the fold run over those few thousand
@@ -105,6 +108,7 @@ export async function listSearchSuggestions(
         and (
           ${column} ilike ${pattern}
           ${folded ? sql`or ${normalizedKeySql(column)} like ${`%${folded}%`}` : sql``}
+          ${phonetic ? sql`or ${phoneticKeySql(column)} like ${`%${phonetic}%`}` : sql``}
           ${
             keys?.length
               ? sql`or ${normalizedKeySql(column)} in (${sql.join(
@@ -139,25 +143,25 @@ export async function listSearchSuggestions(
 }
 
 /*
- * The folded values whose label in this locale contains the query, per facet kind, so "Спліт"
- * finds "Split region" on the Ukrainian site. Empty on the default locale, where the column
- * already is the label.
+ * The folded values whose translated label contains the query, per facet kind, so "Спліт" finds
+ * "Split region" whichever site it is typed on.
  */
 async function translatedMatches(
   db: NodePgDatabase<typeof schema>,
-  locale: string | undefined,
   pattern: string,
 ): Promise<Map<FacetMediaKind, string[]>> {
   const kinds = Object.values(TRANSLATED_AS).filter((kind) => kind !== null);
   const byKind = new Map<FacetMediaKind, string[]>();
-  if (!locale || locale === DEFAULT_LOCALE) return byKind;
 
+  /*
+   * Every locale's labels, not only the page's: "Хорватія" typed on the English site is still
+   * Croatia, and the default locale has no translations of its own to look in.
+   */
   const rows = await db.execute<{ kind: FacetMediaKind; key: string }>(sql`
     select distinct media.kind, ${normalizedKeySql(sql`media.value`)} as key
     from facet_media media
     join facet_media_translation translation
       on translation.facet_media_id = media.id
-      and translation.locale = ${locale}
     where translation.label ilike ${pattern}
       and media.kind in (${sql.join(
         kinds.map((kind) => sql`${kind}`),

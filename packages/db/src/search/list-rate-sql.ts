@@ -56,6 +56,34 @@ export function listRatePeriodPrice(listingId: SQL, checkIn: SQL, nights: number
   );
 }
 
+/**
+ * The operator's weekly list rate for the week the shown charter starts in, as the `wr` lateral:
+ * the boat's rate alone, before fees, crew and discounts, from any offer that can still sell.
+ *
+ * Only a reference for a card nothing priced: a budget for the boat, captioned as a week "from"
+ * it, never the price of the dates beside it (those are quoted live on the yacht page).
+ */
+export function weeklyReferenceRate(listingId: SQL, checkIn: SQL): SQL {
+  return sql`
+    left join lateral (
+      select price.price_minor as weekly_rate_minor, price.currency as weekly_rate_currency
+      from listing_offer o
+      join provider p on p.id = o.provider_id
+      join listing_price_period price on price.listing_offer_id = o.id
+      where o.listing_id = ${listingId}
+        and ${sellableActiveOffer()}
+        and price.kind = 'weekly'
+        and price.price_minor > 0
+        and price.start_date <= ${checkIn}
+        and (
+          price.end_date > ${checkIn}
+          or (price.end_date = ${checkIn} and p.code <> ${HALF_OPEN_RATE_PROVIDER})
+        )
+      order by price.price_minor
+      limit 1
+    ) wr on true`;
+}
+
 /* A per-provider value for this length as a `case` over `p.code`, listing only the exceptions. */
 function byProvider<T extends string | number>(
   nights: number,

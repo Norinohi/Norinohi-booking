@@ -65,6 +65,7 @@ export default function MapLayout({
   charterType,
   crew,
   priceLabel,
+  getPrice,
   priceHint,
   price,
   listPrice,
@@ -145,6 +146,7 @@ export default function MapLayout({
         <YachtCardDetailsButton
           detailHref={detailHref}
           openInNewTab={openInNewTab}
+          getPrice={getPrice}
           className="w-full"
         />
       </div>

@@ -95,7 +95,7 @@ export function placeWordsKeySql(column: SQL): SQL {
   ), '')`;
 }
 
-function foldedLettersSql(column: SQL): SQL {
+export function foldedLettersSql(column: SQL): SQL {
   let expression = sql`lower(coalesce(${column}, ''))`;
   for (const [from, to] of MULTI_CHAR_FOLDS) {
     expression = sql`replace(${expression}, ${from}, ${to})`;

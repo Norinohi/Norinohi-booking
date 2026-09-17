@@ -38,7 +38,7 @@ export function pricedForShownPeriod(
    * another week's figure or a season floor, and neither names these dates. The swap keys on the
    * same choice `periodFor` makes; the check below still refuses a price for any other dates.
    */
-  if (item.pricedForDates === false) return withoutPrice(listing);
+  if (item.pricedForDates === false) return withoutPrice(listing, item);
 
   /*
    * A season floor is a week's rate, so it can stand beside a week and nothing shorter. Beside
@@ -47,7 +47,7 @@ export function pricedForShownPeriod(
   if (listing.priceIsFrom) {
     return nightsBetween(shown.checkIn, shown.checkOut) === WEEKLY_RATE_DAYS
       ? listing
-      : withoutPrice(listing);
+      : withoutPrice(listing, item);
   }
 
   /*
@@ -63,13 +63,26 @@ export function pricedForShownPeriod(
   const priced = bookablePeriodOf(item);
   return priced && priced.checkIn === shown.checkIn && priced.checkOut === shown.checkOut
     ? listing
-    : withoutPrice(listing);
+    : withoutPrice(listing, item);
 }
 
-/* No figure at all, which the card renders as "on request". */
-function withoutPrice<T extends ReturnType<typeof presentListingSummary>>(listing: T): T {
+/*
+ * No figure for the charter, which the card renders as "on request". The operator's weekly list
+ * rate for that week, where the search found one, rides along as `weeklyPriceFrom`: captioned on
+ * the card as a week "from" it, it names no dates and cannot pass for their price, but it gives
+ * a visitor the boat's budget before they open it for the live quote.
+ */
+function withoutPrice<T extends ReturnType<typeof presentListingSummary>>(
+  listing: T,
+  item: ListingSearchDoc,
+): T {
+  const weekly =
+    item.weeklyRateMinor && item.weeklyRateCurrency
+      ? { amountMinor: item.weeklyRateMinor, currency: item.weeklyRateCurrency }
+      : null;
   return {
     ...listing,
+    weeklyPriceFrom: weekly,
     priceFrom: null,
     comparablePriceFrom: null,
     allInPriceFrom: null,

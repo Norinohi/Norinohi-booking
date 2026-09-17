@@ -63,6 +63,13 @@ describe("toSearchInput", () => {
     expect(input.maxPriceMinor).toBe(200_000);
   });
 
+  it("rounds length bounds outwards to the centimetre the catalogue stores", () => {
+    const input = search({ length: [40, 45] });
+
+    expect(input.minLength).toBe(12.19);
+    expect(input.maxLength).toBe(13.72);
+  });
+
   it("takes the larger of the berths slider and a planner's minimum", () => {
     expect(search({ berths: [6, 16], minBerths: 4 }).minBerths).toBe(6);
     expect(search({ berths: [2, 16], minBerths: 8 }).minBerths).toBe(8);

@@ -4,7 +4,7 @@ import { listingSearchDoc } from "../schema/search";
 import { availabilityWindowFor } from "./candidate-range";
 import { MIN_LEAD_DAYS } from "./lead-time";
 import { lengthPriceTier } from "./length-charter-sql";
-import { listRatePeriodPrice } from "./list-rate-sql";
+import { listRatePeriodPrice, weeklyReferenceRate } from "./list-rate-sql";
 import { PERIOD_PRICE_COLUMNS } from "./period-prices";
 import { shownCharterStart } from "./sellable-starts";
 import type { ListingSearchDoc, ListingSearchInput, PeriodPriceSource, PriceBasis } from "./types";
@@ -67,6 +67,8 @@ export function searchDocs(input: ListingSearchInput): SQL {
     select ${sql.join(columns, sql`, `)},
       pp.listing_id is not null as priced_for_dates,
       pp.price_source,
+      case when pp.listing_id is null then wr.weekly_rate_minor end as weekly_rate_minor,
+      case when pp.listing_id is null then wr.weekly_rate_currency end as weekly_rate_currency,
       coalesce(pp.start_date <> ${window.checkIn}::date, false) as priced_for_nearby_dates
     from listing_search_doc doc
     ${
@@ -97,6 +99,7 @@ export function searchDocs(input: ListingSearchInput): SQL {
       ${listRate ? sql`union all (${listRate})` : sql``}
       limit 1
     ) pp on true
+    ${weeklyReferenceRate(sql`doc.listing_id`, checkIn)}
   )`;
 }
 
@@ -125,46 +128,28 @@ export function liftedForDates(input: ListingSearchInput): SQL {
 export function pricedForDatesColumn(input: ListingSearchInput): SQL {
   return availabilityWindowFor(input)
     ? sql`, doc.priced_for_dates as "pricedForDates", doc.price_source as "priceSource",
-        doc.priced_for_nearby_dates as "pricedForNearbyDates"`
+        doc.priced_for_nearby_dates as "pricedForNearbyDates",
+        doc.weekly_rate_minor as "weeklyRateMinor", doc.weekly_rate_currency as "weeklyRateCurrency"`
     : sql``;
 }
 
 /**
- * `nightlyPriceValue` in the units the keyset cursor compares.
+ * `shownPriceValue` in the units the keyset cursor compares.
  *
  * It has to agree with the SQL to the unit: the cursor is the last row's sort value, and a page
- * boundary computed from a different number either skips rows or serves them twice. Postgres
- * `round(numeric)` and `Math.round` both go half away from zero, and every figure here is
- * positive, so the two land on the same integer.
+ * boundary computed from a different number either skips rows or serves them twice.
  */
-export function nightlyPriceOf(
-  item: Pick<
-    ListingSearchDoc,
-    "priceFromMinorEur" | "basePriceFromMinorEur" | "priceIsFrom" | "bookableFrom" | "bookableTo"
-  >,
+export function shownPriceOf(
+  item: Pick<ListingSearchDoc, "priceFromMinorEur" | "basePriceFromMinorEur">,
   basis: PriceBasis = "all_in",
 ): number | null {
-  /* The SQL's `coalesce(nullif(...))`, restated: a zero rate is not a price, and the cursor has
-     to divide the same figure the ORDER BY did or the page boundary lands in the wrong place. */
+  /* The SQL's `coalesce(nullif(...))`, restated: a zero rate is not a price. */
   const rate = item.basePriceFromMinorEur;
   const allIn = item.priceFromMinorEur;
   const usableRate =
     rate !== null && rate > 0 && (allIn === null || rate >= allIn * MIN_BASE_SHARE_OF_ALL_IN);
   const comparable = basis === "base" && usableRate ? rate : allIn;
-  if (comparable === null) return null;
-
-  const sellable = hasPricedCharter(item);
-
-  const nights =
-    sellable && item.bookableFrom && item.bookableTo
-      ? Math.round(
-          (Date.parse(`${item.bookableTo}T00:00:00.000Z`) -
-            Date.parse(`${item.bookableFrom}T00:00:00.000Z`)) /
-            86_400_000,
-        )
-      : ASSUMED_PRICED_NIGHTS;
-
-  return Math.round(comparable / Math.max(nights, 1));
+  return comparable === null ? null : Math.round(comparable);
 }
 
 /** The SQL's sellable test in `pricedNights` and `priceAscSortValue`, restated for the cursor. */
@@ -175,23 +160,24 @@ function hasPricedCharter(item: Pick<ListingSearchDoc, "priceIsFrom" | "bookable
 
 /** `priceAscSortValue` in the units the keyset cursor compares. */
 export function priceAscSortValueOf(
-  item: Parameters<typeof nightlyPriceOf>[0] & Pick<ListingSearchDoc, "pricedForDates">,
+  item: Parameters<typeof shownPriceOf>[0] &
+    Pick<ListingSearchDoc, "pricedForDates" | "priceIsFrom" | "bookableFrom">,
   basis: PriceBasis = "all_in",
 ): number {
-  const nightly = nightlyPriceOf(item, basis);
-  if (nightly === null) return NULL_PRICE_ASC;
+  const shown = shownPriceOf(item, basis);
+  if (shown === null) return NULL_PRICE_ASC;
   const pricedHere = hasPricedCharter(item) && item.pricedForDates !== false;
-  return nightly + (pricedHere ? 0 : UNPRICED_CHARTER_SORT_OFFSET);
+  return shown + (pricedHere ? 0 : UNPRICED_CHARTER_SORT_OFFSET);
 }
 
 /** `priceDescSortValue` in the units the keyset cursor compares. */
 export function priceDescSortValueOf(
-  item: Parameters<typeof nightlyPriceOf>[0] & Pick<ListingSearchDoc, "pricedForDates">,
+  item: Parameters<typeof shownPriceOf>[0] & Pick<ListingSearchDoc, "pricedForDates">,
   basis: PriceBasis = "all_in",
 ): number {
-  const nightly = nightlyPriceOf(item, basis);
-  if (nightly === null) return NULL_PRICE_DESC;
-  return nightly + (item.pricedForDates === true ? UNPRICED_CHARTER_SORT_OFFSET : 0);
+  const shown = shownPriceOf(item, basis);
+  if (shown === null) return NULL_PRICE_DESC;
+  return shown + (item.pricedForDates === true ? UNPRICED_CHARTER_SORT_OFFSET : 0);
 }
 
 /*
@@ -213,11 +199,17 @@ export function priceDescSortValueOf(
 export const recommendedSortValue = sql`case when doc.price_is_from then doc.rating else doc.rating + 10 end`;
 
 /* Each clears the 0..5 rating range, so a tier is settled before the stars are read. */
-const VENDOR_PRICED_RANK = 30;
-const LIST_PRICED_RANK = 20;
-const ESTIMATE_PRICED_RANK = 10;
+const VENDOR_PRICED_RANK = 60;
+const LIST_PRICED_RANK = 40;
+const ESTIMATE_PRICED_RANK = 20;
 /* Clears the widest gap between two sources plus the rating range. */
-const ASKED_DATES_RANK = 30;
+const ASKED_DATES_RANK = 60;
+/*
+ * An unpriced card that can at least show the week's list rate goes after every priced card and
+ * before the ones with no figure at all: the yacht page will quote it, and the card says so.
+ * Ten apart from both neighbours clears the rating range, which is why the tiers above are twenty.
+ */
+const WEEKLY_REFERENCE_RANK = 10;
 
 /**
  * `recommendedSortValue` for a search that may name dates.
@@ -240,6 +232,7 @@ export function recommendedSortValueFor(input: ListingSearchInput): SQL {
   return availabilityWindowFor(input)
     ? sql`case
         when doc.price_source is null then doc.rating
+          + case when doc.weekly_rate_minor is not null then ${WEEKLY_REFERENCE_RANK}::integer else 0 end
         else doc.rating
           + case doc.price_source
               when 'vendor' then ${VENDOR_PRICED_RANK}::integer
@@ -267,13 +260,20 @@ export function recommendedSortValueOf(
     | "pricedForDates"
     | "priceSource"
     | "pricedForNearbyDates"
+    | "weeklyRateMinor"
     | "rating"
     | "lengthPriceTier"
   >,
 ): number {
   if (item.lengthPriceTier !== undefined) return item.lengthPriceTier + Number(item.rating);
   if (item.pricedForDates === undefined) return (item.priceIsFrom ? 0 : 10) + Number(item.rating);
-  if (item.priceSource === null || item.priceSource === undefined) return Number(item.rating);
+  if (item.priceSource === null || item.priceSource === undefined) {
+    return (
+      (item.weeklyRateMinor === null || item.weeklyRateMinor === undefined
+        ? 0
+        : WEEKLY_REFERENCE_RANK) + Number(item.rating)
+    );
+  }
   const source = SOURCE_RANK[item.priceSource];
   return source + (item.pricedForNearbyDates ? 0 : ASKED_DATES_RANK) + Number(item.rating);
 }
@@ -312,21 +312,6 @@ export const pricedNights = sql`greatest(
   1
 )`;
 
-/**
- * Price sorted per night, not per charter.
- *
- * The stored figure prices whatever charter the listing was quoted for, and those are not the
- * same length: a three-night charter at 819 EUR sorted above a week at 865, so the first page of
- * "Price: low to high" opened with the most expensive boats on it -- 273 EUR a night above 124.
- * Dividing by the nights the figure covers is the only basis on which the rows compare, because
- * nothing here can restate one charter's price as another's (see the money lateral in
- * `read-model.ts`: prorating a weekly band into three nights read 3,450 against a vendor quote
- * of 1,621, so the arithmetic that would let us sort on a common length does not exist).
- *
- * `round` to a whole minor unit rather than carrying the fraction, so the keyset cursor can hold
- * the sort value as the integer it compares -- `cursorFor` computes the identical number in JS.
- * Both round half away from zero, and every value here is positive.
- */
 /**
  * Which of the document's two prices every comparison reads, and the rule that keeps a page
  * coherent: whichever figure the cards show, the sort, the filter and the "from" aggregates
@@ -367,12 +352,16 @@ export const publishedPrice = (basis: PriceBasis = "all_in"): SQL =>
       )`
     : sql`doc.price_from_minor`;
 
-const nightlyPriceValue = (basis?: PriceBasis): SQL =>
-  sql`round(${comparablePrice(basis)}::numeric / ${pricedNights})`;
+/*
+ * The headline figure on the card, whatever length of charter it prices. Sorting per night kept
+ * charters of different lengths comparable, but the list then read as unsorted: 90,654, 67,200,
+ * then a 271,200 week. Visitors compare the numbers they see.
+ */
+const shownPriceValue = (basis?: PriceBasis): SQL => sql`round(${comparablePrice(basis)}::numeric)`;
 
 export const priceAscSortValue = (basis: PriceBasis | undefined, pricedHere: SQL): SQL =>
   sql`coalesce(
-    ${nightlyPriceValue(basis)} + case
+    ${shownPriceValue(basis)} + case
       when not doc.price_is_from
         and doc.bookable_from >= current_date + cast(${MIN_LEAD_DAYS} as int)
         and ${pricedHere}
@@ -382,7 +371,7 @@ export const priceAscSortValue = (basis: PriceBasis | undefined, pricedHere: SQL
 /* Dearest first, among the prices for the searched dates and then among the rest. */
 export const priceDescSortValue = (basis: PriceBasis | undefined, liftedHere: SQL): SQL =>
   sql`coalesce(
-    ${nightlyPriceValue(basis)} + case
+    ${shownPriceValue(basis)} + case
       when ${liftedHere} then ${UNPRICED_CHARTER_SORT_OFFSET} else 0 end,
     ${NULL_PRICE_DESC}
   )`;

@@ -7,10 +7,18 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type ReactNode, type RefObject, Suspense, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  type RefObject,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import { type AppPathname, Link, useRouter } from "@/i18n/navigation";
-import { parseAsInteger, parseAsStringLiteral, useQueryState } from "nuqs";
+import { createParser, parseAsStringLiteral, useQueryState } from "nuqs";
 
 import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
 import { Image } from "@/components/shared/data-display/image";
@@ -38,6 +46,15 @@ import ResultsHeader, { SORT_OPTIONS, type SortValue } from "./results-header";
 import SearchBar from "./search-bar";
 
 const YACHTS_MAP_HREF = "/yachts/map";
+
+/* `page=0` went to the API as is and came back a 400, which the screen read as no yachts. */
+const parseAsPage = createParser({
+  parse: (query: string) => {
+    const page = Number(query);
+    return Number.isSafeInteger(page) && page >= 1 ? page : null;
+  },
+  serialize: String,
+});
 
 /* The page container every other screen uses — the navigation bar and footer included, which is
    what keeps the search bar and the results grid on the same edges as the header at every width. */
@@ -81,7 +98,10 @@ function useResultOrder() {
     "sort",
     parseAsStringLiteral(SORT_OPTIONS).withDefault("recommended"),
   );
-  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
+  const [page, setPage] = useQueryState(
+    "page",
+    parseAsPage.withDefault(1).withOptions({ history: "push" }),
+  );
 
   return {
     sort,
@@ -237,6 +257,14 @@ function ResultsColumn({ locked }: { locked?: LockedFilters }) {
   const boats = data?.items.map((item) => toCard(item.listing, item)) ?? [];
   const pagination = data?.pagination;
   const chips = useFilterChips(filters);
+
+  /* A page past the end, from an old link or a search that shrank, lands on the last real one. */
+  const lastPage = pagination ? Math.ceil(pagination.totalItems / pagination.pageSize) : null;
+  useEffect(() => {
+    if (!isPlaceholderData && lastPage !== null && lastPage > 0 && page > lastPage) {
+      void setPage(lastPage);
+    }
+  }, [isPlaceholderData, lastPage, page, setPage]);
 
   function removeChip(chip: FilterChip) {
     applyFilters(clearFilterKeys(filters, chip.keys, defaults));

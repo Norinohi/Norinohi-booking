@@ -183,7 +183,7 @@ describe("recommending cards a length names", () => {
     expect(items.map((item) => item.basePriceFromMinor)).toEqual([250_000, 500_000]);
 
     const slugs: string[] = [];
-    let cursor: string | undefined = encodeSearchCursor({ value: 100, listingId: "~" });
+    let cursor: string | undefined = encodeSearchCursor({ value: 1000, listingId: "~" });
     do {
       const page = await searchListings(test.db, { ...input, limit: 1, cursor });
       slugs.push(...page.items.map((item) => item.slug));

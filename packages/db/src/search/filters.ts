@@ -9,6 +9,7 @@ import {
 } from "./candidate-range";
 import {
   foldedLetters,
+  foldedLettersSql,
   normalizedKey as normalizedFilterValue,
   normalizedKeySql as normalizedSql,
   placeWordsKey,
@@ -61,9 +62,19 @@ function freeTextClause(text: string | undefined): SQL | null {
 
   const haystack = sql`concat_ws(' ', doc.name, doc.searchable_text)`;
   return sql.join(
-    words.map((word) => sql`${haystack} ilike ${`%${word}%`}`),
+    words.map((word) => containsFolded(haystack, word)),
     sql` and `,
   );
+}
+
+/*
+ * A substring match that reads "Skrlatica" as "Škrlatica", the way a visitor without the keyboard
+ * layout types it, and treats `%` and `_` as the characters they are: an unescaped `%` matched
+ * every row in the catalogue.
+ */
+function containsFolded(column: SQL, text: string): SQL {
+  const escaped = foldedLetters(text).replace(/[\\%_]/g, (char) => `\\${char}`);
+  return sql`${foldedLettersSql(column)} like ${`%${escaped}%`}`;
 }
 
 export function whereClause(
@@ -73,16 +84,16 @@ export function whereClause(
   const skip = new Set<FacetFilterKey>(ignored);
   const parts: SQL[] = [sql`true`];
   if (!skip.has("destination") && input.destination) {
-    const pattern = `%${input.destination}%`;
+    const destination = input.destination;
     parts.push(sql`(
-      doc.country ilike ${pattern}
-      or doc.region ilike ${pattern}
-      or doc.location ilike ${pattern}
-      or doc.base_name ilike ${pattern}
+      ${containsFolded(sql`doc.country`, destination)}
+      or ${containsFolded(sql`doc.region`, destination)}
+      or ${containsFolded(sql`doc.location`, destination)}
+      or ${containsFolded(sql`doc.base_name`, destination)}
     )`);
   }
   if (!skip.has("query") && input.query) {
-    parts.push(sql`doc.searchable_text ilike ${`%${input.query}%`}`);
+    parts.push(containsFolded(sql`doc.searchable_text`, input.query));
   }
   if (!skip.has("name")) {
     const match = freeTextClause(input.name);

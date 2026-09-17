@@ -169,6 +169,9 @@ export default function DatePicker({
             // Match the trigger width, but never below the calendar's own size (7 × 36px cells +
             // padding ≈ 284px) — a narrow trigger would otherwise squash and clip the month grid.
             "w-(--anchor-width) min-w-72 border-0 bg-transparent p-0 shadow-none",
+            /* One card around the rule, the month and its legend: drawn apart, the legend read as
+               a stray panel floating over the page. */
+            (hint || legend) && "rounded-lg border border-border bg-card p-4 shadow-popover",
             contentClassName,
           )}
         >
@@ -180,7 +183,10 @@ export default function DatePicker({
           ) : null}
           {props.mode === "range" ? (
             <Calendar
-              className="w-full"
+              className={cn(
+                "w-full",
+                (hint || legend) && "border-0 bg-transparent p-0 shadow-none",
+              )}
               mode="range"
               locale={locale}
               weekStartsOn={weekStartsOn}
@@ -192,7 +198,10 @@ export default function DatePicker({
             />
           ) : (
             <Calendar
-              className="w-full"
+              className={cn(
+                "w-full",
+                (hint || legend) && "border-0 bg-transparent p-0 shadow-none",
+              )}
               locale={locale}
               weekStartsOn={weekStartsOn}
               defaultMonth={defaultMonth}
@@ -202,7 +211,7 @@ export default function DatePicker({
               onSelect={selectDay}
             />
           )}
-          {legend ? <div className="mt-2">{legend}</div> : null}
+          {legend ? <div className="mt-3">{legend}</div> : null}
         </PopoverContent>
       </Popover>
 

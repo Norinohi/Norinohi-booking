@@ -88,11 +88,15 @@ describe("filterParsers", () => {
   });
 
   it("accepts only real calendar days", () => {
-    expect(loadFilters("?startDate=2026-07-04").startDate).toBe("2026-07-04");
+    expect(loadFilters("?startDate=2030-07-04").startDate).toBe("2030-07-04");
     expect(loadFilters("?startDate=2026-13-40").startDate).toBeNull();
     expect(loadFilters("?startDate=4.7.2026").startDate).toBeNull();
     expect(loadFilters("?startDate=2026-02-31").startDate).toBeNull();
-    expect(loadFilters("?startDate=2028-02-29").startDate).toBe("2028-02-29");
+    expect(loadFilters("?startDate=2032-02-29").startDate).toBe("2032-02-29");
+  });
+
+  it("drops a start date already in the past", () => {
+    expect(loadFilters("?startDate=2020-06-06").startDate).toBeNull();
   });
 
   it("accepts a known date flexibility only", () => {

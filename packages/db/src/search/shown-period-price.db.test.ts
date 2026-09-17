@@ -205,7 +205,7 @@ describe("a flexible search prices the charter each card names", () => {
     expect(items.map((item) => item.slug)).toEqual(expected);
 
     const slugs: string[] = [];
-    let cursor: string | undefined = encodeSearchCursor({ value: 100, listingId: "~" });
+    let cursor: string | undefined = encodeSearchCursor({ value: 1000, listingId: "~" });
     do {
       const page = await searchListings(test.db, {
         ...flexible,

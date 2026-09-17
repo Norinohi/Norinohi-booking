@@ -37,3 +37,10 @@ export const facetsQueryOptions = (
     input: priceBasis ? { locale, ...scope, priceBasis } : { locale, ...scope },
     staleTime: ONE_DAY,
   });
+
+/* The typeahead read, reused to spell a picked city: a city has no facet list of its own. */
+export const citySuggestionsQueryOptions = (city: string, locale: string) =>
+  orpc.charterSearch.suggestions.queryOptions({
+    input: { query: city.replace(/-/g, " "), locale },
+    staleTime: 5 * 60 * 1000,
+  });

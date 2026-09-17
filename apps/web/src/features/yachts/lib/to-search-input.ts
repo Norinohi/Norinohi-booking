@@ -94,10 +94,16 @@ export function toSearchInput(
   ) => (filters[key][1] < defaults[key][1] ? filters[key][1] : undefined);
   const scaled = (value: number | undefined, factor: number) =>
     value === undefined ? undefined : value * factor;
+  /*
+   * Hulls are stored to the centimetre, and 45 ft is 13.716 m: an exact bound left out every
+   * boat listed at 13.72 m, which the slider itself renders as 45 ft. Rounded outwards instead.
+   */
+  const centimetres = (metres: number | undefined, round: (value: number) => number) =>
+    metres === undefined ? undefined : round(Number((metres * 100).toFixed(6))) / 100;
 
   if (isActive("length")) {
-    input.minLength = scaled(lowerOf("length"), FEET_TO_METRES);
-    input.maxLength = scaled(upperOf("length"), FEET_TO_METRES);
+    input.minLength = centimetres(scaled(lowerOf("length"), FEET_TO_METRES), Math.floor);
+    input.maxLength = centimetres(scaled(upperOf("length"), FEET_TO_METRES), Math.ceil);
   }
   if (isActive("cabins")) {
     input.minCabins = lowerOf("cabins");

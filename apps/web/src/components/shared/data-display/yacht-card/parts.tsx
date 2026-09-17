@@ -255,19 +255,22 @@ export function YachtCardAmount({
 interface YachtCardDetailsButtonProps {
   detailHref?: AppPathname;
   openInNewTab?: boolean;
+  /* The card has no price for its dates: the button says the yacht page will give one. */
+  getPrice?: boolean;
   className: string;
 }
 
 export function YachtCardDetailsButton({
   detailHref,
   openInNewTab,
+  getPrice,
   className,
 }: YachtCardDetailsButtonProps) {
   const t = useTranslations("Common.boatCard");
 
   return (
     <Button
-      variant="neutral"
+      variant={getPrice ? "brand" : "neutral"}
       size="md"
       nativeButton={false}
       render={
@@ -278,7 +281,7 @@ export function YachtCardDetailsButton({
       }
       className={className}
     >
-      {t("viewDetails")}
+      {getPrice ? t("getPrice") : t("viewDetails")}
     </Button>
   );
 }

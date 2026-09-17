@@ -5,6 +5,9 @@ import {
   normalizedFilterValue,
 } from "@yacht-charter/db/search";
 import { docHasMainsail } from "@yacht-charter/db/search/mainsail";
+import type { z } from "zod";
+
+import type { moneySchema } from "../contracts/primitives";
 import { BASE_CURRENCY } from "../lib/display-currency";
 import type {
   ListingDetail,
@@ -17,6 +20,9 @@ import type {
 const EMPTY_AMENITY_RANKS: ReadonlyMap<string, number> = new Map();
 
 const EMPTY_IMAGE = "";
+
+/* Set only where a dated search withheld the price: see `withoutPrice` in shown-period.ts. */
+const NO_WEEKLY_PRICE: z.infer<typeof moneySchema> | null = null;
 
 /** `listing_price_period.kind = 'weekly'` is what the read model reads, so the rate is a week. */
 export const WEEKLY_RATE_DAYS = 7;
@@ -297,6 +303,7 @@ export function presentListingSummary(
       listMinor === null || amountMinor === null || listMinor <= amountMinor
         ? null
         : { amountMinor: listMinor, currency },
+    weeklyPriceFrom: NO_WEEKLY_PRICE,
     priceDetails: {
       periodDays,
       /*

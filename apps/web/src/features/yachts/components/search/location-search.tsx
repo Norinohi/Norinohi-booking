@@ -77,6 +77,8 @@ export default function LocationSearch({ value, onSelect, placeholder }: Locatio
         icon={<MapPin className="size-6 shrink-0 text-foreground" />}
         onClear={value ? () => onSelect(null) : undefined}
         clearLabel={t("clearLocation")}
+        /* A combobox takes no name from its content, so screen readers announced a bare control. */
+        aria-label={value ? `${placeholder}: ${value}` : placeholder}
       >
         {value || <span className="text-placeholder-foreground">{placeholder}</span>}
       </ComboboxTrigger>

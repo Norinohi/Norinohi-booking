@@ -352,7 +352,7 @@ describe("a dated search", () => {
   it("pages the recommended order by cursor without skipping or repeating", async () => {
     const slugs: string[] = [];
     /* Above every recommended value, so the first page starts at the top of the order. */
-    let cursor: string | undefined = encodeSearchCursor({ value: 100, listingId: "~" });
+    let cursor: string | undefined = encodeSearchCursor({ value: 1000, listingId: "~" });
     do {
       const page = await searchListings(test.db, {
         ...dated,
