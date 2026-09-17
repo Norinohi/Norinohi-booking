@@ -6,6 +6,8 @@ import Supercluster, { type PointFeature } from "supercluster";
 import type { MapMarinaData } from "../api/queries";
 import type { MapInstance } from "@/components/shared/map/map-canvas";
 
+import { snapToSameHarbour } from "../lib/same-harbour";
+
 const CLUSTER_RADIUS = 60;
 /*
  * Mapbox's own ceiling, so clusters exist at every zoom the map can reach. Stopping lower let the
@@ -110,7 +112,7 @@ export function useMapClusters(marinas: MapMarinaData[], map: MapInstance | null
         accumulated.count += props.count;
       },
     });
-    const points: PointFeature<MapMarinaData>[] = marinas.map((marina) => ({
+    const points: PointFeature<MapMarinaData>[] = snapToSameHarbour(marinas).map((marina) => ({
       type: "Feature",
       properties: marina,
       geometry: { type: "Point", coordinates: [marina.lng, marina.lat] },
