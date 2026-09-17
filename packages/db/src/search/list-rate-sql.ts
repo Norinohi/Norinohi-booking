@@ -3,7 +3,6 @@ import { sql, type SQL } from "drizzle-orm";
 
 import { toBaseMinorSql } from "../fx/rates";
 import { REFUSAL_TRUST_DAYS } from "../schema/availability";
-import { nightsBetween } from "./candidate-range";
 import { unavoidableCrew } from "./crew-sql";
 import { unavoidableFees } from "./fees-sql";
 import { providerLeadDaysSql } from "./lead-time";
@@ -26,8 +25,8 @@ export const LIST_RATE_NIGHTS = 7;
 const HALF_OPEN_RATE_PROVIDER: ProviderKey = "booking_manager";
 
 /**
- * The operator's published rate for exactly the searched week, as one `listing_period_price`-shaped
- * row with `price_source = 'price-list'`, or no row.
+ * The operator's published rate for exactly the week starting on `checkIn`, the week the card
+ * names, as one `listing_period_price`-shaped row with `price_source = 'price-list'`, or no row.
  *
  * Only where a vendor has not priced the week itself; the caller tries that first. The rate is the
  * band covering the check-in day, cheapest first where lists overlap, as the price writer reads
@@ -38,14 +37,10 @@ const HALF_OPEN_RATE_PROVIDER: ProviderKey = "booking_manager";
  * compete on the document's order, so the figure is what the card would show had the list rate
  * been its stored price. It is a pre-discount number with no strike-through behind it.
  */
-export function listRatePeriodPrice(
-  listingId: SQL,
-  window: { checkIn: string; checkOut: string },
-): SQL | undefined {
-  if (nightsBetween(window) !== LIST_RATE_NIGHTS) return undefined;
+export function listRatePeriodPrice(listingId: SQL, checkIn: SQL, nights: number): SQL | undefined {
+  if (nights !== LIST_RATE_NIGHTS) return undefined;
 
-  const checkIn = sql`${window.checkIn}::date`;
-  const checkOut = sql`${window.checkOut}::date`;
+  const checkOut = sql`(${checkIn} + ${LIST_RATE_NIGHTS}::integer)`;
 
   return sql`
     select
@@ -131,7 +126,7 @@ export function listRatePeriodPrice(
             and refused.end_date <= ${checkOut}
             and refused.updated_at > now() - make_interval(days => ${REFUSAL_TRUST_DAYS})
         )
-        and ${rulesSellWindow(listingId, window)}
+        and ${rulesSellWindow(listingId, checkIn, LIST_RATE_NIGHTS)}
     ) candidate
     where candidate.all_in_minor is not null and candidate.currency is not null
     order by

@@ -23,6 +23,10 @@ type SearchResult = z.output<typeof searchResultSchema>;
  * `bookablePeriodOf` is also the period `priceFrom` and `periodDays` already describe, so the
  * swap leaves the card internally consistent rather than pairing one charter's dates with
  * another's rate.
+ *
+ * `shownCharterStart` in packages/db makes the same choice in SQL, so the search prices, sorts and
+ * filters on the charter this returns. A change to one has to be made to the other, or the card
+ * names dates its price is not for and `pricedForShownPeriod` withholds it.
  */
 function periodFor(item: ListingSearchDoc, period: CharterPeriod, startDate: string | undefined) {
   if (period.checkIn !== undefined && item.sellsRequestedPeriod) {

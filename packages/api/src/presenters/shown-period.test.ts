@@ -106,6 +106,45 @@ describe("pricedForShownPeriod", () => {
     expect(card.priceSource).toBe("vendor");
   });
 
+  it("keeps the price of the nearby week a flexible search shows instead", () => {
+    const card = pricedForShownPeriod(
+      doc({ ...priced, pricedForDates: true, pricedForNearbyDates: true, priceSource: "vendor" }),
+      { checkIn: "2099-06-06", checkOut: "2099-06-13" },
+      "base",
+      ranks,
+    );
+    expect(card.priceFrom).not.toBeNull();
+    expect(card.priceIsFrom).toBe(false);
+    expect(card.priceSource).toBe("vendor");
+  });
+
+  it("captions a nearby week priced from the list as a list rate", () => {
+    const card = pricedForShownPeriod(
+      doc({
+        ...priced,
+        pricedForDates: true,
+        pricedForNearbyDates: true,
+        priceSource: "price-list",
+      }),
+      { checkIn: "2099-06-06", checkOut: "2099-06-13" },
+      "base",
+      ranks,
+    );
+    expect(card.priceFrom).not.toBeNull();
+    expect(card.priceSource).toBe("price-list");
+  });
+
+  it("prices nothing where the search priced a nearby week but the card names another", () => {
+    const card = pricedForShownPeriod(
+      doc({ ...priced, pricedForDates: true, pricedForNearbyDates: true, priceSource: "vendor" }),
+      { checkIn: "2099-06-03", checkOut: "2099-06-10" },
+      "base",
+      ranks,
+    );
+    expect(card.priceFrom).toBeNull();
+    expect(card.priceSource).toBeNull();
+  });
+
   it("puts no season floor beside a dated week nobody priced", () => {
     const card = pricedForShownPeriod(
       doc({ ...priced, priceIsFrom: true, pricedForDates: false, priceSource: null }),

@@ -17,6 +17,7 @@ import {
 } from "@/components/shared/data-display/yacht-card/view-model";
 import type { BadgeTranslator } from "@/lib/badge-label";
 import type { CrewTranslator } from "@/lib/crew-label";
+import { dayToDisplay } from "@/lib/date";
 
 import { serializeDetailPeriod } from "./search-params";
 import { toMarina } from "./to-marina";
@@ -107,7 +108,7 @@ export function toYachtCard(
     datesNote: period?.periodIsAlternative ? t("datesAlternative") : undefined,
     /* Says what the badge above it leaves out: how long the other customer's hold has left. */
     hold: hold ?? undefined,
-    priceLabel: priceCaption(t, listing, basis),
+    priceLabel: priceCaption(t, listing, basis, period?.periodIsAlternative ? searched : null),
     price: yachtCardPrice(t, listing, formatMoney),
     listPrice: yachtCardListPrice(listing, formatMoney),
     /* Only ever present where the headline is the charter rate, which is what makes the line
@@ -163,14 +164,25 @@ export function toYachtCard(
  * Both captions introduce a figure: "From" reads into it, "Price for 7 days" names what it
  * buys. With no published rate the slot holds a word instead, "On request", and captioning
  * that produced "From / On request", which reads as a broken sentence rather than as a price.
+ *
+ * `otherDates` is the charter a flexible search moved the card onto, which the API priced. The
+ * caption names it, so the figure cannot pass for a price of the dates that were searched.
  */
 function priceCaption(
   t: CardTranslator,
   listing: ResultListing,
   basis: "base" | "all_in" | undefined,
+  otherDates: CharterPeriod | null,
 ): string {
   if (!listing.priceFrom) return "";
   const listRate = listing.priceSource === "price-list";
+  if (!listing.priceIsFrom && otherDates?.checkIn && otherDates.checkOut) {
+    const dates = { from: dayToDisplay(otherDates.checkIn), to: dayToDisplay(otherDates.checkOut) };
+    if (isBoatPrice(listing, basis)) {
+      return t(listRate ? "boatPriceListRateForPeriod" : "boatPriceForPeriod", dates);
+    }
+    return t(listRate ? "priceListRateForPeriod" : "priceForPeriod", dates);
+  }
   if (isBoatPrice(listing, basis)) {
     if (listing.priceIsFrom) return t("boatPriceIndicative");
     if (listRate) return t("boatPriceListRate");

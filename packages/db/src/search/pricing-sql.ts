@@ -5,6 +5,7 @@ import { availabilityWindowFor } from "./candidate-range";
 import { MIN_LEAD_DAYS } from "./lead-time";
 import { listRatePeriodPrice } from "./list-rate-sql";
 import { PERIOD_PRICE_COLUMNS } from "./period-prices";
+import { shownCharterStart } from "./sellable-starts";
 import type { ListingSearchDoc, ListingSearchInput, PriceBasis } from "./types";
 
 const NULL_PRICE_ASC = 2_147_483_647;
@@ -34,32 +35,44 @@ const NULL_PRICE_DESC = -1;
 export const NULL_YEAR_DESC = 0;
 
 /**
- * The documents a search reads, priced for the dates it names where anyone priced them.
+ * The documents a search reads, priced for the charter each dated card names where anyone priced it.
  *
- * The vendor's own price for those dates wins; failing that, the operator's published rate for that
- * exact week (`listRatePeriodPrice`). `price_source` says which, and a listing neither prices reads
- * its document as stored, which is the price of that listing's own week. An undated search reads
- * every document as stored.
+ * That charter is the dates asked for, or on a flexible search the nearest one the listing sells
+ * instead (`shownCharterStart`). The vendor's own price for it wins; failing that, the operator's
+ * published rate for that exact week (`listRatePeriodPrice`). `price_source` says which, and a
+ * listing neither prices reads its document as stored, which is the price of that listing's own
+ * week. An undated search reads every document as stored.
+ *
+ * The inner alias is `doc` because the charter lookups are written against it.
  */
 export function searchDocs(input: ListingSearchInput): SQL {
   const window = availabilityWindowFor(input);
-  if (!window) return sql`listing_search_doc`;
+  const shown = shownCharterStart(input);
+  if (!window || !shown) return sql`listing_search_doc`;
 
   const columns = Object.values(getTableColumns(listingSearchDoc)).map(({ name }) => {
     const priced = PERIOD_PRICE_COLUMNS.get(name);
     const column = sql.identifier(name);
     return priced
-      ? sql`case when pp.listing_id is null then stored.${column} else ${priced} end as ${column}`
-      : sql`stored.${column}`;
+      ? sql`case when pp.listing_id is null then doc.${column} else ${priced} end as ${column}`
+      : sql`doc.${column}`;
   });
 
-  const listRate = listRatePeriodPrice(sql`stored.listing_id`, window);
+  const checkIn = shown.perRow ? sql`shown.check_in` : shown.checkIn;
+  const listRate = listRatePeriodPrice(sql`doc.listing_id`, checkIn, shown.nights);
 
   return sql`(
     select ${sql.join(columns, sql`, `)},
       pp.listing_id is not null as priced_for_dates,
-      pp.price_source
-    from listing_search_doc stored
+      pp.price_source,
+      coalesce(pp.start_date <> ${window.checkIn}::date, false) as priced_for_nearby_dates
+    from listing_search_doc doc
+    ${
+      shown.perRow
+        ? /* `offset 0` keeps it a subquery, computed once per row rather than at every use. */
+          sql`cross join lateral (select ${shown.checkIn} as check_in offset 0) shown`
+        : sql``
+    }
     left join lateral (
       (
         select
@@ -75,9 +88,9 @@ export function searchDocs(input: ListingSearchInput): SQL {
           vendor.list_all_in_minor,
           'vendor'::text as price_source
         from listing_period_price vendor
-        where vendor.listing_id = stored.listing_id
-          and vendor.start_date = ${window.checkIn}::date
-          and vendor.end_date = ${window.checkOut}::date
+        where vendor.listing_id = doc.listing_id
+          and vendor.start_date = ${checkIn}
+          and vendor.end_date = ${checkIn} + ${shown.nights}::integer
       )
       ${listRate ? sql`union all (${listRate})` : sql``}
       limit 1
@@ -86,8 +99,8 @@ export function searchDocs(input: ListingSearchInput): SQL {
 }
 
 /**
- * Whether a row carries a price for the dates the search names, from the vendor or from the
- * operator's list for that week.
+ * Whether a row carries a price for the charter its card names on a dated search, from the vendor
+ * or from the operator's list for that week: the dates asked for, or the nearby ones shown instead.
  *
  * Always true on an undated search, which names no dates to price. On a dated one the rest are
  * priced for another week or from the season, and a figure for another week is not a price for
@@ -109,7 +122,8 @@ export function liftedForDates(input: ListingSearchInput): SQL {
 /** The same flags for the card, so the keyset cursor can restate the order in JS. */
 export function pricedForDatesColumn(input: ListingSearchInput): SQL {
   return availabilityWindowFor(input)
-    ? sql`, doc.priced_for_dates as "pricedForDates", doc.price_source as "priceSource"`
+    ? sql`, doc.priced_for_dates as "pricedForDates", doc.price_source as "priceSource",
+        doc.priced_for_nearby_dates as "pricedForNearbyDates"`
     : sql``;
 }
 
@@ -199,6 +213,7 @@ export const recommendedSortValue = sql`case when doc.price_is_from then doc.rat
 /* Each clears the 0..5 rating range, so a tier is settled before the stars are read. */
 const VENDOR_PRICED_RANK = 20;
 const LIST_PRICED_RANK = 10;
+const ASKED_DATES_RANK = 20;
 
 /**
  * `recommendedSortValue` for a search that may name dates.
@@ -209,30 +224,35 @@ const LIST_PRICED_RANK = 10;
  * for that week sat further down.
  *
  * The vendor's price for the week outranks the operator's list rate for it, because the quote will
- * match the first and both vendors sell below the second.
+ * match the first and both vendors sell below the second. Either for the dates asked for outranks
+ * either for the nearby week a flexible search moved the card onto: both are priced, but only the
+ * first is the trip as described.
  */
 export function recommendedSortValueFor(input: ListingSearchInput): SQL {
   return availabilityWindowFor(input)
-    ? sql`case doc.price_source
-        when 'vendor' then doc.rating + ${VENDOR_PRICED_RANK}
-        when 'price-list' then doc.rating + ${LIST_PRICED_RANK}
+    ? sql`case
+        when doc.price_source is null then doc.rating
         else doc.rating
+          + case doc.price_source when 'vendor' then ${VENDOR_PRICED_RANK}::integer
+              else ${LIST_PRICED_RANK}::integer end
+          + case when doc.priced_for_nearby_dates then 0 else ${ASKED_DATES_RANK}::integer end
       end`
     : recommendedSortValue;
 }
 
 /** `recommendedSortValueFor` in the units the keyset cursor compares. */
 export function recommendedSortValueOf(
-  item: Pick<ListingSearchDoc, "priceIsFrom" | "pricedForDates" | "priceSource" | "rating">,
+  item: Pick<
+    ListingSearchDoc,
+    "priceIsFrom" | "pricedForDates" | "priceSource" | "pricedForNearbyDates" | "rating"
+  >,
 ): number {
   if (item.pricedForDates === undefined) return (item.priceIsFrom ? 0 : 10) + Number(item.rating);
-  const tier =
-    item.priceSource === "vendor"
-      ? VENDOR_PRICED_RANK
-      : item.priceSource === "price-list"
-        ? LIST_PRICED_RANK
-        : 0;
-  return tier + Number(item.rating);
+  if (item.priceSource !== "vendor" && item.priceSource !== "price-list") {
+    return Number(item.rating);
+  }
+  const source = item.priceSource === "vendor" ? VENDOR_PRICED_RANK : LIST_PRICED_RANK;
+  return source + (item.pricedForNearbyDates ? 0 : ASKED_DATES_RANK) + Number(item.rating);
 }
 
 /**

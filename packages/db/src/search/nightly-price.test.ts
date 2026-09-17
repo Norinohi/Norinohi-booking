@@ -196,6 +196,39 @@ describe("recommendedSortValueOf", () => {
     expect(list).toBeGreaterThan(none);
   });
 
+  it("ranks a price for the dates asked for above one for the nearby week shown instead", () => {
+    const listAsked = recommendedSortValueOf({
+      ...rated,
+      pricedForDates: true,
+      pricedForNearbyDates: false,
+      priceSource: "price-list",
+    });
+    const vendorNearby = recommendedSortValueOf({
+      ...rated,
+      rating: "5.00",
+      pricedForDates: true,
+      pricedForNearbyDates: true,
+      priceSource: "vendor",
+    });
+    const listNearby = recommendedSortValueOf({
+      ...rated,
+      rating: "5.00",
+      pricedForDates: true,
+      pricedForNearbyDates: true,
+      priceSource: "price-list",
+    });
+    const none = recommendedSortValueOf({
+      ...rated,
+      rating: "5.00",
+      pricedForDates: false,
+      pricedForNearbyDates: false,
+      priceSource: null,
+    });
+    expect(listAsked).toBeGreaterThan(vendorNearby);
+    expect(vendorNearby).toBeGreaterThan(listNearby);
+    expect(listNearby).toBeGreaterThan(none);
+  });
+
   it("leaves an undated search's values as they were", () => {
     expect(recommendedSortValueOf(rated)).toBe(14.5);
     expect(recommendedSortValueOf({ ...rated, priceIsFrom: true })).toBe(4.5);

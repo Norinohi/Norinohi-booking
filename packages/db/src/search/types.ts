@@ -218,8 +218,9 @@ export type ListingSearchDoc = {
    */
   sellsRequestedPeriod: boolean;
   /*
-   * On a dated search, whether the price is for exactly those dates rather than for another week.
-   * Absent on an undated search and on every other read.
+   * On a dated search, whether the price is for exactly the charter the card names: the dates
+   * asked for, or the nearby ones a flexible search shows instead. Absent on an undated search and
+   * on every other read.
    */
   pricedForDates?: boolean;
   /*
@@ -228,6 +229,11 @@ export type ListingSearchDoc = {
    * neither did; absent wherever `pricedForDates` is.
    */
   priceSource?: PeriodPriceSource | null;
+  /*
+   * Whether that price is for the nearby charter a flexible search shows instead of the dates
+   * asked for. Ranks below a price for those dates; absent wherever `pricedForDates` is.
+   */
+  pricedForNearbyDates?: boolean;
   /*
    * The charter nearest the searched dates that this listing would actually sell, when the
    * searched one is not it. Null on an undated search, and on a listing with no sellable

@@ -49,10 +49,65 @@ export function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
   }
 
   const nights = nightsBetween(window);
-  return sql`, (
-    ${rulesSellWindow(sql`doc.listing_id`, window)}
+  return sql`, ${sellsWindow(window, nights)} as "sellsRequestedPeriod"${nearestSellableColumns(window, nights, candidateRange(window, nights, FLEXIBILITY_DAYS[input.dateFlexibility ?? "on-day"]))}`;
+}
+
+/*
+ * Free as well as allowed. On the rules alone a boat with none was taken to sell a week it had
+ * booked: a flexible search admitted Noelle Bavaria 38 for its free week three days later, and the
+ * card named the booked dates asked for, "on request", instead of the week it does sell.
+ */
+function sellsWindow(window: { checkIn: string; checkOut: string }, nights: number): SQL {
+  return sql`(
+    (${rulesSellWindow(sql`doc.listing_id`, sql`${window.checkIn}::date`, nights)}
+      and exists (
+        select 1
+        from listing_offer o
+        join listing_free_period free on free.listing_offer_id = o.id
+        where o.listing_id = doc.listing_id
+          and o.status = 'active'
+          and free.start_date <= ${window.checkIn}::date
+          and free.end_date >= ${window.checkOut}::date
+      ))
     or exists (${vendorCharters(nights, { earliestStart: window.checkIn, latestStart: window.checkIn, earliestEnd: window.checkOut, latestEnd: window.checkOut }, "row")})
-  ) as "sellsRequestedPeriod"${nearestSellableColumns(window, nights, candidateRange(window, nights, FLEXIBILITY_DAYS[input.dateFlexibility ?? "on-day"]))}`;
+  )`;
+}
+
+/**
+ * The first day of the charter a dated card names, for the price lookup in `searchDocs` to key on.
+ *
+ * `periodFor` in packages/api picks those dates from `sellsRequestedPeriod` and `nearestCheckIn`:
+ * the dates asked for where this listing sells them, else the nearest charter it does sell. Pricing
+ * only the dates asked for left every card moved onto a nearby week "on request", 2,699 of 4,495
+ * for one flexible September search, although a vendor had priced most of those weeks. The same
+ * choice made here lets the card, the sort, the price filter, the slider and the map read one
+ * figure for the charter on screen.
+ *
+ * Without flexibility the nearest start can only be the day asked for, so nothing is looked up.
+ * Where no nearer start is found the day asked for stands, which is also where the card falls
+ * back: to the bookable charter, which the swap moves onto these dates only when they are priced.
+ */
+export function shownCharterStart(
+  input: ListingSearchInput,
+): { checkIn: SQL; nights: number; perRow: boolean } | undefined {
+  const window = availabilityWindowFor(input);
+  if (!window) return undefined;
+
+  const nights = nightsBetween(window);
+  const requested = sql`${window.checkIn}::date`;
+  const flex = FLEXIBILITY_DAYS[input.dateFlexibility ?? "on-day"];
+  if (flex === 0) return { checkIn: requested, nights, perRow: false };
+
+  const nearest = sql`coalesce(${nearestSellableStart(window.checkIn, nights, candidateRange(window, nights, flex))}, ${requested})`;
+  /* A start date alone names no charter to contradict, so the card shows the nearest outright. */
+  const namesCharter = Boolean((input.checkIn && input.checkOut) || input.duration);
+  return {
+    checkIn: namesCharter
+      ? sql`case when ${sellsWindow(window, nights)} then ${requested} else ${nearest} end`
+      : nearest,
+    nights,
+    perRow: true,
+  };
 }
 
 /*
@@ -60,11 +115,8 @@ export function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
  * no rule at all as no refusal. Shared with the price-list rate in `list-rate-sql.ts`, so a card
  * the rules move onto other dates is never priced from the list for the dates it no longer shows.
  */
-export function rulesSellWindow(
-  listingId: SQL,
-  window: { checkIn: string; checkOut: string },
-): SQL {
-  const nights = nightsBetween(window);
+export function rulesSellWindow(listingId: SQL, checkIn: SQL, nights: number): SQL {
+  const checkOut = sql`(${checkIn} + ${nights}::integer)`;
   return sql`(
     not exists (
       select 1
@@ -78,12 +130,12 @@ export function rulesSellWindow(
       join listing_checkin_rule rule on rule.listing_offer_id = o.id
       where o.listing_id = ${listingId}
         and o.status = 'active'
-        and (rule.season_start is null or rule.season_start <= ${window.checkIn}::date)
-        and (rule.season_end is null or rule.season_end >= ${window.checkIn}::date)
+        and (rule.season_start is null or rule.season_start <= ${checkIn})
+        and (rule.season_end is null or rule.season_end >= ${checkIn})
         and (rule.checkin_weekday is null
-             or rule.checkin_weekday = extract(dow from ${window.checkIn}::date))
+             or rule.checkin_weekday = extract(dow from ${checkIn}))
         and (rule.checkout_weekday is null
-             or rule.checkout_weekday = extract(dow from ${window.checkOut}::date))
+             or rule.checkout_weekday = extract(dow from ${checkOut}))
         and (rule.min_nights is null or rule.min_nights <= ${nights})
         and (rule.max_nights is null or rule.max_nights >= ${nights})
     )
