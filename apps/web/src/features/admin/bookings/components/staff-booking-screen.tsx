@@ -22,7 +22,7 @@ import { useInstant } from "../../shared/hooks/use-instant";
 import { useAmount } from "../hooks/use-amount";
 import { useAdminBooking, useSetBookingExcluded } from "../hooks/use-payments";
 import { type BookingAdminDetail } from "../types";
-import { toProviderKey } from "../../shared/types";
+import { useProviderLabel } from "../../shared/hooks/use-provider-label";
 import AdminCancelBookingDialog from "./admin-cancel-booking-dialog";
 
 /*
@@ -156,7 +156,6 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
   const t = useTranslations("Admin.StaffBooking");
   const tStatus = useTranslations("Admin.Bookings.status");
   const tInvoiceStatus = useTranslations("Admin.Payments.invoices.status");
-  const tProviders = useTranslations("Admin.providers");
   const tCrew = useTranslations("Common.crewTypes");
   const tDetail = useTranslations("Booking.detail");
   const tLines = useTranslations("Admin.StaffBooking.priceLines.labels");
@@ -167,10 +166,7 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
   /* Enum codes from the contract, each rendered through the map that already names it elsewhere.
      The provider and crew values are plain strings on the wire, so those two fall back to the raw
      code when it is one this build does not know. */
-  const providerLabel = (code: string) => {
-    const key = toProviderKey(code);
-    return key ? tProviders(key) : code;
-  };
+  const providerLabel = useProviderLabel();
   const crewLabel = (value: string) => {
     const key = crewKey(value);
     return key ? tCrew(key) : value;

@@ -18,6 +18,7 @@ import { Link, type AppPathname } from "@/i18n/navigation";
 import { dayToDisplay } from "@/lib/date";
 
 import { useInstant } from "../../shared/hooks/use-instant";
+import { useProviderLabel } from "../../shared/hooks/use-provider-label";
 import { SHORT_DAY } from "../../shared/lib/instant";
 import { useRetryRelease, useUnreleasedOptions } from "../hooks/use-maintenance";
 
@@ -38,6 +39,7 @@ export default function UnreleasedOptionsPanel() {
   const t = useTranslations("Admin.Sync.unreleasedOptions");
   const format = useFormatter();
   const instant = useInstant();
+  const providerLabel = useProviderLabel();
   const { data, isPending } = useUnreleasedOptions();
   const retry = useRetryRelease();
 
@@ -111,7 +113,7 @@ export default function UnreleasedOptionsPanel() {
                         to: format.dateTime(dayToDisplay(item.checkOut), "dayShort"),
                       })}
                     </TableCell>
-                    <TableCell>{item.provider}</TableCell>
+                    <TableCell>{providerLabel(item.provider)}</TableCell>
                     <TableCell className="font-mono text-xs">
                       {item.providerOptionId ?? "-"}
                     </TableCell>

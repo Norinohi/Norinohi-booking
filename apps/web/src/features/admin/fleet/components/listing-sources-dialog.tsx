@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { useProviderLabel } from "../../shared/hooks/use-provider-label";
 import {
   useListingFieldSources,
   useSetListingFieldSource,
@@ -83,6 +84,7 @@ export default function ListingSourcesDialog({
 
 function SourcesBody({ listingId, onSplit }: { listingId: string; onSplit: () => void }) {
   const t = useTranslations("Admin.Listings.sources");
+  const providerLabel = useProviderLabel();
   const { data, isPending, isError } = useListingFieldSources(listingId);
   const setSource = useSetListingFieldSource();
   const splitOffer = useSplitListingOffer();
@@ -172,7 +174,7 @@ function SourcesBody({ listingId, onSplit }: { listingId: string; onSplit: () =>
                           disabled={setSource.isPending}
                           onClick={() => choose(field, offer.id)}
                         >
-                          {offer.provider}
+                          {providerLabel(offer.provider)}
                         </Button>
                       );
                     })}
@@ -226,6 +228,7 @@ function OfferCard({
   busy?: boolean;
 }) {
   const t = useTranslations("Admin.Listings.sources");
+  const providerLabel = useProviderLabel();
   const dash = "—";
 
   const facts: [string, string][] = [
@@ -245,7 +248,7 @@ function OfferCard({
       )}
     >
       <div className="flex items-center gap-2">
-        <Chip variant="neutral">{offer.provider}</Chip>
+        <Chip variant="neutral">{providerLabel(offer.provider)}</Chip>
         {offer.status === "active" ? null : <Chip variant="warning">{offer.status}</Chip>}
       </div>
       <p className="text-sm leading-[1.3] font-medium">{offer.title ?? dash}</p>
@@ -261,7 +264,7 @@ function OfferCard({
         confirming ? (
           <div className="flex flex-col gap-2 rounded-md bg-warning-50 p-2">
             <p className="text-sm leading-[1.3] text-foreground">
-              {t("confirmSplitBody", { provider: offer.provider })}
+              {t("confirmSplitBody", { provider: providerLabel(offer.provider) })}
             </p>
             <div className="flex gap-2">
               <Button variant="neutral" size="sm" disabled={busy} onClick={onCancel}>

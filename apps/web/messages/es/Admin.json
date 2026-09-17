@@ -430,7 +430,7 @@
       "yacht": "Yate",
       "dates": "Fechas",
       "period": "{from} a {to}",
-      "provider": "Operador",
+      "provider": "Proveedor",
       "optionId": "ID de opción",
       "hold": "Opción",
       "refusedAt": "Rechazada",
