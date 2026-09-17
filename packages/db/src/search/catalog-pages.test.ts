@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { toSlug } from "./catalog-pages";
+import { isPlaceholderBuilder, toSlug } from "./catalog-pages";
 
 describe("toSlug", () => {
   it("folds diacritics instead of dropping them", () => {
@@ -27,5 +27,19 @@ describe("toSlug", () => {
   it("keeps two catalogue values apart when only their accents differ from a third", () => {
     /* Distinctness matters more than prettiness: colliding slugs silently lose a page. */
     expect(toSlug("Split")).not.toBe(toSlug("Split region"));
+  });
+});
+
+describe("isPlaceholderBuilder", () => {
+  it("recognises the builder names vendors use for none", () => {
+    expect(isPlaceholderBuilder("Unknown")).toBe(true);
+    expect(isPlaceholderBuilder(" unknown ")).toBe(true);
+    expect(isPlaceholderBuilder("N/A")).toBe(true);
+  });
+
+  it("keeps real shipyards, including ones with odd names", () => {
+    expect(isPlaceholderBuilder("Fountaine Pajot")).toBe(false);
+    expect(isPlaceholderBuilder("Custom Made")).toBe(false);
+    expect(isPlaceholderBuilder("Unknown Yachts")).toBe(false);
   });
 });

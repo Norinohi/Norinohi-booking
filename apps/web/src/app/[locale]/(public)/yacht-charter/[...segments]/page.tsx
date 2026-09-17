@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 
 import { defaultLocale } from "@/i18n/config";
 
-import { CatalogCards, CatalogSiblings, SearchScreen } from "@/features/yachts";
+import { CatalogBreadcrumbs, CatalogCards, CatalogSiblings, SearchScreen } from "@/features/yachts";
 import {
   prefetchCatalogPages,
   prefetchCatalogResults,
@@ -15,6 +15,7 @@ import {
   catalogPageHeading,
   catalogPageHref,
   catalogPageSiblings,
+  catalogPageTrail,
   findCatalogPage,
   prerenderedCatalogPages,
 } from "@/features/yachts/lib/catalog-page";
@@ -100,22 +101,13 @@ export default async function CatalogPageRoute({
 
   const t = await getTranslations("Seo.CatalogPage");
   const heading = catalogPageHeading(t, page);
+  const trail = catalogPageTrail(t, pages, page);
 
   return (
     <>
       <JsonLd
         data={[
-          breadcrumbNode(
-            page.segments.map((_, index) => {
-              const trail = page.segments.slice(0, index + 1);
-              const crumb = findCatalogPage(pages, ROOT, trail);
-              return {
-                name: crumb ? catalogPageHeading(t, crumb) : (trail[index] ?? ""),
-                path: `/${ROOT}/${trail.join("/")}`,
-              };
-            }),
-            locale,
-          ),
+          breadcrumbNode(trail, locale),
           itemListNode({
             name: heading,
             items: listings.map((listing) => ({
@@ -126,6 +118,7 @@ export default async function CatalogPageRoute({
           }),
         ]}
       />
+      <CatalogBreadcrumbs trail={trail} />
       <Hydrated state={{ mutations: [], queries: [...facets.queries, ...results.queries] }}>
         <SearchScreen
           heading={heading}

@@ -122,6 +122,39 @@ async function group(
 
 const str = (row: Row, key: string): string => String(row[key] ?? "");
 
+/**
+ * Region names that are a continent's subdivision rather than somewhere to sail.
+ *
+ * Booking Manager has no sailing region per country, so its projection files each country under
+ * the vendor's world region: Croatia, Greece, Italy and five more all carry a region called
+ * "Southern Europe". As a catalogue page that read "Yacht charter in Southern Europe, Croatia",
+ * 2,096 boats deep, beside the real Split and Zadar regions. A sailing region belongs to one
+ * country, so a name the region table files under more than one is one of these. The data stays
+ * as synced; only the page is withheld.
+ */
+async function worldRegionNames(db: NodePgDatabase<typeof schema>): Promise<Set<string>> {
+  const rows = await db.execute<{ name: string }>(sql`
+    select name from region group by name having count(distinct country_id) > 1
+  `);
+  return new Set(rows.rows.map((row) => row.name));
+}
+
+/*
+ * A builder a vendor records by name for boats it has no builder for. NauSYS ships one called
+ * "Unknown" in its builder list, and 36 boats point at it, which made `/shipyard/unknown` a page.
+ */
+const PLACEHOLDER_BUILDERS = new Set(["unknown", "n a", "na", "none", "other", "not specified"]);
+
+export function isPlaceholderBuilder(name: string): boolean {
+  return PLACEHOLDER_BUILDERS.has(
+    name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim(),
+  );
+}
+
 export async function listCatalogPages(
   db: NodePgDatabase<typeof schema>,
   options: { threshold?: number; locale?: string } = {},
@@ -152,6 +185,7 @@ export async function listCatalogPages(
     typeMarinas,
     builders,
     models,
+    worldRegions,
   ] = await Promise.all([
     of(["country"]),
     of(["country", "region"]),
@@ -164,7 +198,10 @@ export async function listCatalogPages(
     of(["category", "country", "city", "base_name"]),
     of(["builder"]),
     of(["builder", "model_canonical"]),
+    worldRegionNames(db),
   ]);
+  const sailingRegion = (row: Row) => !worldRegions.has(str(row, "region"));
+  const realBuilder = (row: Row) => !isPlaceholderBuilder(str(row, "builder"));
 
   const pages: CatalogPage[] = [];
 
@@ -188,7 +225,7 @@ export async function listCatalogPages(
    * region named after its city ("Split region" slugs apart, but "Hvar" does not) is the broader
    * page of the two and the one a searcher means.
    */
-  for (const row of regions) {
+  for (const row of regions.filter(sailingRegion)) {
     const country = str(row, "country");
     const region = str(row, "region");
     push({
@@ -258,7 +295,7 @@ export async function listCatalogPages(
     });
   }
 
-  for (const row of typeRegions) {
+  for (const row of typeRegions.filter(sailingRegion)) {
     const category = str(row, "category");
     const country = str(row, "country");
     const region = str(row, "region");
@@ -306,7 +343,7 @@ export async function listCatalogPages(
     });
   }
 
-  for (const row of builders) {
+  for (const row of builders.filter(realBuilder)) {
     const builder = str(row, "builder");
     push({
       root: "shipyard",
@@ -323,7 +360,7 @@ export async function listCatalogPages(
    * and the builder, so adding the builder would narrow to listings whose model name happens to
    * contain it.
    */
-  for (const row of models) {
+  for (const row of models.filter(realBuilder)) {
     const builder = str(row, "builder");
     const model = str(row, "model_canonical");
     push({

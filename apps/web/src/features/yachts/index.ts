@@ -1,3 +1,4 @@
+export { default as CatalogBreadcrumbs } from "./components/catalog/catalog-breadcrumbs";
 export { default as CatalogCards } from "./components/catalog/catalog-cards";
 export { default as CatalogSiblings } from "./components/catalog/catalog-siblings";
 export { default as MapScreen } from "./components/map/map-screen";

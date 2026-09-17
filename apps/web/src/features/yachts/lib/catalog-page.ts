@@ -109,3 +109,32 @@ export function catalogPageSiblings(pages: CatalogPage[], page: CatalogPage): Ca
     .sort((a, b) => b.count - a.count)
     .slice(0, SIBLING_LIMIT);
 }
+
+/**
+ * One step of the trail. `name` is the page heading `BreadcrumbList` carries; `label` is the
+ * place, type or shipyard alone, which is what fits in a visible crumb.
+ */
+export type CatalogCrumb = { name: string; label: string; path: string; exists: boolean };
+
+/**
+ * The trail from the page's root-most ancestor down to the page, for both the visible
+ * breadcrumbs and `BreadcrumbList`. An ancestor the enumeration withholds (below the threshold,
+ * or not a real place) keeps its slug as the name, and the visible trail leaves it unlinked.
+ */
+export function catalogPageTrail(
+  t: CatalogPageTranslator,
+  pages: CatalogPage[],
+  page: CatalogPage,
+): CatalogCrumb[] {
+  return page.segments.map((_, index) => {
+    const trail = page.segments.slice(0, index + 1);
+    const crumb = findCatalogPage(pages, page.root, trail);
+    const slug = trail[index] ?? "";
+    return {
+      name: crumb ? catalogPageHeading(t, crumb) : slug,
+      label: crumb?.labels.at(-1) ?? slug,
+      path: `/${page.root}/${trail.join("/")}`,
+      exists: crumb !== undefined,
+    };
+  });
+}
