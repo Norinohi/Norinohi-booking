@@ -3,7 +3,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { DateRange } from "@yacht-charter/ui/components/form/calendar";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { useMoney } from "@/hooks/use-money";
 import { useRouter } from "@/i18n/navigation";
@@ -35,6 +35,7 @@ const CANCELLED_STATUSES = new Set(["CANCELLED", "REFUND_PENDING", "REFUNDED"]);
 
 export default function BookingsScreen({ user }: { user: { name: string; email: string } }) {
   const t = useTranslations("Bookings");
+  const locale = useLocale();
   const formatMoney = useMoney();
   const router = useRouter();
   const { toBookingCard } = useBookingCards();
@@ -43,7 +44,7 @@ export default function BookingsScreen({ user }: { user: { name: string; email: 
   const logout = () => authClient.signOut({ fetchOptions: { onSuccess: () => router.push("/") } });
 
   const { data, isLoading } = useQuery({
-    ...bookingListQueryOptions({ page, from: from ?? undefined, to: to ?? undefined }),
+    ...bookingListQueryOptions({ page, from: from ?? undefined, to: to ?? undefined, locale }),
     placeholderData: keepPreviousData,
   });
 

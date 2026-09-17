@@ -25,7 +25,7 @@ export function prefetchProfile(queryClient: QueryClient) {
 /** Server prefetch for /profile/bookings — the first page for the given date/status filter. */
 export function prefetchBookings(
   queryClient: QueryClient,
-  input: { from?: string; to?: string; status?: BookingStatus[]; page: number },
+  input: { from?: string; to?: string; status?: BookingStatus[]; locale: string; page: number },
 ) {
   return queryClient.prefetchQuery(bookingListQueryOptions(input));
 }

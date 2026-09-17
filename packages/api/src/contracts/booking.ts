@@ -139,12 +139,16 @@ export const bookingSummarySchema = z.object({
 
 const DEFAULT_PAGE_SIZE = 10;
 
+const bookingLocaleSchema = z.string().min(2).max(10).optional();
+
 export const bookingListInputSchema = z
   .object({
     /** The "Any dates" filter; matched against the charter period, not booked-on. */
     from: z.iso.date().optional(),
     to: z.iso.date().optional(),
     status: z.array(bookingStatusSchema).optional(),
+    /** The language the boat's facet labels (country, category, sail type, amenities) come back in. */
+    locale: bookingLocaleSchema,
     ...paginationInputSchema({ maxPageSize: 50, defaultPageSize: DEFAULT_PAGE_SIZE }),
   })
   .default(paginationInputDefault(DEFAULT_PAGE_SIZE))
@@ -163,6 +167,8 @@ export const bookingIdInputSchema = z.object({
   id: idSchema,
   accessToken: guestAccessTokenSchema.optional(),
 });
+
+export const bookingGetInputSchema = bookingIdInputSchema.extend({ locale: bookingLocaleSchema });
 
 /*
  * The three repeated blocks of a booking's money, named so the customer detail view and the

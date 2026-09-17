@@ -73,6 +73,7 @@ const settledParsers = { paidBefore: parseAsInteger };
  */
 export default function BalanceScreen({ bookingId }: { bookingId: string }) {
   const t = useTranslations("Booking.balance");
+  const locale = useLocale();
   const tPayment = useTranslations("Booking.payment");
   const money = useMoney();
   const format = useFormatter();
@@ -98,7 +99,7 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
    */
   const pollingSince = useRef(Date.now());
   const { data: booking, isLoading } = useQuery({
-    ...bookingDetailQueryOptions(bookingId, access?.token),
+    ...bookingDetailQueryOptions(bookingId, access?.token, locale),
     enabled: access !== null,
     refetchInterval: (query) => {
       const current = query.state.data;

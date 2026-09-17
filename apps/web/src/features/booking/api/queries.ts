@@ -82,8 +82,11 @@ export type BookingDetail = Awaited<ReturnType<AppRouterClient["booking"]["get"]
  */
 
 /** The held/confirmed booking behind the confirmation screen. */
-export const bookingDetailQueryOptions = (id: string, accessToken?: string) =>
-  orpc.booking.get.queryOptions({ input: { id, accessToken } });
+export const bookingDetailQueryOptions = (
+  id: string,
+  accessToken: string | undefined,
+  locale: string,
+) => orpc.booking.get.queryOptions({ input: { id, accessToken, locale } });
 
 /** The receipt for Download Receipt. */
 export const bookingReceiptQueryOptions = (id: string, accessToken?: string) =>

@@ -15,7 +15,7 @@ import {
 } from "@yacht-charter/ui/components/form/form";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { ArrowUpRight, CalendarX, CheckCircle2, LifeBuoy, Mail, Phone } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useQueryStates } from "nuqs";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -47,6 +47,7 @@ const MESSAGE_MAX = 2000;
  */
 export default function SupportScreen() {
   const t = useTranslations("Booking.support");
+  const locale = useLocale();
   const [{ booking: bookingId, topic }] = useQueryStates(supportParsers);
   const cancelling = topic === "cancellation";
 
@@ -56,7 +57,7 @@ export default function SupportScreen() {
   useEffect(() => setAccess({ token: guestAccessFor(bookingId) }), [bookingId]);
 
   const { data: booking, isLoading } = useQuery({
-    ...bookingDetailQueryOptions(bookingId ?? "", access?.token),
+    ...bookingDetailQueryOptions(bookingId ?? "", access?.token, locale),
     enabled: Boolean(bookingId) && access !== null,
     /* No rights to this booking is not an error here — the general enquiry form takes over. */
     meta: { silent: true },

@@ -124,6 +124,7 @@ export const bookingListQueryOptions = (input: {
   from?: string;
   to?: string;
   status?: BookingStatus[];
+  locale: string;
   page: number;
   pageSize?: number;
 }) =>

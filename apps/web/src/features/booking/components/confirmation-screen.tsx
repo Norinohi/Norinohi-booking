@@ -153,7 +153,7 @@ export default function BookingConfirmationScreen() {
   const isGuest = Boolean(access?.token);
 
   const { data: booking, isLoading } = useQuery({
-    ...bookingDetailQueryOptions(bookingId ?? "", access?.token),
+    ...bookingDetailQueryOptions(bookingId ?? "", access?.token, locale),
     enabled: Boolean(bookingId) && access !== null,
   });
 

@@ -15,13 +15,18 @@ import { listingSearchDoc } from "@yacht-charter/db/schema/search";
 import { requiresOperatorConfirmation } from "@yacht-charter/db/sellable-offer";
 import { user } from "@yacht-charter/db/schema/auth";
 import { quote, type QuoteLine } from "@yacht-charter/db/schema/quote";
-import { listRequestableExtras } from "@yacht-charter/db/search";
+import {
+  facetTranslator,
+  listRequestableExtras,
+  type FacetTranslator,
+} from "@yacht-charter/db/search";
 import type { InventoryProvider } from "@yacht-charter/providers";
 import { parseError } from "evlog";
 import { and, count, desc, eq, gte, inArray, lte, notInArray, sql } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database, DatabaseExecutor } from "../context";
+import { localizeSnapshot } from "../presenters/booking-snapshot";
 import { badgesFor } from "../presenters/listing";
 import type {
   bookingCancelSchema,
@@ -129,21 +134,31 @@ export async function listBookings(
       ),
   });
 
-  const money = await loadMoney(
-    db,
-    rows.map((row) => row.booking.id),
-  );
+  const [money, translate] = await Promise.all([
+    loadMoney(
+      db,
+      rows.map((row) => row.booking.id),
+    ),
+    facetTranslator(db, input.locale),
+  ]);
 
   return {
-    items: rows.map((row) => presentSummary(row.booking, row.quote, money.get(row.booking.id))),
+    items: rows.map((row) =>
+      presentSummary(row.booking, row.quote, money.get(row.booking.id), translate),
+    ),
     pagination,
   };
 }
 
-export async function getBooking(db: Database, userId: string, id: string): Promise<Detail> {
+export async function getBooking(
+  db: Database,
+  userId: string,
+  id: string,
+  locale?: string,
+): Promise<Detail> {
   const row = await readOwnedBooking(db, userId, id);
 
-  const [extras, schedules, payments, money, invoices] = await Promise.all([
+  const [extras, schedules, payments, money, invoices, translate] = await Promise.all([
     db.select().from(bookingExtra).where(eq(bookingExtra.bookingId, id)),
     db.select().from(paymentSchedule).where(eq(paymentSchedule.bookingId, id)),
     db.select().from(payment).where(eq(payment.bookingId, id)),
@@ -156,11 +171,12 @@ export async function getBooking(db: Database, userId: string, id: string): Prom
       .where(eq(invoiceRequest.bookingId, id))
       .orderBy(desc(invoiceRequest.createdAt))
       .limit(1),
+    facetTranslator(db, locale),
   ]);
 
   const [invoice] = invoices;
 
-  const summary = presentSummary(row.booking, row.quote, money.get(id));
+  const summary = presentSummary(row.booking, row.quote, money.get(id), translate);
 
   return {
     ...summary,
@@ -1077,12 +1093,17 @@ async function loadMoney(db: Database, bookingIds: string[]): Promise<Map<string
   return totals;
 }
 
+/*
+ * The snapshot freezes the catalogue's English labels, so the reader's language is applied on the
+ * way out, from the same facet copy the search cards read.
+ */
 function presentSummary(
   row: BookingRow,
   priced: typeof quote.$inferSelect,
   money: MoneyTotals | undefined,
+  translate?: FacetTranslator,
 ): Summary {
-  const snapshot = row.commercialSnapshot;
+  const snapshot = localizeSnapshot(row.commercialSnapshot, translate);
   const paidMinor = money?.paidMinor ?? 0;
   const snapshotSpecs = snapshot.specs;
   const specs = snapshotSpecs

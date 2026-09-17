@@ -18,7 +18,7 @@ import {
   Phone,
   XCircle,
 } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { type ReactNode, useState } from "react";
 
@@ -30,6 +30,7 @@ import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import CancelBookingDialog from "@/components/shared/overlay/cancel-booking-dialog";
 import { useMoney } from "@/hooks/use-money";
 import { authClient } from "@/lib/auth-client";
+import { crewLabel } from "@/lib/crew-label";
 import {
   bookingMarina,
   yachtCardIdentity,
@@ -66,6 +67,7 @@ const FAILED_STATUSES = new Set([
  */
 export default function BookingDetailScreen({ bookingId }: { bookingId: string }) {
   const t = useTranslations("Booking.detail");
+  const locale = useLocale();
   const tCard = useTranslations("Common.boatCard");
   const tCrew = useTranslations("Common.crewTypes");
   const tBadge = useTranslations("Common.boatCard.badges");
@@ -80,7 +82,7 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
    * it — so the rule that this page is for account holders is kept here, by not asking.
    */
   const { data: booking, isLoading } = useQuery({
-    ...bookingDetailQueryOptions(bookingId),
+    ...bookingDetailQueryOptions(bookingId, undefined, locale),
     enabled: signedIn,
     /* A missing booking is answered by the empty state below, not by a toast. */
     meta: { silent: true },
@@ -203,6 +205,7 @@ function Charter({
   const t = useTranslations("Booking.detail");
   const tCancel = useTranslations("Bookings.cancel");
   const tBalance = useTranslations("Booking.balance");
+  const tCrew = useTranslations("Common.crewTypes");
   const money = useMoney();
   const format = useFormatter();
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -268,7 +271,7 @@ function Charter({
         <Fact label={t("dates")} value={`${day(booking.checkIn)} → ${day(booking.checkOut)}`} />
         <Fact label={t("guestsLabel")} value={String(booking.guests)} />
         {booking.crewType ? (
-          <Fact label={t("crew")} value={booking.crewType} className="capitalize" />
+          <Fact label={t("crew")} value={crewLabel(tCrew, booking.crewType)} />
         ) : null}
         <Fact label={t("marina")} value={placeLine(booking.base.name, booking.base.countryName)} />
         <Fact label={t("referenceLabel")} value={booking.reference} className="font-mono" />

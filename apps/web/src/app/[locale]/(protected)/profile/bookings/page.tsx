@@ -24,9 +24,10 @@ export async function generateMetadata() {
 
 export default async function BookingsPage() {
   const user = await requireSignedIn();
+  const locale = await getLocale();
 
   return (
-    <Hydrated prefetch={(queryClient) => prefetchBookings(queryClient, { page: 1 })}>
+    <Hydrated prefetch={(queryClient) => prefetchBookings(queryClient, { page: 1, locale })}>
       <BookingsScreen user={{ name: user.name, email: user.email }} />
     </Hydrated>
   );
