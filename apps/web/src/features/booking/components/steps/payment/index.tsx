@@ -53,7 +53,7 @@ const TABS: PaymentMethod[] = ["card", "invoice", "question"];
  */
 export default function PaymentStep() {
   const { quote, slug, bookingId } = useBooking();
-  const holdExpiresAt = useHoldDeadline(bookingId);
+  const { holdExpiresAt, closed } = useHoldDeadline(bookingId);
   const holdLeft = useHoldRemaining(holdExpiresAt);
   const locale = useLocale();
   const stripe = stripeLoader();
@@ -89,7 +89,7 @@ export default function PaymentStep() {
     ) : null;
 
   /* Every way to pay goes: the vendor has released the option, so there is nothing left to pay for. */
-  if (holdLeft?.expired) {
+  if (holdLeft?.expired || closed) {
     return (
       <div className="flex flex-col items-start gap-4 p-5">
         {hold}

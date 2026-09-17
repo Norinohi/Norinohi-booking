@@ -12,7 +12,9 @@ import {
   type QuoteLine,
   type QuotePaymentPolicy,
 } from "@yacht-charter/db/schema/quote";
-import { crewTypeSchema } from "@yacht-charter/providers";
+import { booking } from "@yacht-charter/db/schema/booking";
+import { discount } from "@yacht-charter/db/schema/discount";
+import { crewTypeSchema, providerQuoteSchema } from "@yacht-charter/providers";
 import { thrownFields } from "@yacht-charter/providers/shared/log-fields";
 import { log, parseError } from "evlog";
 import type {
@@ -34,7 +36,7 @@ import {
   recordOfferAttempts,
   selectBestOffer,
 } from "./offer-selection";
-import { and, eq, gt, isNull, or } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNull, or } from "drizzle-orm";
 
 import { daysBetween } from "../lib/dates";
 import { classifyRefusal } from "../lib/refusal-report";
@@ -484,6 +486,17 @@ export async function repriceQuote(
     throw new ForbiddenError({ message: "Quote belongs to another user" });
   }
 
+  /*
+   * A checkout reloaded after Confirm enters on the quote its booking was made from. Asking the
+   * vendor again there is asking about our own option, which it answers as taken, and the page
+   * read that as the dates being gone while the hold was still running. The booking froze this
+   * price, so the stored quote is the answer until the hold is paid or lapses.
+   */
+  if (hasNoChanges(changes)) {
+    const held = await heldQuote(db, existing);
+    if (held) return held;
+  }
+
   // Anything the caller did not send keeps the previous quote's value, so the
   // sidebar can change one control at a time without restating the whole trip.
   const selectedExtras = changes.extras ?? existing.extras;
@@ -557,6 +570,127 @@ export async function repriceQuote(
   // The caller asked to reprice, so the answer is a reprice regardless of whether
   // the provider's number happened to move.
   return { ...replacement, repriced: true };
+}
+
+/* Mirrors `canPay` on the web: a booking in one of these can still be paid for from checkout. */
+const PAYABLE_HOLD_STATUSES = [
+  "QUOTED",
+  "OPTION_HELD",
+  "PAYMENT_PENDING",
+  "PAYMENT_FAILED",
+] as const;
+
+function hasNoChanges(changes: RepriceChanges): boolean {
+  return Object.values(changes).every((value) => value === undefined);
+}
+
+async function heldQuote(
+  db: Database,
+  row: Awaited<ReturnType<typeof readQuote>>,
+  now = new Date(),
+): Promise<PersistedQuote | null> {
+  const [held] = await db
+    .select({ holdExpiresAt: booking.holdExpiresAt })
+    .from(booking)
+    .where(and(eq(booking.quoteId, row.id), inArray(booking.status, PAYABLE_HOLD_STATUSES)))
+    .limit(1);
+  if (!held || (held.holdExpiresAt && held.holdExpiresAt <= now)) return null;
+
+  const [adjustments, promo] = await Promise.all([
+    db
+      .select()
+      .from(priceAdjustmentSnapshot)
+      .where(eq(priceAdjustmentSnapshot.quoteId, row.id))
+      .orderBy(asc(priceAdjustmentSnapshot.sortOrder)),
+    row.discountId
+      ? db
+          .select({ name: discount.name })
+          .from(discount)
+          .where(eq(discount.id, row.discountId))
+          .limit(1)
+      : Promise.resolve([]),
+  ]);
+
+  const { currency } = row;
+  const money = (amountMinor: number) => ({ amountMinor, currency });
+  const priced = providerQuoteSchema.parse({
+    id: row.providerQuoteId ?? row.id,
+    provider: row.provider,
+    listingId: row.listingId,
+    providerSourceId: row.providerSourceId,
+    checkIn: row.checkIn,
+    checkOut: row.checkOut,
+    guests: row.guests,
+    crewType: asCrewType(row.crewType) ?? null,
+    currency,
+    lines: row.lines.map((line) => ({
+      code: line.code,
+      label: line.label,
+      amount: { amountMinor: line.amountMinor, currency: line.currency },
+      payWhen: line.payWhen,
+      kind: line.kind,
+      group: line.group,
+    })),
+    total: money(row.totalMinor),
+    deposit: money(row.depositMinor),
+    securityDeposit:
+      row.securityDepositMinor === null ? undefined : money(row.securityDepositMinor),
+    paymentPolicy: {
+      mode: row.paymentPolicy.mode,
+      depositPct: row.paymentPolicy.depositPct,
+      balanceDueAt: row.paymentPolicy.balanceDueAt,
+    },
+    route: row.route,
+    routeOptions: row.routeOptions,
+    priceSourceHash: row.priceSourceHash,
+    expiresAt: row.expiresAt.toISOString(),
+    repriced: false,
+    checkInTime: row.checkInTime ?? undefined,
+    checkOutTime: row.checkOutTime ?? undefined,
+  });
+
+  const discountLine = row.lines.find(
+    (line) => line.kind === "discount" && line.code === row.discountCode,
+  );
+
+  return {
+    ...priced,
+    quoteId: row.id,
+    requestedExtras: row.requestedExtras,
+    perPerson: toPerPerson(row.totalMinor, row.guests, currency),
+    paymentSchedule: buildPaymentSchedulePreview({
+      lines: row.lines,
+      paymentPolicy: row.paymentPolicy,
+      depositMinor: row.depositMinor,
+      securityDepositMinor: row.securityDepositMinor,
+      checkIn: row.checkIn,
+      currency,
+    }).map((entry) => ({
+      kind: entry.kind,
+      amount: { amountMinor: entry.amountMinor, currency: entry.currency },
+      dueAt: entry.dueAt,
+    })),
+    discount:
+      row.discountCode && promo[0]
+        ? {
+            code: row.discountCode,
+            name: promo[0].name,
+            amountMinor: Math.abs(discountLine?.amountMinor ?? 0),
+          }
+        : null,
+    discountRejected: null,
+    creditApplied: row.creditAppliedMinor > 0 ? money(row.creditAppliedMinor) : null,
+    creditAvailable: row.creditAppliedMinor > 0 ? money(row.creditAppliedMinor) : null,
+    adjustments: adjustments.map((adjustment) => ({
+      source: adjustment.source,
+      sourceId: adjustment.sourceId,
+      name: adjustment.name,
+      type: adjustment.type,
+      valuePct: adjustment.valuePct === null ? null : Number(adjustment.valuePct),
+      valueMinor: adjustment.valueMinor,
+      amountMinor: adjustment.amountMinor,
+    })),
+  };
 }
 
 export async function readQuote(db: Database, quoteId: string) {

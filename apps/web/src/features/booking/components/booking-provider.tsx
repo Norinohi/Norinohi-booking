@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useQueryStates } from "nuqs";
 import { createContext, type ReactNode, useContext, useState } from "react";
 
 import type { OfferConstraints } from "@yacht-charter/api/lib/offer-availability";
@@ -15,6 +16,7 @@ import { useQuoteLoad } from "../hooks/use-quote-load";
 import { useQuotePricing } from "../hooks/use-quote-pricing";
 import { useQuoteSelection } from "../hooks/use-quote-selection";
 import { useSearchedPeriod } from "../hooks/use-searched-period";
+import { bookingParsers } from "../lib/search-params";
 import type { CrewType, ListingDetail } from "../types";
 
 type BookingContextValue = {
@@ -71,7 +73,7 @@ type BookingContextValue = {
   applyPromo: (code: string | null) => void;
   /** Spends the caller's referral credit on the live quote, or takes it back off. */
   applyCredit: (spend: boolean) => void;
-  /** The held booking, set by `createHold` at Confirm; the payment step and confirmation key on it. */
+  /** The held booking, set by `createHold` at Confirm and kept in the URL; the payment step and confirmation key on it. */
   bookingId: string | null;
   setBookingId: (id: string | null) => void;
 };
@@ -95,7 +97,10 @@ export function BookingProvider({
   const { data: listing } = useListingDetail();
   const listingId = listing?.id ?? "";
   const { quote, quoteFor, load, repriceWith, isPending } = useQuote(listingId);
-  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [{ bookingId }, setBookingParams] = useQueryStates(bookingParsers);
+  function setBookingId(id: string | null) {
+    void setBookingParams({ bookingId: id }, { history: "replace", scroll: false });
+  }
 
   const searchedPeriod = useSearchedPeriod();
   const { offers, constraintsLoaded, suggestedPeriod, refusePeriod } = useOfferConstraints(
