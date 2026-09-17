@@ -50,6 +50,9 @@ export interface BookingSummaryProps {
   loadError?: boolean;
   /** Asks for that quote again. Omitted where nothing was loaded by id in the first place. */
   onRetryLoad?: () => void;
+  /** The vendor could not price the chosen period; see `pricingFailed` on the booking context. */
+  pricingFailed?: boolean;
+  onRetryPricing?: () => void;
   /** The marina's wall-clock check-in/out, shown beneath each charter date. */
   /**
    * The listing's reduced deposit, for the note under the deposit figure. Comes from the
@@ -120,6 +123,8 @@ export default function BookingSummary({
   refusedPeriod = null,
   loadError = false,
   onRetryLoad,
+  pricingFailed = false,
+  onRetryPricing,
   depositWhenInsured,
   checkInTime,
   checkOutTime,
@@ -181,6 +186,8 @@ export default function BookingSummary({
             selectedPeriod={selectedPeriod}
             onPeriodSelect={onPeriodSelect}
             slotError={slotError}
+            pricingFailed={pricingFailed}
+            onRetryPricing={onRetryPricing}
             refusedPeriod={refusedPeriod}
             checkInTime={checkInTime}
             checkOutTime={checkOutTime}

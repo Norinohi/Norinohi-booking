@@ -35,6 +35,8 @@ export default function BookingSidebar({
     refusedSearchPeriod,
     loadError,
     retryLoad,
+    pricingFailed,
+    retryPricing,
     selectPeriod,
     setCrew,
     setDropOff,
@@ -78,6 +80,8 @@ export default function BookingSidebar({
         refusedPeriod={refusedSearchPeriod}
         loadError={loadError}
         onRetryLoad={retryLoad}
+        pricingFailed={pricingFailed}
+        onRetryPricing={retryPricing}
         depositWhenInsured={listing?.priceDetails.securityDepositWhenInsured}
         /* The offer's own handover where the vendor stated one; the base's is shared by every
            fleet at the marina and can be another operator's. */

@@ -29,6 +29,8 @@ export interface CharterPeriodFieldProps {
   selectedPeriod: CharterPeriod | undefined;
   onPeriodSelect: (period: CharterPeriod) => void;
   slotError: boolean;
+  pricingFailed?: boolean;
+  onRetryPricing?: () => void;
   refusedPeriod: { checkIn: string; checkOut: string } | null;
   checkInTime?: string | null;
   checkOutTime?: string | null;
@@ -43,6 +45,8 @@ export function CharterPeriodField({
   selectedPeriod,
   onPeriodSelect,
   slotError,
+  pricingFailed = false,
+  onRetryPricing,
   refusedPeriod,
   checkInTime,
   checkOutTime,
@@ -72,6 +76,22 @@ export function CharterPeriodField({
       {slotError ? (
         <p className="text-sm font-medium text-error-600">{t("sidebar.slotRefused")}</p>
       ) : null}
+      {pricingFailed ? (
+        <div className="flex flex-col items-start gap-2 rounded-lg bg-error-50 px-4 py-3">
+          <span className="text-sm leading-4.5 font-medium text-error-600">
+            {t("sidebar.pricingUnavailable")}
+          </span>
+          {onRetryPricing ? (
+            <button
+              type="button"
+              onClick={onRetryPricing}
+              className="text-sm leading-4.5 font-bold text-error-600 underline underline-offset-2"
+            >
+              {t("sidebar.loadRetry")}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {!slotError && refusedPeriod ? (
         <p className="text-sm font-medium text-error-600">
           {t("sidebar.searchedPeriodRefused", {
@@ -93,6 +113,7 @@ export function CharterPeriodField({
       {!loading &&
       offers.length > 0 &&
       !slotError &&
+      !pricingFailed &&
       !refusedPeriod &&
       !selectedPeriod &&
       !unavailable ? (

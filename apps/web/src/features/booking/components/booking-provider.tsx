@@ -46,6 +46,10 @@ type BookingContextValue = {
   loadError: boolean;
   /** Asks for the URL's quote again after `loadError`. */
   retryLoad: () => void;
+  /** The vendor could not price the chosen period at all, which is not the dates being refused. */
+  pricingFailed: boolean;
+  /** Prices that period again after `pricingFailed`. */
+  retryPricing: () => void;
   selectPeriod: (period: CharterPeriod) => void;
   setCrew: (next: CrewType) => void;
   /**
@@ -128,7 +132,7 @@ export function BookingProvider({
     applyCredit,
   } = useQuoteSelection(listing, quote, repriceWith);
 
-  const { refusedSearchPeriod, selectPeriod } = useQuotePricing({
+  const { refusedSearchPeriod, selectPeriod, pricingFailed, retryPricing } = useQuotePricing({
     slug,
     quoteId,
     listing,
@@ -160,6 +164,8 @@ export function BookingProvider({
     refusedSearchPeriod,
     loadError,
     retryLoad,
+    pricingFailed,
+    retryPricing,
     selectPeriod,
     setCrew,
     setDropOff,

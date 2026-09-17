@@ -77,6 +77,7 @@
     "searchedPeriodRefused": "{from} bis {to} ist für diese Yacht nicht verfügbar. Wählen Sie einen anderen Zeitraum oder die angezeigten Daten.",
     "loadFailed": "Der Preis für diese Buchung konnte nicht geladen werden.",
     "loadRetry": "Erneut versuchen",
+    "pricingUnavailable": "Der Anbieter der Yacht konnte gerade keinen Preis für diese Daten liefern. Das ist meist nur vorübergehend.",
     "prepayment": "{percent}% Anzahlung",
     "boatPrice": "Bootspreis",
     "boatPriceHint": "Voller Mietpreis",

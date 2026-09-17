@@ -77,6 +77,7 @@
     "searchedPeriodRefused": "Del {from} al {to} no está disponible para este yate. Elige otro periodo o usa las fechas mostradas.",
     "loadFailed": "No pudimos cargar el precio de esta reserva.",
     "loadRetry": "Reintentar",
+    "pricingUnavailable": "Ahora mismo el proveedor del yate no ha podido darnos un precio para estas fechas. Suele ser algo temporal.",
     "prepayment": "Anticipo del {percent}%",
     "boatPrice": "Precio del barco",
     "boatPriceHint": "Precio total del alquiler",

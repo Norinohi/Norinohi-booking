@@ -42,6 +42,7 @@ import { daysBetween } from "../lib/dates";
 import { classifyRefusal } from "../lib/refusal-report";
 import { requestedExtraAmountMinor } from "../lib/requested-extra-amount";
 import { saysSlotIsGone } from "../lib/provider-failure";
+import { onlyVendorFailures } from "../lib/vendor-outage";
 
 import type { Database, DatabaseExecutor } from "../context";
 import { learnExtrasFromQuote } from "./learn-extras";
@@ -65,6 +66,7 @@ import {
   ForbiddenError,
   InternalError,
   NotFoundError,
+  ServiceUnavailableError,
 } from "../errors";
 export type PersistedQuote = ProviderQuote & {
   quoteId: string;
@@ -225,6 +227,12 @@ async function selectOrConflict(
     if (error instanceof NoSellableOfferError) {
       reportRefusal(input, error.attempts);
       await learnFromRefusal(db, provider, input, error.attempts);
+      if (onlyVendorFailures(error.attempts)) {
+        throw new ServiceUnavailableError({
+          message: "The provider could not price this charter right now",
+          data: { code: "PROVIDER_UNAVAILABLE" },
+        });
+      }
     }
     if (error instanceof SlotUnavailableError || error instanceof ProviderNotFoundError) {
       if (!(error instanceof NoSellableOfferError)) reportRefusal(input, []);

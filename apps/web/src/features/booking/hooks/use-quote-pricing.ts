@@ -61,6 +61,12 @@ export function useQuotePricing({
   const listingId = listing?.id ?? "";
   const [refusedSearchPeriod, setRefusedSearchPeriod] = useState<CharterPeriod | null>(null);
   /*
+   * A period the vendor could not price at all (it was down, or answered with an error), kept so
+   * the panel can say so and ask again. Without it a seeded period that failed left only "Select
+   * dates", as though the visitor had picked nothing.
+   */
+  const [failedPeriod, setFailedPeriod] = useState<CharterPeriod | null>(null);
+  /*
    * The currency the card quoted, which the panel has to answer in. Undefined until the listing
    * loads, and nothing is quoted before then, so the request never falls back to the default.
    */
@@ -146,6 +152,7 @@ export function useQuotePricing({
     if (verdict.verdict !== "bookable") return;
     const refusedBy = verdict.offerId;
     setSlotError(false);
+    setFailedPeriod(null);
     void (
       quote
         ? repriceWith(period)
@@ -166,7 +173,7 @@ export function useQuotePricing({
          * reading - which is how a broken listing looked like a quiet one.
          */
         console.error(`[booking] pricing ${slug} ${dates} failed`, error);
-        if (report) setSlotError(true);
+        setFailedPeriod(period);
         return;
       }
 
@@ -179,5 +186,9 @@ export function useQuotePricing({
     });
   }
 
-  return { refusedSearchPeriod, selectPeriod };
+  function retryPricing() {
+    if (failedPeriod) pricePeriod(failedPeriod, { report: true });
+  }
+
+  return { refusedSearchPeriod, selectPeriod, pricingFailed: failedPeriod !== null, retryPricing };
 }

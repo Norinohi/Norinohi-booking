@@ -77,6 +77,7 @@
     "searchedPeriodRefused": "{from} to {to} is not available for this yacht. Pick another period, or use the dates shown.",
     "loadFailed": "We couldn't load this booking's price.",
     "loadRetry": "Try again",
+    "pricingUnavailable": "We couldn't get a price for these dates from the yacht's supplier right now. This is usually temporary.",
     "prepayment": "{percent}% Booking Prepayment",
     "boatPrice": "Boat price",
     "boatPriceHint": "Full rental price",
