@@ -11,7 +11,7 @@
     "build": "turbo run build",
     "check-types": "turbo run check-types",
     "test": "turbo run test",
-    "test:db": "turbo run test:db",
+    "test:db": "turbo run test:db --concurrency=1",
     "dev:web": "turbo run dev -F web",
     "dev:server": "turbo run dev -F server",
     "storybook": "pnpm --filter @yacht-charter/ui storybook",

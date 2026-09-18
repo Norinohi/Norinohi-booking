@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   canonicalJson,
+  pruneOrphanedRawPayloads,
   type RawPayloadWriter,
   retainRawPayloads,
   stableSourceHash,
@@ -120,5 +121,33 @@ describe("retainRawPayloads", () => {
 
     expect(JSON.stringify(statements)).not.toContain("hunter2");
     expect(JSON.stringify(statements)).toContain("04.07.2026");
+  });
+});
+
+describe("pruneOrphanedRawPayloads", () => {
+  it("keeps deleting until a batch comes back short, and totals every batch", async () => {
+    const counts = [3, 3, 1];
+    let statements = 0;
+    const db = {
+      async execute() {
+        return { rowCount: counts[statements++] ?? 0 };
+      },
+    };
+
+    await expect(pruneOrphanedRawPayloads(db, "prov_x", { batchSize: 3 })).resolves.toBe(7);
+    expect(statements).toBe(3);
+  });
+
+  it("issues one statement when nothing is left to prune", async () => {
+    let statements = 0;
+    const db = {
+      async execute() {
+        statements += 1;
+        return { rowCount: 0 };
+      },
+    };
+
+    await expect(pruneOrphanedRawPayloads(db, "prov_x")).resolves.toBe(0);
+    expect(statements).toBe(1);
   });
 });

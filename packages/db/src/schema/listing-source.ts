@@ -8,6 +8,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -69,7 +70,6 @@ export const providerCrewRole = pgEnum("provider_crew_role", ["skipper", "hostes
 export const providerExtraCatalogue = pgTable(
   "provider_extra_catalogue",
   {
-    id: id("pxtr"),
     listingId: text("listing_id")
       .notNull()
       .references(() => listing.id, { onDelete: "cascade" }),
@@ -168,7 +168,10 @@ export const providerExtraCatalogue = pgTable(
     ...timestamps,
   },
   (t) => [
-    unique("provider_extra_catalogue_uq").on(t.listingOfferId, t.kind, t.externalId),
+    primaryKey({
+      name: "provider_extra_catalogue_pkey",
+      columns: [t.listingOfferId, t.kind, t.externalId],
+    }),
     index("provider_extra_catalogue_listing_idx").on(t.listingId),
     /*
      * Names a code the listing's own rows do not carry.

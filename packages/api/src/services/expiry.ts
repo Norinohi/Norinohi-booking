@@ -18,6 +18,7 @@ import {
   type BookingStatus,
 } from "./booking-state";
 import { pruneListingViews } from "./listing-view";
+import { pruneSentOutbox } from "./outbox";
 
 export type SweepResult = {
   quotesExpired: number;
@@ -30,6 +31,8 @@ export type SweepResult = {
   /** View rows dropped past their retention window — unrelated to expiry, but the
    *  same scheduled call is the only maintenance tick this service has. */
   viewsPruned: number;
+  /** Delivered outbox messages dropped past their retention window. */
+  outboxPruned: number;
   /** Sync runs abandoned by a process that died, moved to `failed`. */
   syncRunsReaped: number;
   /**
@@ -65,6 +68,7 @@ export async function sweepExpiries(
   const bookingsQuoteExpired = await expireBookingsWithDeadQuotes(db, now);
   const { paymentsAbandoned } = await expireAbandonedPayments(db, now, provider, releaseFailures);
   const { viewsPruned } = await pruneListingViews(db, now);
+  const { outboxPruned } = await pruneSentOutbox(db, now);
   /*
    * Reaped through the same function `openSyncRun` calls, so the sweep and the lock can
    * never disagree about when a run has been abandoned. The sweep is the unattended half:
@@ -81,6 +85,7 @@ export async function sweepExpiries(
     paymentsAbandoned,
     releaseFailures,
     viewsPruned,
+    outboxPruned,
     syncRunsReaped,
     staleConfirmations,
   };

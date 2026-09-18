@@ -135,6 +135,8 @@ export const providerRecord = pgTable(
   (t) => [
     // Import idempotency key.
     unique("provider_record_external_uq").on(t.providerId, t.resourceType, t.externalId),
+    // Pruning a replaced payload fires the set-null action, which scans for referencing records.
+    index("provider_record_raw_payload_idx").on(t.rawPayloadId),
     index("provider_record_sweep_idx").on(t.providerId, t.resourceType, t.scopeKey, t.lastSeenAt),
   ],
 );

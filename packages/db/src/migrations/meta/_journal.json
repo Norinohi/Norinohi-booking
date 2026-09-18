@@ -925,6 +925,20 @@
       "when": 1789721276565,
       "tag": "0131_route_slug",
       "breakpoints": true
+    },
+    {
+      "idx": 132,
+      "version": "7",
+      "when": 1789731842403,
+      "tag": "0132_listing_price_period_offer_dates_idx",
+      "breakpoints": true
+    },
+    {
+      "idx": 133,
+      "version": "7",
+      "when": 1789732451183,
+      "tag": "0133_black_masque",
+      "breakpoints": true
     }
   ]
 }
