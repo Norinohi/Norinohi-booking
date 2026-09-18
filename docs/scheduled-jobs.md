@@ -128,6 +128,22 @@ There is no occupancy walk in front of it. The pieces are
   what lets one date resume a list whose dates restart at every group boundary: `remainingWeeks`
   keeps the rest of the cursor's own group and every group behind it. A cursor written before
   this change is a Saturday and therefore resumes in the Saturday group, as it meant to.
+- **Several periods at once, Booking Manager only.** Its `/offers` pass walks the weeks through
+  `orderedWindow` with `BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY` (default 4, refused above 8) of
+  them in flight, each on its own sweep lane and each still spaced by
+  `BOOKING_MANAGER_MIN_INTERVAL_MS`. Its own knob rather than the catalogue's
+  `BOOKING_MANAGER_SWEEP_CONCURRENCY`, because the two run against different bottlenecks: the
+  catalogue walk waits on the vendor, this pass waits on the writer. NauSYS stays strictly
+  sequential and is not affected -- measured read-only on 2026-09-18, 3, 6 and 10 parallel
+  `freeYachts` calls each returned `429 Too many concurrent requests for user` for all but one.
+  Booking Manager took the same probe cleanly: 1 call 2.4 s, 3 parallel 2.9 s, 6 parallel 3.4 s,
+  10 parallel 4.3 s, every one HTTP 200.
+  The order is unchanged, which is the point of `orderedWindow`: answers are handed to the writer
+  strictly in week order, so the cursor still names a prefix and a budget stop leaves no gap
+  behind an already-fetched later week. Writes stay serialized behind that one consumer -- only
+  the fetching overlaps. A 429 or a 5xx from the vendor halves the width for the rest of the run
+  and never widens it again (`booking_manager.price_weeks_narrowed`); one period failing costs
+  only that period, and the retry and error classification are unchanged.
 - **Rate limits.** Calls go through the provider clients, so `NAUSYS_MIN_INTERVAL_MS` and
   `BOOKING_MANAGER_MIN_INTERVAL_MS` (and Booking Manager's sweep lanes) apply unchanged. NauSYS
   also rate limits sustained `freeYachts` traffic with a 429 that outlasts the client's own
@@ -192,6 +208,34 @@ measured:
 | --------------- | -------------- | ------------------ | ---------------------- |
 | NauSYS          | 45 min         | about 57 min       | 1,066, was 780         |
 | Booking Manager | 8 min          | about 12 min       | 78, was 26             |
+
+Those Booking Manager figures are unchanged by the parallel pass: the extrapolation is write time,
+and the fan-out does not shorten it. Read the 12 minutes as the budget this vendor needs whatever
+`BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY` is set to.
+
+### What the parallel Booking Manager pass is worth, measured locally on 2026-09-18
+
+Same machine, live vendor, `PRICE_WEEKS_COUNT=4`, Saturdays only, Booking Manager alone, two runs
+at each setting. Read-only price calls: no options, no bookings, NauSYS untouched.
+
+| `BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY` | Wall clock | Fetch per week                | Write per week | Prices written |
+| ----------------------------------------- | ---------- | ----------------------------- | -------------- | -------------- |
+| 1                                         | 42 s, 41 s | 1.4 to 1.9 s then under 0.1 s | 3.0 to 6.3 s   | 17,326, 17,331 |
+| 4                                         | 42 s, 41 s | 1.2 to 1.5 s then under 0.1 s | 3.0 to 6.6 s   | 17,328, 17,325 |
+
+**It buys nothing measurable here, and that is the finding, not a disappointment.** `orderedWindow`
+already fetches one week ahead at a width of 1, and one `/offers` call costs 1.4 s against 4.6 s
+of writing, so the vendor is fully hidden behind the writer from the second week onward -- every
+week after the first reports a fetch under 0.1 s at either setting. The pass is write-bound: 17,300
+prices in roughly 19 s of writing, about 1.1 ms each on one connection. Parallel writing was not
+attempted, because the writer owns the cursor's meaning and serializing it is what makes a
+budget-stopped run a clean prefix.
+
+The width still earns its place for the cases the local machine does not show: a vendor cold start
+near 30 s on a first call, the weeks where `/offers` runs long, and the Railway container, where
+the database is a network hop away and the writer is slower rather than faster. It is bounded and
+self-narrowing, so the risk of leaving it at 4 is small and the risk of raising it is the
+account-wide 20-call ceiling.
 
 **Recommended on production: `PRICE_WEEKS_COUNT=26` unchanged, `PRICE_WEEKS_BUDGET_MS=3600000`
 (60 minutes).** The horizon is what the coverage is worth and the added cost is 27% of the pass,
