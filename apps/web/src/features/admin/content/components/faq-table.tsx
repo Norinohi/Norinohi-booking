@@ -14,11 +14,22 @@ import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
-import { ArrowDown, ArrowUp, Check, Minus, Plus, Search, TriangleAlert } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Check,
+  Minus,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  TriangleAlert,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import IconAction from "../../shared/components/icon-action";
 import { useFaqList, useFaqListingOptions, useReorderFaq } from "../hooks/use-faq";
 import {
   FAQ_CATEGORIES,
@@ -284,14 +295,14 @@ export default function FaqTable() {
         })}
       </div>
 
-      <Table className="min-w-250 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">
+      <Table className="min-w-200 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">
         <TableHeader>
           <TableRow>
             <TableHead className="w-24">{t("table.order")}</TableHead>
             <TableHead>{t("table.question")}</TableHead>
-            <TableHead>{t("table.locales")}</TableHead>
+            <TableHead className="w-44">{t("table.locales")}</TableHead>
             <TableHead>{t("table.category")}</TableHead>
-            <TableHead>{t("table.actions")}</TableHead>
+            <TableHead className="w-24 text-right">{t("table.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -320,21 +331,15 @@ export default function FaqTable() {
                               <span className="w-6 text-sm text-natural-500">
                                 {group.sortOrder + 1}
                               </span>
-                              <Button
-                                variant="subtle"
-                                size="sm"
-                                aria-label={t("actions.moveUp")}
-                                title={canReorder ? t("actions.moveUp") : t("reorderDisabled")}
+                              <IconAction
+                                label={t("actions.moveUp")}
                                 disabled={!canReorder || index === 0 || reorder.isPending}
                                 onClick={() => move(index, -1)}
                               >
-                                <ArrowUp className="size-4" />
-                              </Button>
-                              <Button
-                                variant="subtle"
-                                size="sm"
-                                aria-label={t("actions.moveDown")}
-                                title={canReorder ? t("actions.moveDown") : t("reorderDisabled")}
+                                <ArrowUp />
+                              </IconAction>
+                              <IconAction
+                                label={t("actions.moveDown")}
                                 disabled={
                                   !canReorder ||
                                   index === data.items.length - 1 ||
@@ -342,8 +347,8 @@ export default function FaqTable() {
                                 }
                                 onClick={() => move(index, 1)}
                               >
-                                <ArrowDown className="size-4" />
-                              </Button>
+                                <ArrowDown />
+                              </IconAction>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -387,18 +392,20 @@ export default function FaqTable() {
                             {group.category ? t(`categories.${group.category}`) : t("noCategory")}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Button variant="brand" size="sm" onClick={() => openEditor(group)}>
-                                {t("actions.edit")}
-                              </Button>
-                              <Button
-                                variant="subtle"
-                                size="sm"
-                                className="text-error-500"
+                            <div className="flex items-center justify-end gap-1">
+                              <IconAction
+                                label={t("actions.edit")}
+                                onClick={() => openEditor(group)}
+                              >
+                                <Pencil />
+                              </IconAction>
+                              <IconAction
+                                label={t("actions.delete")}
+                                destructive
                                 onClick={() => confirmRemove(group)}
                               >
-                                {t("actions.delete")}
-                              </Button>
+                                <Trash2 />
+                              </IconAction>
                             </div>
                           </TableCell>
                         </TableRow>

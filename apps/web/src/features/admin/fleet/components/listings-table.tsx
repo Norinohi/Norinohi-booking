@@ -1,7 +1,6 @@
 "use client";
 
 import { PROVIDER_KEYS } from "@yacht-charter/env/providers";
-import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import {
   Table,
@@ -19,6 +18,7 @@ import { EyeOff, ImageOff, Layers, Search, Undo2, Upload } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
+import IconAction from "../../shared/components/icon-action";
 import ListingSourcesDialog from "./listing-sources-dialog";
 import { toast } from "sonner";
 
@@ -209,7 +209,7 @@ export default function ListingsTable() {
         />
       </div>
 
-      <Table className="min-w-300 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">
+      <Table className="min-w-225 [&_td]:px-3 [&_td]:py-3 [&_th]:px-3 [&_th]:h-12.5 [&_th]:py-0">
         <TableHeader>
           <TableRow>
             <TableHead>{t("table.listing")}</TableHead>
@@ -219,7 +219,7 @@ export default function ListingsTable() {
             <TableHead>{t("table.place")}</TableHead>
             <TableHead>{t("table.price")}</TableHead>
             <TableHead>{t("table.status")}</TableHead>
-            <TableHead>{t("table.actions")}</TableHead>
+            <TableHead className="w-36 text-right">{t("table.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -259,7 +259,7 @@ export default function ListingsTable() {
                               </div>
                             )}
                           </div>
-                          <div className="flex min-w-0 flex-col">
+                          <div className="flex max-w-48 min-w-0 flex-col">
                             {/* A new tab because the filters above are component state —
                                 returning would land on page one, unfiltered. An unpublished row
                                 404s until the detail route grows a staff preview: the page reads
@@ -281,11 +281,24 @@ export default function ListingsTable() {
                       <TableCell className="whitespace-nowrap">
                         {providerLabel(listing.provider)}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {listing.operatorName ?? t("notSet")}
+                      <TableCell>
+                        <span
+                          className="block max-w-28 truncate"
+                          title={listing.operatorName ?? t("notSet")}
+                        >
+                          {listing.operatorName ?? t("notSet")}
+                        </span>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">{modelLabel(listing)}</TableCell>
-                      <TableCell className="whitespace-nowrap">{placeLabel(listing)}</TableCell>
+                      <TableCell>
+                        <span className="block max-w-32 truncate" title={modelLabel(listing)}>
+                          {modelLabel(listing)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="block max-w-36 truncate" title={placeLabel(listing)}>
+                          {placeLabel(listing)}
+                        </span>
+                      </TableCell>
                       <TableCell className="whitespace-nowrap">{priceLabel(listing)}</TableCell>
                       <TableCell>
                         <Chip variant={STATUS_VARIANTS[listing.status]}>
@@ -295,21 +308,19 @@ export default function ListingsTable() {
                       <TableCell>
                         {/* Only the moves that change something: the row's own status is never
                             offered back to itself. */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-end gap-1">
                           {/*
                             Only where there is something to choose between. On a listing one
                             vendor sells, every field group has exactly one candidate and the
                             dialog would be a page of foregone conclusions.
                           */}
                           {listing.offerCount > 1 ? (
-                            <Button
-                              variant="neutral"
-                              size="sm"
+                            <IconAction
+                              label={t("actions.sources")}
                               onClick={() => setSourcesFor(listing)}
                             >
                               <Layers />
-                              {t("actions.sources")}
-                            </Button>
+                            </IconAction>
                           ) : null}
                           {/*
                             A merged listing has no offers left — they moved to the survivor —
@@ -320,37 +331,31 @@ export default function ListingsTable() {
                           {listing.status === "merged" ? null : (
                             <>
                               {listing.status === "published" ? null : (
-                                <Button
-                                  variant="brand"
-                                  size="sm"
+                                <IconAction
+                                  label={t("actions.publish")}
                                   disabled={setStatusMutation.isPending}
                                   onClick={() => move(listing, "published")}
                                 >
                                   <Upload />
-                                  {t("actions.publish")}
-                                </Button>
+                                </IconAction>
                               )}
                               {listing.status === "hidden" ? null : (
-                                <Button
-                                  variant="neutral"
-                                  size="sm"
+                                <IconAction
+                                  label={t("actions.unpublish")}
                                   disabled={setStatusMutation.isPending}
                                   onClick={() => move(listing, "hidden")}
                                 >
                                   <EyeOff />
-                                  {t("actions.unpublish")}
-                                </Button>
+                                </IconAction>
                               )}
                               {listing.status === "draft" ? null : (
-                                <Button
-                                  variant="neutral"
-                                  size="sm"
+                                <IconAction
+                                  label={t("actions.draft")}
                                   disabled={setStatusMutation.isPending}
                                   onClick={() => move(listing, "draft")}
                                 >
                                   <Undo2 />
-                                  {t("actions.draft")}
-                                </Button>
+                                </IconAction>
                               )}
                             </>
                           )}

@@ -18,6 +18,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import IconAction from "../../shared/components/icon-action";
 import { useCreateRouteStop, useReorderRouteStops, useUpdateRouteStop } from "../hooks/use-routes";
 import type { RouteRow, RouteStopRow } from "../types";
 import PlaceSearch from "./place-search";
@@ -243,42 +244,35 @@ export default function RouteStopsDialog({ route, open, onOpenChange }: RouteSto
                         </p>
                       ) : null}
                       <div className="flex items-center gap-1">
-                        <Button
-                          variant="subtle"
-                          size="sm"
-                          aria-label={t("moveUp")}
+                        <IconAction
+                          label={t("moveUp")}
                           disabled={pending || index === 0}
                           onClick={() => void move(index, -1)}
                         >
-                          <ArrowUp className="size-4" />
-                        </Button>
-                        <Button
-                          variant="subtle"
-                          size="sm"
-                          aria-label={t("moveDown")}
+                          <ArrowUp />
+                        </IconAction>
+                        <IconAction
+                          label={t("moveDown")}
                           disabled={pending || index === stops.length - 1}
                           onClick={() => void move(index, 1)}
                         >
-                          <ArrowDown className="size-4" />
-                        </Button>
-                        <Button
-                          variant="subtle"
-                          size="sm"
+                          <ArrowDown />
+                        </IconAction>
+                        <IconAction
+                          label={t("edit")}
                           disabled={pending}
                           onClick={() => setWorking(toWorking(stop))}
                         >
-                          <Pencil className="size-4" />
-                          {t("edit")}
-                        </Button>
-                        <Button
-                          variant="subtle"
-                          size="sm"
-                          aria-label={t("remove")}
+                          <Pencil />
+                        </IconAction>
+                        <IconAction
+                          label={t("remove")}
+                          destructive
                           disabled={pending}
                           onClick={() => remove(stop, index + 1)}
                         >
-                          <Trash2 className="size-4 text-error-500" />
-                        </Button>
+                          <Trash2 />
+                        </IconAction>
                       </div>
                     </li>
                   ))}
