@@ -256,13 +256,35 @@ export const env = createEnv({
     // clock that observes daylight saving, so this must stay a real IANA zone.
     BOOKING_MANAGER_TIMEZONE: z.string().min(1).default("Europe/Zagreb"),
     /*
-     * The nightly price-weeks job (docs/scheduled-jobs.md): how many Saturday weeks ahead it
-     * asks both vendors to price for the whole fleet, and the wall clock it may spend doing so
-     * (45 minutes) before it stops and leaves the rest to the next night. The budget includes
-     * any wait for the availability sweep to release its lock.
+     * The nightly price-weeks job (docs/scheduled-jobs.md): how many weeks ahead it asks both
+     * vendors to price, and the wall clock it may spend doing so (45 minutes) before it stops
+     * and leaves the rest to the next night. The budget includes any wait for the availability
+     * sweep to release its lock.
      */
     PRICE_WEEKS_COUNT: z.coerce.number().int().min(1).max(104).default(26),
     PRICE_WEEKS_BUDGET_MS: z.coerce.number().int().positive().default(2_700_000),
+    /*
+     * Which check-in weekdays it asks about, in the order it asks them: 0 is Sunday, 6 is
+     * Saturday. Saturday is asked of the whole fleet; every other weekday only of the hulls
+     * whose check-in rules admit a seven-night charter starting on it, so the cost of adding
+     * one is proportional to how many boats those are.
+     *
+     * Duplicates would ask the same week twice and are rejected rather than folded away, since
+     * a list stating a weekday twice means whoever wrote it believed something this job does
+     * not do.
+     */
+    PRICE_WEEKS_WEEKDAYS: z
+      .string()
+      .default("6,0,3")
+      .transform((value) => value.split(",").map((part) => Number(part.trim())))
+      .pipe(
+        z
+          .array(z.number().int().min(0).max(6))
+          .min(1)
+          .refine((days) => new Set(days).size === days.length, {
+            message: "PRICE_WEEKS_WEEKDAYS must not repeat a weekday",
+          }),
+      ),
   },
   runtimeEnv: process.env,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

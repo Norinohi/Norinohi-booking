@@ -8,7 +8,8 @@ import type { JsonField } from "./json";
 import type { SweepPeriod } from "./sweep-periods";
 
 /**
- * The nightly pass that prices every Saturday week of the horizon for the whole fleet.
+ * The nightly pass that prices every week of the horizon: Saturday check-ins for the whole fleet,
+ * then the other check-in weekdays for the hulls whose rules admit them.
  *
  * The half-hourly sweep asks about what the cards already advertise, which is each listing's
  * nearest bookable charter, so a week three months out is priced only for the handful of boats
@@ -45,16 +46,73 @@ export interface PriceWeeksPlan {
  *
  * Every week judges silence. It is asked for the whole fleet in the canonical shape, which is
  * the case the refusal model was built for; see docs/scheduled-jobs.md for the reasoning.
+ * `priceWeekPeriods` is what the job builds its list with; this is the Saturday half of it.
  */
 export function saturdayWeeks(plan: PriceWeeksPlan): SweepPeriod[] {
+  return weekdayWeeks(plan, SATURDAY);
+}
+
+/** The same horizon counted from the first `weekday` a charter could still be sold on. */
+export function weekdayWeeks(plan: PriceWeeksPlan, weekday: number): SweepPeriod[] {
   const earliest = addDays(plan.today, plan.leadDays);
-  const weekday = new Date(`${earliest}T00:00:00Z`).getUTCDay();
-  const first = addDays(earliest, (SATURDAY - weekday + 7) % 7);
+  const opens = new Date(`${earliest}T00:00:00Z`).getUTCDay();
+  const first = addDays(earliest, (weekday - opens + 7) % 7);
 
   return Array.from({ length: Math.max(0, plan.count) }, (_, index) => {
     const startDate = addDays(first, index * 7);
     return { startDate, endDate: addDays(startDate, 7), source: "grid" };
   });
+}
+
+/** The check-in weekday of an ISO day, in the same terms as `DEFAULT_PRICE_WEEK_WEEKDAYS`. */
+export function weekdayOf(day: string): number {
+  return new Date(`${day}T00:00:00Z`).getUTCDay();
+}
+
+export interface PriceWeekdayPlan extends PriceWeeksPlan {
+  weekdays: readonly number[];
+  /**
+   * The provider-side hulls whose rules admit a seven-night charter starting on that day, for a
+   * weekday the whole fleet is not asked about. See `listWeekdayCharterHulls`.
+   */
+  hullsFor: (weekday: number, checkIn: string) => readonly string[];
+}
+
+/**
+ * The nightly horizon across every check-in weekday asked about, one weekday group after another.
+ *
+ * Saturday is asked of the whole fleet: it is the turnaround the refusal model was built for and
+ * a vendor asked about a shape a hull never sells simply leaves it out, which the writer's own
+ * rule test already declines to read as a refusal. Any other weekday is asked only of the hulls
+ * whose rules admit it, so the extra cost stays proportional to how many boats those are rather
+ * than doubling the pass. A weekday-week no hull is eligible for is dropped rather than asked:
+ * there is nobody to price and nobody to judge.
+ *
+ * Grouped by weekday rather than interleaved by date so that a run the budget stops has finished
+ * the Saturdays, which carry most of the dated cards, before it starts on anything else.
+ *
+ * `PRICE_WEEKS_WEEKDAYS` names the weekdays and their order. Its default, 6,0,3, is Saturday
+ * then the only two other turnarounds the operators publish in any number: on the local
+ * catalogue 1,149 NauSYS and 3,359 Booking Manager hulls admit a Sunday week, 1,399 and 3,353 a
+ * Wednesday one, against 7,348 and 10,645 for Saturday.
+ */
+export function priceWeekPeriods(plan: PriceWeekdayPlan): SweepPeriod[] {
+  const periods: SweepPeriod[] = [];
+
+  for (const weekday of plan.weekdays) {
+    for (const week of weekdayWeeks(plan, weekday)) {
+      if (weekday === SATURDAY) {
+        periods.push(week);
+        continue;
+      }
+
+      const yachtIds = plan.hullsFor(weekday, week.startDate);
+      if (yachtIds.length === 0) continue;
+      periods.push({ ...week, yachtIds: [...yachtIds] });
+    }
+  }
+
+  return periods;
 }
 
 /**
@@ -76,7 +134,21 @@ export function remainingWeeks(weeks: readonly SweepPeriod[], resume: JsonField)
   const cursor = priceWeeksCursorSchema.safeParse(resume).data;
   if (!cursor) return [...weeks];
 
-  const pending = weeks.filter((week) => week.startDate >= cursor.nextCheckIn);
+  /*
+   * The date alone is not enough once the list holds more than one check-in weekday: the groups
+   * run Saturdays, then Sundays, then Wednesdays, so dates restart at each group boundary and a
+   * plain `>=` would drop every later group's early weeks. The weekday the cursor's own date
+   * falls on names its group, which is why it needs no extra field -- a cursor written by the
+   * Saturday-only pass still resumes where it meant to.
+   */
+  const groups = [...new Set(weeks.map((week) => weekdayOf(week.startDate)))];
+  const group = groups.indexOf(weekdayOf(cursor.nextCheckIn));
+  if (group < 0) return [...weeks];
+
+  const pending = weeks.filter((week) => {
+    const at = groups.indexOf(weekdayOf(week.startDate));
+    return at > group || (at === group && week.startDate >= cursor.nextCheckIn);
+  });
   return pending.length > 0 ? pending : [...weeks];
 }
 

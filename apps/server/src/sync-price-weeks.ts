@@ -1,7 +1,10 @@
 /**
- * The nightly price-weeks job: asks every enabled vendor to price each Saturday week of the next
- * PRICE_WEEKS_COUNT weeks for the whole fleet, writes the answers through the availability
- * writer and rebuilds the read model for the listings it touched. See docs/scheduled-jobs.md.
+ * The nightly price-weeks job: asks every enabled vendor to price each week of the next
+ * PRICE_WEEKS_COUNT weeks, writes the answers through the availability writer and rebuilds the
+ * read model for the listings it touched. See docs/scheduled-jobs.md.
+ *
+ * Saturday check-ins for the whole fleet, then each further weekday in PRICE_WEEKS_WEEKDAYS for
+ * the hulls whose own check-in rules admit a seven-night charter starting on it.
  *
  * Budgeted and resumable. It stops at PRICE_WEEKS_BUDGET_MS from process start and the next
  * night continues from the first week it did not finish.
@@ -10,6 +13,11 @@
  *   PRICE_WEEKS_COUNT=2 pnpm --filter server sync:price-weeks -- --provider nausys
  */
 import { db } from "@yacht-charter/db";
+import {
+  hullsEligibleOn,
+  listWeekdayCharterHulls,
+  type WeekdayCharterHull,
+} from "@yacht-charter/db/search/read-model";
 import { env } from "@yacht-charter/env/server";
 import {
   createEnabledInventoryProviders,
@@ -18,7 +26,7 @@ import {
   type ProviderKey,
 } from "@yacht-charter/providers";
 import { type PriceWeeksProvider, supportsPriceWeeks } from "@yacht-charter/providers/provider";
-import { leadDaysFor, saturdayWeeks } from "@yacht-charter/providers/shared/price-weeks";
+import { leadDaysFor, priceWeekPeriods } from "@yacht-charter/providers/shared/price-weeks";
 import {
   openPriceWeeksRun,
   readPriceWeeksCursor,
@@ -67,12 +75,40 @@ let budgetStopped = 0;
 const today = new Date(startedAt).toISOString().slice(0, 10);
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+/** The charter this pass prices, which is also the length the eligibility rules are read for. */
+const CHARTER_NIGHTS = 7;
+const SATURDAY = 6;
+
+/**
+ * The hulls each non-Saturday weekday may be asked about, read once per run.
+ *
+ * One query per weekday rather than one per week: a rule carries the season it is in force for,
+ * so the same answer serves every week of the horizon and `hullsEligibleOn` picks out the ones
+ * whose season covers that check-in.
+ */
+const eligibleHulls = async (providerCode: string, weekdays: readonly number[]) => {
+  const asked = weekdays.filter((weekday) => weekday !== SATURDAY);
+  const lists = await Promise.all(
+    asked.map((weekday) =>
+      listWeekdayCharterHulls(db, { providerCode, weekday, nights: CHARTER_NIGHTS }),
+    ),
+  );
+
+  const byWeekday = new Map<number, WeekdayCharterHull[]>();
+  asked.forEach((weekday, index) => byWeekday.set(weekday, lists[index] ?? []));
+  return byWeekday;
+};
+
 const priceProvider = async (provider: InventoryProvider & PriceWeeksProvider) => {
   const providerId = await ensureProviderId(db, provider.key);
-  const weeks = saturdayWeeks({
+  const weekdays = env.PRICE_WEEKS_WEEKDAYS;
+  const hulls = await eligibleHulls(provider.key, weekdays);
+  const weeks = priceWeekPeriods({
     today,
     leadDays: leadDaysFor(provider.key),
     count: env.PRICE_WEEKS_COUNT,
+    weekdays,
+    hullsFor: (weekday, checkIn) => hullsEligibleOn(hulls.get(weekday) ?? [], checkIn),
   });
 
   let syncRunId: string;
@@ -99,8 +135,9 @@ const priceProvider = async (provider: InventoryProvider & PriceWeeksProvider) =
   const resume = await readPriceWeeksCursor(db, providerId);
   const budgetMs = Math.max(0, deadline - Date.now());
   console.log(
-    `Started price-weeks ${syncRunId} for "${provider.key}": ${weeks[0]?.startDate} to ` +
-      `${weeks.at(-1)?.endDate}, resuming from ${JSON.stringify(resume)}, budget ${Math.round(budgetMs / 1000)}s`,
+    `Started price-weeks ${syncRunId} for "${provider.key}": ${weeks.length} periods across ` +
+      `weekdays ${weekdays.join(",")}, resuming from ${JSON.stringify(resume)}, ` +
+      `budget ${Math.round(budgetMs / 1000)}s`,
   );
 
   try {
@@ -145,6 +182,7 @@ await db.$client.end();
 const metrics = {
   providers: priced.length,
   weeks: env.PRICE_WEEKS_COUNT,
+  weekdays: env.PRICE_WEEKS_WEEKDAYS.join(","),
   failed,
   skipped,
   budgetStopped,
