@@ -184,6 +184,7 @@ export function SelectedRouteLayer({
                 {t("marinaMeta", {
                   count: openMarina.listingCount,
                   km: Math.max(1, Math.round(openMarina.distanceKm)),
+                  stop: openMarina.nearStop,
                 })}
               </p>
             </div>

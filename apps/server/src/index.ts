@@ -169,6 +169,7 @@ app.use("/*", async (c, next) => {
 });
 
 app.get("/", (c) => c.text("OK"));
+app.get("/version", (c) => c.json({ commit: env.RAILWAY_GIT_COMMIT_SHA ?? null }));
 
 serve(
   {

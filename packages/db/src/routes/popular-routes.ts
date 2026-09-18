@@ -175,29 +175,33 @@ export async function listPopularRoutes(
 }
 
 /**
- * Where "the marinas near this route" are measured from: its first stop, where the charter
- * starts, falling back to its base for a route written before it had stops. Null for a draft or
- * a route with neither, which has nowhere to be near.
+ * The places "the marinas near this route" are measured from: every stop of a published route in
+ * itinerary order, or its base alone for a route written before it had stops. Null for a draft or
+ * an unknown id, and an empty list for a route with neither.
  */
-export async function findRouteAnchor(
+export async function findRoutePlaces(
   db: NodePgDatabase<typeof schema>,
   routeId: string,
-): Promise<{ lat: number; lng: number } | null> {
-  const rows = await db.execute<{ lat: number | null; lng: number | null }>(sql`
-    select
-      coalesce(first_stop.lat, base.lat) as lat,
-      coalesce(first_stop.lng, base.lng) as lng
-    from suggested_route route
-    left join base on base.id = route.base_id
-    left join lateral (
-      select stop.lat, stop.lng
-      from suggested_route_stop stop
-      where stop.route_id = route.id
-      order by stop.sort_order
-      limit 1
-    ) first_stop on true
-    where route.id = ${routeId} and route.active
+): Promise<{ name: string; lat: number; lng: number }[] | null> {
+  const routes = await db.execute<{ name: string | null; lat: number | null; lng: number | null }>(
+    sql`
+      select base.name, base.lat, base.lng
+      from suggested_route route
+      left join base on base.id = route.base_id
+      where route.id = ${routeId} and route.active
+    `,
+  );
+  const [route] = routes.rows;
+  if (!route) return null;
+
+  const stops = await db.execute<{ name: string; lat: number; lng: number }>(sql`
+    select name, lat, lng
+    from suggested_route_stop
+    where route_id = ${routeId}
+    order by sort_order
   `);
-  const row = rows.rows[0];
-  return row?.lat != null && row.lng != null ? { lat: row.lat, lng: row.lng } : null;
+  if (stops.rows.length > 0) return stops.rows;
+  return route.name !== null && route.lat !== null && route.lng !== null
+    ? [{ name: route.name, lat: route.lat, lng: route.lng }]
+    : [];
 }

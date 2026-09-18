@@ -16,13 +16,13 @@
   "allRoutes": "All routes",
   "showRouteYachts": "Show yachts for this route",
   "itinerary": "Itinerary",
-  "nearbyMarinas": "Marinas with yachts nearby",
+  "nearbyMarinas": "Marinas with yachts along the route",
   "loadingMarinas": "Looking for marinas…",
   "marinasFailed": "Could not load the marinas. Try again later.",
-  "noMarinas": "No marinas with yachts within 50 km of the start.",
-  "marinaMeta": "{count, plural, one {# yacht} other {# yachts}} · {km} km from the start",
+  "noMarinas": "No marinas with yachts within 20 km of this route.",
+  "marinaMeta": "{count, plural, one {# yacht} other {# yachts}} · {km} km from {stop}",
   "marinaYachts": "{name}, {count, plural, one {# yacht} other {# yachts}}",
   "showMarinaYachts": "Show yachts in this marina",
   "routesHere": "{count, plural, one {# route starts here} other {# routes start here}}",
-  "marinaDistance": "{km} km from the start"
+  "marinaDistance": "{km} km from {stop}"
 }

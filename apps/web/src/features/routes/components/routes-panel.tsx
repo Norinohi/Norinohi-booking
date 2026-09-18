@@ -232,7 +232,10 @@ function NearbyMarinas({
                     {marina.name}
                   </span>
                   <span className="text-xs text-natural-500">
-                    {t("marinaDistance", { km: Math.max(1, Math.round(marina.distanceKm)) })}
+                    {t("marinaDistance", {
+                      km: Math.max(1, Math.round(marina.distanceKm)),
+                      stop: marina.nearStop,
+                    })}
                   </span>
                 </span>
               </button>
