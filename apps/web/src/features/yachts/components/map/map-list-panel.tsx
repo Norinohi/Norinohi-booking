@@ -100,7 +100,7 @@ export default function MapListPanel({ filters, defaults, className, ref }: MapL
             total={pagination.totalItems}
             onPageChange={setPage}
             summary={false}
-            className="justify-center"
+            className="justify-center md:justify-center"
           />
         </div>
       ) : null}

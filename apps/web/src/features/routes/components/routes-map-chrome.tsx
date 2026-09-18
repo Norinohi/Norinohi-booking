@@ -86,7 +86,17 @@ export default function RoutesMapChrome({
           </DialogContent>
         </Dialog>
 
-        {/* The yachts map's own two buttons: the list opener, and a close in its place once open. */}
+        {/* The yachts map's own pair: the list button stays, and a close joins it once open. */}
+        <Button
+          type="button"
+          variant="neutral"
+          aria-expanded={listOpen}
+          onClick={() => onListOpenChange(!listOpen)}
+          className="pointer-events-auto ml-auto w-auto shrink-0 shadow-brand-glow"
+        >
+          <List />
+          <span className="sr-only">{listOpen ? t("hideList") : t("showList")}</span>
+        </Button>
         {listOpen ? (
           <Button
             type="button"
@@ -94,22 +104,11 @@ export default function RoutesMapChrome({
             size="icon"
             aria-label={t("hideList")}
             onClick={() => onListOpenChange(false)}
-            className="pointer-events-auto ml-auto size-12 shrink-0 shadow-brand-glow"
+            className="pointer-events-auto size-12 shrink-0 shadow-brand-glow"
           >
             <X />
           </Button>
-        ) : (
-          <Button
-            type="button"
-            variant="neutral"
-            aria-expanded={false}
-            onClick={() => onListOpenChange(true)}
-            className="pointer-events-auto ml-auto w-auto shrink-0 shadow-brand-glow"
-          >
-            <List />
-            <span className="sr-only">{t("showList")}</span>
-          </Button>
-        )}
+        ) : null}
       </div>
     </div>
   );

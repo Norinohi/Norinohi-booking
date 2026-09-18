@@ -156,7 +156,10 @@ export default function RoutesMapScreen() {
       {/* The cards the map's left edge belongs to, laid out as the yachts map lays its own. */}
       <div
         className={cn(
-          "pointer-events-none absolute inset-x-3 bottom-3 flex max-h-[55%] items-start gap-5 md:inset-x-auto md:top-6 md:bottom-6 md:left-6 md:max-h-none 2xl:top-8 2xl:bottom-8 2xl:left-8",
+          "pointer-events-none absolute inset-x-3 bottom-3 flex items-start gap-5 md:inset-x-auto md:top-6 md:bottom-6 md:left-6 2xl:top-8 2xl:bottom-8 2xl:left-8",
+          /* On a phone the list opens under the buttons and fills the rest, as the yachts map's
+             does; an open route sits at the bottom instead, so the map above it stays in view. */
+          selected ? "max-h-[55%] md:max-h-none" : "max-md:top-18",
           /* A marina's boats open over the map, and on a phone the panel would sit on top of them,
              as the search map's chrome would; it steps aside until the card is closed. */
           (openMarina || (!selected && !listOpen)) && "max-md:hidden",
@@ -184,7 +187,12 @@ export default function RoutesMapScreen() {
           marinasFailed={marinasQuery.isError}
           collapsed={collapsed}
           onCollapsedChange={setCollapsed}
-          className="pointer-events-auto max-h-[50dvh] w-full md:h-full md:max-h-full md:w-100"
+          className={cn(
+            /* As tall as what it holds, up to the room there is: two routes are not a column
+               of empty card. */
+            "pointer-events-auto w-full md:max-h-full md:w-100",
+            selected ? "max-h-[50dvh]" : "max-h-full",
+          )}
         />
       </div>
 

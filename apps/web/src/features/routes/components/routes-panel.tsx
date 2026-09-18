@@ -355,30 +355,33 @@ export default function RoutesPanel({
         className,
       )}
     >
-      {/* Phones only: the panel covers half the map there, so it folds down to this bar. */}
-      <button
-        type="button"
-        aria-expanded={!collapsed}
-        onClick={() => onCollapsedChange(!collapsed)}
-        className={cn(
-          "flex shrink-0 items-center gap-3 px-4 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40 md:hidden",
-          !collapsed && "border-b border-border",
-        )}
-      >
-        <span className="min-w-0 flex-1 truncate text-base font-bold text-natural-700">
-          {selected ? selected.title : t("title")}
-        </span>
-        <span className="shrink-0 text-sm text-natural-500">
-          {collapsed ? t("showList") : t("hideList")}
-        </span>
-        {collapsed ? (
-          <ChevronUp className="size-5 shrink-0 text-natural-500" />
-        ) : (
-          <ChevronDown className="size-5 shrink-0 text-natural-500" />
-        )}
-      </button>
+      {/* Phones only, for an open route: it covers half the map there, so it folds down to this
+          bar. The list has no bar: it opens and closes from the button over the map. */}
+      {selected ? (
+        <button
+          type="button"
+          aria-expanded={!collapsed}
+          onClick={() => onCollapsedChange(!collapsed)}
+          className={cn(
+            "flex shrink-0 items-center gap-3 px-4 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40 md:hidden",
+            !collapsed && "border-b border-border",
+          )}
+        >
+          <span className="min-w-0 flex-1 truncate text-base font-bold text-natural-700">
+            {selected ? selected.title : t("title")}
+          </span>
+          <span className="shrink-0 text-sm text-natural-500">
+            {collapsed ? t("showList") : t("hideList")}
+          </span>
+          {collapsed ? (
+            <ChevronUp className="size-5 shrink-0 text-natural-500" />
+          ) : (
+            <ChevronDown className="size-5 shrink-0 text-natural-500" />
+          )}
+        </button>
+      ) : null}
 
-      <div className={cn("flex min-h-0 flex-1 flex-col", collapsed && "max-md:hidden")}>
+      <div className={cn("flex min-h-0 flex-1 flex-col", selected && collapsed && "max-md:hidden")}>
         {selected ? (
           <>
             <div className="relative shrink-0">
@@ -461,7 +464,7 @@ export default function RoutesPanel({
                   total={visible.length}
                   onPageChange={(next) => setPaging({ key: listKey, page: next })}
                   summary={false}
-                  className="justify-center"
+                  className="justify-center md:justify-center"
                 />
               </div>
             ) : null}
