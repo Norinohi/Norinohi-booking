@@ -4,7 +4,7 @@ import { base, country, listing, listingSearchDoc, location, operator, region } 
 import { createTestDatabase, type TestDatabase } from "../test-support/database";
 import { boundingBox, isInBoundingBox } from "./bounds";
 import { distanceKm } from "./distance";
-import { listNearestBases } from "./nearest-marinas";
+import { listBasesNearRoute, listNearestBases } from "./nearest-marinas";
 
 const SPLIT = { lat: 43.5081, lng: 16.4402 };
 const CORNER = { lat: 43.7941, lng: 16.8349 };
@@ -26,27 +26,25 @@ const BASES = [
   { id: "base_nowhere", name: "Unmapped Base", lat: null, lng: null },
 ];
 
-describe("listNearestBases", () => {
-  let test: TestDatabase;
+/* The geography above, with boats listed at the named bases only. */
+async function seed(db: TestDatabase["db"], listed: { baseId: string; slugs: string[] }[]) {
+  await db.insert(country).values({ id: "cty_hr", code: "HR", name: "Croatia" });
+  await db.insert(region).values({ id: "rgn_dal", countryId: "cty_hr", name: "Dalmatia" });
+  await db
+    .insert(location)
+    .values({ id: "loc_dal", regionId: "rgn_dal", name: "Dalmatia", city: "Split" });
+  await db.insert(base).values(BASES.map((row) => ({ ...row, locationId: "loc_dal" })));
 
-  beforeAll(async () => {
-    test = await createTestDatabase();
-    const { db } = test;
-    await db.insert(country).values({ id: "cty_hr", code: "HR", name: "Croatia" });
-    await db.insert(region).values({ id: "rgn_dal", countryId: "cty_hr", name: "Dalmatia" });
-    await db
-      .insert(location)
-      .values({ id: "loc_dal", regionId: "rgn_dal", name: "Dalmatia", city: "Split" });
-    await db.insert(base).values(BASES.map((row) => ({ ...row, locationId: "loc_dal" })));
-
-    await db.insert(operator).values({ id: "op_geo", name: "Geo Charter", slug: "geo-charter" });
-    for (const slug of ["trogir-1", "trogir-2"]) {
+  await db.insert(operator).values({ id: "op_geo", name: "Geo Charter", slug: "geo-charter" });
+  for (const { baseId, slugs } of listed) {
+    const baseName = BASES.find((row) => row.id === baseId)?.name ?? baseId;
+    for (const slug of slugs) {
       await db.insert(listing).values({
         id: `lst_${slug}`,
         slug,
         title: slug,
         operatorId: "op_geo",
-        homeBaseId: "base_trogir",
+        homeBaseId: baseId,
         status: "published",
       });
       await db.insert(listingSearchDoc).values({
@@ -54,8 +52,8 @@ describe("listNearestBases", () => {
         slug,
         title: slug,
         operator: "Geo Charter",
-        baseId: "base_trogir",
-        baseName: "ACI Marina Trogir",
+        baseId,
+        baseName,
         location: "Dalmatia",
         region: "Dalmatia",
         country: "Croatia",
@@ -63,6 +61,15 @@ describe("listNearestBases", () => {
         searchableText: slug,
       });
     }
+  }
+}
+
+describe("listNearestBases", () => {
+  let test: TestDatabase;
+
+  beforeAll(async () => {
+    test = await createTestDatabase();
+    await seed(test.db, [{ baseId: "base_trogir", slugs: ["trogir-1", "trogir-2"] }]);
   });
 
   afterAll(async () => {
@@ -127,5 +134,57 @@ describe("listNearestBases", () => {
       onlyWithListings: true,
     });
     expect(listed.map((row) => row.id)).toEqual(["base_trogir"]);
+  });
+});
+
+describe("listBasesNearRoute", () => {
+  let test: TestDatabase;
+
+  /* Split out to Hvar and on to Dubrovnik: a one-way charter, so both ends have marinas. */
+  const ROUTE = [
+    { name: "Split", lat: 43.5081, lng: 16.4402 },
+    { name: "Hvar", lat: 43.172, lng: 16.44 },
+    { name: "Dubrovnik", lat: 42.65, lng: 18.09 },
+  ];
+
+  beforeAll(async () => {
+    test = await createTestDatabase();
+    await seed(test.db, [
+      { baseId: "base_split", slugs: ["split-1"] },
+      { baseId: "base_trogir", slugs: ["trogir-1", "trogir-2"] },
+      { baseId: "base_hvar", slugs: ["hvar-1"] },
+      { baseId: "base_dubrovnik", slugs: ["dubrovnik-1"] },
+      { baseId: "base_ancona", slugs: ["ancona-1"] },
+    ]);
+  });
+
+  afterAll(async () => {
+    await test.drop();
+  });
+
+  it("finds bases near every stop, not only the start, in the order the route reaches them", async () => {
+    const rows = await listBasesNearRoute(test.db, { stops: ROUTE, maxKm: 20, limit: 10 });
+
+    expect(rows.map((row) => [row.id, row.nearStop])).toEqual([
+      ["base_split", "Split"],
+      ["base_trogir", "Split"],
+      ["base_hvar", "Hvar"],
+      ["base_dubrovnik", "Dubrovnik"],
+    ]);
+    expect(rows.map((row) => row.nearStopIndex)).toEqual([0, 0, 1, 2]);
+  });
+
+  it("measures each base to its nearest stop and keeps the cut", async () => {
+    const rows = await listBasesNearRoute(test.db, { stops: ROUTE, maxKm: 20, limit: 10 });
+    for (const row of rows) {
+      const nearest = Math.min(...ROUTE.map((stop) => distanceKm(stop, row)));
+      expect(row.distanceKm).toBeCloseTo(nearest, 6);
+      expect(row.distanceKm).toBeLessThanOrEqual(20);
+    }
+    expect(rows.find((row) => row.id === "base_trogir")?.listingCount).toBe(2);
+  });
+
+  it("answers nothing for a route with no stops", async () => {
+    expect(await listBasesNearRoute(test.db, { stops: [], maxKm: 20, limit: 10 })).toEqual([]);
   });
 });

@@ -79,11 +79,15 @@ export const routeMarinasInputSchema = z.object({
 
 export const routeMarinaSchema = z.object({
   name: z.string(),
-  /** The search filter value a link to this marina's boats in the catalogue carries. */
+  /** The marina's key: the filter value of the name it is shown under. */
   value: z.string(),
+  /** Every name its bases are filed under, as filter values, so a catalogue link finds them all. */
+  values: z.array(z.string()),
   lat: z.number(),
   lng: z.number(),
+  /** From `nearStop`, the stop of the itinerary this marina is closest to. */
   distanceKm: z.number(),
+  nearStop: z.string(),
   listingCount: z.number().int(),
 });
 

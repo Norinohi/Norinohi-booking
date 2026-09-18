@@ -214,9 +214,9 @@ export const charterSearchRouter = {
       path: "/charter-search/route-marinas",
       operationId: "listRouteMarinas",
       summary: "List the marinas near a sailing route",
-      description: `The marinas within ${ROUTE_MARINA_RADIUS_KM} km of where a route starts that the catalogue has boats at, nearest first, at most ${ROUTE_MARINA_LIMIT}. Bases two vendors file under one name come back as one marina, with both vendors' boats counted. Answers NOT_FOUND for a route that is unknown or unpublished.`,
+      description: `The marinas with boats within ${ROUTE_MARINA_RADIUS_KM} km of any stop of a route, at most ${ROUTE_MARINA_LIMIT}, in the order the route passes them, each with the stop it is closest to. Every stop rather than the start alone, so a route that ends somewhere else lists marinas at both ends. Bases two vendors file under one name come back as one marina, with both vendors' boats counted. Answers NOT_FOUND for a route that is unknown or unpublished.`,
       tags: ["Charter Search"],
-      successDescription: "Marinas with boats near the route's start.",
+      successDescription: "Marinas with boats along the route.",
       spec: withParameterExamples({ routeId: "srt_example" }),
     })
     .input(routeMarinasInputSchema)
