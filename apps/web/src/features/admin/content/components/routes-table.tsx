@@ -14,11 +14,12 @@ import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
-import { Plus, Search, Star } from "lucide-react";
+import { Eye, EyeOff, Globe, MapPin, Pencil, Plus, Search, Star, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import IconAction from "../../shared/components/icon-action";
 import { useGeographyOptions, useRoutes, useSetRouteActive } from "../hooks/use-routes";
 import { ROUTE_KINDS, type RouteRow } from "../types";
 import FeaturedRoutesDialog from "./featured-routes-dialog";
@@ -42,7 +43,7 @@ const STATUS_VALUES = ["live", "draft"] as const;
 
 const COLUMN_COUNT = 7;
 const SKELETON_ROWS = 5;
-const SKELETON_WIDTHS = ["w-48", "w-40", "w-24", "w-12", "w-16", "w-20", "w-48"];
+const SKELETON_WIDTHS = ["w-48", "w-32", "w-20", "w-8", "w-16", "w-14", "w-40"];
 
 export default function RoutesTable() {
   const t = useTranslations("Admin.Routes");
@@ -191,16 +192,16 @@ export default function RoutesTable() {
         </div>
       </div>
 
-      <Table className="min-w-275 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">
+      <Table className="min-w-200 [&_td]:px-3 [&_td]:py-3 [&_th]:h-12.5 [&_th]:px-3 [&_th]:py-0">
         <TableHeader>
           <TableRow>
             <TableHead>{t("table.title")}</TableHead>
-            <TableHead>{t("table.target")}</TableHead>
+            <TableHead className="w-36">{t("table.target")}</TableHead>
             <TableHead>{t("table.kind")}</TableHead>
-            <TableHead>{t("table.nights")}</TableHead>
-            <TableHead>{t("table.stops")}</TableHead>
-            <TableHead>{t("table.status")}</TableHead>
-            <TableHead>{t("table.actions")}</TableHead>
+            <TableHead className="w-16">{t("table.nights")}</TableHead>
+            <TableHead className="w-28">{t("table.stops")}</TableHead>
+            <TableHead className="w-20">{t("table.status")}</TableHead>
+            <TableHead className="w-44 text-right">{t("table.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -226,19 +227,26 @@ export default function RoutesTable() {
                             {route.title}
                           </span>
                           {route.description ? (
-                            <span className="max-w-80 truncate text-sm text-natural-500">
+                            <span className="max-w-52 truncate text-sm text-natural-500">
                               {route.description}
                             </span>
                           ) : null}
                         </div>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">{route.targetLabel}</TableCell>
+                      <TableCell>
+                        <span className="block max-w-36 truncate" title={route.targetLabel}>
+                          {route.targetLabel}
+                        </span>
+                      </TableCell>
                       <TableCell className="whitespace-nowrap">{tKinds(route.kind)}</TableCell>
                       <TableCell className="whitespace-nowrap">{route.nights}</TableCell>
                       <TableCell>
                         {/* An empty itinerary is the one state that blocks publishing, so it is
                             coloured rather than left as a bare zero. */}
-                        <Chip variant={route.stops.length === 0 ? "warning" : "neutral"}>
+                        <Chip
+                          variant={route.stops.length === 0 ? "warning" : "neutral"}
+                          className="whitespace-nowrap"
+                        >
                           {t("stopCount", { count: route.stops.length })}
                         </Chip>
                       </TableCell>
@@ -248,49 +256,45 @@ export default function RoutesTable() {
                         </Chip>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="brand"
-                            size="sm"
+                        <div className="flex items-center justify-end gap-1">
+                          <IconAction
+                            label={t("actions.stops")}
                             disabled={busy}
                             onClick={() => setStopsFor(route.id)}
                           >
-                            {t("actions.stops")}
-                          </Button>
-                          <Button
-                            variant="subtle"
-                            size="sm"
+                            <MapPin />
+                          </IconAction>
+                          <IconAction
+                            label={t("actions.preview")}
                             disabled={busy || route.stops.length === 0}
                             onClick={() => setPreviewFor(route.id)}
                           >
-                            {t("actions.preview")}
-                          </Button>
-                          <Button
-                            variant="subtle"
-                            size="sm"
+                            <Eye />
+                          </IconAction>
+                          <IconAction
+                            label={t("actions.edit")}
                             disabled={busy}
                             onClick={() => openEdit(route)}
                           >
-                            {t("actions.edit")}
-                          </Button>
-                          <Button
-                            variant="subtle"
-                            size="sm"
+                            <Pencil />
+                          </IconAction>
+                          <IconAction
+                            label={t(route.active ? "actions.unpublish" : "actions.publish")}
                             /* Publishing an empty route is refused by the server; the button
                                says so by being unavailable rather than by failing. */
                             disabled={busy || (!route.active && route.stops.length === 0)}
                             onClick={() => togglePublished(route)}
                           >
-                            {t(route.active ? "actions.unpublish" : "actions.publish")}
-                          </Button>
-                          <Button
-                            variant="subtle"
-                            size="sm"
+                            {route.active ? <EyeOff /> : <Globe />}
+                          </IconAction>
+                          <IconAction
+                            label={t("actions.delete")}
                             disabled={busy}
+                            destructive
                             onClick={() => remove(route)}
                           >
-                            {t("actions.delete")}
-                          </Button>
+                            <Trash2 />
+                          </IconAction>
                         </div>
                       </TableCell>
                     </TableRow>

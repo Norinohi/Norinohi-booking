@@ -18,6 +18,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useState, type ComponentProps } from "react";
 
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
+import { Link } from "@/i18n/navigation";
 
 import { useInstant } from "../../shared/hooks/use-instant";
 import { useAmount } from "../hooks/use-amount";
@@ -215,7 +216,19 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
         </div>
         <StaffActions booking={booking} providerLabel={providerLabel(booking.provider)} />
         <p className="text-base text-natural-500">
-          {booking.listingTitle} · {placeLine(booking.base.name, booking.base.countryName)}
+          {booking.listingSlug ? (
+            <Link
+              href={`/yachts/${booking.listingSlug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-brand hover:underline"
+            >
+              {booking.listingTitle}
+            </Link>
+          ) : (
+            booking.listingTitle
+          )}{" "}
+          · {placeLine(booking.base.name, booking.base.countryName)}
         </p>
 
         <dl className="grid grid-cols-1 gap-4 md:grid-cols-3">

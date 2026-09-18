@@ -161,7 +161,7 @@ export default function BookingsTable() {
         {t("filters.includeExcluded")}
       </label>
 
-      <Table className="min-w-225 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">
+      <Table className="min-w-190 [&_td]:px-3 [&_td]:py-3 [&_th]:h-12.5 [&_th]:px-3 [&_th]:py-0">
         <TableHeader>
           <TableRow>
             <TableHead>{t("table.reference")}</TableHead>
@@ -222,8 +222,20 @@ export default function BookingsTable() {
                           </a>
                         </div>
                       </TableCell>
-                      <TableCell className="max-w-64">
-                        <p className="line-clamp-2 text-foreground">{booking.listingTitle}</p>
+                      <TableCell className="max-w-56">
+                        {booking.listingSlug ? (
+                          <Link
+                            href={`/yachts/${booking.listingSlug}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={booking.listingTitle}
+                            className="line-clamp-2 font-medium text-brand hover:underline"
+                          >
+                            {booking.listingTitle}
+                          </Link>
+                        ) : (
+                          <p className="line-clamp-2 text-foreground">{booking.listingTitle}</p>
+                        )}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         {day(booking.checkIn)} → {day(booking.checkOut)}

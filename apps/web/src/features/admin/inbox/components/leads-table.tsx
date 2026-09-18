@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import {
   Table,
@@ -14,10 +13,13 @@ import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
-import { Search } from "lucide-react";
+import { CheckCheck, MessageSquareReply, RotateCcw, Search, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
+import { Link } from "@/i18n/navigation";
+
+import IconAction from "../../shared/components/icon-action";
 import { useInstant } from "../../shared/hooks/use-instant";
 import { useLeads, useSetLeadStatus } from "../hooks/use-inbox";
 import type { LeadKind, LeadRow, LeadStatus } from "../types";
@@ -134,15 +136,15 @@ export default function LeadsTable() {
         />
       </div>
 
-      <Table className="min-w-225 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">
+      <Table className="min-w-190 [&_td]:px-3 [&_td]:py-3 [&_th]:h-12.5 [&_th]:px-3 [&_th]:py-0">
         <TableHeader>
           <TableRow>
-            <TableHead>{t("table.received")}</TableHead>
+            <TableHead className="w-32">{t("table.received")}</TableHead>
             <TableHead>{t("table.from")}</TableHead>
-            <TableHead>{t("table.kind")}</TableHead>
+            <TableHead className="w-36">{t("table.kind")}</TableHead>
             <TableHead>{t("table.message")}</TableHead>
-            <TableHead>{t("table.status")}</TableHead>
-            <TableHead>{t("table.actions")}</TableHead>
+            <TableHead className="w-24">{t("table.status")}</TableHead>
+            <TableHead className="w-32 text-right">{t("table.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -190,15 +192,30 @@ export default function LeadsTable() {
                           ) : null}
                         </div>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <span className="block">{t(`kind.${lead.kind}`)}</span>
+                      <TableCell>
+                        <span className="block whitespace-nowrap">{t(`kind.${lead.kind}`)}</span>
                         {lead.listingTitle ? (
-                          <span className="block text-sm text-natural-500">
-                            {lead.listingTitle}
-                          </span>
+                          lead.listingSlug ? (
+                            <Link
+                              href={`/yachts/${lead.listingSlug}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              title={lead.listingTitle}
+                              className="block max-w-36 truncate text-sm text-brand hover:underline"
+                            >
+                              {lead.listingTitle}
+                            </Link>
+                          ) : (
+                            <span
+                              className="block max-w-36 truncate text-sm text-natural-500"
+                              title={lead.listingTitle}
+                            >
+                              {lead.listingTitle}
+                            </span>
+                          )
                         ) : null}
                       </TableCell>
-                      <TableCell className="max-w-96">
+                      <TableCell className="max-w-80">
                         <p className="line-clamp-2 text-foreground">{lead.message ?? "-"}</p>
                         {lead.answer ? (
                           <p className="line-clamp-1 text-sm text-natural-500">
@@ -212,44 +229,45 @@ export default function LeadsTable() {
                         </Chip>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button variant="brand" size="sm" onClick={() => setAnswering(lead)}>
-                            {lead.answer ? t("actions.replyAgain") : t("actions.reply")}
-                          </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <IconAction
+                            label={lead.answer ? t("actions.replyAgain") : t("actions.reply")}
+                            primary
+                            onClick={() => setAnswering(lead)}
+                          >
+                            <MessageSquareReply />
+                          </IconAction>
                           {lead.status === "new" ? (
-                            <Button
-                              variant="subtle"
-                              size="sm"
+                            <IconAction
+                              label={t("actions.contacted")}
                               disabled={setStatusMutation.isPending}
                               onClick={() =>
                                 setStatusMutation.mutate({ id: lead.id, status: "contacted" })
                               }
                             >
-                              {t("actions.contacted")}
-                            </Button>
+                              <CheckCheck />
+                            </IconAction>
                           ) : null}
                           {lead.status === "closed" ? (
-                            <Button
-                              variant="subtle"
-                              size="sm"
+                            <IconAction
+                              label={t("actions.reopen")}
                               disabled={setStatusMutation.isPending}
                               onClick={() =>
                                 setStatusMutation.mutate({ id: lead.id, status: "new" })
                               }
                             >
-                              {t("actions.reopen")}
-                            </Button>
+                              <RotateCcw />
+                            </IconAction>
                           ) : (
-                            <Button
-                              variant="subtle"
-                              size="sm"
+                            <IconAction
+                              label={t("actions.close")}
                               disabled={setStatusMutation.isPending}
                               onClick={() =>
                                 setStatusMutation.mutate({ id: lead.id, status: "closed" })
                               }
                             >
-                              {t("actions.close")}
-                            </Button>
+                              <X />
+                            </IconAction>
                           )}
                         </div>
                       </TableCell>

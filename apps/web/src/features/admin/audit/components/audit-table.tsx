@@ -263,15 +263,15 @@ export default function AuditTable() {
         </div>
       </div>
 
-      <Table className="min-w-225 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">
+      <Table className="min-w-190 [&_td]:px-3 [&_td]:py-3 [&_th]:h-12.5 [&_th]:px-3 [&_th]:py-0">
         <TableHeader>
           <TableRow>
-            <TableHead>{t("table.when")}</TableHead>
+            <TableHead className="w-36">{t("table.when")}</TableHead>
             <TableHead>{t("table.actor")}</TableHead>
             <TableHead>{t("table.action")}</TableHead>
-            <TableHead>{t("table.entity")}</TableHead>
+            <TableHead className="w-32">{t("table.entity")}</TableHead>
             <TableHead>{t("table.entityId")}</TableHead>
-            <TableHead>{t("table.details")}</TableHead>
+            <TableHead className="w-20 text-right">{t("table.details")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -320,16 +320,22 @@ export default function AuditTable() {
                         <TableCell className="whitespace-nowrap">
                           {entity ? t(`entity.${entity}`) : row.entityType}
                         </TableCell>
-                        <TableCell className="font-mono text-xs">{row.entityId}</TableCell>
-                        <TableCell>
+                        <TableCell className="font-mono text-xs">
+                          <span className="block max-w-48 truncate" title={row.entityId ?? undefined}>
+                            {row.entityId}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
                           <Button
                             variant="subtle"
-                            size="sm"
+                            size="icon-md"
                             aria-expanded={isOpen}
+                            aria-label={isOpen ? t("details.hide") : t("details.show")}
+                            title={isOpen ? t("details.hide") : t("details.show")}
+                            className="[&_svg]:size-4"
                             onClick={() => setExpanded(isOpen ? null : row.id)}
                           >
                             {isOpen ? <ChevronUp /> : <ChevronDown />}
-                            {isOpen ? t("details.hide") : t("details.show")}
                           </Button>
                         </TableCell>
                       </TableRow>,

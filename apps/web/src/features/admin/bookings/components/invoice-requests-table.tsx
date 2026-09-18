@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import {
   Table,
@@ -18,6 +17,8 @@ import { useState } from "react";
 
 import { Link } from "@/i18n/navigation";
 
+import { CircleCheck, Ban } from "lucide-react";
+import IconAction from "../../shared/components/icon-action";
 import { useInstant } from "../../shared/hooks/use-instant";
 import { useAmount } from "../hooks/use-amount";
 import { useInvoices } from "../hooks/use-payments";
@@ -93,16 +94,16 @@ export default function InvoiceRequestsTable() {
         />
       </div>
 
-      <Table className="min-w-245 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">
+      <Table className="min-w-190 [&_td]:px-3 [&_td]:py-3 [&_th]:h-12.5 [&_th]:px-3 [&_th]:py-0">
         <TableHeader>
           <TableRow>
-            <TableHead>{t("table.issued")}</TableHead>
-            <TableHead>{t("table.invoice")}</TableHead>
+            <TableHead className="w-32">{t("table.issued")}</TableHead>
+            <TableHead className="w-28">{t("table.invoice")}</TableHead>
             <TableHead>{t("table.customer")}</TableHead>
-            <TableHead>{t("table.booking")}</TableHead>
-            <TableHead>{t("table.amount")}</TableHead>
-            <TableHead>{t("table.status")}</TableHead>
-            <TableHead>{t("table.actions")}</TableHead>
+            <TableHead className="w-44">{t("table.booking")}</TableHead>
+            <TableHead className="w-28">{t("table.amount")}</TableHead>
+            <TableHead className="w-24">{t("table.status")}</TableHead>
+            <TableHead className="w-28 text-right">{t("table.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -141,28 +142,37 @@ export default function InvoiceRequestsTable() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="font-medium text-foreground">
+                          <span className="max-w-52 truncate font-medium text-foreground">
                             {invoice.billingName ?? invoice.guestName ?? "-"}
                           </span>
                           <a
                             href={`mailto:${invoice.billingEmail}`}
-                            className="text-sm text-natural-500 transition-colors hover:text-brand"
+                            title={invoice.billingEmail}
+                            className="max-w-52 truncate text-sm text-natural-500 transition-colors hover:text-brand"
                           >
                             {invoice.billingEmail}
                           </a>
                           {invoice.companyName ? (
-                            <span className="text-sm text-natural-500">{invoice.companyName}</span>
+                            <span
+                              className="max-w-52 truncate text-sm text-natural-500"
+                              title={invoice.companyName}
+                            >
+                              {invoice.companyName}
+                            </span>
                           ) : null}
                         </div>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell>
                         <Link
                           href={`/admin/staff/bookings/${invoice.bookingId}`}
                           className="font-medium text-brand hover:underline"
                         >
                           {invoice.reference}
                         </Link>
-                        <span className="block text-sm text-natural-500">
+                        <span
+                          className="block max-w-44 truncate text-sm text-natural-500"
+                          title={invoice.listingTitle}
+                        >
                           {invoice.listingTitle}
                         </span>
                       </TableCell>
@@ -176,20 +186,24 @@ export default function InvoiceRequestsTable() {
                       </TableCell>
                       <TableCell>
                         {invoice.status === "pending" || invoice.status === "sent" ? (
-                          <div className="flex items-center gap-2">
-                            <Button variant="brand" size="sm" onClick={() => setSettling(invoice)}>
-                              {t("actions.settle")}
-                            </Button>
-                            <Button
-                              variant="subtle"
-                              size="sm"
+                          <div className="flex items-center justify-end gap-1">
+                            <IconAction
+                              label={t("actions.settle")}
+                              primary
+                              onClick={() => setSettling(invoice)}
+                            >
+                              <CircleCheck />
+                            </IconAction>
+                            <IconAction
+                              label={t("actions.withdraw")}
+                              destructive
                               onClick={() => setWithdrawing(invoice)}
                             >
-                              {t("actions.withdraw")}
-                            </Button>
+                              <Ban />
+                            </IconAction>
                           </div>
                         ) : (
-                          <span className="text-sm text-natural-500">
+                          <span className="block text-right text-sm text-natural-500">
                             {invoice.settledAt
                               ? t("settledAt", { date: at(invoice.settledAt) })
                               : "-"}

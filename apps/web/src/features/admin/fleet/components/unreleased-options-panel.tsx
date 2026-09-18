@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import {
   Table,
@@ -17,6 +16,8 @@ import { toast } from "sonner";
 import { Link, type AppPathname } from "@/i18n/navigation";
 import { dayToDisplay } from "@/lib/date";
 
+import { RotateCw } from "lucide-react";
+import IconAction from "../../shared/components/icon-action";
 import { useInstant } from "../../shared/hooks/use-instant";
 import { useProviderLabel } from "../../shared/hooks/use-provider-label";
 import { SHORT_DAY } from "../../shared/lib/instant";
@@ -77,18 +78,18 @@ export default function UnreleasedOptionsPanel() {
         <p className="text-sm leading-[1.3] font-medium text-natural-500">{t("empty")}</p>
       ) : (
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="[&_td]:px-3 [&_th]:px-3">
             <TableHeader>
               <TableRow>
-                <TableHead>{t("reference")}</TableHead>
+                <TableHead className="w-28">{t("reference")}</TableHead>
                 <TableHead>{t("yacht")}</TableHead>
                 <TableHead>{t("dates")}</TableHead>
                 <TableHead>{t("provider")}</TableHead>
-                <TableHead>{t("optionId")}</TableHead>
+                <TableHead className="w-24">{t("optionId")}</TableHead>
                 <TableHead>{t("hold")}</TableHead>
                 <TableHead>{t("refusedAt")}</TableHead>
                 <TableHead>{t("reason")}</TableHead>
-                <TableHead />
+                <TableHead className="w-14" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -103,11 +104,15 @@ export default function UnreleasedOptionsPanel() {
                   <TableRow key={item.bookingId}>
                     <TableCell className="font-semibold">{item.reference}</TableCell>
                     <TableCell>
-                      <Link href={yachtHref} className="text-brand underline decoration-dotted">
+                      <Link
+                        href={yachtHref}
+                        title={item.yachtName}
+                        className="block max-w-32 truncate text-brand underline decoration-dotted"
+                      >
                         {item.yachtName}
                       </Link>
                     </TableCell>
-                    <TableCell className="whitespace-nowrap">
+                    <TableCell className="w-28 text-sm">
                       {t("period", {
                         from: format.dateTime(dayToDisplay(item.checkIn), "dayShort"),
                         to: format.dateTime(dayToDisplay(item.checkOut), "dayShort"),
@@ -115,7 +120,12 @@ export default function UnreleasedOptionsPanel() {
                     </TableCell>
                     <TableCell>{providerLabel(item.provider)}</TableCell>
                     <TableCell className="font-mono text-xs">
-                      {item.providerOptionId ?? "-"}
+                      <span
+                        className="block max-w-24 truncate"
+                        title={item.providerOptionId ?? undefined}
+                      >
+                        {item.providerOptionId ?? "-"}
+                      </span>
                     </TableCell>
                     <TableCell>
                       {item.holdExpiresAt === null ? (
@@ -131,18 +141,21 @@ export default function UnreleasedOptionsPanel() {
                       )}
                     </TableCell>
                     <TableCell>{instant(item.failedAt, SHORT_DAY)}</TableCell>
-                    <TableCell className="max-w-80 text-sm wrap-break-word">
-                      {item.reason}
+                    <TableCell className="text-sm">
+                      <p className="line-clamp-3 max-w-44 wrap-break-word" title={item.reason}>
+                        {item.reason}
+                      </p>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="neutral"
-                        size="sm"
-                        loading={retry.isPending}
-                        onClick={() => askAgain(item.bookingId, item.reference)}
-                      >
-                        {t("retry")}
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <IconAction
+                          label={t("retry")}
+                          disabled={retry.isPending}
+                          onClick={() => askAgain(item.bookingId, item.reference)}
+                        >
+                          <RotateCw />
+                        </IconAction>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );

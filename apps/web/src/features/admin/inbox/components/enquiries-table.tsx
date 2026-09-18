@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import {
   Table,
@@ -14,12 +13,13 @@ import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
-import { Search } from "lucide-react";
+import { MessageSquareReply, RotateCcw, Search, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { Link } from "@/i18n/navigation";
 
+import IconAction from "../../shared/components/icon-action";
 import { useInstant } from "../../shared/hooks/use-instant";
 import { useEnquiries, useSetEnquiryStatus } from "../hooks/use-inbox";
 import type { EnquiryRow, EnquiryStatus } from "../types";
@@ -108,15 +108,15 @@ export default function EnquiriesTable() {
         />
       </div>
 
-      <Table className="min-w-225 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">
+      <Table className="min-w-190 [&_td]:px-3 [&_td]:py-3 [&_th]:h-12.5 [&_th]:px-3 [&_th]:py-0">
         <TableHeader>
           <TableRow>
-            <TableHead>{t("table.received")}</TableHead>
+            <TableHead className="w-32">{t("table.received")}</TableHead>
             <TableHead>{t("table.customer")}</TableHead>
             <TableHead>{t("table.question")}</TableHead>
-            <TableHead>{t("table.status")}</TableHead>
-            <TableHead>{t("table.booking")}</TableHead>
-            <TableHead>{t("table.actions")}</TableHead>
+            <TableHead className="w-24">{t("table.status")}</TableHead>
+            <TableHead className="w-44">{t("table.booking")}</TableHead>
+            <TableHead className="w-24 text-right">{t("table.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -152,7 +152,7 @@ export default function EnquiriesTable() {
                           </a>
                         </div>
                       </TableCell>
-                      <TableCell className="max-w-96">
+                      <TableCell className="max-w-80">
                         <p className="line-clamp-2 text-foreground">{enquiry.question}</p>
                         {enquiry.answer ? (
                           <p className="line-clamp-1 text-sm text-natural-500">
@@ -165,44 +165,61 @@ export default function EnquiriesTable() {
                           {t(`status.${enquiry.status}`)}
                         </Chip>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell>
                         <Link
                           href={`/admin/staff/bookings/${enquiry.bookingId}`}
                           className="font-medium text-brand hover:underline"
                         >
                           {enquiry.reference}
                         </Link>
-                        <span className="block text-sm text-natural-500">
-                          {enquiry.listingTitle}
-                        </span>
+                        {enquiry.listingSlug ? (
+                          <Link
+                            href={`/yachts/${enquiry.listingSlug}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={enquiry.listingTitle}
+                            className="block max-w-44 truncate text-sm text-brand hover:underline"
+                          >
+                            {enquiry.listingTitle}
+                          </Link>
+                        ) : (
+                          <span
+                            className="block max-w-44 truncate text-sm text-natural-500"
+                            title={enquiry.listingTitle}
+                          >
+                            {enquiry.listingTitle}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button variant="brand" size="sm" onClick={() => setAnswering(enquiry)}>
-                            {enquiry.answer ? t("actions.replyAgain") : t("actions.reply")}
-                          </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <IconAction
+                            label={enquiry.answer ? t("actions.replyAgain") : t("actions.reply")}
+                            primary
+                            onClick={() => setAnswering(enquiry)}
+                          >
+                            <MessageSquareReply />
+                          </IconAction>
                           {enquiry.status === "closed" ? (
-                            <Button
-                              variant="subtle"
-                              size="sm"
+                            <IconAction
+                              label={t("actions.reopen")}
                               disabled={setStatusMutation.isPending}
                               onClick={() =>
                                 setStatusMutation.mutate({ id: enquiry.id, status: "open" })
                               }
                             >
-                              {t("actions.reopen")}
-                            </Button>
+                              <RotateCcw />
+                            </IconAction>
                           ) : (
-                            <Button
-                              variant="subtle"
-                              size="sm"
+                            <IconAction
+                              label={t("actions.close")}
                               disabled={setStatusMutation.isPending}
                               onClick={() =>
                                 setStatusMutation.mutate({ id: enquiry.id, status: "closed" })
                               }
                             >
-                              {t("actions.close")}
-                            </Button>
+                              <X />
+                            </IconAction>
                           )}
                         </div>
                       </TableCell>

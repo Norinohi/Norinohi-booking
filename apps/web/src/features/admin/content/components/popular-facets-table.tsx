@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@yacht-charter/ui/components/actions/button";
 import {
   Table,
   TableBody,
@@ -19,6 +18,7 @@ import { toast } from "sonner";
 
 import { Image } from "@/components/shared/data-display/image";
 
+import IconAction from "../../shared/components/icon-action";
 import { usePopularFacets, useSetPopularFacets } from "../hooks/use-popular-facets";
 import FacetMediaDialog from "./facet-media-dialog";
 import {
@@ -220,26 +220,20 @@ export default function PopularFacetsTable() {
                           <TableCell>
                             <div className="flex items-center gap-1">
                               <span className="w-6 text-sm text-natural-500">{index + 1}</span>
-                              <Button
-                                variant="subtle"
-                                size="sm"
-                                aria-label={t("actions.moveUp")}
-                                title={t("actions.moveUp")}
+                              <IconAction
+                                label={t("actions.moveUp")}
                                 disabled={index === 0 || save.isPending}
                                 onClick={() => move(index, -1)}
                               >
-                                <ArrowUp className="size-4" />
-                              </Button>
-                              <Button
-                                variant="subtle"
-                                size="sm"
-                                aria-label={t("actions.moveDown")}
-                                title={t("actions.moveDown")}
+                                <ArrowUp />
+                              </IconAction>
+                              <IconAction
+                                label={t("actions.moveDown")}
                                 disabled={index === values.length - 1 || save.isPending}
                                 onClick={() => move(index, 1)}
                               >
-                                <ArrowDown className="size-4" />
-                              </Button>
+                                <ArrowDown />
+                              </IconAction>
                             </div>
                           </TableCell>
                         ) : null}
@@ -278,27 +272,21 @@ export default function PopularFacetsTable() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Button
-                              variant="subtle"
-                              size="sm"
-                              aria-label={t("actions.edit")}
-                              title={t("actions.edit")}
+                            <IconAction
+                              label={t("actions.edit")}
                               onClick={() =>
                                 setEditing({ kind, value, label: option?.label ?? value })
                               }
                             >
-                              <Pencil className="size-4" />
-                            </Button>
-                            <Button
-                              variant="subtle"
-                              size="sm"
-                              aria-label={t("actions.remove")}
-                              title={t("actions.remove")}
+                              <Pencil />
+                            </IconAction>
+                            <IconAction
+                              label={t("actions.remove")}
                               disabled={save.isPending}
                               onClick={() => commit(values.filter((item) => item !== value))}
                             >
-                              <X className="size-4" />
-                            </Button>
+                              <X />
+                            </IconAction>
                           </div>
                         </TableCell>
                       </TableRow>

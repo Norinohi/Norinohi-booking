@@ -50,6 +50,8 @@ export const leadCreatedSchema = z.object({
 export const leadSchema = leadCreatedSchema.extend({
   listingId: z.string().nullable(),
   listingTitle: z.string().nullable(),
+  /* Null once the listing is gone; the title still names the boat. */
+  listingSlug: z.string().nullable(),
   userId: z.string().nullable(),
   name: z.string(),
   email: z.string(),

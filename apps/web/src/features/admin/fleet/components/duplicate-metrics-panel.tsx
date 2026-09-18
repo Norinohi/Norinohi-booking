@@ -94,7 +94,7 @@ export default function DuplicateMetricsPanel({
 
       <div hidden={!open} className="border-t border-natural-50 p-4">
         <div className="overflow-x-auto">
-          <Table className="min-w-200 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">
+          <Table className="min-w-160 [&_td]:px-3 [&_td]:py-3 [&_th]:h-12.5 [&_th]:px-3 [&_th]:py-0">
             <TableHeader>
               <TableRow>
                 <TableHead>{t("metrics.table.rule")}</TableHead>
