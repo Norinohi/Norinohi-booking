@@ -147,17 +147,17 @@ export default function SyncRunsTable() {
         </div>
       </div>
 
-      <Table className="min-w-275 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">
+      <Table className="min-w-200 [&_td]:px-3 [&_td]:py-3 [&_th]:h-12.5 [&_th]:px-3 [&_th]:py-0">
         <TableHeader>
           <TableRow>
             <TableHead>{t("table.provider")}</TableHead>
             <TableHead>{t("table.kind")}</TableHead>
             <TableHead>{t("table.status")}</TableHead>
             <TableHead>{t("table.results")}</TableHead>
-            <TableHead>{t("table.errors")}</TableHead>
+            <TableHead className="w-20">{t("table.errors")}</TableHead>
             <TableHead>{t("table.started")}</TableHead>
             <TableHead>{t("table.finished")}</TableHead>
-            <TableHead>{t("table.details")}</TableHead>
+            <TableHead className="w-20 text-right">{t("table.details")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -188,19 +188,21 @@ export default function SyncRunsTable() {
                             {t(`status.${run.status}`)}
                           </Chip>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap">{counts(run)}</TableCell>
+                        <TableCell className="max-w-52 text-sm">{counts(run)}</TableCell>
                         <TableCell className="whitespace-nowrap">{run.errorCount}</TableCell>
                         <TableCell className="whitespace-nowrap">{at(run.startedAt)}</TableCell>
                         <TableCell className="whitespace-nowrap">{at(run.finishedAt)}</TableCell>
-                        <TableCell>
+                        <TableCell className="text-right">
                           <Button
                             variant="subtle"
-                            size="sm"
+                            size="icon-md"
                             aria-expanded={isOpen}
+                            aria-label={isOpen ? t("details.hide") : t("details.show")}
+                            title={isOpen ? t("details.hide") : t("details.show")}
+                            className="[&_svg]:size-4"
                             onClick={() => setExpanded(isOpen ? null : run.syncRunId)}
                           >
                             {isOpen ? <ChevronUp /> : <ChevronDown />}
-                            {isOpen ? t("details.hide") : t("details.show")}
                           </Button>
                         </TableCell>
                       </TableRow>,

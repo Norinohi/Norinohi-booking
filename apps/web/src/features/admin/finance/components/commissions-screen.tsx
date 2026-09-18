@@ -13,7 +13,7 @@ import {
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
-import { ListFilter, Plus } from "lucide-react";
+import { ListFilter, Pencil, Plus, Power, PowerOff } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useState } from "react";
@@ -24,6 +24,7 @@ import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { authClient } from "@/lib/auth-client";
 import { SITE_NAME } from "@/lib/seo";
 
+import IconAction from "../../shared/components/icon-action";
 import { useInstant } from "../../shared/hooks/use-instant";
 import { SHORT_DAY } from "../../shared/lib/instant";
 import { useCommissions, useSetCommissionActive } from "../hooks/use-commissions";
@@ -187,16 +188,16 @@ export default function CommissionsScreen({ user }: { user: { name: string; emai
               </div>
 
               <div className="overflow-x-auto">
-                <Table className="min-w-200 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">
+                <Table className="min-w-180 [&_td]:px-3 [&_td]:py-3 [&_th]:h-12.5 [&_th]:px-3 [&_th]:py-0">
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t("table.provider")}</TableHead>
                       <TableHead>{t("table.operator")}</TableHead>
-                      <TableHead>{t("table.rate")}</TableHead>
+                      <TableHead className="w-20">{t("table.rate")}</TableHead>
                       <TableHead>{t("table.window")}</TableHead>
-                      <TableHead>{t("table.status")}</TableHead>
-                      <TableHead>{t("table.added")}</TableHead>
-                      <TableHead>{t("table.actions")}</TableHead>
+                      <TableHead className="w-24">{t("table.status")}</TableHead>
+                      <TableHead className="w-28">{t("table.added")}</TableHead>
+                      <TableHead className="w-24 text-right">{t("table.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -234,22 +235,17 @@ export default function CommissionsScreen({ user }: { user: { name: string; emai
                                 </TableCell>
                                 <TableCell>{instant(rate.createdAt, SHORT_DAY)}</TableCell>
                                 <TableCell>
-                                  <div className="flex gap-2">
-                                    <Button
-                                      variant="secondary"
-                                      size="sm"
-                                      onClick={() => openEdit(rate)}
-                                    >
-                                      {t("edit")}
-                                    </Button>
-                                    <Button
-                                      variant="secondary"
-                                      size="sm"
+                                  <div className="flex items-center justify-end gap-1">
+                                    <IconAction label={t("edit")} onClick={() => openEdit(rate)}>
+                                      <Pencil />
+                                    </IconAction>
+                                    <IconAction
+                                      label={rate.active ? t("switchOff") : t("switchOn")}
                                       disabled={setActive.isPending}
                                       onClick={() => toggle(rate)}
                                     >
-                                      {rate.active ? t("switchOff") : t("switchOn")}
-                                    </Button>
+                                      {rate.active ? <PowerOff /> : <Power />}
+                                    </IconAction>
                                   </div>
                                 </TableCell>
                               </TableRow>

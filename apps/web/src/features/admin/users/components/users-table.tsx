@@ -146,13 +146,13 @@ export default function UsersTable() {
         </p>
       ) : null}
 
-      <Table className="min-w-225 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">
+      <Table className="min-w-190 [&_td]:px-3 [&_td]:py-3 [&_th]:h-12.5 [&_th]:px-3 [&_th]:py-0">
         <TableHeader>
           <TableRow>
             <TableHead>{t("table.user")}</TableHead>
             <TableHead>{t("table.email")}</TableHead>
             <TableHead>{t("table.phone")}</TableHead>
-            <TableHead>{t("table.bookings")}</TableHead>
+            <TableHead className="w-24">{t("table.bookings")}</TableHead>
             <TableHead>{t("table.lastBooking")}</TableHead>
             <TableHead>{t("table.status")}</TableHead>
           </TableRow>
@@ -193,7 +193,7 @@ export default function UsersTable() {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="max-w-60">
+                      <TableCell className="max-w-56">
                         <div className="flex flex-col">
                           <a
                             href={`mailto:${account.email}`}

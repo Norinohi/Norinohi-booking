@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@yacht-charter/ui/components/actions/button";
 import {
   Table,
   TableBody,
@@ -12,13 +11,14 @@ import {
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
-import { Search } from "lucide-react";
+import { Search, Undo2 } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { Link } from "@/i18n/navigation";
 
 import { REFUND_QUEUE_STATUSES } from "../api/queries";
+import IconAction from "../../shared/components/icon-action";
 import { useInstant } from "../../shared/hooks/use-instant";
 import { useAmount } from "../hooks/use-amount";
 import { useBookingQueue } from "../hooks/use-payments";
@@ -81,15 +81,15 @@ export default function RefundQueueTable() {
         }}
       />
 
-      <Table className="min-w-225 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">
+      <Table className="min-w-180 [&_td]:px-3 [&_td]:py-3 [&_th]:h-12.5 [&_th]:px-3 [&_th]:py-0">
         <TableHeader>
           <TableRow>
-            <TableHead>{t("table.cancelled")}</TableHead>
+            <TableHead className="w-32">{t("table.cancelled")}</TableHead>
             <TableHead>{t("table.customer")}</TableHead>
-            <TableHead>{t("table.booking")}</TableHead>
+            <TableHead className="w-44">{t("table.booking")}</TableHead>
             <TableHead>{t("table.charter")}</TableHead>
-            <TableHead>{t("table.collected")}</TableHead>
-            <TableHead>{t("table.actions")}</TableHead>
+            <TableHead className="w-32">{t("table.collected")}</TableHead>
+            <TableHead className="w-20 text-right">{t("table.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -114,25 +114,29 @@ export default function RefundQueueTable() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="font-medium text-foreground">
+                          <span className="max-w-52 truncate font-medium text-foreground">
                             {booking.customerName ?? "-"}
                           </span>
                           <a
                             href={`mailto:${booking.customerEmail}`}
-                            className="text-sm text-natural-500 transition-colors hover:text-brand"
+                            title={booking.customerEmail}
+                            className="max-w-52 truncate text-sm text-natural-500 transition-colors hover:text-brand"
                           >
                             {booking.customerEmail}
                           </a>
                         </div>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell>
                         <Link
                           href={`/admin/staff/bookings/${booking.id}`}
                           className="font-medium text-brand hover:underline"
                         >
                           {booking.reference}
                         </Link>
-                        <span className="block text-sm text-natural-500">
+                        <span
+                          className="block max-w-44 truncate text-sm text-natural-500"
+                          title={booking.listingTitle}
+                        >
                           {booking.listingTitle}
                         </span>
                       </TableCell>
@@ -146,9 +150,15 @@ export default function RefundQueueTable() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Button variant="brand" size="sm" onClick={() => setRefunding(booking)}>
-                          {t("actions.refund")}
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <IconAction
+                            label={t("actions.refund")}
+                            primary
+                            onClick={() => setRefunding(booking)}
+                          >
+                            <Undo2 />
+                          </IconAction>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

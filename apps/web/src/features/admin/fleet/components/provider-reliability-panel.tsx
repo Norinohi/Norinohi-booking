@@ -88,7 +88,7 @@ export default function ProviderReliabilityPanel() {
       </div>
 
       <div className="overflow-x-auto">
-        <Table className="min-w-200 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">
+        <Table className="min-w-160 [&_td]:px-3 [&_td]:py-3 [&_th]:h-12.5 [&_th]:px-3 [&_th]:py-0">
           <TableHeader>
             <TableRow>
               <TableHead>{t("table.provider")}</TableHead>
