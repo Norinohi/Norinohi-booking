@@ -27,5 +27,11 @@
   "marinaDistance": "{km} км від {stop}",
   "search": "Пошук",
   "filtersTitle": "Усі фільтри ({count})",
-  "clearAll": "Очистити все"
+  "clearAll": "Очистити все",
+  "showList": "Показати",
+  "hideList": "Згорнути",
+  "filtersButton": "Фільтри{count, plural, =0 {} other { (#)}}",
+  "back": "Назад",
+  "closeFilters": "Закрити фільтри",
+  "showRoutes": "{count, plural, =0 {Немає маршрутів} one {Показати # маршрут} few {Показати # маршрути} many {Показати # маршрутів} other {Показати # маршруту}}"
 }

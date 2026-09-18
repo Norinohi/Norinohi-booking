@@ -27,5 +27,11 @@
   "marinaDistance": "{km} km from {stop}",
   "search": "Search",
   "filtersTitle": "All filters ({count})",
-  "clearAll": "Clear all"
+  "clearAll": "Clear all",
+  "showList": "Show",
+  "hideList": "Hide",
+  "filtersButton": "Filters{count, plural, =0 {} other { (#)}}",
+  "back": "Back",
+  "closeFilters": "Close filters",
+  "showRoutes": "{count, plural, =0 {No routes} one {Show # route} other {Show # routes}}"
 }

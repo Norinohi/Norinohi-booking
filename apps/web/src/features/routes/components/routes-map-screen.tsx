@@ -17,6 +17,7 @@ import { matchesFilters, type RouteFilters } from "../lib/route-filters";
 import { routeStart } from "../lib/route-geometry";
 import { routesMapParsers, serializeRoutesMap } from "../lib/search-params";
 import { RouteStartsLayer, SelectedRouteLayer } from "./routes-map-layers";
+import RoutesMapChrome from "./routes-map-chrome";
 import RoutesPanel, { RouteFiltersCard } from "./routes-panel";
 
 const MapCanvas = dynamic(() => import("@/components/shared/map/map-canvas"), {
@@ -65,6 +66,10 @@ export default function RoutesMapScreen() {
   const [map, setMap] = useState<MapInstance | null>(null);
   const [dismissSignal, setDismissSignal] = useState(0);
   const [openMarina, setOpenMarina] = useState<RouteMarina | null>(null);
+  /* Phones only. The list waits behind its button, as on the yachts map; an open route shows at
+     once and folds per route, so opening another one unfolds it. */
+  const [listOpen, setListOpen] = useState(false);
+  const [fold, setFold] = useState({ key: "", collapsed: false });
   const panelRef = useRef<HTMLElement>(null);
 
   const { data } = useQuery(routesMapQueryOptions(locale));
@@ -105,6 +110,10 @@ export default function RoutesMapScreen() {
   const resetFilters = () => void setState({ q: null, country: null, length: null, level: null });
   const select = (next: string | null) =>
     router.push(serializeRoutesMap(next ? `/routes/${next}` : "/routes", state), { scroll: false });
+  const collapsed = selected ? fold.key === selected.id && fold.collapsed : !listOpen;
+  const setCollapsed = (next: boolean) =>
+    selected ? setFold({ key: selected.id, collapsed: next }) : setListOpen(!next);
+
   const focus = (point: Coordinates) => {
     if (!map) return;
     map.easeTo({
@@ -115,9 +124,11 @@ export default function RoutesMapScreen() {
   };
 
   return (
-    <div className="relative h-[calc(100dvh-var(--header-h))] min-h-0">
+    /* Full height on a phone, where the site header steps aside for the map as on /yachts/map. */
+    <div className="relative h-dvh min-h-0 md:h-[calc(100dvh-var(--header-h))]">
       <MapCanvas
         pathDepth={2}
+        locateControl
         dimOpacity={0}
         onReady={setMap}
         onBackgroundPress={() => setDismissSignal((signal) => signal + 1)}
@@ -148,7 +159,7 @@ export default function RoutesMapScreen() {
           "pointer-events-none absolute inset-x-3 bottom-3 flex max-h-[55%] items-start gap-5 md:inset-x-auto md:top-6 md:bottom-6 md:left-6 md:max-h-none 2xl:top-8 2xl:bottom-8 2xl:left-8",
           /* A marina's boats open over the map, and on a phone the panel would sit on top of them,
              as the search map's chrome would; it steps aside until the card is closed. */
-          openMarina && "max-md:hidden",
+          (openMarina || (!selected && !listOpen)) && "max-md:hidden",
         )}
       >
         <RouteFiltersCard
@@ -171,9 +182,25 @@ export default function RoutesMapScreen() {
           marinas={marinas}
           marinasPending={Boolean(selected) && marinasQuery.isPending}
           marinasFailed={marinasQuery.isError}
+          collapsed={collapsed}
+          onCollapsedChange={setCollapsed}
           className="pointer-events-auto max-h-[50dvh] w-full md:h-full md:max-h-full md:w-100"
         />
       </div>
+
+      <RoutesMapChrome
+        routes={routes}
+        visibleCount={visible.length}
+        filters={filters}
+        onFiltersChange={(next) => void setState(next)}
+        onResetFilters={resetFilters}
+        listOpen={!selected && listOpen}
+        onListOpenChange={(open) => {
+          if (selected && open) select(null);
+          setListOpen(open);
+        }}
+        popupOpen={Boolean(openMarina)}
+      />
     </div>
   );
 }
