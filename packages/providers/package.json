@@ -31,7 +31,8 @@
     "audit:rule-rejects": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/audit/rule-rejected-slots.ts",
     "audit:coverage": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/audit/catalogue-coverage.ts",
     "audit:quotes": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/audit/live-quotes.ts",
-    "audit:bm-checkin-days": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/audit/bm-checkin-days.ts"
+    "audit:bm-checkin-days": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/audit/bm-checkin-days.ts",
+    "audit:bm-mismatched-offers": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/audit/bm-mismatched-offers.ts"
   },
   "dependencies": {
     "@yacht-charter/db": "workspace:*",
