@@ -249,6 +249,19 @@ export const env = createEnv({
      * longer dominates the run.
      */
     BOOKING_MANAGER_SWEEP_CONCURRENCY: z.coerce.number().int().min(1).max(32).default(12),
+    /*
+     * The same fan-out for the nightly price-weeks pass, which needs its own number because it
+     * runs against a different bottleneck. The catalogue walk is latency-bound and scales to 12;
+     * this pass hands every answer to the availability writer, which writes thousands of prices
+     * per week on one connection, so past a few lanes the vendor is no longer what the run is
+     * waiting for. Measured read-only on 2026-09-18: Booking Manager answered 1, 3, 6 and 10
+     * parallel `/offers` calls in 2.4s, 2.9s, 3.4s and 4.3s, all 200.
+     *
+     * Capped at 8 rather than at the account ceiling because a nightly run that trips the
+     * vendor's concurrency rule costs a day of live quotes too, and this pass buys little above
+     * that point.
+     */
+    BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY: z.coerce.number().int().min(1).max(8).default(4),
     // We must release a hold before the vendor auto-expires it, otherwise we sell
     // a slot Booking Manager has already dropped.
     BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: z.coerce.number().int().nonnegative().default(15),

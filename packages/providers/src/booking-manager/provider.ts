@@ -48,6 +48,8 @@ import {
   withShortCharterPeriods,
 } from "../shared/sweep-periods";
 import { DEFAULT_RATE_LIMIT_PAUSE, priceWeeksSource } from "../shared/price-weeks";
+import { createConcurrencyGovernor } from "../shared/concurrency-governor";
+import { log } from "evlog";
 import { streamBookingManagerConfirmedOffers } from "./confirmed-offers";
 import { warmBookingManagerServers } from "./warmup";
 import { createBookingManagerAvailabilitySource } from "./occupancy";
@@ -218,10 +220,28 @@ export class BookingManagerInventoryProvider
    * currencies would flip the stored price and its hash every time the two passes alternate.
    */
   createPriceWeeksSource(weeks: readonly SweepPeriod[]): AvailabilitySource {
+    /*
+     * One governor for the whole pass, not one per stream. The source restarts the stream at the
+     * week a rate limit stopped, so a governor built inside `stream` would hand the vendor back
+     * the width that earned the 429 on every restart.
+     */
+    const concurrency = createConcurrencyGovernor({
+      start: this.config.priceWeeksConcurrency,
+      onBackOff: (limit) => log.warn({ action: "booking_manager.price_weeks_narrowed", limit }),
+    });
+
     return priceWeeksSource({
       weeks,
       warmUp: async () => reportColdStart(await warmBookingManagerServers(this.client)),
-      rateLimit: DEFAULT_RATE_LIMIT_PAUSE,
+      rateLimit: {
+        ...DEFAULT_RATE_LIMIT_PAUSE,
+        onPause: (pause, week) =>
+          log.warn({
+            action: "booking_manager.price_weeks_rate_limited",
+            pause,
+            week: week.startDate,
+          }),
+      },
       stream: (pending) =>
         streamBookingManagerConfirmedOffers(
           {
@@ -231,6 +251,7 @@ export class BookingManagerInventoryProvider
             years: this.years,
             weeks: pending,
             today: this.today,
+            concurrency,
           },
           { weekIndex: 0 },
         ),

@@ -33,6 +33,7 @@ const config: BookingManagerConfig = {
   syncTimeoutMs: 5000,
   minIntervalMs: 0,
   sweepConcurrency: 1,
+  priceWeeksConcurrency: 4,
   optionSafetyMarginMinutes: 15,
   timeZone: "Europe/Zagreb",
   companyScope: unscopedCompanies,

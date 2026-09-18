@@ -5,7 +5,7 @@ import type { JsonObject } from "../shared/json";
 import type { JsonValue } from "../shared/json";
 import { idOf, objectsOf } from "../shared/projection-helpers";
 import { type CompanyScope, unscopedCompanies } from "../shared/company-scope";
-import { orderedWindow } from "../shared/ordered-window";
+import { fixedLimit, orderedWindow } from "../shared/ordered-window";
 import { retireOutOfScopeCompanies } from "../sync/retire-companies";
 import type { CatalogueSyncEvent, CatalogueSyncSource, SyncReporter } from "../sync/runner";
 import type { ProviderResourceType } from "../types";
@@ -324,13 +324,16 @@ export async function* syncBookingManagerCatalogue(
    * does not forbid parallel calls on one credential; it has published no limit at
    * all, which is why the width is a variable and 1 restores the old walk.
    */
-  const sweep = orderedWindow(companyIds.slice(startCompany), concurrency, (companyId, slot) =>
-    client.get(
-      bookingManagerEndpoints.yachts,
-      restYachtListSchema,
-      { ...YACHT_QUERY, companyId },
-      client.sweepLane("yachts", slot % Math.max(1, concurrency)),
-    ),
+  const sweep = orderedWindow(
+    companyIds.slice(startCompany),
+    fixedLimit(concurrency),
+    (companyId, slot) =>
+      client.get(
+        bookingManagerEndpoints.yachts,
+        restYachtListSchema,
+        { ...YACHT_QUERY, companyId },
+        client.sweepLane("yachts", slot % Math.max(1, concurrency)),
+      ),
   );
 
   for await (const { index: offset, item: companyId, result } of sweep) {

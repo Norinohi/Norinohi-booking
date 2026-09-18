@@ -17,6 +17,7 @@ const config: BookingManagerConfig = resolveBookingManagerConfig({
   BOOKING_MANAGER_SYNC_TIMEOUT_MS: 180_000,
   BOOKING_MANAGER_MIN_INTERVAL_MS: 0,
   BOOKING_MANAGER_SWEEP_CONCURRENCY: 2,
+  BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY: 4,
   BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: 15,
   BOOKING_MANAGER_TIMEZONE: "Europe/Zagreb",
 });
@@ -181,6 +182,25 @@ describe("foldOffersToConfirmed", () => {
     );
 
     expect(confirmed).not.toHaveProperty("listPriceMinor");
+  });
+
+  /* Asked for one night, the vendor also answers with a day trip out and back the same day. */
+  it("keeps only offers for the days asked about, whatever their times", () => {
+    const confirmed = foldOffersToConfirmed(
+      [
+        offer({
+          yachtId: "501",
+          dateFrom: "2026-09-26 09:00:00",
+          dateTo: "2026-09-26 17:00:00",
+          product: "DailyCharter",
+        }),
+        offer({ yachtId: "502", dateFrom: "2026-09-26 15:30:00", dateTo: "2026-09-27 10:00:00" }),
+      ],
+      "2026-09-26",
+      "2026-09-27",
+    );
+
+    expect(confirmed.map((row) => row.externalYachtId)).toEqual(["502"]);
   });
 
   it("strikes nothing through on an offer the vendor states no discount for", () => {

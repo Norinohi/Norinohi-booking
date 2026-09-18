@@ -14,6 +14,8 @@ export interface BookingManagerConfig {
   minIntervalMs: number;
   /** Reads the catalogue and price sweeps keep in flight; see the env note. */
   sweepConcurrency: number;
+  /** Periods the nightly price-weeks pass starts with; see the env note. */
+  priceWeeksConcurrency: number;
   /** `holdExpiresAt = expirationDate − this`, so our sweeper releases first. */
   optionSafetyMarginMinutes: number;
   /**
@@ -43,6 +45,7 @@ export interface BookingManagerEnvSource {
   BOOKING_MANAGER_SYNC_TIMEOUT_MS: number;
   BOOKING_MANAGER_MIN_INTERVAL_MS: number;
   BOOKING_MANAGER_SWEEP_CONCURRENCY: number;
+  BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY: number;
   BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: number;
   BOOKING_MANAGER_TIMEZONE: string;
 }
@@ -63,6 +66,13 @@ export const BM_MAX_CONCURRENT_CALLS = 20;
  */
 export const BM_LIVE_TRAFFIC_RESERVE = 4;
 export const BM_MAX_SWEEP_CONCURRENCY = BM_MAX_CONCURRENT_CALLS - BM_LIVE_TRAFFIC_RESERVE;
+
+/**
+ * The price-weeks pass runs at night beside the catalogue walk's own lanes, so its ceiling is
+ * lower again: the two together must stay under the account limit even if both are misconfigured
+ * upward, and this pass stops gaining well before it.
+ */
+export const BM_MAX_PRICE_WEEKS_CONCURRENCY = 8;
 
 /**
  * Keyed on a fingerprint rather than the token: the queue key reaches logs and
@@ -99,6 +109,13 @@ export function resolveBookingManagerConfig(
     );
   }
 
+  if (source.BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY > BM_MAX_PRICE_WEEKS_CONCURRENCY) {
+    throw new ContractError(
+      `BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY is ${source.BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY}; the nightly pass is limited to ${BM_MAX_PRICE_WEEKS_CONCURRENCY} so it cannot combine with the catalogue sweep to exceed the ${BM_MAX_CONCURRENT_CALLS} concurrent calls the vendor allows`,
+      { providerCode: "PRICE_WEEKS_CONCURRENCY_TOO_HIGH" },
+    );
+  }
+
   return {
     baseUrl: source.BOOKING_MANAGER_BASE_URL.replace(/\/+$/, ""),
     apiToken,
@@ -110,6 +127,7 @@ export function resolveBookingManagerConfig(
     syncTimeoutMs: source.BOOKING_MANAGER_SYNC_TIMEOUT_MS,
     minIntervalMs: source.BOOKING_MANAGER_MIN_INTERVAL_MS,
     sweepConcurrency: source.BOOKING_MANAGER_SWEEP_CONCURRENCY,
+    priceWeeksConcurrency: source.BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY,
     optionSafetyMarginMinutes: source.BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES,
     timeZone: source.BOOKING_MANAGER_TIMEZONE,
     queueKey: bookingManagerQueueKey(apiToken),
