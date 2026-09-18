@@ -1,0 +1,62 @@
+name: Server ready
+
+# A GitHub check that passes once the server is running the pushed commit. The web service in
+# Railway has "Wait for CI" on, so its build, which prerenders the catalogue against the live
+# API, starts only after the server finished migrating and switched to the new code. The server
+# service must keep "Wait for CI" off, or the two would wait on each other.
+on:
+  push:
+    branches: [main, staging]
+
+concurrency:
+  group: server-ready-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server-ready:
+    name: server running this commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Did this push redeploy the server?
+        id: changed
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # The server's Railway watchPatterns (apps/server/railway.json).
+          pattern='^(apps/server/|packages/(api|auth|config|db|env)/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|\.node-version$)'
+          if [ -z "$BEFORE" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            echo "server=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "$BEFORE" "$GITHUB_SHA" | grep -Eq "$pattern"; then
+            echo "server=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "server=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Wait for the server to run this commit
+        if: steps.changed.outputs.server == 'true'
+        env:
+          PRODUCTION_URL: ${{ vars.SERVER_URL_PRODUCTION }}
+          STAGING_URL: ${{ vars.SERVER_URL_STAGING }}
+        run: |
+          if [ "$GITHUB_REF_NAME" = "main" ]; then SERVER_URL="$PRODUCTION_URL"; else SERVER_URL="$STAGING_URL"; fi
+          if [ -z "$SERVER_URL" ]; then
+            echo "::error::Set the repository variable SERVER_URL_PRODUCTION or SERVER_URL_STAGING"
+            exit 1
+          fi
+          deadline=$(( $(date +%s) + 35 * 60 ))
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            commit=$(curl -fsS --max-time 10 "$SERVER_URL/version" | jq -r '.commit // empty' || true)
+            if [ "$commit" = "$GITHUB_SHA" ]; then
+              echo "Server at $SERVER_URL runs $GITHUB_SHA"
+              exit 0
+            fi
+            echo "Server reports '${commit:-unknown}', waiting for $GITHUB_SHA"
+            sleep 20
+          done
+          echo "::error::The server did not switch to $GITHUB_SHA within 35 minutes"
+          exit 1

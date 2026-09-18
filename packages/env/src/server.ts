@@ -43,6 +43,9 @@ export const env = createEnv({
     OPENAPI_SERVER_URL: z.url().optional(),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
     PORT: z.coerce.number().int().positive().default(3000),
+    /* Injected by Railway on every deployment; `/version` reports it so CI can tell when the
+       server it waits on is running the pushed commit. */
+    RAILWAY_GIT_COMMIT_SHA: z.string().optional(),
     PROVIDER_MODE: z.enum(PROVIDER_KEYS).default("mock"),
     // Optional as a pair: the Google sign-in button only works when both are set,
     // and packages/auth registers the provider only when both are present.
