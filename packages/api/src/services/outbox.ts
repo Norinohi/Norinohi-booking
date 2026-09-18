@@ -59,6 +59,42 @@ export async function enqueueOutbox(
     .onConflictDoNothing({ target: [outboxMessage.kind, outboxMessage.subjectId] });
 }
 
+/** How long a delivered message is kept. Nothing reads a sent row back; this is for ops. */
+const SENT_RETENTION_DAYS = 30;
+
+/** Rows deleted per statement, so a first run over a long backlog never holds one huge lock. */
+const PRUNE_BATCH = 5000;
+
+/**
+ * Drops delivered messages past the retention window.
+ *
+ * Deleting one frees its `(kind, subject_id)` slot, which is safe only because no subject is
+ * ever enqueued again for a reason that should stay silent: invitations and booking notices
+ * are keyed on ids minted in the same call that enqueues them, and a `release_option` that
+ * comes back is a fresh failed release that does need retrying.
+ */
+export async function pruneSentOutbox(
+  db: Database,
+  now: Date = new Date(),
+): Promise<{ outboxPruned: number }> {
+  const cutoff = new Date(now.getTime() - SENT_RETENTION_DAYS * 86_400_000);
+  let outboxPruned = 0;
+
+  for (;;) {
+    const result = await db.execute(sql`
+      delete from ${outboxMessage}
+      where ${outboxMessage.id} in (
+        select ${outboxMessage.id} from ${outboxMessage}
+        where ${outboxMessage.status} = 'sent' and ${outboxMessage.sentAt} < ${cutoff}
+        limit ${PRUNE_BATCH}
+      )
+    `);
+    const deleted = result.rowCount ?? 0;
+    outboxPruned += deleted;
+    if (deleted < PRUNE_BATCH) return { outboxPruned };
+  }
+}
+
 export type DrainResult = {
   sent: number;
   /** Messages whose send failed and that are waiting on their backoff. */

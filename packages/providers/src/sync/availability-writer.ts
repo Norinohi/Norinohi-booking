@@ -303,13 +303,17 @@ export interface AvailabilitySyncStore {
    * had; a listing absent from the batch is not touched at all.
    */
   writeFreePeriods(writes: readonly FreePeriodWrite[], years: readonly number[]): Promise<void>;
-  /** False when the period is held by an occupied slot, which the vendor's own dump wins. */
-  confirmSlot(input: ConfirmSlotInput): Promise<boolean>;
+  /**
+   * Writes one page of confirmed offers and answers with the listing id of every slot it
+   * actually changed, once per slot. A period held by an occupied slot is left alone, since the
+   * vendor's own dump wins, and so is one whose stored price already says the same thing.
+   */
+  confirmSlots(inputs: readonly ConfirmSlotInput[]): Promise<string[]>;
   /**
    * Restates which listings the provider declined to sell one exact period to.
    *
-   * Replaces the period's rows wholesale rather than adding to them, so a week that has
-   * since opened up loses its refusal. The store decides who is eligible to be refused -
+   * Restates the period's rows rather than adding to them, so a week that has since opened
+   * up loses its refusal. The store decides who is eligible to be refused -
    * priced for exactly this period and free across it - because that is a join, and offers
    * only ever name the listings that said yes.
    */
@@ -797,6 +801,7 @@ export async function runAvailabilitySync(
       try {
         for await (const page of source.searchConfirmed(options.resume)) {
           const offeredListingIds = new Set<string>();
+          const confirmations: ConfirmSlotInput[] = [];
           for (const offer of page.offers) {
             const ref = await store.resolveListing(offer.externalYachtId);
             if (!ref) {
@@ -805,7 +810,7 @@ export async function runAvailabilitySync(
               continue;
             }
             offeredListingIds.add(ref.listingId);
-            const changed = await store.confirmSlot({
+            confirmations.push({
               ...ref,
               startDate: offer.startDate,
               endDate: offer.endDate,
@@ -816,10 +821,11 @@ export async function runAvailabilitySync(
               sourceHash: offer.sourceHash,
               seenAt: startedAt,
             });
-            if (changed) {
-              confirmedSlots += 1;
-              touched.add(ref.listingId);
-            }
+          }
+
+          for (const listingId of await store.confirmSlots(confirmations)) {
+            confirmedSlots += 1;
+            touched.add(listingId);
           }
 
           /*
@@ -965,6 +971,21 @@ function isoDay(at: Date): string {
 /** The oldest confirmation an occupancy sweep leaves standing; see CONFIRMED_PRICE_TRUST_DAYS. */
 function trustedSince(at: Date): Date {
   return new Date(at.getTime() - CONFIRMED_PRICE_TRUST_DAYS * 86_400_000);
+}
+
+/**
+ * How stale a restated-but-unchanged row may get before it is stamped again. Both stamps it
+ * guards are read against fourteen-day windows, so a day costs them nothing that matters.
+ */
+const RESTAMP_AFTER = "1 day";
+
+function periodValues(
+  rows: readonly { listingOfferId: string; startDate: string; endDate: string }[],
+) {
+  return sql.join(
+    rows.map((row) => sql`(${row.listingOfferId}, ${row.startDate}::date, ${row.endDate}::date)`),
+    sql`, `,
+  );
 }
 
 export function storableMinor(value: number | null): boolean {
@@ -1192,72 +1213,154 @@ export function createDrizzleAvailabilitySyncStore(
               // The stamp the sweep reads; `$onUpdate` does not fire on a conflict path.
               updatedAt: sql`excluded.updated_at`,
             },
+            /*
+             * An occupied row this run already wrote is not rewritten. One the run has not
+             * stamped yet still is, data unchanged or not: the sweep deletes whatever this run
+             * did not restamp, so skipping it would free a week that is still sold.
+             */
+            setWhere: sql`(
+              ${availabilitySlot.listingId}, ${availabilitySlot.listingSourceId},
+              ${availabilitySlot.status}, ${availabilitySlot.optionExpiresAt},
+              ${availabilitySlot.availabilityConfirmed}, ${availabilitySlot.priceMinor},
+              ${availabilitySlot.currency}, ${availabilitySlot.minNights},
+              ${availabilitySlot.checkinWeekday}, ${availabilitySlot.checkoutWeekday},
+              ${availabilitySlot.sourceHash}
+            ) is distinct from (
+              excluded.listing_id, excluded.listing_source_id,
+              excluded.status, excluded.option_expires_at,
+              excluded.availability_confirmed, excluded.price_minor,
+              excluded.currency, excluded.min_nights,
+              excluded.checkin_weekday, excluded.checkout_weekday,
+              excluded.source_hash
+            ) or ${availabilitySlot.updatedAt} < excluded.updated_at`,
           });
       }
     },
 
-    async confirmSlot(input) {
+    async confirmSlots(inputs) {
       /* No offer, nowhere to put it: a retired record's confirmations are not ours to store. */
-      if (input.listingOfferId === null) return false;
-
-      /*
-       * Looked up by offer, not by listing. Scoped to the listing, one vendor's occupancy
-       * silently refused the other vendor's confirmed, priced offer for the same week, and a
-       * sellable boat read as taken.
-       */
-      const [existing] = await db
-        .select({ id: availabilitySlot.id, status: availabilitySlot.status })
-        .from(availabilitySlot)
-        .where(
-          and(
-            eq(availabilitySlot.listingOfferId, input.listingOfferId),
-            eq(availabilitySlot.startDate, input.startDate),
-            eq(availabilitySlot.endDate, input.endDate),
-          ),
-        )
-        .limit(1);
-
-      if (existing && existing.status !== "available") return false;
+      const offered = inputs.flatMap((input) =>
+        input.listingOfferId === null ? [] : [{ ...input, listingOfferId: input.listingOfferId }],
+      );
 
       /*
        * Confirming without the rate would publish a bookable week we cannot quote,
        * and nulling only the extras would understate the total. The synthesized slot
        * keeps its catalogue price and its unconfirmed flag, which is the honest state.
        */
-      if (!storableMinor(input.priceMinor) || !storableMinor(input.obligatoryExtrasMinor)) {
-        unstorablePrices += 1;
-        return false;
+      const storable: typeof offered = [];
+      const unstorable: typeof offered = [];
+      for (const input of offered) {
+        const fits = storableMinor(input.priceMinor) && storableMinor(input.obligatoryExtrasMinor);
+        (fits ? storable : unstorable).push(input);
+      }
+      /* Counted only where the offer would otherwise have been written, as the per-offer path
+         did: a period an occupied slot holds is skipped before its price is ever read. */
+      for (const chunk of chunked(unstorable, ROW_CHUNK)) {
+        const held = await db.execute<{ key: string }>(sql`
+          select s.listing_offer_id || '|' || s.start_date || '|' || s.end_date as key
+          from availability_slot s
+          join (values ${periodValues(chunk)}) v(offer_id, start_date, end_date)
+            on s.listing_offer_id = v.offer_id
+            and s.start_date = v.start_date
+            and s.end_date = v.end_date
+          where s.status <> 'available'
+        `);
+        const heldKeys = new Set(held.rows.map((row) => row.key));
+        unstorablePrices += chunk.filter(
+          (input) => !heldKeys.has(`${input.listingOfferId}|${input.startDate}|${input.endDate}`),
+        ).length;
       }
 
-      const values = {
-        availabilityConfirmed: true,
-        priceMinor: input.priceMinor,
-        obligatoryExtrasMinor: input.obligatoryExtrasMinor,
-        /* Dropped rather than refused where it will not fit the column: the strike-through is
-           decoration, and losing it costs nothing the price itself does not already say. */
-        listPriceMinor: storableMinor(input.listPriceMinor) ? input.listPriceMinor : null,
-        currency: input.currency,
-        sourceHash: input.sourceHash,
-        updatedAt: input.seenAt,
-      };
+      const changed: string[] = [];
+      const rows = dedupeSlotsByPeriod(storable);
 
-      if (existing) {
-        await db.update(availabilitySlot).set(values).where(eq(availabilitySlot.id, existing.id));
-        return true;
+      for (const chunk of chunked(rows, ROW_CHUNK)) {
+        /*
+         * Looked up by offer, not by listing. Scoped to the listing, one vendor's occupancy
+         * silently refused the other vendor's confirmed, priced offer for the same week, and a
+         * sellable boat read as taken.
+         *
+         * A period the vendor priced and called free is a confirmed slot even where our
+         * synthesis never proposed it, so it is inserted. An existing row is only rewritten
+         * while it is still available and something on it moved; RETURNING then names exactly
+         * the slots whose price changed, which is what drives the search rebuild.
+         */
+        const written = await db
+          .insert(availabilitySlot)
+          .values(
+            chunk.map((input) => ({
+              listingId: input.listingId,
+              listingSourceId: input.listingSourceId,
+              listingOfferId: input.listingOfferId,
+              startDate: input.startDate,
+              endDate: input.endDate,
+              status: "available" as const,
+              availabilityConfirmed: true,
+              priceMinor: input.priceMinor,
+              obligatoryExtrasMinor: input.obligatoryExtrasMinor,
+              /* Dropped rather than refused where it will not fit the column: the strike-through
+                 is decoration, and losing it costs nothing the price itself does not already say. */
+              listPriceMinor: storableMinor(input.listPriceMinor) ? input.listPriceMinor : null,
+              currency: input.currency,
+              sourceHash: input.sourceHash,
+              updatedAt: input.seenAt,
+            })),
+          )
+          .onConflictDoUpdate({
+            target: [
+              availabilitySlot.listingOfferId,
+              availabilitySlot.startDate,
+              availabilitySlot.endDate,
+            ],
+            set: {
+              availabilityConfirmed: sql`excluded.availability_confirmed`,
+              priceMinor: sql`excluded.price_minor`,
+              obligatoryExtrasMinor: sql`excluded.obligatory_extras_minor`,
+              listPriceMinor: sql`excluded.list_price_minor`,
+              currency: sql`excluded.currency`,
+              sourceHash: sql`excluded.source_hash`,
+              updatedAt: sql`excluded.updated_at`,
+            },
+            setWhere: sql`${availabilitySlot.status} = 'available' and (
+              ${availabilitySlot.availabilityConfirmed}, ${availabilitySlot.priceMinor},
+              ${availabilitySlot.obligatoryExtrasMinor}, ${availabilitySlot.listPriceMinor},
+              ${availabilitySlot.currency}, ${availabilitySlot.sourceHash}
+            ) is distinct from (
+              excluded.availability_confirmed, excluded.price_minor,
+              excluded.obligatory_extras_minor, excluded.list_price_minor,
+              excluded.currency, excluded.source_hash
+            )`,
+          })
+          .returning({ listingId: availabilitySlot.listingId });
+
+        for (const row of written) changed.push(row.listingId);
+
+        /*
+         * The rows the vendor restated unchanged still need their stamp, because the occupancy
+         * sweep retires a confirmed price nothing has re-observed in CONFIRMED_PRICE_TRUST_DAYS.
+         * Once a day is plenty against a fortnight, and it spares the run a write per slot it
+         * already agrees with. A row written just above carries this run's stamp and is skipped.
+         */
+        await db.execute(sql`
+          update availability_slot s
+          set updated_at = v.seen_at
+          from (values ${sql.join(
+            chunk.map(
+              (input) =>
+                sql`(${input.listingOfferId}, ${input.startDate}::date, ${input.endDate}::date, ${input.seenAt.toISOString()}::timestamp)`,
+            ),
+            sql`, `,
+          )}) v(offer_id, start_date, end_date, seen_at)
+          where s.listing_offer_id = v.offer_id
+            and s.start_date = v.start_date
+            and s.end_date = v.end_date
+            and s.status = 'available'
+            and s.updated_at < v.seen_at - ${RESTAMP_AFTER}::interval
+        `);
       }
 
-      // The vendor priced this exact period and called it free, so it is a
-      // confirmed slot even though our synthesis never proposed it.
-      await db.insert(availabilitySlot).values({
-        listingId: input.listingId,
-        listingSourceId: input.listingSourceId,
-        listingOfferId: input.listingOfferId,
-        startDate: input.startDate,
-        endDate: input.endDate,
-        status: "available",
-        ...values,
-      });
-      return true;
+      return changed;
     },
 
     async replaceRefusedPeriods({ period, offeredListingIds }) {
@@ -1315,15 +1418,30 @@ export function createDrizzleAvailabilitySyncStore(
            *
            * This only ever widens: a row that contained the whole charter still covers every
            * night of it, so nothing that earned a refusal before stops earning one.
+           *
+           * Asked of the bands rather than night by night: the ones touching the nights, in
+           * start order, reach the first night, the last one, and never start past the day
+           * after the furthest any earlier band reached. That is every night covered, without
+           * a probe per night. A charter with no nights has nothing to cover.
            */
-          and not exists (
-            select 1
-            from generate_series(${startDate}::date, ${endDate}::date - 1, interval '1 day') night
-            where not exists (
-              select 1 from listing_price_period p
-              where p.listing_offer_id = o.id
-                and p.start_date <= night::date
-                and p.end_date >= night::date
+          and (
+            ${endDate}::date <= ${startDate}::date
+            or exists (
+              select 1
+              from (
+                select p.start_date, p.end_date,
+                  max(p.end_date) over (
+                    order by p.start_date, p.end_date
+                    rows between unbounded preceding and 1 preceding
+                  ) as reach
+                from listing_price_period p
+                where p.listing_offer_id = o.id
+                  and p.start_date <= ${endDate}::date - 1
+                  and p.end_date >= ${startDate}::date
+              ) band
+              having min(band.start_date) <= ${startDate}::date
+                and max(band.end_date) >= ${endDate}::date - 1
+                and bool_and(band.reach is null or band.start_date <= band.reach + 1)
             )
           )
           and not exists (
@@ -1378,14 +1496,15 @@ export function createDrizzleAvailabilitySyncStore(
 
       const offered = new Set(offeredListingIds);
       const refused = eligible.rows.filter((row) => !offered.has(row.listingId));
+      const lifted = eligible.rows.filter((row) => offered.has(row.listingId));
 
       /*
-       * Replaced, not merged: a listing the vendor has since opened up has to lose the refusal
-       * it no longer earns, and only a delete keyed on this exact period can do that without
-       * touching periods the sweep has not reached. Scoped to the eligible set for the same
-       * reason - a listing that has since sold the week is no longer ours to judge.
+       * Restated as a difference, keyed on this exact period so periods the sweep has not
+       * reached are untouched. A listing the vendor has since opened up loses the refusal it no
+       * longer earns; one that has since sold the week is outside the eligible set and no
+       * longer ours to judge, so its row is left as it was.
        */
-      for (const chunk of chunked(eligible.rows)) {
+      for (const chunk of chunked(lifted)) {
         await db.delete(listingRefusedPeriod).where(
           and(
             eq(listingRefusedPeriod.startDate, startDate),
@@ -1398,6 +1517,11 @@ export function createDrizzleAvailabilitySyncStore(
         );
       }
 
+      /*
+       * A refusal restated unchanged is only restamped, and at most daily: search trusts one
+       * for REFUSAL_TRUST_DAYS from its stamp, so it has to keep moving while the vendor keeps
+       * saying no, but not on every run.
+       */
       for (const chunk of chunked(refused, ROW_CHUNK)) {
         await db
           .insert(listingRefusedPeriod)
@@ -1410,7 +1534,21 @@ export function createDrizzleAvailabilitySyncStore(
               endDate,
             })),
           )
-          .onConflictDoNothing();
+          .onConflictDoUpdate({
+            target: [
+              listingRefusedPeriod.listingOfferId,
+              listingRefusedPeriod.startDate,
+              listingRefusedPeriod.endDate,
+            ],
+            set: {
+              listingId: sql`excluded.listing_id`,
+              listingSourceId: sql`excluded.listing_source_id`,
+              updatedAt: sql`now()`,
+            },
+            setWhere: sql`(${listingRefusedPeriod.listingId}, ${listingRefusedPeriod.listingSourceId})
+              is distinct from (excluded.listing_id, excluded.listing_source_id)
+              or ${listingRefusedPeriod.updatedAt} < now() - ${RESTAMP_AFTER}::interval`,
+          });
       }
 
       return refused.length;

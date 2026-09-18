@@ -100,6 +100,89 @@ async function providerDescription(
 }
 
 /**
+ * The listing's amenities, one row per piece of equipment. Exported for its database suite.
+ */
+export function readListingAmenities(db: NodePgDatabase<typeof schema>, listingId: string) {
+  return db.execute<{
+    code: string | null;
+    label: string;
+    obligatory: boolean;
+    crew: boolean;
+    priceMinor: number | null;
+    priceCurrency: string | null;
+    popularRank: number | null;
+    categories: string[] | null;
+  }>(sql`
+      /*
+       * One row per piece of equipment, however each vendor spells it.
+       *
+       * The two providers keep separate amenity taxonomies, their codes are scoped per
+       * provider, so Autopilot exists once as each vendor's own row, and a listing both of
+       * them sell carries both. Folded on the amenity's canonical name the same way the search
+       * documents fold it, so a hull sold by both does not list "Bimini" above "Bimini top".
+       * An included row wins over a priced one: the list answers "what does this yacht have".
+       */
+      with amenities as (
+        select
+          a.code,
+          a.name,
+          coalesce(a.canonical_name, a.name) as label,
+          a.crew,
+          a.amenity_category_id,
+          la.obligatory,
+          la.price_minor,
+          la.price_currency,
+          /* Folded once here and referred to by name. Spelled out twice instead, the DISTINCT ON
+             and the ORDER BY are two expressions over the same columns but different bind
+             parameters, and Postgres compares them before it knows the values: "DISTINCT ON
+             expressions must match initial ORDER BY expressions". */
+          ${normalizedKeySql(sql`coalesce(a.canonical_name, a.name)`)} as folded
+        from listing_amenity la
+        join amenity a on a.id = la.amenity_id
+        where la.listing_id = ${listingId}
+      ),
+      /*
+       * The curated order the amenity list is shown in, off the same facet_media rank the
+       * search cards read. Two vendor spellings of one amenity carry one rank between them --
+       * the lowest wins, whichever of the two this listing published. Each facet row is folded
+       * once per read, not once per amenity.
+       */
+      ranks as (
+        select ${normalizedKeySql(sql`fm.value`)} as folded, min(fm.popular_rank) as popular_rank
+        from facet_media fm
+        where fm.kind = 'equipment'
+        group by 1
+      ),
+      /*
+       * Every vendor category this listing files the amenity under, not just the one whose row
+       * wins the DISTINCT ON below. A hull both providers sell publishes the fitting twice under
+       * two taxonomies, and which of the two survives the fold is decided by name order -- so
+       * reading the category off the surviving row alone would file one boat's autopilot under
+       * Navigation and the next boat's under the vendor's catch-all.
+       */
+      categories as (
+        select am.folded, array_agg(distinct ac.name) as categories
+        from amenities am
+        join amenity_category ac on ac.id = am.amenity_category_id
+        group by am.folded
+      )
+      select distinct on (am.folded)
+        am.code,
+        am.label,
+        am.crew,
+        am.obligatory,
+        am.price_minor as "priceMinor",
+        am.price_currency as "priceCurrency",
+        r.popular_rank as "popularRank",
+        c.categories
+      from amenities am
+      left join ranks r on r.folded = am.folded
+      left join categories c on c.folded = am.folded
+      order by am.folded, am.price_minor nulls first, am.name asc, am.code asc
+    `);
+}
+
+/**
  * Folds an extra's name the way `extra_label_translation.name_key` is written.
  *
  * Mirrors normalizedKey in normalize.ts, so "Boat Cleaning" and "boat cleaning" are one fee.
@@ -153,69 +236,7 @@ export async function getListingDetailByIdOrSlug(
       where l.id = ${listing.listingId}
       limit 1
     `),
-      db.execute<{
-        code: string | null;
-        label: string;
-        obligatory: boolean;
-        crew: boolean;
-        priceMinor: number | null;
-        priceCurrency: string | null;
-        popularRank: number | null;
-        categories: string[] | null;
-      }>(sql`
-      /*
-       * One row per piece of equipment, however each vendor spells it.
-       *
-       * The two providers keep separate amenity taxonomies — their codes are scoped per
-       * provider, so Autopilot exists once as each vendor's own row — and a listing both of
-       * them sell carries both. Folded on the amenity's canonical name the same way the search
-       * documents fold it, so a hull sold by both does not list "Bimini" above "Bimini top".
-       * An included row wins over a priced one: the list answers "what does this yacht have".
-       */
-      select distinct on (key.folded)
-        a.code,
-        coalesce(a.canonical_name, a.name) as label,
-        a.crew,
-        la.obligatory,
-        la.price_minor as "priceMinor",
-        la.price_currency as "priceCurrency",
-        /*
-         * The curated order the amenity list is shown in, off the same facet_media rank the
-         * search cards read. A subquery rather than a join because the row above already
-         * de-duplicates, and because two vendor spellings of one amenity carry one rank
-         * between them -- the lowest wins, whichever of the two this listing published.
-         */
-        (
-          select min(fm.popular_rank)
-          from facet_media fm
-          where fm.kind = 'equipment'
-            and ${normalizedKeySql(sql`fm.value`)} = key.folded
-        ) as "popularRank",
-        /*
-         * Every vendor category this listing files the amenity under, not just the one whose row
-         * won the DISTINCT ON above. A hull both providers sell publishes the fitting twice under
-         * two taxonomies, and which of the two survives the fold is decided by name order -- so
-         * reading the category off the surviving row alone would file one boat's autopilot under
-         * Navigation and the next boat's under the vendor's catch-all.
-         */
-        (
-          select array_agg(distinct ac2.name)
-          from listing_amenity la2
-          join amenity a2 on a2.id = la2.amenity_id
-          join amenity_category ac2 on ac2.id = a2.amenity_category_id
-          where la2.listing_id = la.listing_id
-            and ${normalizedKeySql(sql`coalesce(a2.canonical_name, a2.name)`)} = key.folded
-        ) as "categories"
-      from listing_amenity la
-      join amenity a on a.id = la.amenity_id
-      /* Folded once and referred to by name. Spelled out twice instead, the DISTINCT ON and the
-         ORDER BY are two expressions over the same columns but different bind parameters, and
-         Postgres compares them before it knows the values: "DISTINCT ON expressions must match
-         initial ORDER BY expressions". */
-      cross join lateral (select ${normalizedKeySql(sql`coalesce(a.canonical_name, a.name)`)} as folded) key
-      where la.listing_id = ${listing.listingId}
-      order by key.folded, la.price_minor nulls first, a.name asc
-    `),
+      readListingAmenities(db, listing.listingId),
       db.execute<{
         source: string;
         kind: string;

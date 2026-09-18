@@ -9,6 +9,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -214,7 +215,6 @@ export const listingMedia = pgTable(
 export const listingAmenity = pgTable(
   "listing_amenity",
   {
-    id: id("lamn"),
     listingId: text("listing_id")
       .notNull()
       .references(() => listing.id, { onDelete: "cascade" }),
@@ -229,7 +229,7 @@ export const listingAmenity = pgTable(
     ...timestamps,
   },
   (t) => [
-    unique("listing_amenity_uq").on(t.listingOfferId, t.amenityId),
+    primaryKey({ name: "listing_amenity_pkey", columns: [t.listingOfferId, t.amenityId] }),
     index("listing_amenity_listing_idx").on(t.listingId),
   ],
 );

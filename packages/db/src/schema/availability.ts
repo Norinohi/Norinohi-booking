@@ -6,6 +6,7 @@ import {
   integer,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -115,7 +116,6 @@ export const pricePeriodKind = pgEnum("price_period_kind", ["weekly", "daily"]);
 export const listingPricePeriod = pgTable(
   "listing_price_period",
   {
-    id: id("lpp"),
     listingId: text("listing_id")
       .notNull()
       .references(() => listing.id, { onDelete: "cascade" }),
@@ -133,9 +133,17 @@ export const listingPricePeriod = pgTable(
     ...timestamps,
   },
   (t) => [
-    unique("listing_price_period_uq").on(t.listingOfferId, t.kind, t.startDate, t.endDate),
+    primaryKey({
+      name: "listing_price_period_pkey",
+      columns: [t.listingOfferId, t.kind, t.startDate, t.endDate],
+    }),
     index("listing_price_period_listing_idx").on(t.listingId),
     index("listing_price_period_dates_idx").on(t.startDate, t.endDate),
+    /*
+     * The refusal sweep's coverage test reads one offer's bands by date across every kind. The
+     * primary key above puts `kind` second, so it cannot range over the dates without it.
+     */
+    index("listing_price_period_offer_dates_idx").on(t.listingOfferId, t.startDate, t.endDate),
   ],
 );
 

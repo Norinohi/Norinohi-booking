@@ -123,29 +123,44 @@ function fakeStore(seed: FakeStoreSeed = {}) {
       }
       return written.length;
     },
-    async confirmSlot(input) {
-      if (input.listingOfferId === null) return false;
-      const key = keyOf(input.listingOfferId, input.startDate, input.endDate);
-      const existing = slots.get(key);
-      if (existing && existing.status !== "available") return false;
+    async confirmSlots(inputs) {
+      const changed: string[] = [];
+      for (const input of inputs) {
+        if (input.listingOfferId === null) continue;
+        const key = keyOf(input.listingOfferId, input.startDate, input.endDate);
+        const existing = slots.get(key);
+        if (existing && existing.status !== "available") continue;
 
-      slots.set(key, {
-        listingId: input.listingId,
-        listingSourceId: input.listingSourceId,
-        listingOfferId: input.listingOfferId,
-        startDate: input.startDate,
-        endDate: input.endDate,
-        status: "available",
-        availabilityConfirmed: true,
-        priceMinor: input.priceMinor,
-        currency: input.currency,
-        minNights: existing?.minNights ?? null,
-        checkinWeekday: existing?.checkinWeekday ?? null,
-        checkoutWeekday: existing?.checkoutWeekday ?? null,
-        sourceHash: input.sourceHash,
-        updatedAt: input.seenAt,
-      });
-      return true;
+        /* The Drizzle store's guard: a restated price that moved nothing is only restamped. */
+        if (
+          existing?.availabilityConfirmed &&
+          existing.priceMinor === input.priceMinor &&
+          existing.currency === input.currency &&
+          existing.sourceHash === input.sourceHash
+        ) {
+          existing.updatedAt = input.seenAt;
+          continue;
+        }
+
+        slots.set(key, {
+          listingId: input.listingId,
+          listingSourceId: input.listingSourceId,
+          listingOfferId: input.listingOfferId,
+          startDate: input.startDate,
+          endDate: input.endDate,
+          status: "available",
+          availabilityConfirmed: true,
+          priceMinor: input.priceMinor,
+          currency: input.currency,
+          minNights: existing?.minNights ?? null,
+          checkinWeekday: existing?.checkinWeekday ?? null,
+          checkoutWeekday: existing?.checkoutWeekday ?? null,
+          sourceHash: input.sourceHash,
+          updatedAt: input.seenAt,
+        });
+        changed.push(input.listingId);
+      }
+      return changed;
     },
     async sweepScope(input) {
       const listingIds = new Set(input.listings.map((ref) => ref.listingId));
@@ -472,6 +487,56 @@ describe("runAvailabilitySync", () => {
     });
     expect(summary.confirmedSlots).toBe(1);
     expect(store.closed[0]?.updatedCount).toBe(1);
+  });
+
+  it("does not count a confirmed price the vendor restated unchanged", async () => {
+    const store = fakeStore({
+      yachts: { "4711001": MARLIN },
+      listings: { "102701": [MARLIN] },
+      slots: [
+        {
+          listingId: "ylst_marlin",
+          listingSourceId: "lsrc_marlin",
+          listingOfferId: "loff_marlin",
+          startDate: "2026-07-04",
+          endDate: "2026-07-11",
+          status: "available",
+          availabilityConfirmed: true,
+          priceMinor: 334000,
+          currency: "EUR",
+          minNights: null,
+          checkinWeekday: null,
+          checkoutWeekday: null,
+          sourceHash: "hash-offer",
+          updatedAt: new Date(RUN_AT.getTime() - 86_400_000),
+        },
+      ],
+    });
+
+    const summary = await runAvailabilitySync({
+      store: store.store,
+      source: source({
+        searchConfirmed: async function* () {
+          yield {
+            offers: [
+              {
+                externalYachtId: "4711001",
+                startDate: "2026-07-04",
+                endDate: "2026-07-11",
+                priceMinor: 334000,
+                currency: "EUR",
+                sourceHash: "hash-offer",
+              },
+            ],
+            cursor: null,
+          } satisfies ConfirmedOfferPage;
+        },
+      }),
+      now: () => RUN_AT,
+    });
+
+    expect(summary.confirmedSlots).toBe(0);
+    expect(store.closed[0]?.updatedCount).toBe(0);
   });
 
   it("refuses to confirm a period the occupancy dump says is taken", async () => {

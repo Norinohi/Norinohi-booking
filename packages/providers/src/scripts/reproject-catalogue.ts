@@ -1,9 +1,9 @@
 /**
  * Rebuilds the catalogue from the payloads already stored, without asking a vendor anything.
  *
- * Phase B of the catalogue job on its own. `provider_raw_payload` keeps every response we have
- * ever been given, and `projectCatalogue` is pure, so the whole projection can be replayed
- * offline — which is what the move to offers needs: each vendor's own title, specs, media,
+ * Phase B of the catalogue job on its own. `provider_raw_payload` keeps the latest response for
+ * every record (the catalogue run prunes the ones a newer response replaced), and
+ * `projectCatalogue` is pure, so the whole projection can be replayed offline — which is what the move to offers needs: each vendor's own title, specs, media,
  * equipment, prose and check-in rules written to its own `listing_offer` instead of fought over
  * on the shared listing row.
  *

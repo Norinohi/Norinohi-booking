@@ -1,0 +1,1 @@
+CREATE INDEX "listing_price_period_offer_dates_idx" ON "listing_price_period" USING btree ("listing_offer_id","start_date","end_date");

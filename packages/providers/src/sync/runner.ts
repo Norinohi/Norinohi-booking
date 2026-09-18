@@ -7,6 +7,7 @@ import {
 import { findProviderMeta } from "@yacht-charter/env/providers";
 import { env } from "@yacht-charter/env/server";
 import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import { log, parseError } from "evlog";
 import { z } from "zod";
 
 import { chunked, ROW_CHUNK } from "../shared/chunks";
@@ -24,7 +25,12 @@ import { listReferenceRegions } from "@yacht-charter/db/geo/reference-regions";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
 
 import { refreshOfferFlags } from "./offer-flags";
-import { retainRawPayloads, stableSourceHash } from "../shared/raw-retention";
+import {
+  pruneOrphanedRawPayloads,
+  retainRawPayloads,
+  stableSourceHash,
+} from "../shared/raw-retention";
+import { thrownFields } from "../shared/log-fields";
 import { createDrizzlePricePeriodStore, writeSeasonalPrices } from "./price-writer";
 import { openSyncRun, releaseSyncRun } from "./run";
 import type { ProviderResourceType, RawEntity } from "../types";
@@ -1018,6 +1024,23 @@ export async function runCatalogueSyncJob(
     await rebuildSearchReadModelsAfterSync(db, { listingIds: written.rebuildListingIds });
   } catch (error) {
     return await failRun(error, "project");
+  }
+
+  /*
+   * Housekeeping, after everything the run exists for has landed, and never a reason to call
+   * the run anything but what it was. A partial run prunes too: whether a payload is still
+   * referenced does not depend on whether every scope of the dump was read.
+   */
+  try {
+    const pruned = await pruneOrphanedRawPayloads(db, providerId);
+    log.info({ action: "catalogue.raw_payloads_pruned", providerId, syncRunId, pruned });
+  } catch (error) {
+    log.warn({
+      action: "catalogue.raw_payload_prune_failed",
+      providerId,
+      syncRunId,
+      ...thrownFields(parseError(error)),
+    });
   }
 
   /*

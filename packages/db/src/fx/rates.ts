@@ -90,6 +90,8 @@ export type FxRefreshResult = {
   uahAsOf: string | null;
 };
 
+const newerOrCorrected = sql`excluded.as_of > ${fxRate.asOf} or (excluded.as_of = ${fxRate.asOf} and (excluded.rate, excluded.source) is distinct from (${fxRate.rate}, ${fxRate.source}))`;
+
 /**
  * Pulls the ECB daily reference rates into `fx_rate`.
  *
@@ -130,8 +132,9 @@ export async function refreshFxRates(
         source: sql`excluded.source`,
         updatedAt: sql`now()`,
       },
-      /* A re-run against a stale mirror must not walk the stored rate backwards in time. */
-      where: sql`excluded.as_of >= ${fxRate.asOf}`,
+      /* A re-run against a stale mirror must not walk the stored rate backwards in time, and a
+         same-day re-run that changes nothing must not rewrite the row. */
+      where: newerOrCorrected,
     });
 
   return {
@@ -177,7 +180,7 @@ async function refreshHryvniaRate(
           source: sql`excluded.source`,
           updatedAt: sql`now()`,
         },
-        where: sql`excluded.as_of >= ${fxRate.asOf}`,
+        where: newerOrCorrected,
       });
 
     return quote.asOf;

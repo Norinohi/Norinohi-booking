@@ -20,6 +20,9 @@ import {
   installFakeStripe,
   type FakeStripe,
 } from "../test-support/fake-stripe";
+import { outboxMessage } from "@yacht-charter/db/schema/outbox";
+import { inArray } from "drizzle-orm";
+
 import { confirmCheckout } from "./payment";
 import { sweepExpiries } from "./expiry";
 
@@ -30,6 +33,7 @@ import { sweepExpiries } from "./expiry";
  *   lapsed     a hold past `hold_expires_at` is released at the provider and gives the week back
  *   refused    the provider will not take the release: the booking expires all the same
  *   abandoned  a declined card nobody retried for five days is reaped like a lapsed hold
+ *   outbox     a delivered message past its 30 days is deleted; pending and recent ones stay
  *
  * The mock provider holds an option for 48 hours. Each case books its own yacht and asserts only
  * on its own booking, because every sweep walks the whole table.
@@ -176,5 +180,58 @@ describe("abandoned payment expiry", () => {
     });
     expect(await weekOnSale(db, listingId)).toBe(true);
     cancel.mockRestore();
+  });
+});
+
+describe("outbox retention", () => {
+  it("deletes only messages sent more than 30 days before the sweep", async () => {
+    const { db } = test;
+    const now = new Date();
+    const at = (days: number) => new Date(now.getTime() - days * DAY);
+    const rows = [
+      {
+        kind: "booking_received" as const,
+        subjectId: "bkg_old_sent",
+        status: "sent" as const,
+        sentAt: at(31),
+      },
+      {
+        kind: "booking_received" as const,
+        subjectId: "bkg_new_sent",
+        status: "sent" as const,
+        sentAt: at(29),
+      },
+      {
+        kind: "booking_received" as const,
+        subjectId: "bkg_old_failed",
+        status: "failed" as const,
+        sentAt: null,
+      },
+      {
+        kind: "booking_received" as const,
+        subjectId: "bkg_pending",
+        status: "pending" as const,
+        sentAt: null,
+      },
+    ];
+    await db.insert(outboxMessage).values(rows);
+
+    const result = await sweepExpiries(db, inventory, now);
+
+    expect(result.outboxPruned).toBe(1);
+    const left = await db
+      .select({ subjectId: outboxMessage.subjectId })
+      .from(outboxMessage)
+      .where(
+        inArray(
+          outboxMessage.subjectId,
+          rows.map((row) => row.subjectId),
+        ),
+      );
+    expect(left.map((row) => row.subjectId).toSorted()).toEqual([
+      "bkg_new_sent",
+      "bkg_old_failed",
+      "bkg_pending",
+    ]);
   });
 });

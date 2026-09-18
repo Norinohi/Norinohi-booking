@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import { newId } from "@yacht-charter/db/schema/_shared";
 import { providerRawPayload } from "@yacht-charter/db/schema/provider";
+import { type SQL, sql } from "drizzle-orm";
 
 import { redactSecrets } from "./errors";
 
@@ -99,4 +100,65 @@ export async function retainRawPayloads<TInsertResult>(
 
   await db.insert(providerRawPayload).values(rows);
   return rows.map((row) => row.id);
+}
+
+/** Structural subset of the Drizzle executor `pruneOrphanedRawPayloads` needs. */
+export interface RawPayloadPruner {
+  execute(query: SQL): PromiseLike<{ rowCount: number | null }>;
+}
+
+export interface PruneRawPayloadsOptions {
+  /*
+   * The grace is what makes this safe beside a writer. `writeRecords` inserts a payload and the
+   * record pointing at it in one transaction, and only ever points a record at a payload it has
+   * just minted, so a payload no record references is either one that was replaced or one whose
+   * record has not committed yet. The second kind is seconds old, never a day.
+   */
+  graceSeconds?: number;
+  batchSize?: number;
+}
+
+const DEFAULT_PRUNE_GRACE_SECONDS = 24 * 60 * 60;
+const DEFAULT_PRUNE_BATCH = 5000;
+
+/**
+ * Deletes the payloads a changed record left behind when it was repointed at its new one.
+ *
+ * Every reader reaches a payload through `provider_record.raw_payload_id`, so an unreferenced
+ * payload is unreachable, and without this each changed record adds one forever.
+ *
+ * In bounded batches, each its own statement, so no single delete holds its locks for long.
+ * `provider_record.raw_payload_id` is `on delete set null` and unindexed, so every deleted row
+ * costs Postgres a scan of that table for the referential action; the batch keeps that bounded
+ * per statement too.
+ */
+export async function pruneOrphanedRawPayloads(
+  db: RawPayloadPruner,
+  providerId: string,
+  options: PruneRawPayloadsOptions = {},
+): Promise<number> {
+  const graceSeconds = options.graceSeconds ?? DEFAULT_PRUNE_GRACE_SECONDS;
+  const batchSize = options.batchSize ?? DEFAULT_PRUNE_BATCH;
+
+  let deleted = 0;
+  for (;;) {
+    // The cutoff is Postgres' clock, not ours: `created_at` is a zoneless timestamp its own
+    // `now()` filled, and a Date bound from here would be read in whatever zone the session has.
+    const result = await db.execute(sql`
+      delete from provider_raw_payload
+      where id in (
+        select rp.id
+        from provider_raw_payload rp
+        where rp.provider_id = ${providerId}
+          and rp.created_at < now() - make_interval(secs => ${graceSeconds})
+          and not exists (
+            select 1 from provider_record r where r.raw_payload_id = rp.id
+          )
+        limit ${batchSize}
+      )
+    `);
+    const count = result.rowCount ?? 0;
+    deleted += count;
+    if (count < batchSize) return deleted;
+  }
 }

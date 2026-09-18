@@ -12,7 +12,8 @@
   "scripts": {
     "build": "tsc -b",
     "check-types": "tsc -b --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --exclude \"**/*.db.test.ts\" --exclude \"**/node_modules/**\"",
+    "test:db": "vitest run .db.test.ts",
     "import:nausys": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/import-nausys.ts",
     "import:booking-manager": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/import-booking-manager.ts",
     "import:booking-manager-yacht": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/import-booking-manager-yacht.ts",

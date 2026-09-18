@@ -31,6 +31,7 @@ const metrics = {
   quotesExpired: result.quotesExpired,
   holdsExpired: result.holdsExpired,
   paymentsAbandoned: result.paymentsAbandoned,
+  outboxPruned: result.outboxPruned,
   syncRunsReaped: result.syncRunsReaped,
   staleConfirmations: result.staleConfirmations.length,
   releaseFailures: result.releaseFailures.length,

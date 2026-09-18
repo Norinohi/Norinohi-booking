@@ -112,7 +112,7 @@ function recordingStore() {
     listListingsForScope: () => Promise.resolve([]),
     writeSlots: () => Promise.resolve(),
     writeFreePeriods: () => Promise.resolve(),
-    confirmSlot: () => Promise.resolve(true),
+    confirmSlots: (inputs) => Promise.resolve(inputs.map((input) => input.listingId)),
     replaceRefusedPeriods: (input) => {
       refusals.push(input);
       return Promise.resolve(0);
