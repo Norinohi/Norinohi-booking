@@ -8,7 +8,7 @@ import { ScrollArea } from "@yacht-charter/ui/components/layout/scroll-area";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Activity, ArrowLeft, ChevronRight, Clock, MapPin, Search, Ship } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { Ref } from "react";
+import type { ReactNode, Ref } from "react";
 
 import DayTimeline from "@/components/shared/data-display/day-timeline";
 import { Image } from "@/components/shared/data-display/image";
@@ -59,22 +59,44 @@ function RouteThumb({ route, className }: { route: MapRoute; className?: string 
   );
 }
 
+/* A field's name above it, where the filters have a card of their own and room to say so. */
+function Labelled({
+  label,
+  show,
+  children,
+}: {
+  label: string;
+  show: boolean;
+  children: ReactNode;
+}) {
+  if (!show) return children;
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <span className="text-sm leading-4.25 font-semibold text-foreground">{label}</span>
+      {children}
+    </div>
+  );
+}
+
 function RouteFiltersForm({
   routes,
   filters,
   onChange,
+  labelled = false,
 }: {
   routes: MapRoute[];
   filters: RouteFilters;
   onChange: (next: Partial<RouteFilters>) => void;
+  labelled?: boolean;
 }) {
   const t = useTranslations("RoutesMap");
   const levels = useTranslations("Home.SailingRoutes.levels");
   const common = useTranslations("Common");
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={cn("flex flex-col", labelled ? "gap-4" : "gap-2")}>
       <TextField
+        label={labelled ? t("search") : undefined}
         type="search"
         value={filters.q}
         onChange={(event) => onChange({ q: event.target.value })}
@@ -83,7 +105,7 @@ function RouteFiltersForm({
         startIcon={<Search />}
         fieldClassName="h-11"
       />
-      <div className="min-w-0">
+      <Labelled label={t("country")} show={labelled}>
         <Select
           className="h-11 w-full min-w-0 bg-card"
           ariaLabel={t("country")}
@@ -95,9 +117,9 @@ function RouteFiltersForm({
           onClear={() => onChange({ country: null })}
           clearLabel={common("removeFilter", { label: t("country") })}
         />
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="min-w-0">
+      </Labelled>
+      <div className={cn("grid grid-cols-2", labelled ? "gap-4" : "gap-2")}>
+        <Labelled label={t("length")} show={labelled}>
           <Select
             className="h-11 w-full min-w-0 bg-card"
             ariaLabel={t("length")}
@@ -110,8 +132,8 @@ function RouteFiltersForm({
             onClear={() => onChange({ length: null })}
             clearLabel={common("removeFilter", { label: t("length") })}
           />
-        </div>
-        <div className="min-w-0">
+        </Labelled>
+        <Labelled label={t("level")} show={labelled}>
           <Select
             className="h-11 w-full min-w-0 bg-card"
             ariaLabel={t("level")}
@@ -124,7 +146,7 @@ function RouteFiltersForm({
             onClear={() => onChange({ level: null })}
             clearLabel={common("removeFilter", { label: t("level") })}
           />
-        </div>
+        </Labelled>
       </div>
     </div>
   );
@@ -363,7 +385,10 @@ export default function RoutesPanel({
                 {t("count", { count: visible.length, total: routes.length })}
               </span>
             </div>
-            <RouteFiltersForm routes={routes} filters={filters} onChange={onFiltersChange} />
+            {/* From xl the filters have their own card beside this one, as on the yachts map. */}
+            <div className="xl:hidden">
+              <RouteFiltersForm routes={routes} filters={filters} onChange={onFiltersChange} />
+            </div>
           </div>
           <ScrollArea className="min-h-0 flex-1">
             <div className="p-3">
@@ -372,6 +397,53 @@ export default function RoutesPanel({
           </ScrollArea>
         </>
       )}
+    </aside>
+  );
+}
+
+export interface RouteFiltersCardProps {
+  routes: MapRoute[];
+  filters: RouteFilters;
+  onChange: (next: Partial<RouteFilters>) => void;
+  onReset: () => void;
+  className?: string;
+}
+
+/** The filters as a card of their own, shaped like the yachts map's filter panel. */
+export function RouteFiltersCard({
+  routes,
+  filters,
+  onChange,
+  onReset,
+  className,
+}: RouteFiltersCardProps) {
+  const t = useTranslations("RoutesMap");
+  const active = [filters.q.trim(), filters.country, filters.length, filters.level].filter(
+    Boolean,
+  ).length;
+
+  return (
+    <aside
+      className={cn(
+        "flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card",
+        className,
+      )}
+    >
+      <div className="flex shrink-0 items-center gap-3 border-b border-border p-4">
+        <h2 className="flex-1 text-xl leading-[1.3] font-bold text-natural-700">
+          {t("filtersTitle", { count: active })}
+        </h2>
+        <button
+          type="button"
+          onClick={onReset}
+          className="cursor-pointer rounded-lg px-1 py-1.5 leading-[1.4] font-bold underline underline-offset-2 outline-none hover:text-natural-500 focus-visible:ring-2 focus-visible:ring-ring/40"
+        >
+          {t("clearAll")}
+        </button>
+      </div>
+      <div className="p-4">
+        <RouteFiltersForm routes={routes} filters={filters} onChange={onChange} labelled />
+      </div>
     </aside>
   );
 }

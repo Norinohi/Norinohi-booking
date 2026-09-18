@@ -1,6 +1,5 @@
 "use client";
 
-import { buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
@@ -16,12 +15,12 @@ import {
   routeCurve,
   routePoints,
 } from "@/components/shared/map/route-points";
-import { Link } from "@/i18n/navigation";
+import { MarinaYachtsPopup } from "@/features/yachts";
 
 import type { MapRoute, RouteMarina } from "../api/queries";
 import { routeCatalogueHref } from "../lib/catalogue-href";
 import { routeStart, toRouteStops } from "../lib/route-geometry";
-import { DayMarker, MarinaMarker } from "./route-markers";
+import { DayMarker } from "./route-markers";
 
 type StartGroup = { lat: number; lng: number; routes: MapRoute[] };
 
@@ -117,6 +116,9 @@ export interface SelectedRouteLayerProps {
   route: MapRoute;
   marinas: RouteMarina[];
   map: MapInstance | null;
+  /** The marina whose boats are open, held by the screen so it can clear the way for the card. */
+  openMarina: RouteMarina | null;
+  onOpenMarina: (marina: RouteMarina | null) => void;
 }
 
 export function SelectedRouteLayer({
@@ -124,12 +126,13 @@ export function SelectedRouteLayer({
   marinas,
   map,
   dismissSignal,
+  openMarina,
+  onOpenMarina,
 }: SelectedRouteLayerProps) {
   const t = useTranslations("RoutesMap");
   const words = useTranslations("YachtDetail.route");
   const reduced = useReducedMotion();
-  const [openMarina, setOpenMarina] = useState<RouteMarina | null>(null);
-  useEffect(() => setOpenMarina(null), [dismissSignal]);
+  useEffect(() => onOpenMarina(null), [dismissSignal, onOpenMarina]);
 
   const stops = toRouteStops(route);
   const points = routePoints(stops);
@@ -144,17 +147,32 @@ export function SelectedRouteLayer({
     <>
       {/* Under the days, so the start's number and its "Start" plate stay readable over the
           marinas that crowd a charter base. */}
-      {marinas.map((marina, index) => (
-        <MarinaMarker
-          key={marina.value}
-          coordinates={marina}
-          count={marina.listingCount}
-          label={t("marinaYachts", { name: marina.name, count: marina.listingCount })}
-          selected={openMarina?.value === marina.value}
-          order={index}
-          onSelect={() => setOpenMarina(marina)}
-        />
-      ))}
+      {/* The search map's own marker, so a marina reads the same on both maps: a count pill where
+          it holds several boats, a bare pin for one. */}
+      {marinas.map((marina, index) => {
+        const label = t("marinaYachts", { name: marina.name, count: marina.listingCount });
+        return marina.listingCount > 1 ? (
+          <MapMarker
+            key={marina.value}
+            variant="cluster"
+            coordinates={marina}
+            count={marina.listingCount}
+            label={label}
+            order={index}
+            onSelect={() => onOpenMarina(marina)}
+          />
+        ) : (
+          <MapMarker
+            key={marina.value}
+            variant="pin"
+            coordinates={marina}
+            label={label}
+            selected={openMarina?.value === marina.value}
+            order={index}
+            onSelect={() => onOpenMarina(marina)}
+          />
+        );
+      })}
 
       <RouteLine key={route.id} curve={curve} animate={!reduced} />
 
@@ -170,34 +188,23 @@ export function SelectedRouteLayer({
             /* Only the ends are named: the dot already carries the day's number. */
             caption={caption === captions.day(day) ? undefined : caption}
             delayMs={reduced ? 0 : arrivalOf(curve, point) * ROUTE_DRAW_MS}
-            onSelect={() => setOpenMarina(null)}
+            onSelect={() => onOpenMarina(null)}
           />
         );
       })}
 
       {openMarina ? (
-        <MapPopup key={openMarina.value} coordinates={openMarina} map={map} className="w-72">
-          <div className="flex flex-col gap-3 rounded-2xl bg-card p-4 shadow-brand-glow">
-            <div className="flex flex-col gap-1">
-              <p className="text-base leading-5.5 font-bold text-foreground">{openMarina.name}</p>
-              <p className="text-sm text-natural-500">
-                {t("marinaMeta", {
-                  count: openMarina.listingCount,
-                  km: Math.max(1, Math.round(openMarina.distanceKm)),
-                  stop: openMarina.nearStop,
-                })}
-              </p>
-            </div>
-            <Link
-              href={routeCatalogueHref(route, openMarina)}
-              target="_blank"
-              rel="noopener"
-              className={buttonVariants({ variant: "primary", size: "sm" })}
-            >
-              {t("showMarinaYachts")}
-            </Link>
-          </div>
-        </MapPopup>
+        <MarinaYachtsPopup
+          key={openMarina.value}
+          coordinates={openMarina}
+          marinas={openMarina.values}
+          filters={{
+            country: route.countryValue ? [route.countryValue] : [],
+            duration: String(route.nights),
+          }}
+          map={map}
+          catalogueHref={routeCatalogueHref(route, openMarina)}
+        />
       ) : null}
     </>
   );

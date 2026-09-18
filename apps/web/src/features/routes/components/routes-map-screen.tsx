@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { cn } from "@yacht-charter/ui/lib/utils";
 import { useLocale } from "next-intl";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
@@ -11,12 +12,12 @@ import { boundsOf, type Coordinates } from "@/components/shared/map/geometry";
 import type { MapInstance } from "@/components/shared/map/map-canvas";
 import { useRouter } from "@/i18n/navigation";
 
-import { routeMarinasQueryOptions, routesMapQueryOptions } from "../api/queries";
+import { type RouteMarina, routeMarinasQueryOptions, routesMapQueryOptions } from "../api/queries";
 import { matchesFilters, type RouteFilters } from "../lib/route-filters";
 import { routeStart } from "../lib/route-geometry";
 import { routesMapParsers, serializeRoutesMap } from "../lib/search-params";
 import { RouteStartsLayer, SelectedRouteLayer } from "./routes-map-layers";
-import RoutesPanel from "./routes-panel";
+import RoutesPanel, { RouteFiltersCard } from "./routes-panel";
 
 const MapCanvas = dynamic(() => import("@/components/shared/map/map-canvas"), {
   ssr: false,
@@ -63,6 +64,7 @@ export default function RoutesMapScreen() {
   const router = useRouter();
   const [map, setMap] = useState<MapInstance | null>(null);
   const [dismissSignal, setDismissSignal] = useState(0);
+  const [openMarina, setOpenMarina] = useState<RouteMarina | null>(null);
   const panelRef = useRef<HTMLElement>(null);
 
   const { data } = useQuery(routesMapQueryOptions(locale));
@@ -100,6 +102,7 @@ export default function RoutesMapScreen() {
 
   /* A navigation, not a query change: each route is its own page with its own metadata. The
      layout keeps the map, and the filters travel along so "All routes" returns to the same list. */
+  const resetFilters = () => void setState({ q: null, country: null, length: null, level: null });
   const select = (next: string | null) =>
     router.push(serializeRoutesMap(next ? `/routes/${next}` : "/routes", state), { scroll: false });
   const focus = (point: Coordinates) => {
@@ -126,6 +129,8 @@ export default function RoutesMapScreen() {
             marinas={marinas}
             map={map}
             dismissSignal={dismissSignal}
+            openMarina={openMarina}
+            onOpenMarina={setOpenMarina}
           />
         ) : (
           <RouteStartsLayer
@@ -137,21 +142,38 @@ export default function RoutesMapScreen() {
         )}
       </MapCanvas>
 
-      <RoutesPanel
-        ref={panelRef}
-        routes={routes}
-        visible={visible}
-        selected={selected}
-        filters={filters}
-        onFiltersChange={(next) => void setState(next)}
-        onResetFilters={() => void setState({ q: null, country: null, length: null, level: null })}
-        onSelect={select}
-        onFocus={focus}
-        marinas={marinas}
-        marinasPending={Boolean(selected) && marinasQuery.isPending}
-        marinasFailed={marinasQuery.isError}
-        className="absolute inset-x-3 bottom-3 max-h-[55%] md:inset-x-auto md:top-6 md:bottom-6 md:left-6 md:max-h-none md:w-100 2xl:top-8 2xl:bottom-8 2xl:left-8"
-      />
+      {/* The cards the map's left edge belongs to, laid out as the yachts map lays its own. */}
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-x-3 bottom-3 flex max-h-[55%] items-start gap-5 md:inset-x-auto md:top-6 md:bottom-6 md:left-6 md:max-h-none 2xl:top-8 2xl:bottom-8 2xl:left-8",
+          /* A marina's boats open over the map, and on a phone the panel would sit on top of them,
+             as the search map's chrome would; it steps aside until the card is closed. */
+          openMarina && "max-md:hidden",
+        )}
+      >
+        <RouteFiltersCard
+          routes={routes}
+          filters={filters}
+          onChange={(next) => void setState(next)}
+          onReset={resetFilters}
+          className="pointer-events-auto hidden max-h-full w-83.5 shrink-0 xl:flex"
+        />
+        <RoutesPanel
+          ref={panelRef}
+          routes={routes}
+          visible={visible}
+          selected={selected}
+          filters={filters}
+          onFiltersChange={(next) => void setState(next)}
+          onResetFilters={resetFilters}
+          onSelect={select}
+          onFocus={focus}
+          marinas={marinas}
+          marinasPending={Boolean(selected) && marinasQuery.isPending}
+          marinasFailed={marinasQuery.isError}
+          className="pointer-events-auto max-h-[50dvh] w-full md:h-full md:max-h-full md:w-100"
+        />
+      </div>
     </div>
   );
 }

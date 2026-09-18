@@ -24,5 +24,8 @@
   "marinaYachts": "{name}, {count, plural, one {# yacht} other {# yachts}}",
   "showMarinaYachts": "Show yachts in this marina",
   "routesHere": "{count, plural, one {# route starts here} other {# routes start here}}",
-  "marinaDistance": "{km} km from {stop}"
+  "marinaDistance": "{km} km from {stop}",
+  "search": "Search",
+  "filtersTitle": "All filters ({count})",
+  "clearAll": "Clear all"
 }

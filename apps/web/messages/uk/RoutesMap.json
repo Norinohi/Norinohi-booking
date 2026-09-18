@@ -24,5 +24,8 @@
   "marinaYachts": "{name}, {count, plural, one {# яхта} few {# яхти} many {# яхт} other {# яхти}}",
   "showMarinaYachts": "Яхти в цій марині",
   "routesHere": "{count, plural, one {Тут починається # маршрут} few {Тут починаються # маршрути} many {Тут починається # маршрутів} other {Тут починаються # маршрути}}",
-  "marinaDistance": "{km} км від {stop}"
+  "marinaDistance": "{km} км від {stop}",
+  "search": "Пошук",
+  "filtersTitle": "Усі фільтри ({count})",
+  "clearAll": "Очистити все"
 }
