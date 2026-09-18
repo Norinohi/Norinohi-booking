@@ -13,3 +13,4 @@ export { lastSearchedPeriod } from "./lib/last-search";
 export { serializeDetailPeriod, serializeSearch } from "./lib/search-params";
 export { useListingCards } from "./hooks/use-listing-cards";
 export { useListingDetail } from "./hooks/use-listing-detail";
+export { default as MarinaYachtsPopup } from "./components/map/marina-yachts-popup";

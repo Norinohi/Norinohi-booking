@@ -28,6 +28,7 @@ import { useSearchFilters } from "../../hooks/use-search-filters";
 import { useSearchInput } from "../../hooks/use-search-input";
 import { serializeSearch } from "../../lib/search-params";
 import MapBoatPopup from "./map-boat-popup";
+import MapBoatSkeleton from "./map-boat-skeleton";
 import MapChrome from "./map-chrome";
 import MapStatus from "./map-status";
 import MarinaLayer from "./marina-layer";
@@ -80,14 +81,18 @@ export default function MapScreen() {
      hundred costs the same as opening one of three. */
   const marinaPage = Math.floor(selection.marinaIndex / MARINA_PAGE_SIZE) + 1;
   const {
-    data: marinaBoats,
+    data: marinaBoatsData,
     isError: marinaBoatsFailed,
+    isPlaceholderData: marinaBoatsStale,
     refetch: refetchMarinaBoats,
   } = useQuery({
     /* By name, the way the pin was grouped: one marina can be two vendors' bases. */
     ...marinaListingsQueryOptions(input, openMarina?.values ?? [], marinaPage),
     enabled: Boolean(openMarina),
   });
+  /* Previous data is kept while a page loads, which is right for paging one marina's card and
+     wrong for the first page of another: that would show the last marina's boats under this pin. */
+  const marinaBoats = marinaBoatsStale && marinaPage === 1 ? undefined : marinaBoatsData;
 
   // A popup covers the top-left controls on small screens, so we fade them out while one is open.
   const popupOpen = Boolean(selected || openMarina);
@@ -146,8 +151,6 @@ export default function MapScreen() {
               onFocusApplied={selection.focusApplied}
             />
           ) : openMarina && marinaBoats ? (
-            /* Held back until the first page is in hand: an empty card with a pager reading "1 / 300"
-               is worse than the blink of waiting for it. */
             <MapBoatPopup
               key={openMarina.baseIds.join()}
               coordinates={{ lat: openMarina.lat, lng: openMarina.lng }}
@@ -159,6 +162,14 @@ export default function MapScreen() {
               focusZoom={openMarina.focusZoom}
               focusDurationMs={openMarina.focusDurationMs}
               catalogueHref={catalogueHref}
+            />
+          ) : openMarina && !marinaBoatsFailed ? (
+            /* The card's shape until its first page arrives, rather than an empty card with a pager
+               reading "1 / 300" or nothing at all, which read as a missed click. */
+            <MapBoatSkeleton
+              key={openMarina.baseIds.join()}
+              coordinates={{ lat: openMarina.lat, lng: openMarina.lng }}
+              map={map}
             />
           ) : null}
         </MapCanvas>

@@ -53,7 +53,7 @@ export default function MapListPanel({ filters, defaults, className, ref }: MapL
     <section
       ref={ref}
       className={cn(
-        "flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card md:w-80 md:shrink-0",
+        "flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card md:w-100 md:shrink-0",
         className,
       )}
     >
@@ -100,7 +100,7 @@ export default function MapListPanel({ filters, defaults, className, ref }: MapL
             total={pagination.totalItems}
             onPageChange={setPage}
             summary={false}
-            className="justify-center"
+            className="justify-center md:justify-center"
           />
         </div>
       ) : null}

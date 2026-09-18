@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { cn } from "@yacht-charter/ui/lib/utils";
 import { useLocale } from "next-intl";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
@@ -11,12 +12,13 @@ import { boundsOf, type Coordinates } from "@/components/shared/map/geometry";
 import type { MapInstance } from "@/components/shared/map/map-canvas";
 import { useRouter } from "@/i18n/navigation";
 
-import { routeMarinasQueryOptions, routesMapQueryOptions } from "../api/queries";
+import { type RouteMarina, routeMarinasQueryOptions, routesMapQueryOptions } from "../api/queries";
 import { matchesFilters, type RouteFilters } from "../lib/route-filters";
 import { routeStart } from "../lib/route-geometry";
 import { routesMapParsers, serializeRoutesMap } from "../lib/search-params";
 import { RouteStartsLayer, SelectedRouteLayer } from "./routes-map-layers";
-import RoutesPanel from "./routes-panel";
+import RoutesMapChrome from "./routes-map-chrome";
+import RoutesPanel, { RouteFiltersCard } from "./routes-panel";
 
 const MapCanvas = dynamic(() => import("@/components/shared/map/map-canvas"), {
   ssr: false,
@@ -63,6 +65,11 @@ export default function RoutesMapScreen() {
   const router = useRouter();
   const [map, setMap] = useState<MapInstance | null>(null);
   const [dismissSignal, setDismissSignal] = useState(0);
+  const [openMarina, setOpenMarina] = useState<RouteMarina | null>(null);
+  /* Phones only. The list waits behind its button, as on the yachts map; an open route shows at
+     once and folds per route, so opening another one unfolds it. */
+  const [listOpen, setListOpen] = useState(false);
+  const [fold, setFold] = useState({ key: "", collapsed: false });
   const panelRef = useRef<HTMLElement>(null);
 
   const { data } = useQuery(routesMapQueryOptions(locale));
@@ -100,8 +107,13 @@ export default function RoutesMapScreen() {
 
   /* A navigation, not a query change: each route is its own page with its own metadata. The
      layout keeps the map, and the filters travel along so "All routes" returns to the same list. */
+  const resetFilters = () => void setState({ q: null, country: null, length: null, level: null });
   const select = (next: string | null) =>
     router.push(serializeRoutesMap(next ? `/routes/${next}` : "/routes", state), { scroll: false });
+  const collapsed = selected ? fold.key === selected.id && fold.collapsed : !listOpen;
+  const setCollapsed = (next: boolean) =>
+    selected ? setFold({ key: selected.id, collapsed: next }) : setListOpen(!next);
+
   const focus = (point: Coordinates) => {
     if (!map) return;
     map.easeTo({
@@ -112,9 +124,11 @@ export default function RoutesMapScreen() {
   };
 
   return (
-    <div className="relative h-[calc(100dvh-var(--header-h))] min-h-0">
+    /* Full height on a phone, where the site header steps aside for the map as on /yachts/map. */
+    <div className="relative h-dvh min-h-0 md:h-[calc(100dvh-var(--header-h))]">
       <MapCanvas
         pathDepth={2}
+        locateControl
         dimOpacity={0}
         onReady={setMap}
         onBackgroundPress={() => setDismissSignal((signal) => signal + 1)}
@@ -126,6 +140,8 @@ export default function RoutesMapScreen() {
             marinas={marinas}
             map={map}
             dismissSignal={dismissSignal}
+            openMarina={openMarina}
+            onOpenMarina={setOpenMarina}
           />
         ) : (
           <RouteStartsLayer
@@ -137,20 +153,61 @@ export default function RoutesMapScreen() {
         )}
       </MapCanvas>
 
-      <RoutesPanel
-        ref={panelRef}
+      {/* The cards the map's left edge belongs to, laid out as the yachts map lays its own. */}
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-x-3 bottom-3 flex items-start gap-5 md:inset-x-auto md:top-6 md:bottom-6 md:left-6 2xl:top-8 2xl:bottom-8 2xl:left-8",
+          /* On a phone the list opens under the buttons and fills the rest, as the yachts map's
+             does; an open route sits at the bottom instead, so the map above it stays in view. */
+          selected ? "max-h-[55%] md:max-h-none" : "max-md:top-18",
+          /* A marina's boats open over the map, and on a phone the panel would sit on top of them,
+             as the search map's chrome would; it steps aside until the card is closed. */
+          (openMarina || (!selected && !listOpen)) && "max-md:hidden",
+        )}
+      >
+        <RouteFiltersCard
+          routes={routes}
+          filters={filters}
+          onChange={(next) => void setState(next)}
+          onReset={resetFilters}
+          className="pointer-events-auto hidden max-h-full w-83.5 shrink-0 xl:flex"
+        />
+        <RoutesPanel
+          ref={panelRef}
+          routes={routes}
+          visible={visible}
+          selected={selected}
+          filters={filters}
+          onFiltersChange={(next) => void setState(next)}
+          onResetFilters={resetFilters}
+          onSelect={select}
+          onFocus={focus}
+          marinas={marinas}
+          marinasPending={Boolean(selected) && marinasQuery.isPending}
+          marinasFailed={marinasQuery.isError}
+          collapsed={collapsed}
+          onCollapsedChange={setCollapsed}
+          className={cn(
+            /* As tall as what it holds, up to the room there is: two routes are not a column
+               of empty card. */
+            "pointer-events-auto w-full md:max-h-full md:w-100",
+            selected ? "max-h-[50dvh]" : "max-h-full",
+          )}
+        />
+      </div>
+
+      <RoutesMapChrome
         routes={routes}
-        visible={visible}
-        selected={selected}
+        visibleCount={visible.length}
         filters={filters}
         onFiltersChange={(next) => void setState(next)}
-        onResetFilters={() => void setState({ q: null, country: null, length: null, level: null })}
-        onSelect={select}
-        onFocus={focus}
-        marinas={marinas}
-        marinasPending={Boolean(selected) && marinasQuery.isPending}
-        marinasFailed={marinasQuery.isError}
-        className="absolute inset-x-3 bottom-3 max-h-[55%] md:inset-x-auto md:top-6 md:bottom-6 md:left-6 md:max-h-none md:w-100 2xl:top-8 2xl:bottom-8 2xl:left-8"
+        onResetFilters={resetFilters}
+        listOpen={!selected && listOpen}
+        onListOpenChange={(open) => {
+          if (selected && open) select(null);
+          setListOpen(open);
+        }}
+        popupOpen={Boolean(openMarina)}
       />
     </div>
   );

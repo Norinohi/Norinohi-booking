@@ -61,7 +61,9 @@ export default function NavigationBar() {
     <header
       className={cn(
         "sticky top-0 z-40 border-b border-natural-50 bg-background",
-        pathname === "/yachts/map" && "max-md:hidden",
+        /* The full-bleed maps carry their own way back on a phone and need the height. */
+        (pathname === "/yachts/map" || pathname === "/routes" || pathname.startsWith("/routes/")) &&
+          "max-md:hidden",
       )}
     >
       <div className="mx-auto flex h-18 max-w-384 items-center justify-between gap-4 px-4 max-[360px]:gap-1 max-[360px]:px-3 md:px-13.5 xl:px-17.5 2xl:h-20">

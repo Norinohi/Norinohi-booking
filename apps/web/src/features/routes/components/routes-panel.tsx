@@ -1,14 +1,27 @@
 "use client";
 
 import { Button, buttonVariants } from "@yacht-charter/ui/components/actions/button";
+import { IconButton } from "@yacht-charter/ui/components/actions/icon-button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { ScrollArea } from "@yacht-charter/ui/components/layout/scroll-area";
+import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { Activity, ArrowLeft, ChevronRight, Clock, MapPin, Search, Ship } from "lucide-react";
+import {
+  Activity,
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Clock,
+  MapPin,
+  Search,
+  Ship,
+  X,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { Ref } from "react";
+import { type ReactNode, type Ref, useState } from "react";
 
 import DayTimeline from "@/components/shared/data-display/day-timeline";
 import { Image } from "@/components/shared/data-display/image";
@@ -26,6 +39,9 @@ import {
   type RouteLength,
   type RouteLevel,
 } from "../lib/route-filters";
+
+/* Ten fit a laptop's panel without the page scrolling past the pager. */
+const ROUTES_PAGE_SIZE = 10;
 
 /* The same pressable surface everywhere in the panel, so every row reads as something to press. */
 const ROW =
@@ -59,22 +75,44 @@ function RouteThumb({ route, className }: { route: MapRoute; className?: string 
   );
 }
 
+/* A field's name above it, where the filters have a card of their own and room to say so. */
+function Labelled({
+  label,
+  show,
+  children,
+}: {
+  label: string;
+  show: boolean;
+  children: ReactNode;
+}) {
+  if (!show) return children;
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <span className="text-sm leading-4.25 font-semibold text-foreground">{label}</span>
+      {children}
+    </div>
+  );
+}
+
 function RouteFiltersForm({
   routes,
   filters,
   onChange,
+  labelled = false,
 }: {
   routes: MapRoute[];
   filters: RouteFilters;
   onChange: (next: Partial<RouteFilters>) => void;
+  labelled?: boolean;
 }) {
   const t = useTranslations("RoutesMap");
   const levels = useTranslations("Home.SailingRoutes.levels");
   const common = useTranslations("Common");
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={cn("flex flex-col", labelled ? "gap-4" : "gap-2")}>
       <TextField
+        label={labelled ? t("search") : undefined}
         type="search"
         value={filters.q}
         onChange={(event) => onChange({ q: event.target.value })}
@@ -83,7 +121,7 @@ function RouteFiltersForm({
         startIcon={<Search />}
         fieldClassName="h-11"
       />
-      <div className="min-w-0">
+      <Labelled label={t("country")} show={labelled}>
         <Select
           className="h-11 w-full min-w-0 bg-card"
           ariaLabel={t("country")}
@@ -95,9 +133,9 @@ function RouteFiltersForm({
           onClear={() => onChange({ country: null })}
           clearLabel={common("removeFilter", { label: t("country") })}
         />
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="min-w-0">
+      </Labelled>
+      <div className={cn("grid grid-cols-2", labelled ? "gap-4" : "gap-2")}>
+        <Labelled label={t("length")} show={labelled}>
           <Select
             className="h-11 w-full min-w-0 bg-card"
             ariaLabel={t("length")}
@@ -110,8 +148,8 @@ function RouteFiltersForm({
             onClear={() => onChange({ length: null })}
             clearLabel={common("removeFilter", { label: t("length") })}
           />
-        </div>
-        <div className="min-w-0">
+        </Labelled>
+        <Labelled label={t("level")} show={labelled}>
           <Select
             className="h-11 w-full min-w-0 bg-card"
             ariaLabel={t("level")}
@@ -124,7 +162,7 @@ function RouteFiltersForm({
             onClear={() => onChange({ level: null })}
             clearLabel={common("removeFilter", { label: t("level") })}
           />
-        </div>
+        </Labelled>
       </div>
     </div>
   );
@@ -274,6 +312,9 @@ export interface RoutesPanelProps {
   marinas: RouteMarina[];
   marinasPending: boolean;
   marinasFailed: boolean;
+  /** Phones only: folded down to its bar. Held by the screen, whose list button opens it too. */
+  collapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
   ref?: Ref<HTMLElement>;
   className?: string;
 }
@@ -294,10 +335,17 @@ export default function RoutesPanel({
   marinas,
   marinasPending,
   marinasFailed,
+  collapsed,
+  onCollapsedChange,
   ref,
   className,
 }: RoutesPanelProps) {
   const t = useTranslations("RoutesMap");
+  /* Paged over whatever the filters leave, and back to the first page when that changes: page 3
+     of a list the visitor has just narrowed to eight routes would be empty. */
+  const listKey = visible.map((route) => route.id).join();
+  const [paging, setPaging] = useState({ key: listKey, page: 1 });
+  const page = paging.key === listKey ? paging.page : 1;
 
   return (
     <aside
@@ -307,71 +355,186 @@ export default function RoutesPanel({
         className,
       )}
     >
+      {/* Phones only, for an open route: it covers half the map there, so it folds down to this
+          bar. The list has no bar: it opens and closes from the button over the map. */}
       {selected ? (
-        <>
-          <div className="relative shrink-0">
-            <RouteThumb route={selected} className="h-28 w-full md:h-36" />
-            <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
-            <button
-              type="button"
-              onClick={() => onSelect(null)}
-              className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-card/95 px-3 py-1.5 text-sm font-medium text-foreground shadow-card outline-none transition-colors hover:bg-card focus-visible:ring-2 focus-visible:ring-ring/40"
-            >
-              <ArrowLeft className="size-4" />
-              {t("allRoutes")}
-            </button>
-            <div className="absolute inset-x-4 bottom-3 flex flex-col gap-0.5 text-white">
-              <h2 className="text-xl leading-6 font-bold">{selected.title}</h2>
-              <p className="truncate text-xs text-white/80">{selected.placeLabel}</p>
-            </div>
-          </div>
+        <button
+          type="button"
+          aria-expanded={!collapsed}
+          onClick={() => onCollapsedChange(!collapsed)}
+          className={cn(
+            "flex shrink-0 items-center gap-3 px-4 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40 md:hidden",
+            !collapsed && "border-b border-border",
+          )}
+        >
+          <span className="min-w-0 flex-1 truncate text-base font-bold text-natural-700">
+            {selected ? selected.title : t("title")}
+          </span>
+          <span className="shrink-0 text-sm text-natural-500">
+            {collapsed ? t("showList") : t("hideList")}
+          </span>
+          {collapsed ? (
+            <ChevronUp className="size-5 shrink-0 text-natural-500" />
+          ) : (
+            <ChevronDown className="size-5 shrink-0 text-natural-500" />
+          )}
+        </button>
+      ) : null}
 
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="flex flex-col gap-5 p-4">
-              <RouteChips route={selected} />
-              {selected.description ? (
-                <p className="text-sm leading-5 text-natural-600">{selected.description}</p>
-              ) : null}
-              {selected.stops.length ? <Itinerary route={selected} onFocus={onFocus} /> : null}
-              <NearbyMarinas
-                route={selected}
-                marinas={marinas}
-                pending={marinasPending}
-                failed={marinasFailed}
-                onFocus={onFocus}
-              />
+      <div className={cn("flex min-h-0 flex-1 flex-col", selected && collapsed && "max-md:hidden")}>
+        {selected ? (
+          <>
+            <div className="relative shrink-0">
+              <RouteThumb route={selected} className="h-28 w-full md:h-36" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
+              <button
+                type="button"
+                onClick={() => onSelect(null)}
+                className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-card/95 px-3 py-1.5 text-sm font-medium text-foreground shadow-card outline-none transition-colors hover:bg-card focus-visible:ring-2 focus-visible:ring-ring/40"
+              >
+                <ArrowLeft className="size-4" />
+                {t("allRoutes")}
+              </button>
+              <div className="absolute inset-x-4 bottom-3 flex flex-col gap-0.5 text-white">
+                <h2 className="text-xl leading-6 font-bold">{selected.title}</h2>
+                <p className="truncate text-xs text-white/80">{selected.placeLabel}</p>
+              </div>
             </div>
-          </ScrollArea>
 
-          <div className="shrink-0 border-t border-border p-4">
-            <Link
-              href={routeCatalogueHref(selected)}
-              target="_blank"
-              rel="noopener"
-              className={buttonVariants({ variant: "brand", size: "md", className: "w-full" })}
-            >
-              {t("showRouteYachts")}
-            </Link>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="flex shrink-0 flex-col gap-3 border-b border-border p-4">
-            <div className="flex items-baseline justify-between gap-3">
-              <h2 className="text-xl leading-[1.3] font-bold text-natural-700">{t("title")}</h2>
-              <span className="text-sm text-natural-500">
-                {t("count", { count: visible.length, total: routes.length })}
-              </span>
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="flex flex-col gap-5 p-4">
+                <RouteChips route={selected} />
+                {selected.description ? (
+                  <p className="text-sm leading-5 text-natural-600">{selected.description}</p>
+                ) : null}
+                {selected.stops.length ? <Itinerary route={selected} onFocus={onFocus} /> : null}
+                <NearbyMarinas
+                  route={selected}
+                  marinas={marinas}
+                  pending={marinasPending}
+                  failed={marinasFailed}
+                  onFocus={onFocus}
+                />
+              </div>
+            </ScrollArea>
+
+            <div className="shrink-0 border-t border-border p-4">
+              <Link
+                href={routeCatalogueHref(selected)}
+                target="_blank"
+                rel="noopener"
+                className={buttonVariants({ variant: "brand", size: "md", className: "w-full" })}
+              >
+                {t("showRouteYachts")}
+              </Link>
             </div>
-            <RouteFiltersForm routes={routes} filters={filters} onChange={onFiltersChange} />
-          </div>
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="p-3">
-              <RouteList routes={visible} onSelect={onSelect} onReset={onResetFilters} />
+          </>
+        ) : (
+          <>
+            <div className="flex shrink-0 flex-col gap-3 border-b border-border p-4">
+              {/* The fold bar above names the list on a phone; the count still matters there. */}
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-xl leading-[1.3] font-bold text-natural-700 max-md:hidden">
+                  {t("title")}
+                </h2>
+                <span className="text-sm text-natural-500">
+                  {t("count", { count: visible.length, total: routes.length })}
+                </span>
+              </div>
+              {/* From xl the filters have their own card beside this one, as on the yachts map, and
+                  on a phone they open from the button over the map. */}
+              <div className="max-md:hidden xl:hidden">
+                <RouteFiltersForm routes={routes} filters={filters} onChange={onFiltersChange} />
+              </div>
             </div>
-          </ScrollArea>
-        </>
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="p-3">
+                <RouteList
+                  routes={visible.slice((page - 1) * ROUTES_PAGE_SIZE, page * ROUTES_PAGE_SIZE)}
+                  onSelect={onSelect}
+                  onReset={onResetFilters}
+                />
+              </div>
+            </ScrollArea>
+            {visible.length > ROUTES_PAGE_SIZE ? (
+              <div className="shrink-0 border-t border-border py-4">
+                <PaginationControl
+                  page={page}
+                  pageSize={ROUTES_PAGE_SIZE}
+                  total={visible.length}
+                  onPageChange={(next) => setPaging({ key: listKey, page: next })}
+                  summary={false}
+                  className="justify-center md:justify-center"
+                />
+              </div>
+            ) : null}
+          </>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+export interface RouteFiltersCardProps {
+  routes: MapRoute[];
+  filters: RouteFilters;
+  onChange: (next: Partial<RouteFilters>) => void;
+  onReset: () => void;
+  /** Where the card opens over the map, a close button and one to see what the filters left. */
+  onClose?: () => void;
+  resultCount?: number;
+  className?: string;
+}
+
+/** The filters as a card of their own, shaped like the yachts map's filter panel. */
+export function RouteFiltersCard({
+  routes,
+  filters,
+  onChange,
+  onReset,
+  onClose,
+  resultCount,
+  className,
+}: RouteFiltersCardProps) {
+  const t = useTranslations("RoutesMap");
+  const active = [filters.q.trim(), filters.country, filters.length, filters.level].filter(
+    Boolean,
+  ).length;
+
+  return (
+    <aside
+      className={cn(
+        "flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card",
+        className,
       )}
+    >
+      <div className="flex shrink-0 items-center gap-3 border-b border-border p-4">
+        <h2 className="flex-1 text-xl leading-[1.3] font-bold text-natural-700">
+          {t("filtersTitle", { count: active })}
+        </h2>
+        <button
+          type="button"
+          onClick={onReset}
+          className="cursor-pointer rounded-lg px-1 py-1.5 leading-[1.4] font-bold underline underline-offset-2 outline-none hover:text-natural-500 focus-visible:ring-2 focus-visible:ring-ring/40"
+        >
+          {t("clearAll")}
+        </button>
+        {onClose ? (
+          <IconButton variant="subtle" size="sm" aria-label={t("closeFilters")} onClick={onClose}>
+            <X />
+          </IconButton>
+        ) : null}
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <RouteFiltersForm routes={routes} filters={filters} onChange={onChange} labelled />
+      </div>
+      {onClose ? (
+        <div className="shrink-0 border-t border-border p-4">
+          <Button variant="brand" className="w-full" onClick={onClose}>
+            {t("showRoutes", { count: resultCount ?? routes.length })}
+          </Button>
+        </div>
+      ) : null}
     </aside>
   );
 }

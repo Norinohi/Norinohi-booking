@@ -65,6 +65,8 @@ export interface MapBoatPopupProps {
    * the catalogue at all.
    */
   catalogueHref?: ComponentProps<typeof Link>["href"];
+  /** Opens the catalogue link in a new tab, for a page the visitor should not lose by following it. */
+  catalogueInNewTab?: boolean;
 }
 
 export default function MapBoatPopup({
@@ -78,6 +80,7 @@ export default function MapBoatPopup({
   focusDurationMs,
   onFocusApplied,
   catalogueHref,
+  catalogueInNewTab = false,
 }: MapBoatPopupProps) {
   const t = useTranslations("YachtsMap");
   const [index, setIndex] = useState(0);
@@ -198,6 +201,8 @@ export default function MapBoatPopup({
           {catalogueHref ? (
             <Link
               href={catalogueHref}
+              target={catalogueInNewTab ? "_blank" : undefined}
+              rel={catalogueInNewTab ? "noopener" : undefined}
               className="flex h-10 items-center gap-1.5 rounded-full bg-brand px-4 text-sm font-semibold text-brand-foreground shadow-brand-glow transition-colors outline-none hover:bg-brand/90 focus-visible:ring-2 focus-visible:ring-ring/40"
             >
               {t("allInCatalogue", { count })}

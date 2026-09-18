@@ -24,5 +24,14 @@
   "marinaYachts": "{name}, {count, plural, one {# Yacht} other {# Yachten}}",
   "showMarinaYachts": "Yachten in dieser Marina",
   "routesHere": "{count, plural, one {# Route beginnt hier} other {# Routen beginnen hier}}",
-  "marinaDistance": "{km} km von {stop}"
+  "marinaDistance": "{km} km von {stop}",
+  "search": "Suche",
+  "filtersTitle": "Alle Filter ({count})",
+  "clearAll": "Alle löschen",
+  "showList": "Anzeigen",
+  "hideList": "Einklappen",
+  "filtersButton": "Filter{count, plural, =0 {} other { (#)}}",
+  "back": "Zurück",
+  "closeFilters": "Filter schließen",
+  "showRoutes": "{count, plural, =0 {Keine Routen} one {# Route anzeigen} other {# Routen anzeigen}}"
 }
