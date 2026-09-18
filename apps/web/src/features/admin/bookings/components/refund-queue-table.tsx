@@ -127,7 +127,7 @@ export default function RefundQueueTable() {
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         <Link
-                          href={`/staff/bookings/${booking.id}`}
+                          href={`/admin/staff/bookings/${booking.id}`}
                           className="font-medium text-brand hover:underline"
                         >
                           {booking.reference}

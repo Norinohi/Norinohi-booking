@@ -167,7 +167,7 @@ export default function EnquiriesTable() {
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         <Link
-                          href={`/staff/bookings/${enquiry.bookingId}`}
+                          href={`/admin/staff/bookings/${enquiry.bookingId}`}
                           className="font-medium text-brand hover:underline"
                         >
                           {enquiry.reference}

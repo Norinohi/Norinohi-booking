@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
+import { locales } from "./src/i18n/config";
 import { isPublicSite } from "./src/lib/site";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
@@ -73,6 +74,21 @@ const nextConfig: NextConfig = {
     "*.ngrok-free.app",
     "*.trycloudflare.com",
   ],
+
+  /*
+   * Staff screens moved under /admin on 2026-09-18 so public pages can own paths like /routes.
+   * Temporary, so old bookmarks keep working for a while; /routes is left out because the public
+   * routes map takes it. Unprefixed paths get their locale from the proxy first, then land here.
+   */
+  async redirects() {
+    return [
+      {
+        source: `/:locale(${locales.join("|")})/:page(commissions|inbox|staff|users|payments|listings|faq|popular|popular-yachts|duplicates|sync|audit|settings)/:rest*`,
+        destination: "/:locale/admin/:page/:rest*",
+        permanent: false,
+      },
+    ];
+  },
 
   /*
    * A header rather than `Disallow: /`: `Disallow` blocks the fetch, so an already-indexed URL

@@ -112,7 +112,7 @@ export default function StaffBookingScreen({ id }: { id: string }) {
     <div className="flex flex-col">
       {/* Back to the bookings list, not to whichever queue was used to get here: this screen
           is reached from four of them, and the list is the one place every booking is. */}
-      <AppBreadcrumbs items={[]} backLabel="Admin.StaffBooking.back" backHref="/staff/bookings" />
+      <AppBreadcrumbs items={[]} backLabel="Admin.StaffBooking.back" backHref="/admin/staff/bookings" />
 
       <div className="mx-auto w-full max-w-384 px-4 py-6 md:px-13.5 xl:px-17.5">
         <div className="mx-auto flex w-full max-w-349 flex-col gap-5">

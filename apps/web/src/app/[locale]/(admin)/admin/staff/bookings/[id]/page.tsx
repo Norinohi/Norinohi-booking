@@ -24,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
     locale,
     title: t("title"),
     description: t("description"),
-    path: "/staff/bookings",
+    path: "/admin/staff/bookings",
     noIndex: true,
   });
 }
