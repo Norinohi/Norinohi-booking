@@ -14,9 +14,12 @@ export type PopularRouteStop = {
 
 export type PopularRoute = {
   id: string;
+  /** The route's public address, `/routes/<slug>`. */
+  slug: string;
   title: string;
   description: string | null;
   nights: number;
+  kind: "seven_days" | "fourteen_days" | "family" | "first_time_sailors" | "active_sailing";
   difficulty: "easy" | "moderate" | "advanced" | null;
   imageUrl: string | null;
   cloudinaryId: string | null;
@@ -61,6 +64,11 @@ export async function listPopularRoutes(
     country?: string;
     /** Keep routes in this sailing region, whether drawn over it or starting from a base in it. */
     region?: string;
+    /**
+     * Every published route rather than only the curated list. The routes map shows them all; the
+     * featured ones still come first, in their curated order.
+     */
+    includeUnfeatured?: boolean;
   } = {},
 ): Promise<PopularRoute[]> {
   const locale = input.locale ?? "en";
@@ -68,6 +76,7 @@ export async function listPopularRoutes(
   const countryFilter = input.country
     ? sql`and ${normalizedKeySql(sql`coalesce(base_country.name, region_country.name)`)} = ${normalizedKey(input.country)}`
     : sql``;
+  const featuredFilter = input.includeUnfeatured ? sql`` : sql`and route.featured_rank is not null`;
   const regionFilter = input.region
     ? sql`and ${normalizedKeySql(sql`coalesce(target_region.name, base_region.name)`)} = ${normalizedKey(input.region)}`
     : sql``;
@@ -75,9 +84,11 @@ export async function listPopularRoutes(
   const rows = await db.execute<PopularRoute>(sql`
     select
       route.id,
+      route.slug,
       coalesce(nullif(trim(translation.title), ''), route.title) as title,
       coalesce(nullif(trim(translation.description), ''), route.description) as description,
       route.nights,
+      route.kind,
       route.difficulty,
       route.image_url as "imageUrl",
       route.cloudinary_id as "cloudinaryId",
@@ -140,10 +151,11 @@ export async function listPopularRoutes(
     left join country base_country on base_country.id = base_region.country_id
     left join region target_region on target_region.id = route.region_id
     left join country region_country on region_country.id = target_region.country_id
-    where route.featured_rank is not null and route.active
+    where route.active
+      ${featuredFilter}
       ${countryFilter}
       ${regionFilter}
-    order by route.featured_rank asc
+    order by route.featured_rank asc nulls last, route.sort_order asc, route.id asc
     limit ${limit}
   `);
 
@@ -160,4 +172,32 @@ export async function listPopularRoutes(
     sailingAreaValue: asValue(row.sailingAreaValue),
     marinaValue: asValue(row.marinaValue),
   }));
+}
+
+/**
+ * Where "the marinas near this route" are measured from: its first stop, where the charter
+ * starts, falling back to its base for a route written before it had stops. Null for a draft or
+ * a route with neither, which has nowhere to be near.
+ */
+export async function findRouteAnchor(
+  db: NodePgDatabase<typeof schema>,
+  routeId: string,
+): Promise<{ lat: number; lng: number } | null> {
+  const rows = await db.execute<{ lat: number | null; lng: number | null }>(sql`
+    select
+      coalesce(first_stop.lat, base.lat) as lat,
+      coalesce(first_stop.lng, base.lng) as lng
+    from suggested_route route
+    left join base on base.id = route.base_id
+    left join lateral (
+      select stop.lat, stop.lng
+      from suggested_route_stop stop
+      where stop.route_id = route.id
+      order by stop.sort_order
+      limit 1
+    ) first_stop on true
+    where route.id = ${routeId} and route.active
+  `);
+  const row = rows.rows[0];
+  return row?.lat != null && row.lng != null ? { lat: row.lat, lng: row.lng } : null;
 }

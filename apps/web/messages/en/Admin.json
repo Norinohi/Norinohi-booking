@@ -797,14 +797,24 @@
         "defaultHint": "Shown in any language that has no translation below.",
         "difficulty": "Difficulty",
         "imageUrl": "Photo URL",
-        "imageUrlHint": "Shown on the home page card.",
+        "imageUrlHint": "Shown on the route's card, on the routes map and in link previews.",
         "translations": "Translations",
-        "translationsHint": "Title and description per language. A blank language falls back to the default copy above."
+        "translationsHint": "Title and description per language. A blank language falls back to the default copy above.",
+        "slug": "Page address",
+        "slugPlaceholder": "made from the title",
+        "slugHint": "The route's public page. Lowercase letters, digits and hyphens.",
+        "slugCreateHint": "Leave empty to make it from the title. Lowercase letters, digits and hyphens.",
+        "slugMoved": "Changing it moves the page: links to {previous} will stop working.",
+        "imageHint": "Shown on the route's card, on the routes map and in link previews. Upload a photo or paste its URL.",
+        "upload": "Upload photo",
+        "uploading": "Uploading..."
       },
       "errors": {
         "target": "Choose a base or a region for this route",
         "nights": "Between 1 and 28 nights",
-        "failed": "Couldn't save the route"
+        "failed": "Couldn't save the route",
+        "slug": "Use lowercase letters, digits and single hyphens, for example split-to-vis.",
+        "upload": "Could not upload the photo."
       },
       "cancel": "Cancel",
       "create": "Create route",

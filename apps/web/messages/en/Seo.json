@@ -183,5 +183,9 @@
       "title": "Cancellation Policy",
       "description": "What happens when a charter booked on YachtSkanner is cancelled."
     }
+  },
+  "RoutesMap": {
+    "title": "Sailing routes map",
+    "description": "Explore sailing itineraries on the map and find marinas with yachts near where each route starts."
   }
 }

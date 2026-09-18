@@ -183,5 +183,9 @@
       "title": "Política de cancelación",
       "description": "Qué ocurre cuando se cancela un chárter reservado en YachtSkanner."
     }
+  },
+  "RoutesMap": {
+    "title": "Mapa de rutas de navegación",
+    "description": "Explora itinerarios en el mapa y encuentra puertos con yates cerca del inicio de cada ruta."
   }
 }

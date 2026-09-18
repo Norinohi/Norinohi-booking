@@ -40,6 +40,7 @@ import {
   yachtCategory,
   yachtModel,
 } from "./schema";
+import { routeSlug } from "./routes/route-slug";
 
 const providerId = "prv_mock";
 
@@ -2140,6 +2141,8 @@ const insertStaticData = async () => {
         baseId,
         regionId,
         title,
+        /* The fixture titles are distinct, so no numbering is needed on an empty database. */
+        slug: routeSlug(title),
         kind,
         nights,
         sortOrder,

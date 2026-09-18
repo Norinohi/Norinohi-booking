@@ -23,6 +23,7 @@ import {
   suggestedRouteStopTranslation,
   suggestedRouteTranslation,
 } from "../schema/route";
+import { routeSlug, uniqueSlug } from "./route-slug";
 
 type Database = NodePgDatabase<typeof schema>;
 type DatabaseExecutor = Database | Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -282,6 +283,20 @@ export async function writeRouteStopNotes(
         set: { note, updatedAt: new Date() },
       });
   }
+}
+
+/**
+ * A free address for a new route titled `title`: its slug, or the slug numbered from 2 when an
+ * earlier route already holds it. Read inside the transaction that inserts, so two routes created
+ * in one run cannot both take the same one; `suggested_route_slug_uq` catches two runs racing.
+ */
+export async function freeRouteSlug(db: DatabaseExecutor, title: string): Promise<string> {
+  const base = routeSlug(title);
+  const rows = await db
+    .select({ slug: suggestedRoute.slug })
+    .from(suggestedRoute)
+    .where(or(eq(suggestedRoute.slug, base), ilike(suggestedRoute.slug, `${base}-%`)));
+  return uniqueSlug(base, new Set(rows.map((row) => row.slug)));
 }
 
 /** Appends: `suggested_route_stop_order_uq` means the new row cannot reuse an existing slot. */

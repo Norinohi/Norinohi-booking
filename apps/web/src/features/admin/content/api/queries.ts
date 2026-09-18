@@ -113,6 +113,7 @@ export const reorderFeaturedRoutesMutationOptions = () =>
   orpc.admin.route.reorderFeatured.mutationOptions();
 export const createRouteMutationOptions = () => orpc.admin.route.create.mutationOptions();
 export const updateRouteMutationOptions = () => orpc.admin.route.update.mutationOptions();
+export const uploadRouteImageMutationOptions = () => orpc.admin.route.uploadImage.mutationOptions();
 export const setRouteActiveMutationOptions = () => orpc.admin.route.setActive.mutationOptions();
 export const deleteRouteMutationOptions = () => orpc.admin.route.delete.mutationOptions();
 export const createRouteStopMutationOptions = () => orpc.admin.route.stop.create.mutationOptions();

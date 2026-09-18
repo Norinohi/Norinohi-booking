@@ -7,6 +7,8 @@ import {
   routeFeaturedReorderInputSchema,
   routeFeaturedSchema,
   routeIdInputSchema,
+  routeImageUploadInputSchema,
+  routeImageUploadSchema,
   routeListInputSchema,
   routeListSchema,
   routeSchema,
@@ -32,6 +34,7 @@ import {
   setRouteActive,
   updateRoute,
   updateRouteStop,
+  uploadRouteImage,
 } from "../../services/route-admin";
 import { withJsonBodyExample } from "../openapi-examples";
 
@@ -110,6 +113,20 @@ export const routeAdminRouter = {
     .input(routeUpdateInputSchema)
     .output(routeSchema)
     .handler(({ context, input }) => updateRoute(context.db, context.session.user.id, input)),
+  uploadImage: adminProcedure
+    .route({
+      method: "POST",
+      path: "/admin/route/upload-image",
+      operationId: "uploadSuggestedRouteImage",
+      summary: "Upload a photo for a route",
+      description:
+        "Stores a JPEG, PNG, WebP or AVIF of up to 10 MB in the CDN and answers its URL. Nothing is attached to a route until that URL is saved with update. Refused where CDN storage is not configured.",
+      tags: ["Admin"],
+      successDescription: "The URL the uploaded photo is served from.",
+    })
+    .input(routeImageUploadInputSchema)
+    .output(routeImageUploadSchema)
+    .handler(({ input }) => uploadRouteImage(input)),
   listFeatured: adminProcedure
     .route({
       method: "POST",

@@ -95,8 +95,22 @@ describe("relocating Booking Manager bases into the regions NauSYS uses", () => 
     await moor("bm-aci", "prov_bm", "base_bm_aci");
     await moor("bm-trogir", "prov_bm", "base_bm_trogir");
     await db.insert(suggestedRoute).values([
-      { id: "srt_aci", baseId: "base_bm_aci", title: "Split loop", kind: "seven_days", nights: 7 },
-      { id: "srt_se", regionId: "rgn_se", title: "Adriatic", kind: "seven_days", nights: 7 },
+      {
+        id: "srt_aci",
+        slug: "split-loop",
+        baseId: "base_bm_aci",
+        title: "Split loop",
+        kind: "seven_days",
+        nights: 7,
+      },
+      {
+        id: "srt_se",
+        slug: "adriatic",
+        regionId: "rgn_se",
+        title: "Adriatic",
+        kind: "seven_days",
+        nights: 7,
+      },
     ]);
   });
 

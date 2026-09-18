@@ -309,7 +309,12 @@ export default function RoutesTable() {
         </div>
       ) : null}
 
-      <RouteDialog route={editing} open={editOpen} onOpenChange={setEditOpen} />
+      <RouteDialog
+        route={editing}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        imageUploadEnabled={data?.imageUploadEnabled ?? false}
+      />
       <FeaturedRoutesDialog open={featuredOpen} onOpenChange={setFeaturedOpen} />
       <RouteDeleteDialog route={deleting} open={deleteOpen} onOpenChange={setDeleteOpen} />
       <RouteStopsDialog

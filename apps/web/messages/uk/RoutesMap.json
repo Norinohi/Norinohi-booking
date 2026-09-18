@@ -1,0 +1,28 @@
+{
+  "title": "Маршрути",
+  "count": "{count} з {total} маршрутів",
+  "searchPlaceholder": "Шукайте маршрут, острів чи марину",
+  "country": "Країна",
+  "length": "Тривалість",
+  "level": "Рівень",
+  "lengths": {
+    "short": "Менше тижня",
+    "week": "Тиждень",
+    "long": "Понад тиждень"
+  },
+  "nights": "{count, plural, one {# ніч} few {# ночі} many {# ночей} other {# ночі}}",
+  "noResults": "Жоден маршрут не відповідає фільтрам.",
+  "resetFilters": "Скинути фільтри",
+  "allRoutes": "Усі маршрути",
+  "showRouteYachts": "Яхти для цього маршруту",
+  "itinerary": "Маршрут по днях",
+  "nearbyMarinas": "Марини з яхтами поруч",
+  "loadingMarinas": "Шукаємо марини…",
+  "marinasFailed": "Не вдалося завантажити марини. Спробуйте пізніше.",
+  "noMarinas": "У радіусі 50 км від старту немає марин з яхтами.",
+  "marinaMeta": "{count, plural, one {# яхта} few {# яхти} many {# яхт} other {# яхти}} · {km} км від старту",
+  "marinaYachts": "{name}, {count, plural, one {# яхта} few {# яхти} many {# яхт} other {# яхти}}",
+  "showMarinaYachts": "Яхти в цій марині",
+  "routesHere": "{count, plural, one {Тут починається # маршрут} few {Тут починаються # маршрути} many {Тут починається # маршрутів} other {Тут починаються # маршрути}}",
+  "marinaDistance": "{km} км від старту"
+}

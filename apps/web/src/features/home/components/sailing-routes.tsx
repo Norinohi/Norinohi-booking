@@ -16,7 +16,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Suspense, useState } from "react";
 
 import { Image } from "@/components/shared/data-display/image";
-import { buildSearchHref, type SearchCriteria } from "@/features/yachts";
+import { routeImage } from "@/utils/route-image";
 import { Link } from "@/i18n/navigation";
 import { RISE, VIEWPORT } from "@/lib/motion";
 
@@ -35,33 +35,23 @@ function usePopularRoutes(): PopularRoute[] {
   return data?.routes ?? [];
 }
 
-/*
- * There are no route pages yet, so a card lands on the catalogue filtered to the route's country,
- * sailing area (or starting marina) and length -- the boats that could actually sail it.
- */
+/* A card opens its route on the routes map, which shows where it sails and the marinas near its
+   start; the catalogue link for the route's boats lives there. */
 function RouteCard({ route }: { route: PopularRoute }) {
   const t = useTranslations("Home.SailingRoutes");
-  const criteria: SearchCriteria = { duration: String(route.nights) };
-  if (route.countryValue) criteria.country = [route.countryValue];
-  if (route.sailingAreaValue) criteria.sailingArea = [route.sailingAreaValue];
-  if (route.marinaValue) criteria.marina = [route.marinaValue];
-  const href = buildSearchHref(criteria);
+  const href = `/routes/${route.slug}`;
 
   return (
     <TripCard
       imageRender={
         <>
-          {route.imageUrl ? (
-            <Image
-              src={route.imageUrl}
-              alt={route.title}
-              fill
-              sizes="(min-width: 1024px) 452px, 100vw"
-              className="object-cover"
-            />
-          ) : (
-            <div className="absolute inset-0 bg-natural-200" />
-          )}
+          <Image
+            src={routeImage(route)}
+            alt={route.title}
+            fill
+            sizes="(min-width: 1024px) 452px, 100vw"
+            className="object-cover"
+          />
           {route.countryLabel && (
             <>
               <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/5 to-transparent" />

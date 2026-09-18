@@ -183,5 +183,9 @@
       "title": "Stornierungsbedingungen",
       "description": "Was passiert, wenn ein über YachtSkanner gebuchter Charter storniert wird."
     }
+  },
+  "RoutesMap": {
+    "title": "Karte der Segelrouten",
+    "description": "Segelrouten auf der Karte entdecken und Marinas mit Yachten nahe dem Start jeder Route finden."
   }
 }

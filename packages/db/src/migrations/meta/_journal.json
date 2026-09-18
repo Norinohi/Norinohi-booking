@@ -918,6 +918,13 @@
       "when": 1789646897233,
       "tag": "0130_discount_category_targets_to_groups",
       "breakpoints": true
+    },
+    {
+      "idx": 131,
+      "version": "7",
+      "when": 1789721276565,
+      "tag": "0131_route_slug",
+      "breakpoints": true
     }
   ]
 }

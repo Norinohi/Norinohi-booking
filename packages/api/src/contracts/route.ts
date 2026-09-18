@@ -78,6 +78,8 @@ export const routeSchema = z.object({
   /** Where the stop editor's map opens when the route targets a base that has coordinates. */
   targetPoint: z.object({ lat: z.number(), lng: z.number() }).nullable(),
   title: z.string(),
+  /** The public address, `/routes/<slug>`. */
+  slug: z.string(),
   kind: suggestedRouteKindSchema,
   nights: z.number().int(),
   description: z.string().nullable(),
@@ -110,7 +112,30 @@ export const routeListInputSchema = z
   })
   .default(paginationInputDefault(DEFAULT_PAGE_SIZE));
 
-export const routeListSchema = paginatedSchema(routeSchema);
+export const routeListSchema = paginatedSchema(routeSchema).extend({
+  /** Whether this environment can store an uploaded photo; without it the URL field is the way. */
+  imageUploadEnabled: z.boolean(),
+});
+
+/**
+ * Lowercase words joined by single hyphens, the shape `routeSlug` writes. Checked here so a
+ * hand-edited address cannot carry a space, a slash or a capital into a URL.
+ */
+export const routeSlugSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(120)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, digits and single hyphens");
+
+export const routeImageUploadInputSchema = z.object({
+  file: z
+    .file()
+    .max(10 * 1024 * 1024)
+    .mime(["image/jpeg", "image/png", "image/webp", "image/avif"]),
+});
+
+export const routeImageUploadSchema = z.object({ url: z.string() });
 
 export const routeIdInputSchema = z.object({ id: idSchema });
 
@@ -141,6 +166,11 @@ const routeFieldsSchema = z.object({
   baseId: z.string().min(1).nullable().optional(),
   regionId: z.string().min(1).nullable().optional(),
   title: z.string().trim().min(1).max(200),
+  /*
+   * Optional on create, where it is derived from the title. Changing it later moves the public
+   * page, so the old address stops resolving: the editor says so beside the field.
+   */
+  slug: routeSlugSchema.optional(),
   kind: suggestedRouteKindSchema,
   /* A charter is sold in nights; two weeks is the longest itinerary the client writes. */
   nights: z.number().int().min(1).max(28),
