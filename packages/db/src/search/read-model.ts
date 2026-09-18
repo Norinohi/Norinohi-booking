@@ -16,6 +16,11 @@ import { bestOfferSql, offerDocSql, offerSpreadSql } from "./offer-doc-sql";
 import { adoptNearestPricedWeek, rebuildListingPeriodPrices } from "./period-prices";
 
 export { listAdvertisedCharterPeriods, listUnadvertisedYachtIds } from "./advertised-periods";
+export {
+  hullsEligibleOn,
+  listWeekdayCharterHulls,
+  type WeekdayCharterHull,
+} from "./checkin-weekdays";
 export { MIN_LEAD_DAYS, PROVIDER_LEAD_DAYS, providerLeadDaysSql } from "./lead-time";
 export { resolveListingIdsForListingSources } from "./listing-scope";
 export { PERIOD_PRICE_COLUMNS } from "./period-prices";

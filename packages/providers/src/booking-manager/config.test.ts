@@ -20,6 +20,7 @@ const source: BookingManagerEnvSource = {
   BOOKING_MANAGER_SYNC_TIMEOUT_MS: 180_000,
   BOOKING_MANAGER_MIN_INTERVAL_MS: 250,
   BOOKING_MANAGER_SWEEP_CONCURRENCY: 6,
+  BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY: 4,
   BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: 15,
   BOOKING_MANAGER_TIMEZONE: "Europe/Zagreb",
 };
@@ -35,6 +36,12 @@ describe("resolveBookingManagerConfig", () => {
     expect(
       resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_SWEEP_CONCURRENCY: 16 }),
     ).toMatchObject({ sweepConcurrency: 16 });
+  });
+
+  it("refuses a price-weeks fan-out above the nightly pass's own ceiling", () => {
+    expect(() =>
+      resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY: 9 }),
+    ).toThrow(/PRICE_WEEKS_CONCURRENCY/);
   });
 
   it("reads the env slice", () => {

@@ -1,6 +1,19 @@
+/** The window width, asked for rather than fixed, so a run may narrow its own fan-out. */
+export type ConcurrencyLimit = () => number;
+
+/** A width that never moves, which is what a caller with nothing to react to wants. */
+export function fixedLimit(width: number): ConcurrencyLimit {
+  return () => width;
+}
+
 /**
  * Runs `start` over `items` with up to `limit` of them in flight, and hands the
  * results back in the order the items came in.
+ *
+ * `limit` is read again before each launch, so a run that learns the vendor is overloaded
+ * can narrow the window for the items it has not started yet. It never shrinks the window
+ * retroactively: whatever is already in flight stays in flight. A width that does not move
+ * is `fixedLimit(n)`.
  *
  * The order is the whole point. A sweep that walks a list and saves its position
  * as a resume cursor may overlap the requests freely, but it may not finish them
@@ -16,16 +29,16 @@
  */
 export async function* orderedWindow<T, R>(
   items: Iterable<T>,
-  limit: number,
+  limit: ConcurrencyLimit,
   start: (item: T, index: number) => Promise<R>,
 ): AsyncGenerator<{ index: number; item: T; result: Promise<R> }> {
-  const width = Math.max(1, Math.trunc(limit));
+  const width = () => Math.max(1, Math.trunc(limit()));
   const window: Array<{ index: number; item: T; result: Promise<R> }> = [];
   const source = items[Symbol.iterator]();
   let launched = 0;
 
   const fill = () => {
-    while (window.length < width) {
+    while (window.length < width()) {
       const next = source.next();
       if (next.done === true) return;
       const index = launched;

@@ -192,7 +192,7 @@ export default function BookingsTable() {
                     <TableRow key={booking.id}>
                       <TableCell className="whitespace-nowrap">
                         <Link
-                          href={`/staff/bookings/${booking.id}`}
+                          href={`/admin/staff/bookings/${booking.id}`}
                           className="font-medium text-brand hover:underline"
                         >
                           {booking.reference}

@@ -76,6 +76,7 @@ describe("listCatalogueCountries and the popular routes filter", () => {
     await db.insert(suggestedRoute).values([
       {
         id: "srt_split",
+        slug: "srt-split",
         baseId: "base_split",
         title: "Split loop",
         kind: "seven_days",
@@ -84,6 +85,7 @@ describe("listCatalogueCountries and the popular routes filter", () => {
       },
       {
         id: "srt_ionian",
+        slug: "srt-ionian",
         regionId: "rgn_ion",
         title: "Ionian week",
         kind: "seven_days",
@@ -92,6 +94,7 @@ describe("listCatalogueCountries and the popular routes filter", () => {
       },
       {
         id: "srt_sardinia",
+        slug: "srt-sardinia",
         regionId: "rgn_sar",
         title: "Sardinia",
         kind: "seven_days",

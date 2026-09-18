@@ -25,6 +25,9 @@ import { fxSnapshotSchema } from "../contracts/catalog";
 import {
   popularRoutesInputSchema,
   popularRoutesSchema,
+  routeMarinasInputSchema,
+  routeMarinasSchema,
+  routesMapInputSchema,
   popularYachtsInputSchema,
   popularYachtsSchema,
 } from "../contracts/popular-yachts";
@@ -35,6 +38,11 @@ import { getAmenityRanks } from "../services/amenity-ranks";
 import { CATALOGUE_DEFAULT_BASIS, searchCharterResults } from "../services/charter-search";
 import { getMarketplaceSettings } from "../services/marketplace-settings";
 import { getPopularYachtsConfig } from "../services/popular-yachts-settings";
+import {
+  listRouteMarinas,
+  ROUTE_MARINA_LIMIT,
+  ROUTE_MARINA_RADIUS_KM,
+} from "../services/route-marinas";
 import { withParameterExamples } from "./openapi-examples";
 import { compactFacets, createFacetsCache } from "../lib/facets-cache";
 import { presentListingSummary } from "../presenters/listing";
@@ -178,6 +186,43 @@ export const charterSearchRouter = {
     .output(popularRoutesSchema)
     .handler(async ({ context, input }) => ({
       routes: await listPopularRoutes(context.db, input),
+    })),
+  routesMap: publicProcedure
+    .route({
+      method: "GET",
+      path: "/charter-search/routes-map",
+      operationId: "listRoutesMap",
+      summary: "List every published sailing route",
+      description:
+        "Every published route with its stops, for the routes map: the curated popular routes first in their curated order, then the rest. Same shape and the same language fallback as the popular routes, so a card and a map pin describe a route the same way. Drafts are omitted.",
+      tags: ["Charter Search"],
+      successDescription: "The published routes, curated ones first.",
+      spec: withParameterExamples({ locale: "en" }),
+    })
+    .input(routesMapInputSchema)
+    .output(popularRoutesSchema)
+    .handler(async ({ context, input }) => ({
+      routes: await listPopularRoutes(context.db, {
+        locale: input.locale,
+        includeUnfeatured: true,
+        limit: 500,
+      }),
+    })),
+  routeMarinas: publicProcedure
+    .route({
+      method: "GET",
+      path: "/charter-search/route-marinas",
+      operationId: "listRouteMarinas",
+      summary: "List the marinas near a sailing route",
+      description: `The marinas within ${ROUTE_MARINA_RADIUS_KM} km of where a route starts that the catalogue has boats at, nearest first, at most ${ROUTE_MARINA_LIMIT}. Bases two vendors file under one name come back as one marina, with both vendors' boats counted. Answers NOT_FOUND for a route that is unknown or unpublished.`,
+      tags: ["Charter Search"],
+      successDescription: "Marinas with boats near the route's start.",
+      spec: withParameterExamples({ routeId: "srt_example" }),
+    })
+    .input(routeMarinasInputSchema)
+    .output(routeMarinasSchema)
+    .handler(async ({ context, input }) => ({
+      marinas: await listRouteMarinas(context.db, input.routeId),
     })),
   mapMarinas: publicProcedure
     .route({

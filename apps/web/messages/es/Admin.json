@@ -797,14 +797,24 @@
         "defaultHint": "Se muestra en los idiomas sin traducción abajo.",
         "difficulty": "Dificultad",
         "imageUrl": "URL de la foto",
-        "imageUrlHint": "Se muestra en la tarjeta de la página de inicio.",
+        "imageUrlHint": "Se muestra en la tarjeta de la ruta, en el mapa de rutas y en las vistas previas de enlaces.",
         "translations": "Traducciones",
-        "translationsHint": "Título y descripción por idioma. Un idioma vacío muestra el texto predeterminado de arriba."
+        "translationsHint": "Título y descripción por idioma. Un idioma vacío muestra el texto predeterminado de arriba.",
+        "slug": "Dirección de la página",
+        "slugPlaceholder": "a partir del título",
+        "slugHint": "La página pública de la ruta. Minúsculas, dígitos y guiones.",
+        "slugCreateHint": "Déjalo vacío para crearla a partir del título. Minúsculas, dígitos y guiones.",
+        "slugMoved": "Cambiarla mueve la página: los enlaces a {previous} dejarán de funcionar.",
+        "imageHint": "Se muestra en la tarjeta de la ruta, en el mapa de rutas y en las vistas previas de enlaces. Sube una foto o pega su URL.",
+        "upload": "Subir foto",
+        "uploading": "Subiendo..."
       },
       "errors": {
         "target": "Elige una base o una región para esta ruta",
         "nights": "Entre 1 y 28 noches",
-        "failed": "No se pudo guardar la ruta"
+        "failed": "No se pudo guardar la ruta",
+        "slug": "Usa minúsculas, dígitos y guiones simples, por ejemplo split-to-vis.",
+        "upload": "No se pudo subir la foto."
       },
       "cancel": "Cancelar",
       "create": "Crear ruta",

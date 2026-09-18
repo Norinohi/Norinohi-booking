@@ -1,0 +1,28 @@
+{
+  "title": "Segelrouten",
+  "count": "{count} von {total} Routen",
+  "searchPlaceholder": "Route, Insel oder Marina suchen",
+  "country": "Land",
+  "length": "Dauer",
+  "level": "Niveau",
+  "lengths": {
+    "short": "Unter einer Woche",
+    "week": "Eine Woche",
+    "long": "Über eine Woche"
+  },
+  "nights": "{count, plural, one {# Nacht} other {# Nächte}}",
+  "noResults": "Keine Route passt zu diesen Filtern.",
+  "resetFilters": "Filter zurücksetzen",
+  "allRoutes": "Alle Routen",
+  "showRouteYachts": "Yachten für diese Route",
+  "itinerary": "Tagesetappen",
+  "nearbyMarinas": "Marinas mit Yachten in der Nähe",
+  "loadingMarinas": "Marinas werden gesucht…",
+  "marinasFailed": "Die Marinas konnten nicht geladen werden. Bitte später erneut versuchen.",
+  "noMarinas": "Keine Marina mit Yachten im Umkreis von 50 km um den Start.",
+  "marinaMeta": "{count, plural, one {# Yacht} other {# Yachten}} · {km} km vom Start",
+  "marinaYachts": "{name}, {count, plural, one {# Yacht} other {# Yachten}}",
+  "showMarinaYachts": "Yachten in dieser Marina",
+  "routesHere": "{count, plural, one {# Route beginnt hier} other {# Routen beginnen hier}}",
+  "marinaDistance": "{km} km vom Start"
+}

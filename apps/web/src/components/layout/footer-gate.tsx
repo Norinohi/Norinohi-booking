@@ -14,7 +14,7 @@ import { usePathname } from "@/i18n/navigation";
  * that lingering wrapper keeps matching `~ footer` and hides the footer on the page you navigated
  * TO. `usePathname` always reflects the route actually shown, so the footer follows the real route.
  */
-const FOOTERLESS = ["/login", "/register", "/plan-my-trip", "/yachts/map"];
+const FOOTERLESS = ["/login", "/register", "/plan-my-trip", "/yachts/map", "/routes"];
 
 export function FooterGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();

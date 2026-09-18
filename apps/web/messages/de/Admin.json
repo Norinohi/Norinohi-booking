@@ -797,14 +797,24 @@
         "defaultHint": "Wird in jeder Sprache ohne Übersetzung unten angezeigt.",
         "difficulty": "Schwierigkeit",
         "imageUrl": "Foto-URL",
-        "imageUrlHint": "Wird auf der Karte der Startseite angezeigt.",
+        "imageUrlHint": "Erscheint auf der Karte der Route, auf der Routenkarte und in Linkvorschauen.",
         "translations": "Übersetzungen",
-        "translationsHint": "Titel und Beschreibung je Sprache. Eine leere Sprache zeigt den Standardtext oben."
+        "translationsHint": "Titel und Beschreibung je Sprache. Eine leere Sprache zeigt den Standardtext oben.",
+        "slug": "Seitenadresse",
+        "slugPlaceholder": "aus dem Titel",
+        "slugHint": "Die öffentliche Seite der Route. Kleinbuchstaben, Ziffern und Bindestriche.",
+        "slugCreateHint": "Leer lassen, um sie aus dem Titel zu erzeugen. Kleinbuchstaben, Ziffern und Bindestriche.",
+        "slugMoved": "Eine Änderung verschiebt die Seite: Links auf {previous} funktionieren dann nicht mehr.",
+        "imageHint": "Erscheint auf der Karte der Route, auf der Routenkarte und in Linkvorschauen. Foto hochladen oder URL einfügen.",
+        "upload": "Foto hochladen",
+        "uploading": "Wird hochgeladen..."
       },
       "errors": {
         "target": "Wählen Sie eine Basis oder ein Revier für diese Route",
         "nights": "Zwischen 1 und 28 Nächten",
-        "failed": "Route konnte nicht gespeichert werden"
+        "failed": "Route konnte nicht gespeichert werden",
+        "slug": "Nur Kleinbuchstaben, Ziffern und einfache Bindestriche, zum Beispiel split-to-vis.",
+        "upload": "Das Foto konnte nicht hochgeladen werden."
       },
       "cancel": "Abbrechen",
       "create": "Route anlegen",

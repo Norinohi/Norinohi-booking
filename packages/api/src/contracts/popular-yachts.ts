@@ -38,9 +38,12 @@ export const popularRouteStopSchema = z.object({
 
 export const popularRouteSchema = z.object({
   id: z.string(),
+  /** The route's public address, `/routes/<slug>`. */
+  slug: z.string(),
   title: z.string(),
   description: z.string().nullable(),
   nights: z.number().int(),
+  kind: z.enum(["seven_days", "fourteen_days", "family", "first_time_sailors", "active_sailing"]),
   difficulty: z.enum(["easy", "moderate", "advanced"]).nullable(),
   imageUrl: z.string().nullable(),
   cloudinaryId: z.string().nullable(),
@@ -64,4 +67,26 @@ export const popularRoutesInputSchema = z.object({
 
 export const popularRoutesSchema = z.object({
   routes: z.array(popularRouteSchema),
+});
+
+export const routesMapInputSchema = z.object({
+  locale: z.string().min(2).max(10).optional(),
+});
+
+export const routeMarinasInputSchema = z.object({
+  routeId: z.string().min(1).max(64),
+});
+
+export const routeMarinaSchema = z.object({
+  name: z.string(),
+  /** The search filter value a link to this marina's boats in the catalogue carries. */
+  value: z.string(),
+  lat: z.number(),
+  lng: z.number(),
+  distanceKm: z.number(),
+  listingCount: z.number().int(),
+});
+
+export const routeMarinasSchema = z.object({
+  marinas: z.array(routeMarinaSchema),
 });

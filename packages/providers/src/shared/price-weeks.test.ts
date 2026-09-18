@@ -8,7 +8,13 @@ import { NausysClient } from "../nausys/client";
 import type { NausysConfig } from "../nausys/config";
 import { streamNausysConfirmedOffers } from "../nausys/confirmed-offers";
 import { FakeNausysTransport } from "../nausys/testing/fake-transport";
-import { leadDaysFor, priceWeeksSource, remainingWeeks, saturdayWeeks } from "./price-weeks";
+import {
+  leadDaysFor,
+  priceWeekPeriods,
+  priceWeeksSource,
+  remainingWeeks,
+  saturdayWeeks,
+} from "./price-weeks";
 import type { SweepPeriod } from "./sweep-periods";
 
 describe("saturdayWeeks", () => {
@@ -240,6 +246,161 @@ describe("priceWeeksSource under a vendor rate limit", () => {
   });
 });
 
+describe("priceWeekPeriods", () => {
+  const plan = { today: "2026-09-17", leadDays: 1, count: 3 };
+  /* Two hulls turn around on Sunday, one of them only until the end of September. */
+  const hullsFor = (weekday: number, checkIn: string) => {
+    if (weekday === 0) return checkIn <= "2026-09-30" ? ["1001", "1002"] : ["1001"];
+    if (weekday === 3) return checkIn === "2026-09-23" ? ["2001"] : [];
+    return [];
+  };
+
+  it("asks the whole fleet about Saturdays and only the eligible hulls about the rest", () => {
+    const periods = priceWeekPeriods({ ...plan, weekdays: [6, 0, 3], hullsFor });
+
+    expect(periods.map((period) => [period.startDate, period.endDate, period.yachtIds])).toEqual([
+      ["2026-09-19", "2026-09-26", undefined],
+      ["2026-09-26", "2026-10-03", undefined],
+      ["2026-10-03", "2026-10-10", undefined],
+      ["2026-09-20", "2026-09-27", ["1001", "1002"]],
+      ["2026-09-27", "2026-10-04", ["1001", "1002"]],
+      ["2026-10-04", "2026-10-11", ["1001"]],
+      ["2026-09-23", "2026-09-30", ["2001"]],
+    ]);
+  });
+
+  it("walks every Saturday before it starts on another weekday", () => {
+    const periods = priceWeekPeriods({ ...plan, weekdays: [6, 0, 3], hullsFor });
+    const weekdays = periods.map((period) => new Date(`${period.startDate}T00:00:00Z`).getUTCDay());
+
+    expect(weekdays).toEqual([6, 6, 6, 0, 0, 0, 3]);
+  });
+
+  it("drops a week no hull is eligible for rather than asking about it", () => {
+    const periods = priceWeekPeriods({ ...plan, weekdays: [3], hullsFor });
+
+    expect(periods.map((period) => period.startDate)).toEqual(["2026-09-23"]);
+  });
+
+  it("opens each weekday outside the vendor's own lead time", () => {
+    /* Friday plus two days of notice: Saturday is too soon, the Sunday behind it is not. */
+    const late = priceWeekPeriods({
+      today: "2026-09-18",
+      leadDays: 2,
+      count: 1,
+      weekdays: [6, 0],
+      hullsFor: () => ["1001"],
+    });
+
+    expect(late.map((period) => period.startDate)).toEqual(["2026-09-26", "2026-09-20"]);
+  });
+
+  it("covers the horizon it is given on every weekday it asks about", () => {
+    const periods = priceWeekPeriods({
+      today: "2026-09-17",
+      leadDays: 1,
+      count: 26,
+      weekdays: [6, 0],
+      hullsFor: () => ["1001"],
+    });
+
+    expect(periods).toHaveLength(52);
+    expect(periods.at(25)).toMatchObject({ startDate: "2027-03-13" });
+    expect(periods.at(-1)).toMatchObject({ startDate: "2027-03-14", endDate: "2027-03-21" });
+  });
+
+  it("judges silence on every week, since the writer tests the rules before it refuses", () => {
+    for (const period of priceWeekPeriods({ ...plan, weekdays: [6, 0, 3], hullsFor })) {
+      expect(period).not.toHaveProperty("judgesSilence");
+    }
+  });
+});
+
+describe("remainingWeeks across weekday groups", () => {
+  const weeks = priceWeekPeriods({
+    today: "2026-09-17",
+    leadDays: 1,
+    count: 3,
+    weekdays: [6, 0, 3],
+    hullsFor: () => ["1001"],
+  });
+
+  it("resumes inside a later group without losing its earlier weeks", () => {
+    expect(remainingWeeks(weeks, { nextCheckIn: "2026-09-27" }).map((w) => w.startDate)).toEqual([
+      "2026-09-27",
+      "2026-10-04",
+      "2026-09-23",
+      "2026-09-30",
+      "2026-10-07",
+    ]);
+  });
+
+  it("keeps every later group when the cursor is still in the first one", () => {
+    expect(remainingWeeks(weeks, { nextCheckIn: "2026-10-03" }).map((w) => w.startDate)).toEqual([
+      "2026-10-03",
+      "2026-09-20",
+      "2026-09-27",
+      "2026-10-04",
+      "2026-09-23",
+      "2026-09-30",
+      "2026-10-07",
+    ]);
+  });
+
+  it("starts over when the cursor names a weekday this run no longer asks about", () => {
+    expect(remainingWeeks(weeks, { nextCheckIn: "2026-09-21" })).toEqual(weeks);
+  });
+
+  it("starts over once the last group is walked out", () => {
+    expect(remainingWeeks(weeks, { nextCheckIn: "2026-10-14" })).toEqual(weeks);
+  });
+});
+
+describe("priceWeeksSource across weekday groups", () => {
+  const weeks = priceWeekPeriods({
+    today: "2026-09-17",
+    leadDays: 1,
+    count: 2,
+    weekdays: [6, 0],
+    hullsFor: () => ["1001"],
+  });
+
+  it("names the next period of the walk, crossing from one weekday into the next", async () => {
+    const source = priceWeeksSource({
+      weeks,
+      stream: async function* (pending) {
+        for (const week of pending) yield page(week);
+      },
+    });
+
+    expect((await collect(source.searchConfirmed?.(null))).map((next) => next.cursor)).toEqual([
+      { nextCheckIn: "2026-09-26" },
+      { nextCheckIn: "2026-09-20" },
+      { nextCheckIn: "2026-09-27" },
+      /* Past the last Sunday, which is what makes the next run start the cycle over. */
+      { nextCheckIn: "2026-10-04" },
+    ]);
+  });
+
+  it("leaves a budget-stopped walk a cursor the next run resumes the right group from", async () => {
+    const asked: string[] = [];
+    const source = priceWeeksSource({
+      weeks,
+      stream: async function* (pending) {
+        for (const week of pending) {
+          asked.push(week.startDate);
+          yield page(week);
+        }
+      },
+    });
+
+    /* The previous run stopped after the Saturdays, so the cursor names the first Sunday. */
+    await collect(source.searchConfirmed?.({ nextCheckIn: "2026-09-20" }));
+
+    expect(asked).toEqual(["2026-09-20", "2026-09-27"]);
+  });
+});
+
 const nausysConfig: NausysConfig = {
   baseUrl: "https://ws-test.nausys.com",
   username: "agency-user",
@@ -314,6 +475,47 @@ describe("price weeks through the NauSYS confirming stream", () => {
         externalYachtIds: null,
       },
     ]);
+  });
+
+  it("asks a restricted weekday only about its own hulls, and judges only those", async () => {
+    const transport = new FakeNausysTransport();
+    transport.respondWith("freeYachts", { status: "OK", freeYachts: [] });
+    const client = new NausysClient({
+      config: nausysConfig,
+      fetchImpl: transport.fetch,
+      queue: new SequentialQueue(),
+      retry: { maxAttempts: 1 },
+      lane: "sync",
+    });
+
+    const source = priceWeeksSource({
+      weeks: priceWeekPeriods({
+        today: "2026-09-17",
+        leadDays: 1,
+        count: 1,
+        weekdays: [6, 0],
+        hullsFor: () => ["4711002"],
+      }),
+      stream: (pending) =>
+        streamNausysConfirmedOffers(
+          {
+            client,
+            periods: { advertised: [], grid: pending },
+            loadYachtIds: () => Promise.resolve(["4711001", "4711002", "4711003"]),
+            companyIds: ["102701"],
+            chunkSize: 2,
+          },
+          { windowIndex: 0 },
+        ),
+    });
+    const pages = await collect(source.searchConfirmed?.(null));
+
+    expect(transport.calls.map((call) => [call.body.periodFrom, call.body.yachts])).toEqual([
+      ["19.09.2026", [4_711_001, 4_711_002]],
+      ["19.09.2026", [4_711_003]],
+      ["20.09.2026", [4_711_002]],
+    ]);
+    expect(pages.map((next) => next.swept?.externalYachtIds)).toEqual([null, ["4711002"]]);
   });
 
   it("asks nothing about a week a previous night already priced", async () => {

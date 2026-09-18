@@ -1,5 +1,5 @@
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
-import { orderedWindow } from "../shared/ordered-window";
+import { fixedLimit, orderedWindow } from "../shared/ordered-window";
 import type { SeasonalPrice } from "../sync/price-writer";
 import type { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
@@ -71,20 +71,23 @@ export function createBookingManagerSeasonalPriceLoader(
      * of one - and out-of-order delivery would decide which weeks made it in by
      * which happened to be quick.
      */
-    const weeks = orderedWindow(charterSaturdays(options.years), concurrency, (checkIn, slot) =>
-      client.get(
-        bookingManagerEndpoints.prices,
-        restPriceListSchema,
-        {
-          dateFrom: formatBookingManagerDateTime(checkIn),
-          dateTo: formatBookingManagerDateTime(addDays(checkIn, 7)),
-          companyId: companyScope,
-          // An undefined value is dropped from the query string, so no currency
-          // asks for the vendor's own default rather than for a blank one.
-          currency: options.currency || undefined,
-        },
-        client.sweepLane("prices", slot % Math.max(1, concurrency)),
-      ),
+    const weeks = orderedWindow(
+      charterSaturdays(options.years),
+      fixedLimit(concurrency),
+      (checkIn, slot) =>
+        client.get(
+          bookingManagerEndpoints.prices,
+          restPriceListSchema,
+          {
+            dateFrom: formatBookingManagerDateTime(checkIn),
+            dateTo: formatBookingManagerDateTime(addDays(checkIn, 7)),
+            companyId: companyScope,
+            // An undefined value is dropped from the query string, so no currency
+            // asks for the vendor's own default rather than for a blank one.
+            currency: options.currency || undefined,
+          },
+          client.sweepLane("prices", slot % Math.max(1, concurrency)),
+        ),
     );
 
     // Deliberately no yachtId: the vendor returns the whole fleet for the period,

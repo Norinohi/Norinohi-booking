@@ -249,6 +249,19 @@ export const env = createEnv({
      * longer dominates the run.
      */
     BOOKING_MANAGER_SWEEP_CONCURRENCY: z.coerce.number().int().min(1).max(32).default(12),
+    /*
+     * The same fan-out for the nightly price-weeks pass, which needs its own number because it
+     * runs against a different bottleneck. The catalogue walk is latency-bound and scales to 12;
+     * this pass hands every answer to the availability writer, which writes thousands of prices
+     * per week on one connection, so past a few lanes the vendor is no longer what the run is
+     * waiting for. Measured read-only on 2026-09-18: Booking Manager answered 1, 3, 6 and 10
+     * parallel `/offers` calls in 2.4s, 2.9s, 3.4s and 4.3s, all 200.
+     *
+     * Capped at 8 rather than at the account ceiling because a nightly run that trips the
+     * vendor's concurrency rule costs a day of live quotes too, and this pass buys little above
+     * that point.
+     */
+    BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY: z.coerce.number().int().min(1).max(8).default(4),
     // We must release a hold before the vendor auto-expires it, otherwise we sell
     // a slot Booking Manager has already dropped.
     BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: z.coerce.number().int().nonnegative().default(15),
@@ -256,13 +269,35 @@ export const env = createEnv({
     // clock that observes daylight saving, so this must stay a real IANA zone.
     BOOKING_MANAGER_TIMEZONE: z.string().min(1).default("Europe/Zagreb"),
     /*
-     * The nightly price-weeks job (docs/scheduled-jobs.md): how many Saturday weeks ahead it
-     * asks both vendors to price for the whole fleet, and the wall clock it may spend doing so
-     * (45 minutes) before it stops and leaves the rest to the next night. The budget includes
-     * any wait for the availability sweep to release its lock.
+     * The nightly price-weeks job (docs/scheduled-jobs.md): how many weeks ahead it asks both
+     * vendors to price, and the wall clock it may spend doing so (45 minutes) before it stops
+     * and leaves the rest to the next night. The budget includes any wait for the availability
+     * sweep to release its lock.
      */
     PRICE_WEEKS_COUNT: z.coerce.number().int().min(1).max(104).default(26),
     PRICE_WEEKS_BUDGET_MS: z.coerce.number().int().positive().default(2_700_000),
+    /*
+     * Which check-in weekdays it asks about, in the order it asks them: 0 is Sunday, 6 is
+     * Saturday. Saturday is asked of the whole fleet; every other weekday only of the hulls
+     * whose check-in rules admit a seven-night charter starting on it, so the cost of adding
+     * one is proportional to how many boats those are.
+     *
+     * Duplicates would ask the same week twice and are rejected rather than folded away, since
+     * a list stating a weekday twice means whoever wrote it believed something this job does
+     * not do.
+     */
+    PRICE_WEEKS_WEEKDAYS: z
+      .string()
+      .default("6,0,3")
+      .transform((value) => value.split(",").map((part) => Number(part.trim())))
+      .pipe(
+        z
+          .array(z.number().int().min(0).max(6))
+          .min(1)
+          .refine((days) => new Set(days).size === days.length, {
+            message: "PRICE_WEEKS_WEEKDAYS must not repeat a weekday",
+          }),
+      ),
   },
   runtimeEnv: process.env,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

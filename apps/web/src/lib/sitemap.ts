@@ -49,7 +49,7 @@ export const LISTINGS_PER_SITEMAP = 2500;
 export const BUILT_AT = new Date();
 
 /** Every child, and the order the index lists them in. */
-export const SITEMAP_NAMES = ["static", "catalog", "shipyard", "listings"] as const;
+export const SITEMAP_NAMES = ["static", "catalog", "shipyard", "routes", "listings"] as const;
 
 function localizePath(path: string, locale: string) {
   return path === "/" ? `/${locale}` : `/${locale}${path}`;

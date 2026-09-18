@@ -1,4 +1,7 @@
 import { stableSourceHash } from "../shared/raw-retention";
+import type { ConcurrencyGovernor } from "../shared/concurrency-governor";
+import { createConcurrencyGovernor } from "../shared/concurrency-governor";
+import { RateLimitedError, TransientError } from "../shared/errors";
 import { orderedWindow } from "../shared/ordered-window";
 import {
   ACCOUNT_WIDE_SCOPE,
@@ -7,7 +10,7 @@ import {
 } from "../sync/availability-writer";
 import type { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
-import { formatBookingManagerDateTime } from "./dates";
+import { formatBookingManagerDateTime, parseBookingManagerDate } from "./dates";
 import { bookingManagerEndpoints, restOfferListSchema, type RestOffer } from "./endpoints";
 import { numberToMinor } from "./money";
 import { rankOffers } from "./offer-ranking";
@@ -71,6 +74,12 @@ export interface BookingManagerConfirmedOfferOptions {
   today?: string;
   /** This run's slice of the advertised tail; see `sweepRotation`. */
   rotation?: number;
+  /**
+   * The fan-out to walk the weeks with, when the caller owns it for longer than one stream.
+   * The price-weeks pass does: its source restarts the stream at the week a rate limit stopped,
+   * and a governor rebuilt per stream would restore the width that earned the 429.
+   */
+  concurrency?: ConcurrencyGovernor;
 }
 
 /**
@@ -104,6 +113,8 @@ export function foldOffersToConfirmed(
   for (const row of rankOffers(rows)) {
     const currency = row.currency?.trim() || fallbackCurrency;
     if (!currency || currency.length !== 3 || row.price == null) continue;
+
+    if (!coversAskedDays(row, checkIn, checkOut)) continue;
 
     const externalYachtId = String(row.yachtId);
     if (chosen.has(externalYachtId)) continue;
@@ -151,6 +162,30 @@ export function foldOffersToConfirmed(
   }
 
   return [...chosen.values()];
+}
+
+/**
+ * Whether the offer is for the days we asked about, times aside.
+ *
+ * The vendor answers a period with whatever it sells over it, not only that charter. Asked for
+ * one night, it returns a `DailyCharter` out and back the same day: a Falcon 115 selling three
+ * nights and up came back for 26 to 27 September as 09:00 to 17:00 on the 26th, at 67,200. Keyed
+ * to the asked dates, that day trip became a one-night charter on the search card that the
+ * detail page, reading the three-night minimum, then refused. Only the times may differ: the
+ * vendor substitutes the base's handover hours, which is why the key stays the asked dates.
+ */
+function coversAskedDays(row: RestOffer, checkIn: string, checkOut: string): boolean {
+  return sameDay(row.dateFrom, checkIn) && sameDay(row.dateTo, checkOut);
+}
+
+/* An offer that states no date is taken at the asked one, as every offer was before this test. */
+function sameDay(echoed: string | null | undefined, asked: string): boolean {
+  if (echoed == null) return true;
+  try {
+    return parseBookingManagerDate(echoed) === asked;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -224,19 +259,35 @@ export async function* streamBookingManagerConfirmedOffers(
    * which on a budget-truncated run decides which weeks got swept by which happened to be
    * quick - and an unswept week that looks swept is a fleet of false refusals.
    */
-  const responses = orderedWindow(pending, config.sweepConcurrency, (period, slot) =>
-    client.get(
-      bookingManagerEndpoints.offers,
-      restOfferListSchema,
-      {
-        dateFrom: formatBookingManagerDateTime(period.startDate),
-        dateTo: formatBookingManagerDateTime(period.endDate),
-        companyId: scopeKeys ?? undefined,
-        currency: options.currency || undefined,
-      },
-      client.sweepLane("offers", slot % Math.max(1, config.sweepConcurrency)),
-    ),
-  );
+  const concurrency =
+    options.concurrency ?? createConcurrencyGovernor({ start: config.sweepConcurrency });
+  /*
+   * Narrowed the moment a call comes back overloaded rather than when the consumer reaches it:
+   * the window is already filling the weeks behind that one, and those are the calls still worth
+   * holding back. The error itself travels on untouched, so classification and retry are as
+   * they were and the week is still reported against its own period.
+   */
+  const responses = orderedWindow(pending, concurrency.limit, async (period, slot) => {
+    try {
+      return await client.get(
+        bookingManagerEndpoints.offers,
+        restOfferListSchema,
+        {
+          dateFrom: formatBookingManagerDateTime(period.startDate),
+          dateTo: formatBookingManagerDateTime(period.endDate),
+          companyId: scopeKeys ?? undefined,
+          currency: options.currency || undefined,
+        },
+        client.sweepLane("offers", slot % Math.max(1, concurrency.limit())),
+      );
+    } catch (error) {
+      /* A vendor saying it is overloaded, as opposed to one refusing what we asked. */
+      if (error instanceof RateLimitedError || error instanceof TransientError) {
+        concurrency.backOff();
+      }
+      throw error;
+    }
+  });
 
   let weekIndex = from.weekIndex;
   for await (const { item: period, result } of responses) {

@@ -13,12 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@yacht-charter/ui/components/overlay/dialog";
-import { Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-
-import { Image } from "@/components/shared/data-display/image";
 
 import {
   useFacetMedia,
@@ -26,6 +23,7 @@ import {
   useUploadFacetImage,
 } from "../hooks/use-popular-facets";
 import type { PopularFacetKind } from "../types";
+import PhotoField from "./photo-field";
 
 const LOCALES = ["en", "uk", "de", "es"] as const;
 type Locale = (typeof LOCALES)[number];
@@ -143,6 +141,8 @@ export default function FacetMediaDialog({ target, onOpenChange }: FacetMediaDia
               value={imageUrl}
               onChange={setImageUrl}
               uploading={uploadingField === "image"}
+              uploadLabel={t("upload")}
+              uploadingLabel={t("uploading")}
               onUpload={data.uploadEnabled ? (file) => pickFile("image", file) : undefined}
             />
             <PhotoField
@@ -152,6 +152,8 @@ export default function FacetMediaDialog({ target, onOpenChange }: FacetMediaDia
               value={hoverImageUrl}
               onChange={setHoverImageUrl}
               uploading={uploadingField === "hover"}
+              uploadLabel={t("upload")}
+              uploadingLabel={t("uploading")}
               onUpload={data.uploadEnabled ? (file) => pickFile("hover", file) : undefined}
             />
             <label className="flex cursor-pointer items-start gap-3">
@@ -227,69 +229,5 @@ export default function FacetMediaDialog({ target, onOpenChange }: FacetMediaDia
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-interface PhotoFieldProps {
-  label: string;
-  hint: string;
-  alt: string;
-  value: string;
-  onChange: (value: string) => void;
-  uploading: boolean;
-  /** Absent where this environment cannot store an upload, which leaves the URL field alone. */
-  onUpload?: (file: File | undefined) => void;
-}
-
-/* A photo slot: its preview, the URL it is served from, and an upload that fills that URL in. */
-function PhotoField({ label, hint, alt, value, onChange, uploading, onUpload }: PhotoFieldProps) {
-  const t = useTranslations("Admin.Popular.media");
-  const inputId = useId();
-  const fileInput = useRef<HTMLInputElement>(null);
-  const preview = value.trim();
-
-  return (
-    <div className="flex flex-col gap-3 md:flex-row md:items-start">
-      <div className="relative aspect-4/3 w-full shrink-0 overflow-hidden rounded-xl bg-natural-100 md:w-56">
-        {preview ? (
-          <Image src={preview} alt={alt} fill sizes="224px" className="object-cover" />
-        ) : null}
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <TextField
-          id={inputId}
-          fieldClassName="h-12"
-          label={label}
-          supportingText={hint}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-        />
-        {onUpload ? (
-          <>
-            <input
-              ref={fileInput}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/avif"
-              className="hidden"
-              onChange={(event) => {
-                onUpload(event.target.files?.[0]);
-                event.target.value = "";
-              }}
-            />
-            <Button
-              type="button"
-              variant="neutral"
-              size="sm"
-              className="w-fit"
-              disabled={uploading}
-              onClick={() => fileInput.current?.click()}
-            >
-              <Upload className="size-4" />
-              {uploading ? t("uploading") : t("upload")}
-            </Button>
-          </>
-        ) : null}
-      </div>
-    </div>
   );
 }

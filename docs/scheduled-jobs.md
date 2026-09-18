@@ -66,19 +66,39 @@ only for the few boats whose first free week it happens to be. On the local flee
 Split listings with a vendor-confirmed price by check-in month were Sep 235, Oct 817, Nov 19,
 Dec 4, and a visitor searching 7 to 14 November saw 6 exact prices among 1,193 boats.
 
-`sync-price-weeks.ts` asks both vendors to price every Saturday-to-Saturday week of the next
-`PRICE_WEEKS_COUNT` weeks for the whole fleet, one week at a time, through the same confirming
-streams the sweep uses (`streamNausysConfirmedOffers`, `streamBookingManagerConfirmedOffers`) and
-the same writer, which then rebuilds `listing_search_doc` and `listing_period_price` for the
-listings it priced. There is no occupancy walk in front of it. The pieces are
-`packages/providers/src/shared/price-weeks.ts` (the week list, cursor and source) and
-`packages/providers/src/sync/price-weeks.ts` (lock wait and run).
+`sync-price-weeks.ts` asks both vendors to price every seven-night charter of the next
+`PRICE_WEEKS_COUNT` weeks, one period at a time, through the same confirming streams the sweep
+uses (`streamNausysConfirmedOffers`, `streamBookingManagerConfirmedOffers`) and the same writer,
+which then rebuilds `listing_search_doc` and `listing_period_price` for the listings it priced.
+There is no occupancy walk in front of it. The pieces are
+`packages/providers/src/shared/price-weeks.ts` (the period list, cursor and source),
+`packages/providers/src/sync/price-weeks.ts` (lock wait and run) and
+`packages/db/src/search/checkin-weekdays.ts` (which hulls a weekday may be asked about).
 
-- **Which weeks.** From the first Saturday a charter could still be sold on: today plus the
+- **Which weeks.** From the first check-in a charter could still be sold on: today plus the
   vendor's `leadDays` from `packages/env/src/providers.ts`, never under the read model's
   `MIN_LEAD_DAYS`. Booking Manager's two days mean a Friday run starts a week later than NauSYS.
-  Saturday weeks only, and no check-in rule logic here: a boat that does not turn around on
-  Saturday is simply not in the vendor's answer.
+- **Which check-in weekdays.** `PRICE_WEEKS_WEEKDAYS`, default `6,0,3`: Saturday, then Sunday,
+  then Wednesday, as `extract(dow)` numbers. Saturday is asked of the whole fleet, because that
+  is the turnaround the fleet is built around and the case the refusal model was built for. The
+  other two are asked only of the hulls whose own `listing_checkin_rule` rows admit a seven-night
+  charter starting that day and in force that week -- `listWeekdayCharterHulls`, which applies
+  exactly the weekday, min-nights, max-nights and season test `replaceRefusedPeriods` applies
+  before it writes a refusal. Asking the fleet instead would buy six answers in seven that are
+  already known: 1,149 NauSYS hulls admit a Sunday week against 7,348 that admit a Saturday one.
+  A week no hull is eligible for is dropped rather than asked. Saturdays are walked first, all
+  of them, so a run the budget stops has finished the weekday that carries most of the cards.
+- **What the extra weekdays are worth.** Measured on the local catalogue over the seven weeks
+  from 2026-09-19: 99.7% of eligible NauSYS Sunday charters and 99.3% of Wednesday ones had no
+  vendor price at all, against 58.6% of Saturday ones. On Booking Manager, 64.8% and 71.0%
+  against 57.5%. Those are the cards that show a season floor beside a quote that then differs.
+- **Narrowing the ask, per vendor.** NauSYS prices a batch of hulls at a time, so a restricted
+  period is asked about only its own hulls and its page carries them as `swept.externalYachtIds`;
+  the writer then judges nobody else. Booking Manager's `/offers` takes `dateFrom`, `dateTo`,
+  `companyId` and `currency` and no yacht list, so a restricted period still costs one
+  account-wide call -- the same call a Saturday costs. Its silence keeps being judged across the
+  whole scope, which stays correct because the writer's own rule test excludes every hull that
+  does not turn around that day.
 - **Silence is judged.** Each week is asked for the whole fleet, so a hull missing from the answer
   is written as a refusal, the same as the Booking Manager grid already does. Three things make
   that the safe choice rather than the risky one. The writer only refuses listings the vendor
@@ -104,7 +124,26 @@ listings it priced. There is no occupancy walk in front of it. The pieces are
   wait. The writer checks it after each week, so a run overruns by at most one week plus the
   closing rebuild. The cursor is the check-in date of the first unfinished week, not an index,
   because the next night rebuilds the list from a later today; a cursor past the horizon starts
-  the cycle over, and a completed walk clears it.
+  the cycle over, and a completed walk clears it. The date also names its weekday group, which is
+  what lets one date resume a list whose dates restart at every group boundary: `remainingWeeks`
+  keeps the rest of the cursor's own group and every group behind it. A cursor written before
+  this change is a Saturday and therefore resumes in the Saturday group, as it meant to.
+- **Several periods at once, Booking Manager only.** Its `/offers` pass walks the weeks through
+  `orderedWindow` with `BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY` (default 4, refused above 8) of
+  them in flight, each on its own sweep lane and each still spaced by
+  `BOOKING_MANAGER_MIN_INTERVAL_MS`. Its own knob rather than the catalogue's
+  `BOOKING_MANAGER_SWEEP_CONCURRENCY`, because the two run against different bottlenecks: the
+  catalogue walk waits on the vendor, this pass waits on the writer. NauSYS stays strictly
+  sequential and is not affected -- measured read-only on 2026-09-18, 3, 6 and 10 parallel
+  `freeYachts` calls each returned `429 Too many concurrent requests for user` for all but one.
+  Booking Manager took the same probe cleanly: 1 call 2.4 s, 3 parallel 2.9 s, 6 parallel 3.4 s,
+  10 parallel 4.3 s, every one HTTP 200.
+  The order is unchanged, which is the point of `orderedWindow`: answers are handed to the writer
+  strictly in week order, so the cursor still names a prefix and a budget stop leaves no gap
+  behind an already-fetched later week. Writes stay serialized behind that one consumer -- only
+  the fetching overlaps. A 429 or a 5xx from the vendor halves the width for the rest of the run
+  and never widens it again (`booking_manager.price_weeks_narrowed`); one period failing costs
+  only that period, and the retry and error classification are unchanged.
 - **Rate limits.** Calls go through the provider clients, so `NAUSYS_MIN_INTERVAL_MS` and
   `BOOKING_MANAGER_MIN_INTERVAL_MS` (and Booking Manager's sweep lanes) apply unchanged. NauSYS
   also rate limits sustained `freeYachts` traffic with a 429 that outlasts the client's own
@@ -114,7 +153,7 @@ listings it priced. There is no occupancy walk in front of it. The pieces are
   week.
 
 Schedule: `15 22 * * *`, 22:15 UTC (23:15 CET, 00:15 CEST). Between two sweep ticks, when traffic
-is lowest, and a 45 minute budget plus rebuild ends near 23:10, well clear of the catalogue sync
+is lowest, and a 60 minute budget plus rebuild ends near 23:40, well clear of the catalogue sync
 at 01:00, which rewrites the rate bands refusal eligibility reads.
 
 ### Cost, measured locally on 2026-09-17
@@ -134,12 +173,78 @@ NauSYS time is almost all vendor latency, and it grows with the size of the answ
 a week returning 800 free hulls, 135 s for one returning 4,800 (the `obligatoryExtras` payload).
 Booking Manager time is almost all writing.
 
-Extrapolated to the default 26 weeks: NauSYS about 26 x 104 s = 45 minutes, which is the budget,
-so in season a cycle takes one night and occasionally spills a few weeks into the next; winter
-weeks return fewer free hulls and run faster. Booking Manager about 26 x 19 s = 8 minutes. Call
-volume per cycle: NauSYS 26 x 30 = 780 `freeYachts` calls, Booking Manager 26 `/offers`. Rebuilds
-are scoped to the listings priced, roughly the published fleet on a full run. Re-measure from the
-Railway region before raising the horizon.
+Extrapolated to the default 26 weeks, Saturdays alone: NauSYS about 26 x 104 s = 45 minutes,
+which is the budget, so in season a cycle takes one night and occasionally spills a few weeks
+into the next; winter weeks return fewer free hulls and run faster. Booking Manager about
+26 x 19 s = 8 minutes. Call volume per cycle: NauSYS 26 x 30 = 780 `freeYachts` calls, Booking
+Manager 26 `/offers`. Rebuilds are scoped to the listings priced, roughly the published fleet on
+a full run. Re-measure from the Railway region before raising the horizon.
+
+### What Sunday and Wednesday add, measured locally on 2026-09-18
+
+Same machine, same vendors, `PRICE_WEEKS_COUNT=2` per weekday, one provider at a time.
+
+| Provider        | Weekday   | Hulls asked | Vendor calls per week | Fetch per week | Write per week | Prices | Refusals |
+| --------------- | --------- | ----------- | --------------------- | -------------- | -------------- | ------ | -------- |
+| NauSYS          | Saturday  | 7,348       | 30                    | 26 s and 67 s  | 1.2 to 1.8 s   | 2,159  | 249      |
+| NauSYS          | Sunday    | 1,149       | 5                     | 3.9 s / 4.6 s  | 0.5 s          | 630    | 19       |
+| NauSYS          | Wednesday | 1,399       | 6                     | 9.2 s / 7.2 s  | 0.4 s          | 726    | 12       |
+| Booking Manager | Saturday  | account     | 1                     | 1.4 s          | 3.9 / 5.0 s    | 6,701  | 1,007    |
+| Booking Manager | Sunday    | account     | 1                     | under 0.1 s    | 1.1 / 1.2 s    | 1,793  | 3,355    |
+| Booking Manager | Wednesday | account     | 1                     | under 0.1 s    | 1.1 / 1.4 s    | 2,193  | 281      |
+
+A Sunday costs 9% of a Saturday on NauSYS and a Wednesday 18%, which is the hull ratio and not a
+coincidence: the call count follows the fleet asked and the vendor's latency follows the size of
+the answer. On Booking Manager the call is the same call and only the writing is smaller, so the
+two together are 48% of a Saturday. Booking Manager's Sunday refusals are large because it judges
+the whole scope from one account-wide answer -- 3,359 hulls admit a Sunday week and about 900 a
+week are offered one -- and they are honest refusals: the writer tested the rules, the rate for
+every night and the occupancy before writing each of them.
+
+Extrapolated to 26 weeks on all three weekdays, holding the 104 s Saturday figure the 8-week run
+measured:
+
+| Provider        | Saturdays only | All three weekdays | Vendor calls per cycle |
+| --------------- | -------------- | ------------------ | ---------------------- |
+| NauSYS          | 45 min         | about 57 min       | 1,066, was 780         |
+| Booking Manager | 8 min          | about 12 min       | 78, was 26             |
+
+Those Booking Manager figures are unchanged by the parallel pass: the extrapolation is write time,
+and the fan-out does not shorten it. Read the 12 minutes as the budget this vendor needs whatever
+`BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY` is set to.
+
+### What the parallel Booking Manager pass is worth, measured locally on 2026-09-18
+
+Same machine, live vendor, `PRICE_WEEKS_COUNT=4`, Saturdays only, Booking Manager alone, two runs
+at each setting. Read-only price calls: no options, no bookings, NauSYS untouched.
+
+| `BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY` | Wall clock | Fetch per week                | Write per week | Prices written |
+| ----------------------------------------- | ---------- | ----------------------------- | -------------- | -------------- |
+| 1                                         | 42 s, 41 s | 1.4 to 1.9 s then under 0.1 s | 3.0 to 6.3 s   | 17,326, 17,331 |
+| 4                                         | 42 s, 41 s | 1.2 to 1.5 s then under 0.1 s | 3.0 to 6.6 s   | 17,328, 17,325 |
+
+**It buys nothing measurable here, and that is the finding, not a disappointment.** `orderedWindow`
+already fetches one week ahead at a width of 1, and one `/offers` call costs 1.4 s against 4.6 s
+of writing, so the vendor is fully hidden behind the writer from the second week onward -- every
+week after the first reports a fetch under 0.1 s at either setting. The pass is write-bound: 17,300
+prices in roughly 19 s of writing, about 1.1 ms each on one connection. Parallel writing was not
+attempted, because the writer owns the cursor's meaning and serializing it is what makes a
+budget-stopped run a clean prefix.
+
+The width still earns its place for the cases the local machine does not show: a vendor cold start
+near 30 s on a first call, the weeks where `/offers` runs long, and the Railway container, where
+the database is a network hop away and the writer is slower rather than faster. It is bounded and
+self-narrowing, so the risk of leaving it at 4 is small and the risk of raising it is the
+account-wide 20-call ceiling.
+
+**Recommended on production: `PRICE_WEEKS_COUNT=26` unchanged, `PRICE_WEEKS_BUDGET_MS=3600000`
+(60 minutes).** The horizon is what the coverage is worth and the added cost is 27% of the pass,
+not a doubling, so the cheaper change is the budget. Sixty minutes from 22:15 UTC ends near 23:15
+plus the closing rebuild, still hours clear of the 01:00 catalogue sync that rewrites the rate
+bands refusal eligibility reads. Leaving the budget at 45 minutes is safe and costs only tempo: a
+run stops inside the Sunday group, the cursor keeps the group, and the next night finishes it --
+Saturday coverage is never what gets dropped. Re-measure from the Railway region before changing
+either; every number here was taken from a developer machine.
 
 Effect of the 8-week run on the Split region (listings with a vendor-confirmed Saturday price):
 
@@ -309,8 +414,9 @@ REVALIDATE_SECRET                    ${{api.REVALIDATE_SECRET}}
 defaults:
 
 ```
-PRICE_WEEKS_COUNT       26        # Saturday weeks ahead, 1 to 104
-PRICE_WEEKS_BUDGET_MS   2700000   # 45 minutes, including any wait for the availability lock
+PRICE_WEEKS_COUNT       26        # weeks ahead, 1 to 104
+PRICE_WEEKS_BUDGET_MS   3600000   # 60 minutes, including any wait for the availability lock
+PRICE_WEEKS_WEEKDAYS    6,0,3     # check-in weekdays, in order; 0 Sunday, 6 Saturday
 ```
 
 `PROVIDER_MODE` is still single-valued and still matters, but only to the booking

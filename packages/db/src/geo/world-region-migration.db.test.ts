@@ -53,6 +53,7 @@ describe("0128 moves Booking Manager locations out of world regions", () => {
     ]);
     await db.insert(suggestedRoute).values({
       id: "srt_split",
+      slug: "split-loop",
       baseId: "base_bm_split",
       title: "Split loop",
       kind: "seven_days",

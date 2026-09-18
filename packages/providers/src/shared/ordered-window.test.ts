@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { orderedWindow } from "./ordered-window";
+import { fixedLimit, orderedWindow } from "./ordered-window";
 
 /** A promise a test resolves or rejects by hand, so overlap is observable. */
 function deferred<T>() {
@@ -20,7 +20,7 @@ describe("orderedWindow", () => {
     let inFlight = 0;
     let peak = 0;
 
-    const window = orderedWindow([0, 1, 2, 3, 4], 3, (item) => {
+    const window = orderedWindow([0, 1, 2, 3, 4], fixedLimit(3), (item) => {
       started += 1;
       inFlight += 1;
       peak = Math.max(peak, inFlight);
@@ -52,7 +52,7 @@ describe("orderedWindow", () => {
     const seen: string[] = [];
 
     const drain = (async () => {
-      for await (const { result } of orderedWindow(["a", "b", "c"], 3, (_, index) => {
+      for await (const { result } of orderedWindow(["a", "b", "c"], fixedLimit(3), (_, index) => {
         const gate = gates[index];
         if (!gate) throw new Error("no gate");
         return gate.promise;
@@ -73,7 +73,7 @@ describe("orderedWindow", () => {
   it("surfaces a failure at its own turn and lets the walk go on", async () => {
     const outcome: string[] = [];
 
-    for await (const { item, result } of orderedWindow([1, 2, 3], 3, (item) =>
+    for await (const { item, result } of orderedWindow([1, 2, 3], fixedLimit(3), (item) =>
       item === 2 ? Promise.reject(new Error("boom")) : Promise.resolve(item),
     )) {
       try {
@@ -98,7 +98,7 @@ describe("orderedWindow", () => {
     process.on("unhandledRejection", onRejection);
 
     try {
-      const iterator = orderedWindow([1, 2], 2, (item) =>
+      const iterator = orderedWindow([1, 2], fixedLimit(2), (item) =>
         item === 1 ? slow.promise : Promise.reject(new Error("early")),
       )[Symbol.asyncIterator]();
 
@@ -120,7 +120,7 @@ describe("orderedWindow", () => {
     let inFlight = 0;
     let peak = 0;
 
-    for await (const { result } of orderedWindow([1, 2, 3], 0, async () => {
+    for await (const { result } of orderedWindow([1, 2, 3], fixedLimit(0), async () => {
       inFlight += 1;
       peak = Math.max(peak, inFlight);
       await Promise.resolve();
@@ -135,12 +135,50 @@ describe("orderedWindow", () => {
 
   it("walks an empty list without starting anything", async () => {
     let started = 0;
-    for await (const _ of orderedWindow([], 4, () => {
+    for await (const _ of orderedWindow([], fixedLimit(4), () => {
       started += 1;
       return Promise.resolve(true);
     })) {
       throw new Error("nothing should be yielded");
     }
     expect(started).toBe(0);
+  });
+  it("reads a function limit again before each launch, so a run can narrow itself", async () => {
+    const gates = [0, 1, 2, 3, 4, 5].map(() => deferred<number>());
+    let limit = 3;
+    let started = 0;
+
+    const window = orderedWindow(
+      [0, 1, 2, 3, 4, 5],
+      () => limit,
+      (item) => {
+        started += 1;
+        const gate = gates[item];
+        if (!gate) throw new Error("no gate");
+        return gate.promise;
+      },
+    );
+
+    const iterator = window[Symbol.asyncIterator]();
+    const first = iterator.next();
+    expect(started).toBe(3);
+
+    // What is already in flight stays in flight; only the next launches are held back.
+    limit = 1;
+    gates[0]?.resolve(0);
+    await first;
+    const second = iterator.next();
+    expect(started).toBe(3);
+
+    gates[1]?.resolve(1);
+    await second;
+    gates[2]?.resolve(2);
+    await iterator.next();
+    // The window refills before it hands an item over, so the replacement follows the yield.
+    expect(started).toBe(3);
+
+    gates[3]?.resolve(3);
+    await iterator.next();
+    expect(started).toBe(4);
   });
 });

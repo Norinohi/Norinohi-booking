@@ -1,8 +1,13 @@
+import {
+  editorialImageUploadEnabled,
+  uploadEditorialImage,
+} from "@yacht-charter/providers/media/editorial-images";
 import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
 import {
   baseExists,
   countRouteTargets,
   findRouteStop,
+  freeRouteSlug,
   findRouteTarget,
   listExistingRouteIds,
   listFeaturedRouteTargets,
@@ -20,7 +25,7 @@ import {
 import { suggestedRoute, suggestedRouteStop } from "@yacht-charter/db/schema/route";
 import { baseLabel, facetTranslator } from "@yacht-charter/db/search/localize";
 import type { FacetMediaKind, FacetTranslator } from "@yacht-charter/db/search";
-import { asc, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, ne } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database } from "../context";
@@ -42,7 +47,7 @@ import type {
 } from "../contracts/route";
 import { writeAuditLog } from "./audit";
 import { paginatedQuery, totalFrom } from "./pagination";
-import { ConflictError, InternalError, NotFoundError } from "../errors";
+import { ConflictError, InternalError, NotFoundError, PreconditionFailedError } from "../errors";
 
 type ListInput = z.infer<typeof routeListInputSchema>;
 type ListResult = z.infer<typeof routeListSchema>;
@@ -103,6 +108,7 @@ function toRoute(
     targetPoint:
       row.baseLat !== null && row.baseLng !== null ? { lat: row.baseLat, lng: row.baseLng } : null,
     title: row.route.title,
+    slug: row.route.slug,
     kind: row.route.kind,
     nights: row.route.nights,
     description: row.route.description,
@@ -225,6 +231,7 @@ export async function listRoutes(db: Database, input: ListInput): Promise<ListRe
       toRoute(row, stops.get(row.route.id) ?? [], translations.get(row.route.id) ?? [], translate),
     ),
     pagination,
+    imageUploadEnabled: editorialImageUploadEnabled(),
   };
 }
 
@@ -280,6 +287,9 @@ export async function createRoute(
         baseId: input.baseId ?? null,
         regionId: input.regionId ?? null,
         title: input.title,
+        slug: input.slug
+          ? await assertSlugFree(tx, input.slug)
+          : await freeRouteSlug(tx, input.title),
         kind: input.kind,
         nights: input.nights,
         description: input.description ?? null,
@@ -311,6 +321,44 @@ export async function createRoute(
   return getRoute(db, id);
 }
 
+/**
+ * The slug an editor typed, refused when another route already holds it. Answered as a conflict
+ * naming the field rather than left to `suggested_route_slug_uq`, which would surface as a 500.
+ */
+async function assertSlugFree(
+  db: Parameters<Parameters<Database["transaction"]>[0]>[0] | Database,
+  slug: string,
+  exceptId?: string,
+): Promise<string> {
+  const [taken] = await db
+    .select({ id: suggestedRoute.id })
+    .from(suggestedRoute)
+    .where(
+      exceptId
+        ? and(eq(suggestedRoute.slug, slug), ne(suggestedRoute.id, exceptId))
+        : eq(suggestedRoute.slug, slug),
+    )
+    .limit(1);
+  if (taken)
+    throw new ConflictError({ message: `Another route already uses the address "${slug}"` });
+  return slug;
+}
+
+/** Stores a route's photo in the CDN and answers its URL; saving the route attaches it. */
+export async function uploadRouteImage(input: { file: File }): Promise<{ url: string }> {
+  if (!editorialImageUploadEnabled()) {
+    throw new PreconditionFailedError({
+      message: "Image upload is not configured in this environment. Paste an image URL instead.",
+    });
+  }
+  const url = await uploadEditorialImage({
+    folder: "routes",
+    body: await input.file.arrayBuffer(),
+    contentType: input.file.type,
+  });
+  return { url };
+}
+
 export async function updateRoute(
   db: Database,
   actorUserId: string,
@@ -328,6 +376,9 @@ export async function updateRoute(
       patch.regionId = input.regionId ?? null;
     }
     if (input.title !== undefined) patch.title = input.title;
+    if (input.slug !== undefined && input.slug !== before.slug) {
+      patch.slug = await assertSlugFree(tx, input.slug, input.id);
+    }
     if (input.kind !== undefined) patch.kind = input.kind;
     if (input.nights !== undefined) patch.nights = input.nights;
     if (input.description !== undefined) patch.description = input.description;

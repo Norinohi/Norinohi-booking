@@ -16,8 +16,9 @@ import { useTranslations } from "next-intl";
 import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 
-import { useCreateRoute, useUpdateRoute } from "../hooks/use-routes";
+import { useCreateRoute, useUpdateRoute, useUploadRouteImage } from "../hooks/use-routes";
 import { ROUTE_KINDS, type RouteKind, type RouteRow } from "../types";
+import PhotoField from "./photo-field";
 import RouteTargetPicker, { type RouteTarget } from "./route-target-picker";
 
 /*
@@ -37,9 +38,13 @@ type Difficulty = (typeof DIFFICULTIES)[number];
 /* The select needs a value for "not set"; it never reaches the server as a difficulty. */
 const NO_DIFFICULTY = "none";
 
+/* The shape the server accepts, checked here so the field can say so before a save is refused. */
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 type Draft = {
   target: RouteTarget;
   title: string;
+  slug: string;
   kind: RouteKind;
   nights: string;
   description: string;
@@ -59,6 +64,7 @@ const emptyPanes = () => ({
 const EMPTY: Draft = {
   target: { baseId: null, regionId: null },
   title: "",
+  slug: "",
   kind: "seven_days",
   nights: "7",
   description: "",
@@ -80,6 +86,7 @@ function toDraft(route: RouteRow | null): Draft {
   return {
     target: { baseId: route.baseId, regionId: route.regionId },
     title: route.title,
+    slug: route.slug,
     kind: route.kind,
     nights: String(route.nights),
     description: route.description ?? "",
@@ -95,9 +102,16 @@ interface RouteDialogProps {
   route: RouteRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Whether this environment can store an uploaded photo; the URL field works either way. */
+  imageUploadEnabled: boolean;
 }
 
-export default function RouteDialog({ route, open, onOpenChange }: RouteDialogProps) {
+export default function RouteDialog({
+  route,
+  open,
+  onOpenChange,
+  imageUploadEnabled,
+}: RouteDialogProps) {
   const t = useTranslations("Admin.Routes.dialog");
   const [locale, setLocale] = useState<RouteLocale>("en");
   const tKinds = useTranslations("Admin.Routes.kinds");
@@ -105,13 +119,24 @@ export default function RouteDialog({ route, open, onOpenChange }: RouteDialogPr
   const nightsId = useId();
   const sortId = useId();
   const descriptionId = useId();
-  const imageId = useId();
+  const slugId = useId();
 
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [targetError, setTargetError] = useState<string | null>(null);
   const createRoute = useCreateRoute();
   const updateRoute = useUpdateRoute();
+  const uploadImage = useUploadRouteImage();
 
+  const upload = (file: File | undefined) => {
+    if (!file) return;
+    uploadImage.mutate(
+      { file },
+      {
+        onSuccess: ({ url }) => setDraft((previous) => ({ ...previous, imageUrl: url })),
+        onError: (error) => toast.error(error.message || t("errors.upload")),
+      },
+    );
+  };
   /* Reopening on a different row must not carry the previous route's fields over. */
   useEffect(() => {
     if (open) {
@@ -126,8 +151,13 @@ export default function RouteDialog({ route, open, onOpenChange }: RouteDialogPr
   const validNights = Number.isInteger(nights) && nights >= 1 && nights <= 28;
   const validSort = Number.isInteger(sortOrder) && sortOrder >= 0;
   const hasTarget = Boolean(draft.target.baseId) !== Boolean(draft.target.regionId);
-  const canSubmit = draft.title.trim().length > 0 && validNights && validSort && hasTarget;
-  const pending = createRoute.isPending || updateRoute.isPending;
+  const slug = draft.slug.trim();
+  /* Blank on a new route means "make it from the title"; an existing one always has one. */
+  const validSlug = slug ? SLUG_PATTERN.test(slug) : !route;
+  const slugMoved = Boolean(route) && validSlug && slug !== route?.slug;
+  const canSubmit =
+    draft.title.trim().length > 0 && validNights && validSort && hasTarget && validSlug;
+  const pending = createRoute.isPending || updateRoute.isPending || uploadImage.isPending;
 
   const submit = async () => {
     if (!hasTarget) {
@@ -140,6 +170,7 @@ export default function RouteDialog({ route, open, onOpenChange }: RouteDialogPr
       baseId: draft.target.baseId,
       regionId: draft.target.regionId,
       title: draft.title.trim(),
+      slug: slug || undefined,
       kind: draft.kind,
       nights,
       description: draft.description.trim() || null,
@@ -200,6 +231,28 @@ export default function RouteDialog({ route, open, onOpenChange }: RouteDialogPr
             placeholder={t("fields.titlePlaceholder")}
             onChange={(event) =>
               setDraft((previous) => ({ ...previous, title: event.target.value }))
+            }
+          />
+
+          <TextField
+            id={slugId}
+            label={t("fields.slug")}
+            fieldClassName="h-12"
+            startIcon={<span className="text-sm text-natural-500">/routes/</span>}
+            value={draft.slug}
+            placeholder={route ? undefined : t("fields.slugPlaceholder")}
+            status={validSlug ? "default" : "error"}
+            supportingText={
+              !validSlug
+                ? t("errors.slug")
+                : slugMoved
+                  ? t("fields.slugMoved", { previous: `/routes/${route?.slug}` })
+                  : route
+                    ? t("fields.slugHint")
+                    : t("fields.slugCreateHint")
+            }
+            onChange={(event) =>
+              setDraft((previous) => ({ ...previous, slug: event.target.value.toLowerCase() }))
             }
           />
 
@@ -264,43 +317,41 @@ export default function RouteDialog({ route, open, onOpenChange }: RouteDialogPr
             }
           />
 
-          <div className="flex flex-col gap-4 md:flex-row">
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <span className="text-sm leading-4.25 font-semibold text-foreground">
-                {t("fields.difficulty")}
-              </span>
-              <Select
-                className="h-12 min-w-0"
-                ariaLabel={t("fields.difficulty")}
-                value={draft.difficulty ?? NO_DIFFICULTY}
-                onValueChange={(next) =>
-                  setDraft((previous) => ({
-                    ...previous,
-                    difficulty: DIFFICULTIES.find((level) => level === next) ?? null,
-                  }))
-                }
-                options={[
-                  { value: NO_DIFFICULTY, label: t("difficulty.none") },
-                  ...DIFFICULTIES.map((level) => ({
-                    value: level,
-                    label: t(`difficulty.${level}`),
-                  })),
-                ]}
-              />
-            </div>
-
-            <TextField
-              id={imageId}
-              containerClassName="min-w-0 flex-2"
-              fieldClassName="h-12"
-              label={t("fields.imageUrl")}
-              supportingText={t("fields.imageUrlHint")}
-              value={draft.imageUrl}
-              onChange={(event) =>
-                setDraft((previous) => ({ ...previous, imageUrl: event.target.value }))
+          <div className="flex min-w-0 flex-col gap-1.5 md:w-1/2">
+            <span className="text-sm leading-4.25 font-semibold text-foreground">
+              {t("fields.difficulty")}
+            </span>
+            <Select
+              className="h-12 min-w-0"
+              ariaLabel={t("fields.difficulty")}
+              value={draft.difficulty ?? NO_DIFFICULTY}
+              onValueChange={(next) =>
+                setDraft((previous) => ({
+                  ...previous,
+                  difficulty: DIFFICULTIES.find((level) => level === next) ?? null,
+                }))
               }
+              options={[
+                { value: NO_DIFFICULTY, label: t("difficulty.none") },
+                ...DIFFICULTIES.map((level) => ({
+                  value: level,
+                  label: t(`difficulty.${level}`),
+                })),
+              ]}
             />
           </div>
+
+          <PhotoField
+            label={t("fields.imageUrl")}
+            hint={imageUploadEnabled ? t("fields.imageHint") : t("fields.imageUrlHint")}
+            alt={draft.title}
+            value={draft.imageUrl}
+            onChange={(imageUrl) => setDraft((previous) => ({ ...previous, imageUrl }))}
+            uploading={uploadImage.isPending}
+            uploadLabel={t("fields.upload")}
+            uploadingLabel={t("fields.uploading")}
+            onUpload={imageUploadEnabled ? upload : undefined}
+          />
 
           <div className="flex flex-col gap-1.5">
             <span className="text-sm leading-4.25 font-semibold text-foreground">

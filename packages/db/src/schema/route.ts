@@ -53,6 +53,12 @@ export const suggestedRoute = pgTable(
     baseId: text("base_id").references(() => base.id, { onDelete: "cascade" }),
     regionId: text("region_id").references(() => region.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
+    /*
+     * The route's public address, `/routes/<slug>`. Written once from the English title when the
+     * route is created and never rewritten on a rename: a link somebody shared, or a page a search
+     * engine indexed, has to keep resolving. See `routeSlug`.
+     */
+    slug: text("slug").notNull(),
     kind: suggestedRouteKind("kind").notNull(),
     nights: integer("nights").notNull(),
     description: text("description"),
@@ -72,6 +78,7 @@ export const suggestedRoute = pgTable(
     ...timestamps,
   },
   (t) => [
+    uniqueIndex("suggested_route_slug_uq").on(t.slug),
     index("suggested_route_base_idx").on(t.baseId),
     index("suggested_route_region_idx").on(t.regionId),
     index("suggested_route_featured_idx")

@@ -14,6 +14,7 @@ import {
   suggestedRouteStopTranslation,
   suggestedRouteTranslation,
 } from "./schema/route";
+import { freeRouteSlug } from "./routes/library";
 
 type Database = NodePgDatabase<typeof schema>;
 type Locale = "en" | "uk" | "de" | "es";
@@ -421,6 +422,7 @@ export async function seedCatalogueRoutes(
         baseId,
         regionId,
         title: route.copy.en.title,
+        slug: await freeRouteSlug(tx, route.copy.en.title),
         description: route.copy.en.description,
         kind: "seven_days",
         nights: 7,

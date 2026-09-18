@@ -67,6 +67,12 @@ type MapCanvasProps = {
   locateControl?: boolean;
   minZoom?: number;
   maxZoom?: number;
+  /**
+   * How many leading path segments, the locale included, count as "the same page" for the unmount
+   * gate below. Unset, any change of path drops the map. The routes map passes 2, so moving between
+   * `/en/routes` and `/en/routes/<slug>` keeps its map rather than rebuilding it for every route.
+   */
+  pathDepth?: number;
 };
 
 function MapSurface({
@@ -145,10 +151,19 @@ function MapSurface({
  * the route is hidden, means it mounts fresh on return instead of reconnecting a stale one: no crash,
  * no flicker. `usePathname` is the raw locale-prefixed path, so a locale switch also counts as leaving.
  */
-function RoutedMap(props: MapCanvasProps) {
+function RoutedMap({ pathDepth, ...props }: MapCanvasProps) {
+  const scope = (path: string) =>
+    pathDepth === undefined
+      ? path
+      : path
+          .split("/")
+          .slice(0, pathDepth + 1)
+          .join("/");
   const pathname = usePathname();
   const mountPath = useRef(pathname);
-  if (pathname !== mountPath.current) return <div className="size-full bg-natural-50" />;
+  if (scope(pathname) !== scope(mountPath.current)) {
+    return <div className="size-full bg-natural-50" />;
+  }
   return <MapSurface {...props} />;
 }
 

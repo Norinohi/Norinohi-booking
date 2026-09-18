@@ -8,6 +8,7 @@ import PlanMyTrip from "./PlanMyTrip.json";
 import YachtDetail from "./YachtDetail.json";
 import Yachts from "./Yachts.json";
 import YachtsMap from "./YachtsMap.json";
+import RoutesMap from "./RoutesMap.json";
 import Seo from "./Seo.json";
 import Profile from "./Profile.json";
 import Bookings from "./Bookings.json";
@@ -29,6 +30,7 @@ export default {
   YachtDetail,
   Yachts,
   YachtsMap,
+  RoutesMap,
   Seo,
   Profile,
   Bookings,

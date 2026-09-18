@@ -17,6 +17,7 @@ import {
   setRouteActiveMutationOptions,
   updateRouteMutationOptions,
   updateRouteStopMutationOptions,
+  uploadRouteImageMutationOptions,
 } from "../api/queries";
 import type { RouteKind } from "../types";
 
@@ -71,6 +72,11 @@ export function useCreateRoute() {
 export function useUpdateRoute() {
   const invalidate = useInvalidateRoutes();
   return useMutation({ ...updateRouteMutationOptions(), onSettled: invalidate });
+}
+
+/* Stores the file only; nothing changes on the route until the dialog saves the URL it answers. */
+export function useUploadRouteImage() {
+  return useMutation(uploadRouteImageMutationOptions());
 }
 
 export function useSetRouteActive() {

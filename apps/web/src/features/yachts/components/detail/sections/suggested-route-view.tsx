@@ -1,20 +1,13 @@
 "use client";
 
-import { cn } from "@yacht-charter/ui/lib/utils";
-import {
-  animate,
-  motion,
-  useInView,
-  useMotionValue,
-  useReducedMotion,
-  useTransform,
-} from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 
 import { Info, MapPin } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
+import DayTimeline, { type TimelineDay } from "@/components/shared/data-display/day-timeline";
 import MapPreview from "@/components/shared/overlay/map-preview";
 import { staticMapFrame, stillPositionStyle } from "@/lib/mapbox";
 
@@ -25,7 +18,7 @@ import {
   routeCaption,
   routeCurve,
   routePoints,
-} from "../../../lib/route-points";
+} from "@/components/shared/map/route-points";
 
 /*
  * The itinerary itself — the still with the drawn line over it, and the two columns of days.
@@ -48,148 +41,6 @@ const RouteMap = dynamic(() => import("../route-map"), {
 
 /* The still is ordered at this size; the frame maths needs the same numbers to place the marks. */
 const STILL = { width: 960, height: 480 };
-
-type Stop = { title: string; text: string | null };
-
-type Progress = ReturnType<typeof useTransform<number, number>>;
-
-/* One second per leg reads as travel rather than a page effect; seven stops take six. */
-const SECONDS_PER_DAY = 1;
-
-/*
- * The route plays itself: once the list scrolls into view the line runs from day 1 to the last
- * day on a clock, not on the scroll position — like the drawing on the map still above it. One
- * progress covers both columns, so the left column fills before the right rather than both
- * together, and each stop reads the slice of the progress that is its own.
- */
-function DayLists({ columns }: { columns: Stop[][] }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const reduced = useReducedMotion();
-  const total = columns.reduce((sum, column) => sum + column.length, 0);
-
-  const progress = useMotionValue(0);
-  const inView = useInView(ref, { once: true, margin: "0px 0px -100px 0px" });
-
-  useEffect(() => {
-    if (!inView) return;
-    if (reduced) {
-      progress.set(1);
-      return;
-    }
-
-    const controls = animate(progress, 1, {
-      duration: (total - 1) * SECONDS_PER_DAY,
-      ease: "easeInOut",
-    });
-    return () => controls.stop();
-  }, [inView, progress, reduced, total]);
-
-  let offset = 0;
-  return (
-    <div ref={ref} className="flex flex-col gap-10 pt-3 md:flex-row md:items-start">
-      {columns.map((column, index) => {
-        const first = offset;
-        offset += column.length;
-        return (
-          <DayList key={index} days={column} first={first} total={total} progress={progress} />
-        );
-      })}
-    </div>
-  );
-}
-
-function DayList({
-  days,
-  first,
-  total,
-  progress,
-}: {
-  days: Stop[];
-  first: number;
-  total: number;
-  progress: Progress;
-}) {
-  return (
-    <ol className="flex min-w-0 flex-1 flex-col">
-      {days.map((day, index) => (
-        <DayItem
-          key={day.title}
-          day={day}
-          position={first + index}
-          total={total}
-          isFirst={index === 0}
-          isLast={index === days.length - 1}
-          progress={progress}
-        />
-      ))}
-    </ol>
-  );
-}
-
-function DayItem({
-  day,
-  position,
-  total,
-  isFirst,
-  isLast,
-  progress,
-}: {
-  day: Stop;
-  position: number;
-  total: number;
-  isFirst: boolean;
-  isLast: boolean;
-  progress: Progress;
-}) {
-  const span = Math.max(total - 1, 1);
-  const start = position / span;
-  const end = Math.min((position + 1) / span, 1);
-
-  // The stop fills just as the line reaches it; the first one is filled from the start.
-  const dotOpacity = useTransform(progress, [Math.max(start - 0.08, 0), start], [0, 1]);
-  const fillScale = useTransform(progress, [start, end], [0, 1]);
-
-  return (
-    <li className="flex gap-4">
-      <div className="relative flex w-4 shrink-0 flex-col items-center">
-        {/* The soft track behind the dots, drawn per row so it ends at the last dot instead of
-            running on past it to the bottom of the column's text. */}
-        <span
-          aria-hidden
-          className={cn(
-            "absolute left-0.5 w-3 bg-brand-50/50",
-            isFirst ? "top-2 rounded-t-full" : "top-0",
-            isLast ? "h-5.5 rounded-b-full" : "bottom-0",
-          )}
-        />
-        <span className="relative size-4 shrink-0 rounded-full border-2 border-brand bg-card">
-          <motion.span
-            aria-hidden
-            style={{ opacity: dotOpacity }}
-            className="absolute -inset-0.5 rounded-full bg-brand"
-          />
-        </span>
-        {!isLast && (
-          /* A shade lighter than it was: the stops are what the section is about, and a 4px rail
-             between them read as the subject rather than as what joins them. */
-          <span
-            aria-hidden
-            className="relative w-0.75 flex-1 border-l-3 border-dotted border-brand-100"
-          >
-            <motion.span
-              style={{ scaleY: fillScale }}
-              className="absolute inset-y-0 -left-0.75 w-0.75 origin-top bg-brand"
-            />
-          </span>
-        )}
-      </div>
-      <div className={cn("flex min-w-0 flex-1 flex-col gap-1.5", !isLast && "pb-10.5")}>
-        <h3 className="text-xl leading-6.5 font-bold text-foreground">{day.title}</h3>
-        {day.text ? <p className="text-base leading-5.5 text-foreground">{day.text}</p> : null}
-      </div>
-    </li>
-  );
-}
 
 /*
  * The still, marked with the app's own markers rather than the teardrops Mapbox draws.
@@ -379,7 +230,10 @@ export default function SuggestedRouteView({ title, description, stops }: Sugges
     lat: stop.lat,
     lng: stop.lng,
   }));
-  const days: Stop[] = routeStops.map((stop) => ({ title: stop.title, text: stop.description }));
+  const days: TimelineDay[] = routeStops.map((stop) => ({
+    title: stop.title,
+    text: stop.description,
+  }));
   const mid = Math.ceil(days.length / 2);
   const columns = [days.slice(0, mid), days.slice(mid)];
 
@@ -404,7 +258,7 @@ export default function SuggestedRouteView({ title, description, stops }: Sugges
         <p className="min-w-0 flex-1 text-sm leading-[1.4] text-foreground">{t("disclaimer")}</p>
       </div>
 
-      <DayLists columns={columns} />
+      <DayTimeline columns={columns} />
     </div>
   );
 }

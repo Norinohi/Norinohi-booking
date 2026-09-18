@@ -1,0 +1,28 @@
+{
+  "title": "Rutas de navegación",
+  "count": "{count} de {total} rutas",
+  "searchPlaceholder": "Busca una ruta, isla o puerto",
+  "country": "País",
+  "length": "Duración",
+  "level": "Nivel",
+  "lengths": {
+    "short": "Menos de una semana",
+    "week": "Una semana",
+    "long": "Más de una semana"
+  },
+  "nights": "{count, plural, one {# noche} other {# noches}}",
+  "noResults": "Ninguna ruta coincide con estos filtros.",
+  "resetFilters": "Restablecer filtros",
+  "allRoutes": "Todas las rutas",
+  "showRouteYachts": "Ver yates para esta ruta",
+  "itinerary": "Itinerario",
+  "nearbyMarinas": "Puertos con yates cerca",
+  "loadingMarinas": "Buscando puertos…",
+  "marinasFailed": "No se pudieron cargar los puertos. Inténtalo más tarde.",
+  "noMarinas": "No hay puertos con yates a menos de 50 km del inicio.",
+  "marinaMeta": "{count, plural, one {# yate} other {# yates}} · a {km} km del inicio",
+  "marinaYachts": "{name}, {count, plural, one {# yate} other {# yates}}",
+  "showMarinaYachts": "Ver yates en este puerto",
+  "routesHere": "{count, plural, one {# ruta empieza aquí} other {# rutas empiezan aquí}}",
+  "marinaDistance": "a {km} km del inicio"
+}
