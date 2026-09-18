@@ -2,6 +2,7 @@ import { booking, payment, paymentSchedule } from "@yacht-charter/db/schema/book
 import { invoiceRequest } from "@yacht-charter/db/schema/checkout";
 import { user } from "@yacht-charter/db/schema/auth";
 import { quote } from "@yacht-charter/db/schema/quote";
+import { listing } from "@yacht-charter/db/schema/listing";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { baseLabel, facetTranslator, localizeQuoteLines } from "@yacht-charter/db/search";
 import { and, asc, count, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
@@ -72,9 +73,10 @@ export async function listBookingsForAdmin(db: Database, input: ListInput): Prom
     pageSize: input.pageSize,
     rows: (limit, offset) =>
       db
-        .select({ booking, quote, customer: user, paidMinor })
+        .select({ booking, quote, customer: user, paidMinor, listingSlug: listing.slug })
         .from(booking)
         .innerJoin(quote, eq(quote.id, booking.quoteId))
+        .leftJoin(listing, eq(listing.id, quote.listingId))
         .innerJoin(user, eq(user.id, booking.userId))
         .where(where)
         .orderBy(desc(booking.createdAt), desc(booking.id))
@@ -98,6 +100,7 @@ function present(row: {
   quote: typeof quote.$inferSelect;
   customer: typeof user.$inferSelect;
   paidMinor: number;
+  listingSlug: string | null;
 }): Row {
   return {
     id: row.booking.id,
@@ -106,6 +109,7 @@ function present(row: {
     customerName: row.customer.name || null,
     customerEmail: row.customer.email,
     listingTitle: row.booking.commercialSnapshot.listingTitle,
+    listingSlug: row.listingSlug,
     checkIn: row.quote.checkIn,
     checkOut: row.quote.checkOut,
     total: { amountMinor: row.quote.totalMinor, currency: row.quote.currency },
@@ -135,7 +139,7 @@ export async function getBookingForAdmin(
 ): Promise<Detail> {
   const row = await readAnyBooking(db, id);
 
-  const [customer, schedules, payments, invoices, translate, lines] = await Promise.all([
+  const [customer, schedules, payments, invoices, translate, lines, listed] = await Promise.all([
     db.select().from(user).where(eq(user.id, row.booking.userId)).limit(1),
     db
       .select()
@@ -155,6 +159,11 @@ export async function getBookingForAdmin(
       .limit(1),
     facetTranslator(db, locale),
     localizeQuoteLines(db, row.quote.listingId, row.quote.lines, locale),
+    db
+      .select({ slug: listing.slug })
+      .from(listing)
+      .where(eq(listing.id, row.quote.listingId))
+      .limit(1),
   ]);
 
   const owner = customer[0];
@@ -168,7 +177,13 @@ export async function getBookingForAdmin(
   const invoice = invoices[0];
 
   return {
-    ...present({ booking: row.booking, quote: row.quote, customer: owner, paidMinor }),
+    ...present({
+      booking: row.booking,
+      quote: row.quote,
+      customer: owner,
+      paidMinor,
+      listingSlug: listed[0]?.slug ?? null,
+    }),
     provider: row.booking.provider,
     providerReservationId: row.booking.providerReservationId,
     providerStatus: row.booking.providerStatus,

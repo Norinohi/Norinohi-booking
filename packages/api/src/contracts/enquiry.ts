@@ -42,6 +42,8 @@ export const enquiryRowSchema = z.object({
   reference: z.string(),
   bookingStatus: z.string(),
   listingTitle: z.string(),
+  /* Null once the listing is gone; the title still names the boat. */
+  listingSlug: z.string().nullable(),
   checkIn: z.string(),
   checkOut: z.string(),
   customerName: z.string(),

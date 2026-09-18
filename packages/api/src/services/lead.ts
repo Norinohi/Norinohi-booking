@@ -111,7 +111,7 @@ export async function listLeads(db: Database, input: ListInput): Promise<ListRes
     pageSize: input.pageSize,
     rows: (limit, offset) =>
       db
-        .select({ lead, listingTitle: listing.title })
+        .select({ lead, title: listing.title, slug: listing.slug })
         .from(lead)
         .leftJoin(listing, eq(listing.id, lead.listingId))
         .where(where)
@@ -121,7 +121,12 @@ export async function listLeads(db: Database, input: ListInput): Promise<ListRes
     total: async () => totalFrom(await db.select({ totalItems: count() }).from(lead).where(where)),
   });
 
-  return { items: rows.map((row) => present(row.lead, row.listingTitle)), pagination };
+  return {
+    items: rows.map((row) =>
+      present(row.lead, row.title ? { title: row.title, slug: row.slug } : undefined),
+    ),
+    pagination,
+  };
 }
 
 export async function setLeadStatus(
@@ -162,13 +167,13 @@ export async function setLeadStatus(
 
   const [listingRow] = updated.listingId
     ? await db
-        .select({ title: listing.title })
+        .select({ title: listing.title, slug: listing.slug })
         .from(listing)
         .where(eq(listing.id, updated.listingId))
         .limit(1)
     : [];
 
-  return present(updated, listingRow?.title ?? null);
+  return present(updated, listingRow);
 }
 
 /**
@@ -232,17 +237,21 @@ export async function answerLead(
     yacht: subject,
   });
 
-  return present(updated, subject?.title ?? null);
+  return present(updated, subject);
 }
 
-function present(row: typeof lead.$inferSelect, listingTitle: string | null): Lead {
+function present(
+  row: typeof lead.$inferSelect,
+  yacht: { title: string; slug: string | null } | undefined,
+): Lead {
   return {
     id: row.id,
     kind: row.kind,
     status: row.status,
     createdAt: row.createdAt.toISOString(),
     listingId: row.listingId,
-    listingTitle,
+    listingTitle: yacht?.title ?? null,
+    listingSlug: yacht?.slug ?? null,
     userId: row.userId,
     name: row.name,
     email: row.email,

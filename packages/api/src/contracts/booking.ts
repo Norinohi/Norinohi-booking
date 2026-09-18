@@ -466,6 +466,8 @@ export const bookingAdminRowSchema = z.object({
   customerName: z.string().nullable(),
   customerEmail: z.string(),
   listingTitle: z.string(),
+  /* Null once the listing is gone; the snapshot title still names the boat. */
+  listingSlug: z.string().nullable(),
   checkIn: z.string(),
   checkOut: z.string(),
   total: moneySchema,

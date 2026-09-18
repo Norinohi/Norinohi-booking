@@ -1,6 +1,7 @@
 import { user } from "@yacht-charter/db/schema/auth";
 import { booking } from "@yacht-charter/db/schema/booking";
 import { bookingEnquiry } from "@yacht-charter/db/schema/checkout";
+import { listing } from "@yacht-charter/db/schema/listing";
 import { quote } from "@yacht-charter/db/schema/quote";
 import { and, count, desc, eq, ilike, or } from "drizzle-orm";
 import type { z } from "zod";
@@ -47,6 +48,7 @@ const ROW_COLUMNS = {
   reference: booking.reference,
   bookingStatus: booking.status,
   commercialSnapshot: booking.commercialSnapshot,
+  listingSlug: listing.slug,
   checkIn: quote.checkIn,
   checkOut: quote.checkOut,
   customerName: user.name,
@@ -60,6 +62,7 @@ function selectEnquiries(db: Database) {
     .from(bookingEnquiry)
     .innerJoin(booking, eq(booking.id, bookingEnquiry.bookingId))
     .innerJoin(quote, eq(quote.id, booking.quoteId))
+    .leftJoin(listing, eq(listing.id, quote.listingId))
     .innerJoin(user, eq(user.id, bookingEnquiry.userId));
 }
 
@@ -77,6 +80,7 @@ function present(row: SelectedRow): Row {
     reference: row.reference,
     bookingStatus: row.bookingStatus,
     listingTitle: row.commercialSnapshot.listingTitle,
+    listingSlug: row.listingSlug,
     checkIn: row.checkIn,
     checkOut: row.checkOut,
     customerName: row.customerName,
