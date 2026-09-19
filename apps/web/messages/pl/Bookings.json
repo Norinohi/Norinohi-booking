@@ -1,0 +1,22 @@
+{
+  "title": "Moje rezerwacje",
+  "history": "Historia",
+  "anyDates": "Dowolne daty",
+  "clearDates": "Wyczyść daty",
+  "emptyTitle": "Brak jachtów",
+  "emptyDescription": "Zacznij przeglądać jachty i zaplanuj swój pierwszy rejs - Twoje rezerwacje pojawią się tutaj.",
+  "cancel": {
+    "action": "Anuluj rezerwację",
+    "title": "Anulować tę rezerwację?",
+    "description": "Tej operacji nie można cofnąć, a firma czarterowa zostanie powiadomiona.",
+    "reasonLabel": "Powód (opcjonalnie)",
+    "reasonPlaceholder": "Napisz nam, dlaczego anulujesz",
+    "confirm": "Anuluj rezerwację",
+    "keep": "Zachowaj rezerwację",
+    "success": "Twoja rezerwacja została anulowana.",
+    "error": "Nie udało się anulować rezerwacji. Spróbuj ponownie."
+  },
+  "statusCancelled": "Anulowana",
+  "payBalance": "Zapłać {amount}",
+  "completePayment": "Dokończ płatność {amount}"
+}

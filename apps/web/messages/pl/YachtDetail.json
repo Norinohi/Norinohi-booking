@@ -1,0 +1,207 @@
+{
+  "backToSearch": "Wróć do wyszukiwania",
+  "breadcrumbSearch": "Wyszukiwanie",
+  "share": "Udostępnij",
+  "linkCopied": "Link skopiowany",
+  "seeOnMap": "Zobacz na mapie",
+  "addToWishlist": "Dodaj do ulubionych",
+  "removeFromWishlist": "Usuń z ulubionych",
+  "included": "W cenie",
+  "amenities": {
+    "groups": {
+      "navigation-and-safety": "Nawigacja i bezpieczeństwo",
+      "deck-and-cockpit": "Pokład i kokpit",
+      "interior-and-cabins": "Wnętrze i kabiny",
+      "galley": "Kambuz",
+      "entertainment-and-water-toys": "Rozrywka i sprzęt wodny",
+      "systems-and-power": "Instalacje i zasilanie",
+      "other": "Pozostałe wyposażenie"
+    },
+    "itemCount": "{count, plural, one {# element} few {# elementy} many {# elementów} other {# elementu}}",
+    "allIncluded": "Całe wymienione wyposażenie jest wliczone w cenę czarteru.",
+    "dismissNote": "Zamknij"
+  },
+  "importantInfo": {
+    "charterCompany": "Firma czarterowa",
+    "pickUpAddress": "Adres odbioru jachtu",
+    "pickUp": "Odbiór jachtu",
+    "dropOff": "Zwrot jachtu",
+    "policies": "Zasady anulowania i płatności",
+    "securityDeposit": "Zwrotna kaucja",
+    "securityDepositNote": "Pobierana przez bazę czarterową przy zaokrętowaniu i zwracana po oddaniu jachtu bez uszkodzeń.",
+    "securityDepositInsured": "Obniżana do {amount}, jeśli wykupisz ubezpieczenie kaucji oferowane przez bazę.",
+    "license": "Patent żeglarski",
+    "pets": "Zwierzęta",
+    "paymentMethods": "Metody płatności akceptowane przez firmę czarterową",
+    "marinaInfo": "Informacje o marinie",
+    "policiesVariesBySelection": "Zasady anulowania i przedpłaty zależą od Twojego wyboru. Warunki płatności potwierdzamy podczas wyceny i rezerwacji.",
+    "licenseRequired": "Wymagany ważny patent żeglarski lub lokalny odpowiednik.",
+    "licenseNotRequired": "Patent nie jest wymagany przy rezerwacji z załogą lub skipperem.",
+    "petsAllowedWithConfirmation": "Zwierzęta są dozwolone na tym jachcie po potwierdzeniu przez firmę czarterową.",
+    "petsAskBase": "Zasady dotyczące zwierząt ustala baza czarterowa - zapytaj przed rezerwacją.",
+    "marinaInfoText": "{marina} znajduje się w miejscowości {location}, {country}. Godziny zaokrętowania i wyokrętowania podaje baza czarterowa.",
+    "paymentMethod": {
+      "card": "Karta",
+      "bank_transfer": "Przelew bankowy",
+      "cash": "Gotówka"
+    }
+  },
+  "popular": {
+    "from": "Od",
+    "perPeriod": "/ {days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}",
+    "seeAll": "Zobacz wszystkie jachty",
+    "previous": "Poprzednie jachty",
+    "next": "Następne jachty"
+  },
+  "route": {
+    "start": "Start",
+    "finish": "Meta",
+    "day": "Dzień {day}",
+    "stopTitle": "Dzień {day} - {place}",
+    "disclaimer": "Trasa orientacyjna. Ostateczny plan rejsu i miejsca nocowania zależą od pogody, dostępności i decyzji skippera."
+  },
+  "review": {
+    "count": "({count, plural, one {# opinia} few {# opinie} many {# opinii} other {# opinii}})",
+    "summary": "Wyświetlono {shown} z {total}",
+    "empty": "Brak jeszcze opinii",
+    "operatorRated": "Ocena pochodzi z {count, plural, one {# oceny gościa} few {# ocen gości} many {# ocen gości} other {# oceny gości}} zebranych przez armatora."
+  },
+  "sidebar": {
+    "crew": "Załoga",
+    "people": "Osoby",
+    "datesPlaceholder": "Wybierz daty",
+    "selectDates": "Wybierz daty, aby zobaczyć cenę",
+    "unavailable": "Ten jacht nie ma wolnych terminów",
+    "unavailableHint": "Zapytaj nas o inne terminy lub podobny jacht.",
+    "slotRefused": "Tych dat nie można zarezerwować. Wybierz inny termin.",
+    "searchedPeriodRefused": "Termin od {from} do {to} jest niedostępny dla tego jachtu. Wybierz inny termin lub skorzystaj z pokazanych dat.",
+    "loadFailed": "Nie udało się wczytać ceny tej rezerwacji.",
+    "loadRetry": "Spróbuj ponownie",
+    "pricingUnavailable": "Nie udało się teraz uzyskać ceny na te daty od dostawcy jachtu. Zwykle jest to problem tymczasowy.",
+    "prepayment": "Przedpłata {percent}%",
+    "boatPrice": "Cena jachtu",
+    "boatPriceHint": "Pełna cena czarteru",
+    "deposit": "Zwrotna kaucja",
+    "howItWorks": "Zobacz, jak to działa",
+    "scheduleDetails": "Co obejmuje ta płatność",
+    "scheduleIncludes": "Obejmuje",
+    "scheduleSplit": "Podzielone na obie płatności",
+    "groups": {
+      "mandatory": "Obowiązkowe dodatki",
+      "selectedExtras": "Wybrane dodatki",
+      "crew": "Załoga"
+    },
+    "payNow": "Przedpłata (płatna teraz)",
+    "payAt": "Płatne do: {date}",
+    "payAtCheckIn": "Płatne przy zaokrętowaniu: {date}",
+    "firstPayment": "{amount} (1. płatność)",
+    "fullPayment": "{amount} (pełna płatność)",
+    "secondPayment": "{amount} (2. płatność)",
+    "extrasPayment": "{amount} (dodatki)",
+    "depositNote": "+ {amount} (zwrotna kaucja)",
+    "totalPrice": "Cena całkowita",
+    "discountsHeading": "Wliczone w powyższą cenę czarteru",
+    "dueNow": "Do zapłaty teraz",
+    "payNowCta": "Zapłać {amount} teraz",
+    "requestBookingCta": "Wyślij prośbę o rezerwację",
+    "requestBookingHint": "Armator tego jachtu osobiście potwierdza każdą rezerwację. Zapytamy go o Twoje daty i odezwiemy się do Ciebie. Teraz nic nie pobieramy.",
+    "requestQuote": "Poproś o wycenę",
+    "promo": {
+      "label": "Kod promocyjny",
+      "placeholder": "Wpisz kod",
+      "apply": "Zastosuj",
+      "remove": "Usuń",
+      "applied": "{amount} rabatu",
+      "rejected": {
+        "unknown_code": "Nie rozpoznajemy tego kodu.",
+        "inactive": "Ten kod nie jest już aktywny.",
+        "not_started": "Ten kod nie jest jeszcze ważny.",
+        "expired": "Ten kod wygasł.",
+        "usage_limit_reached": "Limit użyć tego kodu został wyczerpany.",
+        "not_applicable": "Ten kod nie dotyczy tego jachtu."
+      }
+    },
+    "credit": {
+      "label": "Środki z poleceń",
+      "available": "{amount} dostępne dla tej rezerwacji",
+      "applied": "Wykorzystano {amount}",
+      "apply": "Zastosuj",
+      "remove": "Usuń"
+    },
+    "onRequest": "Cena tego jachtu na zapytanie",
+    "onRequestHint": "Mamy dla niego terminy, ale żadna opublikowana stawka ich nie obejmuje. Napisz, kiedy chcesz żeglować, a wrócimy do Ciebie z ceną.",
+    "dropOff": "Marina zwrotu",
+    "pickUp": "Odbiór: {marina}",
+    "boatPriceHintDiscounted": "Cena czarteru po rabacie",
+    "depositWhenInsured": "lub {amount} z ubezpieczeniem od szkód"
+  },
+  "panels": {
+    "details": "Szczegóły jachtu",
+    "booking": "Podsumowanie rezerwacji"
+  },
+  "tabs": {
+    "overview": "Przegląd",
+    "amenities": "Wyposażenie",
+    "mandatory-extras": "Obowiązkowe dodatki",
+    "optional-extras": "Opcjonalne dodatki",
+    "description": "Opis",
+    "important-info": "Ważne informacje",
+    "suggested-route": "Proponowana trasa",
+    "review": "Opinie",
+    "faq": "FAQ",
+    "popular-yachts": "Popularne jachty"
+  },
+  "sections": {
+    "overview": "Przegląd",
+    "amenities": "Wyposażenie",
+    "mandatoryExtras": "Obowiązkowe dodatki",
+    "optionalExtras": "Opcjonalne dodatki",
+    "description": "Opis",
+    "media": "Wideo i wirtualny spacer",
+    "importantInfo": "Ważne informacje",
+    "suggestedRoute": "Proponowana trasa",
+    "review": "Opinie",
+    "faq": "FAQ",
+    "popularYachts": "Inne popularne jachty"
+  },
+  "faqCategories": {
+    "booking": "Rezerwacja",
+    "payment": "Płatność",
+    "prices": "Ceny",
+    "licences": "Patenty",
+    "travel": "Podróż",
+    "cancellation": "Anulowanie"
+  },
+  "overview": {
+    "location": "Lokalizacja",
+    "mainsail": "Typ grota",
+    "year": "Rok",
+    "draught": "Zanurzenie",
+    "boatType": "Typ jachtu",
+    "beam": "Szerokość",
+    "cabins": "Kabiny",
+    "fuelTank": "Zbiornik paliwa",
+    "bathrooms": "Łazienki",
+    "waterTank": "Zbiornik wody",
+    "length": "Długość",
+    "engine": "Silnik",
+    "showers": "Prysznice",
+    "notSpecified": "Nie podano"
+  },
+  "bookingRequestDialog": {
+    "title": "Poproś o rezerwację",
+    "description": "Armator osobiście potwierdza każdy czarter tego jachtu. Zostaw swoje dane, a nasz ekspert czarterowy potwierdzi z nim te daty i odezwie się do Ciebie w ciągu jednego dnia roboczego.",
+    "submit": "Wyślij prośbę o rezerwację",
+    "success": "Dziękujemy! Wysłaliśmy Twoją prośbę i wkrótce się z Tobą skontaktujemy."
+  },
+  "quoteDialog": {
+    "title": "Poproś o wycenę",
+    "description": "Zostaw swoje dane, a ekspert czarterowy prześle Ci indywidualną wycenę na te daty.",
+    "submit": "Wyślij zapytanie",
+    "success": "Dziękujemy! Wkrótce się z Tobą skontaktujemy."
+  },
+  "media": {
+    "video": "Obejrzyj wideo",
+    "tour": "Wirtualny spacer 360°"
+  }
+}

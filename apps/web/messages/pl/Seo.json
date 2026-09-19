@@ -1,0 +1,191 @@
+{
+  "Commissions": {
+    "title": "Stawki prowizji",
+    "description": "Ile {brand} zarabia za pośrednictwem każdego dostawcy."
+  },
+  "Yachts": {
+    "title": "Czarter jachtów - wyszukiwarka",
+    "description": "Wyszukaj jachty i katamarany na czarter w basenie Morza Śródziemnego i nie tylko. Filtruj według miejsca, terminu, liczby gości i ceny."
+  },
+  "YachtsMap": {
+    "title": "Jachty na mapie",
+    "description": "Przeglądaj dostępne jachty i katamarany na interaktywnej mapie. Odkrywaj mariny i kierunki, a następnie filtruj według terminu, liczby gości i ceny."
+  },
+  "YachtDetail": {
+    "title": "Szczegóły jachtu",
+    "description": "Zobacz zdjęcia, specyfikację, opcje załogi i ceny tego jachtu oraz sprawdź dostępność w wybranym terminie.",
+    "titleAtPlace": "Czarter {boat} w {place}",
+    "titlePlain": "Czarter {boat}",
+    "metaSpecs": "{category} z {cabins, plural, one {# kabiną} few {# kabinami} many {# kabinami} other {# kabiny}} dla maksymalnie {guests} gości.",
+    "metaPlace": "Czarter {crew} z {place}.",
+    "metaPriceFrom": "Od {price}.",
+    "metaPriceForDays": "{price} za {days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}.",
+    "metaCta": "Sprawdź dostępność w wybranym terminie."
+  },
+  "Booking": {
+    "title": "Zarezerwuj jacht",
+    "description": "Dokończ rezerwację czarteru jachtu: dane gości, dodatki i bezpieczna płatność."
+  },
+  "BookingConfirmation": {
+    "title": "Rezerwacja potwierdzona",
+    "description": "Twoja rezerwacja czarteru jachtu została potwierdzona. Sprawdź szczegóły rejsu i kolejne kroki."
+  },
+  "PlanMyTrip": {
+    "title": "Zaplanuj mój rejs",
+    "description": "Opowiedz nam o swoim wymarzonym rejsie, a zaproponujemy odpowiednie jachty, trasy i terminy."
+  },
+  "Login": {
+    "title": "Zaloguj się",
+    "description": "Zaloguj się do konta YachtSkanner, aby zarządzać rezerwacjami i zapisanymi jachtami."
+  },
+  "Register": {
+    "title": "Załóż konto",
+    "description": "Załóż konto YachtSkanner, aby rezerwować jachty, zapisywać ulubione i zarządzać swoimi rejsami."
+  },
+  "Wishlist": {
+    "title": "Twoje ulubione",
+    "description": "Zapisane przez Ciebie jachty i katamarany. Porównaj ulubione i sprawdź dostępność w wybranym terminie."
+  },
+  "Profile": {
+    "title": "Twój profil",
+    "description": "Zarządzaj danymi konta YachtSkanner, danymi kontaktowymi i preferencjami."
+  },
+  "Bookings": {
+    "title": "Moje rezerwacje",
+    "description": "Przeglądaj swoje rezerwacje czarteru jachtów, szczegóły rejsów i historię rezerwacji."
+  },
+  "Referrals": {
+    "title": "Twoje polecenia",
+    "description": "Śledź znajomych zaproszonych do YachtSkanner i zdobyte nagrody."
+  },
+  "Credits": {
+    "title": "Środki i saldo",
+    "description": "Sprawdź dostępne środki z poleceń, co wkrótce wygaśnie oraz wszystkie pozycje składające się na saldo."
+  },
+  "Discounts": {
+    "title": "Menedżer rabatów i cen",
+    "description": "Zarządzaj kodami promocyjnymi i cenami jachtów w swoich ofertach."
+  },
+  "Duplicates": {
+    "title": "Przegląd duplikatów",
+    "description": "Przeglądaj i scalaj podobne oferty jachtów wskazane przez synchronizację katalogu."
+  },
+  "Sync": {
+    "title": "Historia synchronizacji",
+    "description": "Przebiegi synchronizacji katalogu i dostępności wraz z liczbami i błędami."
+  },
+  "Listings": {
+    "title": "Oferty",
+    "description": "Przeglądaj zaimportowane oferty jachtów i publikuj wersje robocze w katalogu."
+  },
+  "Routes": {
+    "title": "Proponowane trasy",
+    "description": "Opisz trasy żeglarskie wyświetlane na stronie oferty, osobno dla każdej bazy."
+  },
+  "Audit": {
+    "title": "Dziennik zdarzeń",
+    "description": "Każde działanie personelu zarejestrowane dla rezerwacji, oferty, rabatu lub zapytania."
+  },
+  "Invoice": {
+    "title": "Faktura",
+    "description": "Faktura za rezerwację czarteru jachtu wraz z danymi płatności."
+  },
+  "ForgotPassword": {
+    "title": "Nie pamiętasz hasła?",
+    "description": "Zresetuj hasło do konta YachtSkanner."
+  },
+  "ResetPassword": {
+    "title": "Resetowanie hasła",
+    "description": "Wybierz nowe hasło do konta YachtSkanner."
+  },
+  "SetPassword": {
+    "title": "Ustaw hasło",
+    "description": "Wybierz hasło do konta YachtSkanner."
+  },
+  "Balance": {
+    "title": "Opłać pozostałą kwotę",
+    "description": "Ureguluj pozostałą kwotę za rezerwację czarteru jachtu."
+  },
+  "BookingDetail": {
+    "title": "Twoja rezerwacja",
+    "description": "Szczegóły, płatności i dokumenty Twojej rezerwacji czarteru jachtu."
+  },
+  "Inbox": {
+    "title": "Skrzynka odbiorcza",
+    "description": "Pytania i zapytania klientów oczekujące na odpowiedź."
+  },
+  "Payments": {
+    "title": "Płatności",
+    "description": "Prośby o fakturę i zwroty oczekujące na personel."
+  },
+  "StaffBooking": {
+    "title": "Rezerwacja (personel)",
+    "description": "Widok rezerwacji klienta dla personelu."
+  },
+  "StaffBookings": {
+    "title": "Rezerwacje (personel)",
+    "description": "Wszystkie rezerwacje na platformie, dla personelu."
+  },
+  "Users": {
+    "title": "Użytkownicy",
+    "description": "Wszystkie konta na platformie, dla personelu."
+  },
+  "CatalogPage": {
+    "country": "Czarter jachtów: {place}",
+    "geo": "Czarter jachtów: {place}, {country}",
+    "marina": "Czarter jachtów: {place}",
+    "type": "Czarter: {type}",
+    "typeCountry": "Czarter: {type}, {place}",
+    "typeGeo": "Czarter: {type}, {place}, {country}",
+    "builder": "Czarter jachtów {brand}",
+    "model": "Czarter {model}",
+    "intro": "{count, plural, one {Dostępna # łódź} few {Dostępne # łodzie} many {Dostępnych # łodzi} other {Dostępne # łodzi}}, od {price} za tydzień.",
+    "introNoPrice": "{count, plural, one {Dostępna # łódź} few {Dostępne # łodzie} many {Dostępnych # łodzi} other {Dostępne # łodzi}}.",
+    "description": "Porównaj {count, plural, one {# jacht} few {# jachty} many {# jachtów} other {# jachtu}} na czarter. Filtruj według terminu, liczby gości, kabin i ceny, a następnie sprawdź dostępność na swój rejs.",
+    "siblings": "Warto też zobaczyć",
+    "regions": "Regiony",
+    "empty": "Obecnie żadna łódź nie spełnia kryteriów. Zobacz pełny katalog."
+  },
+  "Support": {
+    "title": "Pomoc",
+    "description": "Zapytaj nas o cokolwiek w sprawie swojej rezerwacji."
+  },
+  "Consultation": {
+    "title": "Skontaktuj się z nami",
+    "description": "Umów rozmowę lub wyślij nam wiadomość w sprawie swojego rejsu."
+  },
+  "Faq": {
+    "title": "FAQ",
+    "description": "Twórz i tłumacz pytania wyświetlane na stronach jachtów."
+  },
+  "Popular": {
+    "title": "Popularne wybory",
+    "description": "Wybierz, które wartości filtrów pojawiają się na początku filtrów i na stronie głównej."
+  },
+  "PopularYachts": {
+    "title": "Popularne jachty",
+    "description": "Skonfiguruj, jak tworzony jest slider popularnych jachtów na stronie głównej."
+  },
+  "Contact": {
+    "title": "Kontakt",
+    "description": "Porozmawiaj z ekspertem od czarteru o swoim kolejnym rejsie."
+  },
+  "Legal": {
+    "terms": {
+      "title": "Regulamin",
+      "description": "Regulamin i umowa czarteru dla rejsów rezerwowanych w YachtSkanner."
+    },
+    "privacy": {
+      "title": "Polityka prywatności",
+      "description": "Jak YachtSkanner przetwarza Twoje dane osobowe."
+    },
+    "cancellation": {
+      "title": "Zasady anulowania",
+      "description": "Co się dzieje w przypadku anulowania czarteru zarezerwowanego w YachtSkanner."
+    }
+  },
+  "RoutesMap": {
+    "title": "Mapa tras żeglarskich",
+    "description": "Odkrywaj trasy żeglarskie na mapie i znajdź mariny z jachtami w pobliżu początku każdej trasy."
+  }
+}

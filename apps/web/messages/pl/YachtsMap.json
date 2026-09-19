@@ -1,0 +1,14 @@
+{
+  "loading": "Wczytywanie jachtów…",
+  "noResults": "Żaden jacht nie pasuje do tych filtrów. Spróbuj je zmienić.",
+  "title": "Jachty na mapie",
+  "backToSearch": "Wróć do wyszukiwania",
+  "viewInCatalogue": "Zobacz w katalogu",
+  "showAllList": "Pokaż całą listę",
+  "closeList": "Zamknij listę",
+  "marker": "Marina {name}",
+  "clusterCount": "{count, plural, one {# jacht} few {# jachty} many {# jachtów} other {# jachtu}}",
+  "previousBoat": "Poprzedni jacht",
+  "nextBoat": "Następny jacht",
+  "allInCatalogue": "{count, plural, one {# jacht w katalogu} few {Wszystkie # jachty w katalogu} many {Wszystkie # jachtów w katalogu} other {Wszystkie # jachtu w katalogu}}"
+}
