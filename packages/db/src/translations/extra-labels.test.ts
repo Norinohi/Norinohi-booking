@@ -13,9 +13,16 @@ function nameKey(name: string): string {
 }
 
 describe("extraLabels", () => {
-  it("names every locale the site serves for every entry", () => {
+  it("names every original locale for every entry, and the later ones all together or not at all", () => {
     for (const [name, byLocale] of Object.entries(extraLabels)) {
-      expect(Object.keys(byLocale).sort(), name).toEqual(["de", "es", "uk"]);
+      const keys = Object.keys(byLocale).sort();
+      expect(
+        [
+          ["de", "es", "uk"],
+          ["de", "es", "fr", "it", "nl", "pl", "uk"],
+        ],
+        name,
+      ).toContainEqual(keys);
     }
   });
 

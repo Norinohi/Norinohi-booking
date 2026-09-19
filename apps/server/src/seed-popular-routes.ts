@@ -29,6 +29,11 @@ for (const route of plan.unfeatured) {
   console.log(`${apply ? "unfeatured" : "would unfeature"}  ${route.title} (${route.id})`);
 }
 
+const filled = plan.translationsFilled;
+console.log(
+  `${apply ? "translations filled" : "would fill translations"}  ${filled.routes} route, ${filled.stops} stop`,
+);
+
 if (apply) {
   /* The home page caches its routes for hours; without this the seed would look like it failed. */
   const cache = await revalidateCatalogCache();

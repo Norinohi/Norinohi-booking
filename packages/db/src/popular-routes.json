@@ -25,6 +25,22 @@
       "es": {
         "title": "Dalmacia Central",
         "description": "Una popular región náutica con decenas de islas, hermosas bahías y ciudades históricas. Una excelente opción para tu primer chárter."
+      },
+      "fr": {
+        "title": "Dalmatie centrale",
+        "description": "Une région de navigation prisée, avec des dizaines d'îles, de belles baies et des villes historiques. Un excellent choix pour votre première location."
+      },
+      "pl": {
+        "title": "Dalmacja Środkowa",
+        "description": "Popularny region żeglarski z dziesiątkami wysp, pięknymi zatokami i historycznymi miastami. Świetny wybór na pierwszy czarter."
+      },
+      "it": {
+        "title": "Dalmazia centrale",
+        "description": "Una regione molto amata dai diportisti, con decine di isole, baie splendide e città storiche. Un'ottima scelta per il primo charter."
+      },
+      "nl": {
+        "title": "Midden-Dalmatië",
+        "description": "Een populair vaargebied met tientallen eilanden, prachtige baaien en historische stadjes. Een prima keuze voor je eerste charter."
       }
     },
     "stops": [
@@ -96,6 +112,22 @@
       "es": {
         "title": "Islas Jónicas",
         "description": "Mar tranquilo, islas pintorescas y cortas travesías entre fondeaderos. Ideal para unas vacaciones familiares y relajadas."
+      },
+      "fr": {
+        "title": "Îles Ioniennes",
+        "description": "Une mer calme, des îles pittoresques et de courtes navigations entre les mouillages. Idéal pour une escapade en famille en tout confort."
+      },
+      "pl": {
+        "title": "Wyspy Jońskie",
+        "description": "Spokojne morze, malownicze wyspy i krótkie przeloty między kotwicowiskami. Idealne na wygodny rodzinny wypoczynek."
+      },
+      "it": {
+        "title": "Isole Ionie",
+        "description": "Mare calmo, isole pittoresche e brevi tratte tra un ancoraggio e l'altro. Ideale per una vacanza in famiglia all'insegna del comfort."
+      },
+      "nl": {
+        "title": "Ionische Eilanden",
+        "description": "Kalme zee, schilderachtige eilanden en korte oversteken tussen ankerplekken. Ideaal voor een comfortabele familievakantie."
       }
     },
     "stops": [
@@ -167,6 +199,22 @@
       "es": {
         "title": "Göcek y Golfo de Fethiye",
         "description": "Bahías protegidas, aguas cristalinas y costas verdes y exuberantes. Una región ideal para navegar sin prisas y relajarse."
+      },
+      "fr": {
+        "title": "Göcek et golfe de Fethiye",
+        "description": "Des baies abritées, des eaux cristallines et des rivages verdoyants. Une région idéale pour naviguer sans hâte et se détendre."
+      },
+      "pl": {
+        "title": "Göcek i Zatoka Fethiye",
+        "description": "Osłonięte zatoki, krystalicznie czysta woda i bujnie zielone brzegi. Idealny region na niespieszne żeglowanie i odpoczynek."
+      },
+      "it": {
+        "title": "Göcek e Golfo di Fethiye",
+        "description": "Baie riparate, acque cristalline e coste verdeggianti. Una regione ideale per navigare senza fretta e rilassarsi."
+      },
+      "nl": {
+        "title": "Göcek en de Golf van Fethiye",
+        "description": "Beschutte baaien, kristalhelder water en weelderig groene kusten. Een ideaal gebied om ontspannen te zeilen en tot rust te komen."
       }
     },
     "stops": [
@@ -228,6 +276,22 @@
       "es": {
         "title": "Cerdeña",
         "description": "Aguas turquesas, islas pintorescas y hermosas playas. Un destino ideal para disfrutar de una inolvidable escapada mediterránea."
+      },
+      "fr": {
+        "title": "Sardaigne",
+        "description": "Des eaux turquoise, des îles pittoresques et de superbes plages. Une destination pour une escapade inoubliable en Méditerranée."
+      },
+      "pl": {
+        "title": "Sardynia",
+        "description": "Turkusowa woda, malownicze wyspy i piękne plaże. Kierunek na niezapomniany wypoczynek na Morzu Śródziemnym."
+      },
+      "it": {
+        "title": "Sardegna",
+        "description": "Acque turchesi, isole pittoresche e spiagge meravigliose. Una destinazione per una vacanza indimenticabile nel Mediterraneo."
+      },
+      "nl": {
+        "title": "Sardinië",
+        "description": "Turquoise water, schilderachtige eilanden en prachtige stranden. Een bestemming voor een onvergetelijke vakantie op de Middellandse Zee."
       }
     },
     "stops": [
@@ -294,6 +358,22 @@
       "es": {
         "title": "Ibiza y Formentera",
         "description": "Playas famosas y la vibrante vida nocturna de Ibiza, combinadas con las tranquilas lagunas de Formentera. El equilibrio perfecto entre relax y ambiente."
+      },
+      "fr": {
+        "title": "Ibiza et Formentera",
+        "description": "Les plages célèbres et la vie nocturne trépidante d'Ibiza, alliées aux lagons paisibles de Formentera. L'équilibre parfait entre détente et ambiance."
+      },
+      "pl": {
+        "title": "Ibiza i Formentera",
+        "description": "Słynne plaże i tętniące życiem noce Ibizy w połączeniu ze spokojnymi lagunami Formentery. Idealna równowaga między odpoczynkiem a atmosferą."
+      },
+      "it": {
+        "title": "Ibiza e Formentera",
+        "description": "Spiagge famose e la vivace vita notturna di Ibiza insieme alle lagune tranquille di Formentera. Il giusto equilibrio tra relax e atmosfera."
+      },
+      "nl": {
+        "title": "Ibiza en Formentera",
+        "description": "Beroemde stranden en het bruisende nachtleven van Ibiza, gecombineerd met de rustige lagunes van Formentera. De perfecte balans tussen ontspanning en sfeer."
       }
     },
     "stops": [
@@ -365,6 +445,22 @@
       "es": {
         "title": "Islas Lofoten",
         "description": "Fiordos, majestuosas montañas y paisajes árticos. Una experiencia náutica única para los amantes de la naturaleza."
+      },
+      "fr": {
+        "title": "Îles Lofoten",
+        "description": "Des fjords, des montagnes majestueuses et des paysages arctiques. Une expérience de navigation unique pour les amoureux de la nature."
+      },
+      "pl": {
+        "title": "Lofoty",
+        "description": "Fiordy, majestatyczne góry i arktyczne krajobrazy. Wyjątkowe przeżycie żeglarskie dla miłośników przyrody."
+      },
+      "it": {
+        "title": "Isole Lofoten",
+        "description": "Fiordi, montagne maestose e paesaggi artici. Un'esperienza in barca unica per chi ama la natura."
+      },
+      "nl": {
+        "title": "Lofoten",
+        "description": "Fjorden, majestueuze bergen en arctische landschappen. Een unieke zeilervaring voor natuurliefhebbers."
       }
     },
     "stops": [
@@ -431,6 +527,22 @@
       "es": {
         "title": "Córcega / Costa Oeste",
         "description": "Costas rocosas, bahías turquesas y pintorescos pueblos costeros. Un destino perfecto para un crucero tranquilo."
+      },
+      "fr": {
+        "title": "Corse / côte ouest",
+        "description": "Des côtes rocheuses, des baies turquoise et des villages côtiers pittoresques. Une magnifique destination pour une croisière détendue."
+      },
+      "pl": {
+        "title": "Korsyka / Zachodnie wybrzeże",
+        "description": "Skaliste brzegi, turkusowe zatoki i malownicze nadmorskie miasteczka. Wspaniały kierunek na spokojny rejs."
+      },
+      "it": {
+        "title": "Corsica / Costa occidentale",
+        "description": "Coste rocciose, baie turchesi e pittoreschi paesi costieri. Una meta splendida per una crociera rilassante."
+      },
+      "nl": {
+        "title": "Corsica / Westkust",
+        "description": "Rotsachtige kusten, turquoise baaien en schilderachtige kustplaatsjes. Een prachtige bestemming voor een ontspannen vaartocht."
       }
     },
     "stops": [
@@ -492,6 +604,22 @@
       "es": {
         "title": "Islas Vírgenes Británicas",
         "description": "Aguas cálidas, islas tropicales y cortas travesías entre fondeaderos. Una de las mejores regiones para alquilar un catamarán."
+      },
+      "fr": {
+        "title": "Îles Vierges britanniques",
+        "description": "Des eaux chaudes, des îles tropicales et de courtes navigations entre les mouillages. L'une des meilleures régions pour louer un catamaran."
+      },
+      "pl": {
+        "title": "Brytyjskie Wyspy Dziewicze",
+        "description": "Ciepła woda, tropikalne wyspy i krótkie przeloty między kotwicowiskami. Jeden z najlepszych regionów na czarter katamaranu."
+      },
+      "it": {
+        "title": "Isole Vergini Britanniche",
+        "description": "Acque calde, isole tropicali e brevi tratte tra un ancoraggio e l'altro. Una delle migliori regioni per un charter in catamarano."
+      },
+      "nl": {
+        "title": "Britse Maagdeneilanden",
+        "description": "Warm water, tropische eilanden en korte oversteken tussen ankerplekken. Een van de beste gebieden voor een catamarancharter."
       }
     },
     "stops": [
@@ -563,6 +691,22 @@
       "es": {
         "title": "Islas Interiores de Seychelles",
         "description": "Playas tropicales, islas de granito y aguas cristalinas. La combinación perfecta de navegación, snorkel y relax."
+      },
+      "fr": {
+        "title": "Seychelles intérieures",
+        "description": "Des plages tropicales, des îles de granit et des eaux cristallines. L'alliance parfaite de la navigation, du snorkeling et de la détente."
+      },
+      "pl": {
+        "title": "Seszele Wewnętrzne",
+        "description": "Tropikalne plaże, granitowe wyspy i krystalicznie czysta woda. Idealne połączenie żeglowania, snorkelingu i odpoczynku."
+      },
+      "it": {
+        "title": "Seychelles interne",
+        "description": "Spiagge tropicali, isole di granito e acque cristalline. La combinazione perfetta di navigazione, snorkeling e relax."
+      },
+      "nl": {
+        "title": "Binnenste Seychellen",
+        "description": "Tropische stranden, granieten eilanden en kristalhelder water. De perfecte combinatie van zeilen, snorkelen en ontspannen."
       }
     },
     "stops": [
@@ -629,6 +773,22 @@
       "es": {
         "title": "Phuket / Mar de Andamán",
         "description": "Islas exóticas, acantilados de piedra caliza y lagunas escondidas. Una experiencia náutica vibrante en un entorno tropical."
+      },
+      "fr": {
+        "title": "Phuket / mer d'Andaman",
+        "description": "Des îles exotiques, des falaises calcaires et des lagons cachés. Une expérience de navigation tropicale pleine de vie."
+      },
+      "pl": {
+        "title": "Phuket / Morze Andamańskie",
+        "description": "Egzotyczne wyspy, wapienne klify i ukryte laguny. Barwne tropikalne przeżycie żeglarskie."
+      },
+      "it": {
+        "title": "Phuket / Mare delle Andamane",
+        "description": "Isole esotiche, falesie calcaree e lagune nascoste. Un'esperienza di navigazione tropicale piena di vita."
+      },
+      "nl": {
+        "title": "Phuket / Andamanse Zee",
+        "description": "Exotische eilanden, kalksteenkliffen en verborgen lagunes. Een levendige tropische zeilervaring."
       }
     },
     "stops": [
@@ -700,6 +860,22 @@
       "es": {
         "title": "Bahía de Kotor y Costa Adriática",
         "description": "Montañas, ciudades históricas y pintorescas bahías de la bahía de Kotor. Una combinación de naturaleza, historia y el Adriático."
+      },
+      "fr": {
+        "title": "Bouches de Kotor et côte adriatique",
+        "description": "Les montagnes, les villes historiques et les baies pittoresques des Bouches de Kotor. Un mélange de nature, d'histoire et d'Adriatique."
+      },
+      "pl": {
+        "title": "Zatoka Kotorska i wybrzeże Adriatyku",
+        "description": "Góry, historyczne miasta i malownicze zatoki Zatoki Kotorskiej. Połączenie przyrody, historii i Adriatyku."
+      },
+      "it": {
+        "title": "Bocche di Cattaro e costa adriatica",
+        "description": "Montagne, città storiche e baie pittoresche delle Bocche di Cattaro. Un mix di natura, storia e Adriatico."
+      },
+      "nl": {
+        "title": "Baai van Kotor en Adriatische kust",
+        "description": "Bergen, historische stadjes en schilderachtige baaien in de Baai van Kotor. Een mix van natuur, geschiedenis en de Adriatische Zee."
       }
     },
     "stops": [
@@ -772,6 +948,22 @@
       "es": {
         "title": "Islas de la Sociedad / Islas de Sotavento",
         "description": "Islas volcánicas, arrecifes de coral y lagunas turquesas. Un destino exótico para una experiencia náutica inolvidable."
+      },
+      "fr": {
+        "title": "Îles de la Société / îles Sous-le-Vent",
+        "description": "Des îles volcaniques, des récifs coralliens et des lagons turquoise. Une destination exotique pour une croisière inoubliable."
+      },
+      "pl": {
+        "title": "Wyspy Towarzystwa / Wyspy Podwietrzne",
+        "description": "Wulkaniczne wyspy, rafy koralowe i turkusowe laguny. Egzotyczny kierunek na niezapomniany rejs."
+      },
+      "it": {
+        "title": "Isole della Società / Isole Sottovento",
+        "description": "Isole vulcaniche, barriere coralline e lagune turchesi. Una meta esotica per un viaggio in barca indimenticabile."
+      },
+      "nl": {
+        "title": "Genootschapseilanden / Benedenwindse Eilanden",
+        "description": "Vulkanische eilanden, koraalriffen en turquoise lagunes. Een exotische bestemming voor een onvergetelijke zeiltocht."
       }
     },
     "stops": [

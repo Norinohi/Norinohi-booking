@@ -2,6 +2,8 @@ import { and, eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { z } from "zod";
 
+import { perTranslatedLocale, TRANSLATED_LOCALES, type TranslatedLocale } from "./locales";
+
 import boatTypesJson from "./boat-types.json" with { type: "json" };
 
 import type * as schema from "./schema/index";
@@ -13,8 +15,8 @@ type Database = NodePgDatabase<typeof schema>;
  * English has no translation row: its label is the catalogue's own value, and a row here would
  * override it and mix "Motor Boat" in among "Sailing yacht" in the filters.
  */
-type Locale = "uk" | "de" | "es";
-const LOCALES: Locale[] = ["uk", "de", "es"];
+type Locale = TranslatedLocale;
+const LOCALES = TRANSLATED_LOCALES;
 type Copy = { label: string; description: string };
 
 const copySchema = z.object({ label: z.string(), description: z.string() });
@@ -38,7 +40,7 @@ export const BOAT_TYPES: SeedBoatType[] = z
     z.object({
       value: z.string(),
       description: z.string(),
-      copy: z.object({ uk: copySchema, de: copySchema, es: copySchema }),
+      copy: perTranslatedLocale(copySchema),
     }),
   )
   .parse(boatTypesJson);

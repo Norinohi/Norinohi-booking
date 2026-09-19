@@ -21,18 +21,19 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 
+import { perSiteLocale, SITE_LOCALES, type SiteLocale } from "./locales";
+
 import { db } from "./index";
 import { faq, faqCategory } from "./schema/content";
 import siteFaqJson from "./site-faq.json" with { type: "json" };
 
 type FaqCategoryValue = (typeof faqCategory.enumValues)[number];
 
-/** The site's four locales; `en` is the default. */
-const LOCALES = ["en", "de", "es", "uk"] as const;
+const LOCALES = SITE_LOCALES;
 
-type Locale = (typeof LOCALES)[number];
+type Locale = SiteLocale;
 
-/** Every locale is required: a question present in three of four is a hole in one page. */
+/** Every locale is required: a question missing from one locale is a hole in that page. */
 type Localized = Record<Locale, string>;
 
 type SiteFaqEntry = {
@@ -41,12 +42,7 @@ type SiteFaqEntry = {
   answer: Localized;
 };
 
-const localizedSchema = z.object({
-  en: z.string(),
-  de: z.string(),
-  es: z.string(),
-  uk: z.string(),
-});
+const localizedSchema = perSiteLocale(z.string());
 
 const entries: SiteFaqEntry[] = z
   .array(

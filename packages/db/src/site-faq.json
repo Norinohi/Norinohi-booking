@@ -5,13 +5,21 @@
       "en": "How do I book a yacht?",
       "de": "Wie buche ich eine Yacht?",
       "es": "¿Cómo reservo un yate?",
-      "uk": "Як забронювати яхту?"
+      "uk": "Як забронювати яхту?",
+      "fr": "Comment réserver un yacht ?",
+      "pl": "Jak zarezerwować jacht?",
+      "it": "Come si prenota uno yacht?",
+      "nl": "Hoe boek ik een jacht?"
     },
     "answer": {
       "en": "Pick your dates and the crew option on the yacht's page, check the price breakdown, leave your details and pay. We send a confirmation request to the charter company, and once it answers, the booking is confirmed. The confirmation and the documents arrive by email.",
       "de": "Wählen Sie auf der Seite der Yacht Zeitraum und Crew-Variante, prüfen Sie die Preisaufstellung, geben Sie Ihre Daten an und bezahlen Sie. Wir senden eine Bestätigungsanfrage an das Charterunternehmen; sobald es antwortet, ist die Buchung bestätigt. Bestätigung und Unterlagen erhalten Sie per E-Mail.",
       "es": "Elige las fechas y el tipo de tripulación en la página del yate, revisa el desglose del precio, deja tus datos y paga. Enviamos una solicitud de confirmación a la empresa de chárter y, en cuanto responde, la reserva queda confirmada. La confirmación y los documentos llegan por correo electrónico.",
-      "uk": "Оберіть дати й тип екіпажу на сторінці яхти, перевірте розрахунок вартості, залиште свої дані та оплатіть. Ми надсилаємо запит на підтвердження чартерній компанії, і після її відповіді бронювання стає підтвердженим. Підтвердження й документи приходять на пошту."
+      "uk": "Оберіть дати й тип екіпажу на сторінці яхти, перевірте розрахунок вартості, залиште свої дані та оплатіть. Ми надсилаємо запит на підтвердження чартерній компанії, і після її відповіді бронювання стає підтвердженим. Підтвердження й документи приходять на пошту.",
+      "fr": "Choisissez vos dates et la formule d'équipage sur la page du yacht, vérifiez le détail du prix, indiquez vos coordonnées et payez. Nous envoyons une demande de confirmation à la société de location, et dès sa réponse, la réservation est confirmée. La confirmation et les documents vous parviennent par e-mail.",
+      "pl": "Wybierz daty i opcję załogi na stronie jachtu, sprawdź zestawienie ceny, podaj swoje dane i zapłać. Wysyłamy prośbę o potwierdzenie do firmy czarterowej, a gdy odpowie, rezerwacja jest potwierdzona. Potwierdzenie i dokumenty otrzymasz e-mailem.",
+      "it": "Nella pagina dello yacht scegliete le date e l'opzione equipaggio, controllate il dettaglio del prezzo, inserite i vostri dati e pagate. Inviamo una richiesta di conferma alla società di charter e, non appena risponde, la prenotazione è confermata. La conferma e i documenti arrivano via email.",
+      "nl": "Kies je data en de bemanningsoptie op de pagina van het jacht, bekijk de prijsopbouw, vul je gegevens in en betaal. Wij sturen een bevestigingsverzoek naar de charteraar, en zodra die antwoordt, is de boeking bevestigd. De bevestiging en de documenten ontvang je per e-mail."
     }
   },
   {
@@ -20,13 +28,21 @@
       "en": "Is availability shown in real time?",
       "de": "Wird die Verfügbarkeit in Echtzeit angezeigt?",
       "es": "¿La disponibilidad se muestra en tiempo real?",
-      "uk": "Чи доступна яхта в реальному часі?"
+      "uk": "Чи доступна яхта в реальному часі?",
+      "fr": "Les disponibilités sont-elles affichées en temps réel ?",
+      "pl": "Czy dostępność jest pokazywana w czasie rzeczywistym?",
+      "it": "La disponibilità è mostrata in tempo reale?",
+      "nl": "Wordt de beschikbaarheid realtime getoond?"
     },
     "answer": {
       "en": "Availability is refreshed every hour from the charter companies' systems, and the catalogue once a day. The final availability and price are re-checked with the operator at the moment of booking, so what you see on the payment page has already been verified with them.",
       "de": "Die Verfügbarkeit wird stündlich aus den Systemen der Charterunternehmen aktualisiert, der Katalog einmal täglich. Endgültige Verfügbarkeit und Preis fragen wir im Moment der Buchung erneut beim Anbieter ab; was Sie auf der Zahlungsseite sehen, ist also bereits mit ihm abgeglichen.",
       "es": "La disponibilidad se actualiza cada hora desde los sistemas de las empresas de chárter, y el catálogo una vez al día. La disponibilidad y el precio definitivos los volvemos a consultar con el operador en el momento de reservar, así que lo que ves en la página de pago ya está contrastado con él.",
-      "uk": "Доступність оновлюється щогодини з систем чартерних компаній, а каталог раз на добу. Остаточну наявність і ціну ми перезапитуємо в оператора безпосередньо в момент бронювання, тому те, що ви бачите на сторінці оплати, уже звірене з ним."
+      "uk": "Доступність оновлюється щогодини з систем чартерних компаній, а каталог раз на добу. Остаточну наявність і ціну ми перезапитуємо в оператора безпосередньо в момент бронювання, тому те, що ви бачите на сторінці оплати, уже звірене з ним.",
+      "fr": "Les disponibilités sont actualisées toutes les heures à partir des systèmes des sociétés de location, et le catalogue une fois par jour. La disponibilité et le prix définitifs sont revérifiés auprès du loueur au moment de la réservation : ce que vous voyez sur la page de paiement a donc déjà été confirmé avec lui.",
+      "pl": "Dostępność jest odświeżana co godzinę z systemów firm czarterowych, a katalog raz dziennie. Ostateczna dostępność i cena są ponownie sprawdzane u operatora w chwili rezerwacji, więc to, co widzisz na stronie płatności, zostało już z nim zweryfikowane.",
+      "it": "La disponibilità viene aggiornata ogni ora dai sistemi delle società di charter, il catalogo una volta al giorno. Disponibilità e prezzo definitivi vengono ricontrollati con l'operatore al momento della prenotazione, quindi ciò che vedete nella pagina di pagamento è già stato verificato con lui.",
+      "nl": "De beschikbaarheid wordt elk uur ververst vanuit de systemen van de charteraars, en de catalogus eenmaal per dag. De definitieve beschikbaarheid en prijs worden op het moment van boeken opnieuw bij de verhuurder gecontroleerd, dus wat je op de betaalpagina ziet, is al met hen geverifieerd."
     }
   },
   {
@@ -35,13 +51,21 @@
       "en": "When is a booking considered confirmed?",
       "de": "Wann gilt eine Buchung als bestätigt?",
       "es": "¿Cuándo se considera confirmada una reserva?",
-      "uk": "Коли бронювання вважається підтвердженим?"
+      "uk": "Коли бронювання вважається підтвердженим?",
+      "fr": "Quand une réservation est-elle considérée comme confirmée ?",
+      "pl": "Kiedy rezerwacja jest uznawana za potwierdzoną?",
+      "it": "Quando una prenotazione si considera confermata?",
+      "nl": "Wanneer is een boeking bevestigd?"
     },
     "answer": {
       "en": "Once the charter company has confirmed it in its own system. Until then the booking is being processed and your card is only held, not charged. If the operator declines, the hold is released and you pay nothing.",
       "de": "Sobald das Charterunternehmen sie in seinem eigenen System bestätigt hat. Bis dahin wird die Buchung bearbeitet und Ihre Karte nur reserviert, nicht belastet. Lehnt der Anbieter ab, wird die Reservierung freigegeben und Sie zahlen nichts.",
       "es": "Cuando la empresa de chárter la confirma en su propio sistema. Hasta entonces la reserva está en trámite y tu tarjeta solo está retenida, no cobrada. Si el operador la rechaza, se libera la retención y no pagas nada.",
-      "uk": "Після того як чартерна компанія підтвердить його у своїй системі. До того бронювання перебуває в обробці, а кошти на картці лише заблоковані, не списані. Якщо оператор відмовить, блокування знімається і ви нічого не платите."
+      "uk": "Після того як чартерна компанія підтвердить його у своїй системі. До того бронювання перебуває в обробці, а кошти на картці лише заблоковані, не списані. Якщо оператор відмовить, блокування знімається і ви нічого не платите.",
+      "fr": "Dès que la société de location l'a confirmée dans son propre système. D'ici là, la réservation est en cours de traitement et le montant est seulement bloqué sur votre carte, sans être débité. Si le loueur refuse, le blocage est levé et vous ne payez rien.",
+      "pl": "Gdy firma czarterowa potwierdzi ją we własnym systemie. Do tego czasu rezerwacja jest w trakcie realizacji, a środki na karcie są jedynie zablokowane, nie pobrane. Jeśli operator odmówi, blokada zostaje zwolniona i nic nie płacisz.",
+      "it": "Quando la società di charter l'ha confermata nel proprio sistema. Fino ad allora la prenotazione è in lavorazione e sulla carta viene solo bloccato l'importo, senza addebito. Se l'operatore rifiuta, il blocco viene rilasciato e non pagate nulla.",
+      "nl": "Zodra de charteraar hem in het eigen systeem heeft bevestigd. Tot die tijd wordt de boeking verwerkt en wordt het bedrag op je kaart alleen gereserveerd, niet afgeschreven. Als de verhuurder weigert, vervalt de reservering en betaal je niets."
     }
   },
   {
@@ -50,13 +74,21 @@
       "en": "Can a yacht be put on option?",
       "de": "Kann eine Yacht auf Option gelegt werden?",
       "es": "¿Se puede poner un yate en opción?",
-      "uk": "Чи можна поставити яхту на опцію?"
+      "uk": "Чи можна поставити яхту на опцію?",
+      "fr": "Peut-on poser une option sur un yacht ?",
+      "pl": "Czy jacht można zarezerwować wstępnie (opcja)?",
+      "it": "È possibile mettere uno yacht in opzione?",
+      "nl": "Kan een jacht in optie worden genomen?"
     },
     "answer": {
       "en": "Yes, if the operator allows it: the yacht is held without payment for a limited time that the charter company itself sets. If the option runs out unpaid, the yacht is released and the booking goes back to the quote stage.",
       "de": "Ja, sofern der Anbieter es zulässt: Die Yacht wird ohne Zahlung für eine begrenzte Zeit reserviert, die das Charterunternehmen selbst festlegt. Läuft die Option ohne Zahlung ab, wird die Yacht wieder freigegeben und die Buchung kehrt zur Preisberechnung zurück.",
       "es": "Sí, si el operador lo permite: el yate queda retenido sin pago durante un tiempo limitado que fija la propia empresa de chárter. Si la opción vence sin pago, el yate se libera y la reserva vuelve a la fase de presupuesto.",
-      "uk": "Так, якщо оператор це дозволяє: яхта резервується без оплати на обмежений час, який визначає сама чартерна компанія. Якщо опція спливає без оплати, яхта звільняється, а бронювання повертається до етапу розрахунку."
+      "uk": "Так, якщо оператор це дозволяє: яхта резервується без оплати на обмежений час, який визначає сама чартерна компанія. Якщо опція спливає без оплати, яхта звільняється, а бронювання повертається до етапу розрахунку.",
+      "fr": "Oui, si le loueur le permet : le yacht est réservé sans paiement pendant une durée limitée, fixée par la société de location elle-même. Si l'option expire sans paiement, le yacht est libéré et la réservation revient au stade du devis.",
+      "pl": "Tak, jeśli operator na to pozwala: jacht jest zarezerwowany bez płatności przez ograniczony czas, który ustala sama firma czarterowa. Jeśli opcja wygaśnie bez płatności, jacht zostaje zwolniony, a rezerwacja wraca do etapu oferty.",
+      "it": "Sì, se l'operatore lo consente: lo yacht viene tenuto senza pagamento per un periodo limitato stabilito dalla società di charter. Se l'opzione scade senza pagamento, lo yacht viene liberato e la prenotazione torna alla fase di preventivo.",
+      "nl": "Ja, als de verhuurder dat toestaat: het jacht wordt zonder betaling vastgehouden voor een beperkte tijd die de charteraar zelf bepaalt. Verloopt de optie zonder betaling, dan komt het jacht weer vrij en gaat de boeking terug naar de offertefase."
     }
   },
   {
@@ -65,13 +97,21 @@
       "en": "Which payment methods are available?",
       "de": "Welche Zahlungsmethoden sind verfügbar?",
       "es": "¿Qué métodos de pago están disponibles?",
-      "uk": "Які способи оплати доступні?"
+      "uk": "Які способи оплати доступні?",
+      "fr": "Quels moyens de paiement sont disponibles ?",
+      "pl": "Jakie metody płatności są dostępne?",
+      "it": "Quali metodi di pagamento sono disponibili?",
+      "nl": "Welke betaalmethoden zijn er?"
     },
     "answer": {
       "en": "Online we accept card payment through Stripe. Some charges are collected by the charter base in person at check-in: the tourist tax, the refundable security deposit, fuel. Those are paid directly at the base.",
       "de": "Online akzeptieren wir Kartenzahlung über Stripe. Einen Teil der Beträge erhebt die Charterbasis vor Ort beim Check-in: Kurtaxe, rückzahlbare Kaution, Treibstoff. Diese werden direkt an der Basis bezahlt.",
       "es": "En línea aceptamos el pago con tarjeta a través de Stripe. Una parte de los importes los cobra la base de chárter en persona al check-in: la tasa turística, la fianza reembolsable y el combustible. Esos se abonan directamente en la base.",
-      "uk": "Онлайн ми приймаємо оплату карткою через Stripe. Частину платежів чартерна база збирає на місці при заїзді: туристичний збір, поворотну заставу, паливо. Їх оплачують безпосередньо на базі."
+      "uk": "Онлайн ми приймаємо оплату карткою через Stripe. Частину платежів чартерна база збирає на місці при заїзді: туристичний збір, поворотну заставу, паливо. Їх оплачують безпосередньо на базі.",
+      "fr": "En ligne, nous acceptons le paiement par carte via Stripe. Certains frais sont perçus directement par la base de location lors de l'embarquement : la taxe de séjour, la caution remboursable, le carburant. Ils se règlent sur place, à la base.",
+      "pl": "Online przyjmujemy płatności kartą przez Stripe. Niektóre opłaty pobiera baza czarterowa osobiście przy zaokrętowaniu: opłatę turystyczną, zwrotną kaucję i paliwo. Płaci się je bezpośrednio w bazie.",
+      "it": "Online accettiamo pagamenti con carta tramite Stripe. Alcuni costi vengono riscossi di persona dalla base charter al check-in: la tassa di soggiorno, la cauzione rimborsabile, il carburante. Questi si pagano direttamente in base.",
+      "nl": "Online accepteren we kaartbetalingen via Stripe. Sommige kosten worden bij het inchecken ter plekke door de charterbasis geïnd: de toeristenbelasting, de terugbetaalbare borg en brandstof. Die betaal je direct op de basis."
     }
   },
   {
@@ -80,13 +120,21 @@
       "en": "Do I have to pay 100% up front?",
       "de": "Muss ich 100 % im Voraus bezahlen?",
       "es": "¿Hay que pagar el 100 % por adelantado?",
-      "uk": "Чи потрібно оплачувати 100% одразу?"
+      "uk": "Чи потрібно оплачувати 100% одразу?",
+      "fr": "Dois-je payer 100 % à l'avance ?",
+      "pl": "Czy muszę zapłacić 100% z góry?",
+      "it": "Devo pagare il 100% in anticipo?",
+      "nl": "Moet ik 100% vooraf betalen?"
     },
     "answer": {
       "en": "If the charter starts more than two months from now, a 50% prepayment is usually enough, with the rest due before the start. If it starts within two months, the full amount is due at once. The exact terms for a particular yacht are shown in the price breakdown before you pay.",
       "de": "Liegt der Charterbeginn mehr als zwei Monate in der Zukunft, genügt in der Regel eine Anzahlung von 50 %, der Rest ist vor dem Törnbeginn fällig. Beginnt der Törn in weniger als zwei Monaten, ist der volle Betrag sofort fällig. Die genauen Bedingungen für die jeweilige Yacht stehen vor der Zahlung in der Preisaufstellung.",
       "es": "Si faltan más de dos meses para el inicio del chárter, normalmente basta con un anticipo del 50 % y el resto antes de la salida. Si faltan menos de dos meses, se paga el importe completo de una vez. Las condiciones exactas de cada yate aparecen en el desglose del precio antes de pagar.",
-      "uk": "Якщо до початку чартеру більше двох місяців, зазвичай достатньо передоплати 50%, решта до старту. Якщо до початку менше двох місяців, оплата повна одразу. Точні умови для конкретної яхти видно в розрахунку перед оплатою."
+      "uk": "Якщо до початку чартеру більше двох місяців, зазвичай достатньо передоплати 50%, решта до старту. Якщо до початку менше двох місяців, оплата повна одразу. Точні умови для конкретної яхти видно в розрахунку перед оплатою.",
+      "fr": "Si la location commence dans plus de deux mois, un acompte de 50 % suffit généralement, le solde étant dû avant le départ. Si elle commence dans les deux mois, la totalité est due immédiatement. Les conditions exactes pour chaque yacht figurent dans le détail du prix avant le paiement.",
+      "pl": "Jeśli czarter zaczyna się za więcej niż dwa miesiące, zwykle wystarczy przedpłata 50%, a resztę należy zapłacić przed rozpoczęciem. Jeśli zaczyna się w ciągu dwóch miesięcy, cała kwota jest wymagana od razu. Dokładne warunki dla danego jachtu są widoczne w zestawieniu ceny przed płatnością.",
+      "it": "Se il charter inizia tra più di due mesi, di solito basta un acconto del 50%, con il saldo prima della partenza. Se inizia entro due mesi, l'importo intero è dovuto subito. Le condizioni esatte per ogni yacht sono indicate nel dettaglio del prezzo prima del pagamento.",
+      "nl": "Begint de charter over meer dan twee maanden, dan is een aanbetaling van 50% meestal genoeg en betaal je de rest voor de start. Begint hij binnen twee maanden, dan betaal je het volledige bedrag meteen. De precieze voorwaarden voor een bepaald jacht zie je in de prijsopbouw voordat je betaalt."
     }
   },
   {
@@ -95,13 +143,21 @@
       "en": "Can I pay by card?",
       "de": "Kann ich mit Karte bezahlen?",
       "es": "¿Puedo pagar con tarjeta?",
-      "uk": "Чи можна оплатити карткою?"
+      "uk": "Чи можна оплатити карткою?",
+      "fr": "Puis-je payer par carte ?",
+      "pl": "Czy mogę zapłacić kartą?",
+      "it": "Posso pagare con carta?",
+      "nl": "Kan ik met een kaart betalen?"
     },
     "answer": {
       "en": "Yes. The payment happens in Stripe's form, and we neither receive nor store your card number.",
       "de": "Ja. Die Zahlung erfolgt im Stripe-Formular; Ihre Kartennummer erhalten und speichern wir nicht.",
       "es": "Sí. El pago se realiza en el formulario de Stripe, y nosotros no recibimos ni guardamos el número de tu tarjeta.",
-      "uk": "Так. Оплата відбувається у формі Stripe, і номер вашої картки ми не отримуємо й не зберігаємо."
+      "uk": "Так. Оплата відбувається у формі Stripe, і номер вашої картки ми не отримуємо й не зберігаємо.",
+      "fr": "Oui. Le paiement s'effectue dans le formulaire de Stripe : nous ne recevons ni ne conservons votre numéro de carte.",
+      "pl": "Tak. Płatność odbywa się w formularzu Stripe, a my ani nie otrzymujemy, ani nie przechowujemy numeru Twojej karty.",
+      "it": "Sì. Il pagamento avviene nel modulo di Stripe e noi non riceviamo né conserviamo il numero della vostra carta.",
+      "nl": "Ja. De betaling gebeurt in het formulier van Stripe, en wij ontvangen of bewaren je kaartnummer niet."
     }
   },
   {
@@ -110,13 +166,21 @@
       "en": "Is paying through Stripe safe?",
       "de": "Ist die Zahlung über Stripe sicher?",
       "es": "¿Es seguro pagar a través de Stripe?",
-      "uk": "Чи безпечна оплата через Stripe?"
+      "uk": "Чи безпечна оплата через Stripe?",
+      "fr": "Le paiement via Stripe est-il sécurisé ?",
+      "pl": "Czy płatność przez Stripe jest bezpieczna?",
+      "it": "Pagare tramite Stripe è sicuro?",
+      "nl": "Is betalen via Stripe veilig?"
     },
     "answer": {
       "en": "Card details are entered in Stripe's secure form and never reach our servers. All we keep is the payment identifier, which we use to check its status.",
       "de": "Die Kartendaten werden im gesicherten Stripe-Formular eingegeben und gelangen nicht auf unsere Server. Wir speichern nur die Zahlungskennung, mit der wir den Status der Zahlung abgleichen.",
       "es": "Los datos de la tarjeta se introducen en el formulario seguro de Stripe y no llegan a nuestros servidores. Solo guardamos el identificador del pago, con el que comprobamos su estado.",
-      "uk": "Дані картки вводяться у захищеній формі Stripe і на наші сервери не потрапляють. Ми зберігаємо лише ідентифікатор платежу, за яким звіряємо його статус."
+      "uk": "Дані картки вводяться у захищеній формі Stripe і на наші сервери не потрапляють. Ми зберігаємо лише ідентифікатор платежу, за яким звіряємо його статус.",
+      "fr": "Les données de carte sont saisies dans le formulaire sécurisé de Stripe et n'atteignent jamais nos serveurs. Nous ne conservons que l'identifiant du paiement, qui nous sert à en vérifier le statut.",
+      "pl": "Dane karty są wprowadzane w bezpiecznym formularzu Stripe i nigdy nie trafiają na nasze serwery. Przechowujemy jedynie identyfikator płatności, którego używamy do sprawdzenia jej statusu.",
+      "it": "I dati della carta vengono inseriti nel modulo sicuro di Stripe e non arrivano mai ai nostri server. Conserviamo solo l'identificativo del pagamento, che usiamo per verificarne lo stato.",
+      "nl": "Kaartgegevens worden ingevoerd in het beveiligde formulier van Stripe en komen nooit op onze servers. Het enige wat we bewaren is de betalingsreferentie, waarmee we de status controleren."
     }
   },
   {
@@ -125,13 +189,21 @@
       "en": "What is included in the rental price?",
       "de": "Was ist im Mietpreis enthalten?",
       "es": "¿Qué incluye el precio del alquiler?",
-      "uk": "Що входить у вартість оренди?"
+      "uk": "Що входить у вартість оренди?",
+      "fr": "Qu'est-ce qui est inclus dans le prix de location ?",
+      "pl": "Co obejmuje cena wynajmu?",
+      "it": "Cosa è incluso nel prezzo del noleggio?",
+      "nl": "Wat zit er in de huurprijs?"
     },
     "answer": {
       "en": "The rental price is the yacht itself for the chosen period, with its standard equipment. The operator's obligatory charges and the optional extras are listed separately in the price breakdown, so the final total is visible before you pay.",
       "de": "Der Mietpreis umfasst die Yacht selbst für den gewählten Zeitraum mit ihrer Standardausrüstung. Die obligatorischen Zuschläge des Anbieters und die optionalen Extras stehen als eigene Liste in der Preisaufstellung, sodass der Endbetrag vor der Zahlung sichtbar ist.",
       "es": "El precio del alquiler es el yate en sí para el periodo elegido, con su equipamiento de serie. Los suplementos obligatorios del operador y los extras opcionales aparecen en una lista aparte dentro del desglose, así que el total final se ve antes de pagar.",
-      "uk": "Вартість оренди це сама яхта на обраний період зі штатним обладнанням. Обов'язкові доплати оператора й додаткові опції показані окремим списком у розрахунку, тому підсумкову суму видно до оплати."
+      "uk": "Вартість оренди це сама яхта на обраний період зі штатним обладнанням. Обов'язкові доплати оператора й додаткові опції показані окремим списком у розрахунку, тому підсумкову суму видно до оплати.",
+      "fr": "Le prix de location couvre le yacht lui-même pour la période choisie, avec son équipement standard. Les frais obligatoires du loueur et les options facultatives figurent séparément dans le détail du prix : vous voyez ainsi le total définitif avant de payer.",
+      "pl": "Cena wynajmu obejmuje sam jacht na wybrany okres wraz z jego standardowym wyposażeniem. Obowiązkowe opłaty operatora i opcjonalne dodatki są wymienione osobno w zestawieniu ceny, więc ostateczna kwota jest widoczna przed płatnością.",
+      "it": "Il prezzo del noleggio comprende lo yacht per il periodo scelto, con la sua dotazione standard. I costi obbligatori dell'operatore e gli extra facoltativi sono elencati a parte nel dettaglio del prezzo, così il totale finale è visibile prima del pagamento.",
+      "nl": "De huurprijs is het jacht zelf voor de gekozen periode, met de standaarduitrusting. De verplichte kosten van de verhuurder en de optionele extra's staan apart in de prijsopbouw, zodat je het eindbedrag ziet voordat je betaalt."
     }
   },
   {
@@ -140,13 +212,21 @@
       "en": "What is a Charter Pack?",
       "de": "Was ist ein Charter Pack?",
       "es": "¿Qué es el Charter Pack?",
-      "uk": "Що таке Charter Pack?"
+      "uk": "Що таке Charter Pack?",
+      "fr": "Qu'est-ce qu'un Charter Pack ?",
+      "pl": "Czym jest Charter Pack?",
+      "it": "Che cos'è il Charter Pack?",
+      "nl": "Wat is een Charter Pack?"
     },
     "answer": {
       "en": "It is the charter base's standard package. It usually covers a gas cylinder, full fresh-water tanks, electricity at the base and a berth in the home marina for the whole charter. Operators put it together and name it differently, so check its contents and price in the extras list of the particular yacht.",
       "de": "Das ist das Standardpaket der Charterbasis. Es umfasst meist eine Gasflasche, volle Frischwassertanks, Strom an der Basis und einen Liegeplatz in der Heimatmarina für die gesamte Charterdauer. Die Anbieter stellen es unterschiedlich zusammen und benennen es unterschiedlich; Inhalt und Preis finden Sie daher in der Zuschlagsliste der jeweiligen Yacht.",
       "es": "Es el paquete estándar de la base de chárter. Suele incluir una bombona de gas, los depósitos de agua dulce llenos, electricidad en la base y amarre en la marina base durante todo el chárter. Cada operador lo compone y lo llama de forma distinta, así que consulta su contenido y su precio en la lista de suplementos de cada yate.",
-      "uk": "Це стандартний пакет чартерної бази. Зазвичай він включає газовий балон, повні баки прісної води, електрику на базі та стоянку в домашній марині протягом усього чартеру. Оператори комплектують і називають його по-різному, тому склад і ціну дивіться в списку доплат конкретної яхти."
+      "uk": "Це стандартний пакет чартерної бази. Зазвичай він включає газовий балон, повні баки прісної води, електрику на базі та стоянку в домашній марині протягом усього чартеру. Оператори комплектують і називають його по-різному, тому склад і ціну дивіться в списку доплат конкретної яхти.",
+      "fr": "C'est le forfait standard de la base de location. Il comprend généralement une bouteille de gaz, des réservoirs d'eau douce pleins, l'électricité à la base et une place dans la marina de départ pendant toute la location. Chaque loueur le compose et le nomme à sa façon : vérifiez son contenu et son prix dans la liste des options du yacht concerné.",
+      "pl": "To standardowy pakiet bazy czarterowej. Zwykle obejmuje butlę z gazem, pełne zbiorniki wody słodkiej, prąd w bazie i miejsce w macierzystej marinie przez cały czarter. Operatorzy różnie go komponują i nazywają, dlatego sprawdź jego zawartość i cenę na liście dodatków danego jachtu.",
+      "it": "È il pacchetto standard della base charter. Di solito comprende una bombola del gas, i serbatoi d'acqua dolce pieni, l'elettricità in base e il posto barca nel marina di partenza per tutta la durata del charter. Ogni operatore lo compone e lo chiama in modo diverso, quindi verificatene contenuto e prezzo nell'elenco degli extra dello yacht scelto.",
+      "nl": "Het is het standaardpakket van de charterbasis. Meestal omvat het een gasfles, volle drinkwatertanks, stroom op de basis en een ligplaats in de thuishaven voor de hele charter. Verhuurders stellen het verschillend samen en geven het verschillende namen, dus controleer de inhoud en prijs in de lijst met extra's van het betreffende jacht."
     }
   },
   {
@@ -155,13 +235,21 @@
       "en": "What extra costs can come up?",
       "de": "Welche zusätzlichen Kosten können anfallen?",
       "es": "¿Qué gastos adicionales pueden surgir?",
-      "uk": "Які додаткові витрати можуть виникнути?"
+      "uk": "Які додаткові витрати можуть виникнути?",
+      "fr": "Quels frais supplémentaires peut-il y avoir ?",
+      "pl": "Jakie dodatkowe koszty mogą się pojawić?",
+      "it": "Quali costi extra possono esserci?",
+      "nl": "Welke extra kosten kunnen er zijn?"
     },
     "answer": {
       "en": "Most often the final cleaning, the tourist tax, fuel, berths in marinas other than the home one, a skipper or a hostess, water toys. We show the obligatory charges in the price breakdown; the rest depends on your route.",
       "de": "Meist die Endreinigung, die Kurtaxe, Treibstoff, Liegeplätze in fremden Marinas, Skipper oder Hostess sowie Wassersportgeräte. Die obligatorischen Zuschläge zeigen wir in der Preisaufstellung, alles Weitere hängt von Ihrer Route ab.",
       "es": "Lo más habitual: la limpieza final, la tasa turística, el combustible, los amarres en marinas distintas de la base, un patrón o una azafata y los juguetes acuáticos. Los suplementos obligatorios los mostramos en el desglose; el resto depende de tu ruta.",
-      "uk": "Найчастіше це фінальне прибирання, туристичний збір, паливо, стоянки в чужих маринах, шкіпер або хостес, водні розваги. Обов'язкові доплати ми показуємо в розрахунку, решта залежить від вашого маршруту."
+      "uk": "Найчастіше це фінальне прибирання, туристичний збір, паливо, стоянки в чужих маринах, шкіпер або хостес, водні розваги. Обов'язкові доплати ми показуємо в розрахунку, решта залежить від вашого маршруту.",
+      "fr": "Le plus souvent : le ménage final, la taxe de séjour, le carburant, les places dans d'autres marinas que celle de départ, un skipper ou une hôtesse, les jeux nautiques. Nous indiquons les frais obligatoires dans le détail du prix ; le reste dépend de votre itinéraire.",
+      "pl": "Najczęściej sprzątanie końcowe, opłata turystyczna, paliwo, postój w marinach innych niż macierzysta, skipper lub hostessa, zabawki wodne. Obowiązkowe opłaty pokazujemy w zestawieniu ceny; reszta zależy od Twojej trasy.",
+      "it": "Più spesso la pulizia finale, la tassa di soggiorno, il carburante, gli ormeggi in marina diversi da quello di partenza, uno skipper o una hostess, i giochi d'acqua. I costi obbligatori sono indicati nel dettaglio del prezzo; il resto dipende dal vostro itinerario.",
+      "nl": "Meestal de eindschoonmaak, toeristenbelasting, brandstof, ligplaatsen in andere havens dan de thuishaven, een schipper of hostess, en waterspeelgoed. De verplichte kosten tonen we in de prijsopbouw; de rest hangt af van je route."
     }
   },
   {
@@ -170,13 +258,21 @@
       "en": "Is fuel included?",
       "de": "Ist der Treibstoff inbegriffen?",
       "es": "¿El combustible está incluido?",
-      "uk": "Чи входить паливо?"
+      "uk": "Чи входить паливо?",
+      "fr": "Le carburant est-il inclus ?",
+      "pl": "Czy paliwo jest wliczone?",
+      "it": "Il carburante è incluso?",
+      "nl": "Is brandstof inbegrepen?"
     },
     "answer": {
       "en": "No. Fuel is paid separately, usually by actual consumption when the yacht is returned to the base.",
       "de": "Nein. Der Treibstoff wird gesondert bezahlt, in der Regel nach tatsächlichem Verbrauch bei der Rückgabe der Yacht an der Basis.",
       "es": "No. El combustible se paga aparte, normalmente según el consumo real al devolver el yate a la base.",
-      "uk": "Ні. Паливо оплачується окремо, зазвичай за фактом витрати при поверненні яхти на базу."
+      "uk": "Ні. Паливо оплачується окремо, зазвичай за фактом витрати при поверненні яхти на базу.",
+      "fr": "Non. Le carburant se paie à part, généralement selon la consommation réelle, au retour du yacht à la base.",
+      "pl": "Nie. Paliwo płaci się osobno, zwykle według rzeczywistego zużycia przy zwrocie jachtu do bazy.",
+      "it": "No. Il carburante si paga a parte, di solito in base al consumo effettivo alla riconsegna dello yacht in base.",
+      "nl": "Nee. Brandstof betaal je apart, meestal op basis van het werkelijke verbruik wanneer het jacht terug op de basis is."
     }
   },
   {
@@ -185,13 +281,21 @@
       "en": "Do I need a skipper's licence?",
       "de": "Brauche ich einen Segelschein?",
       "es": "¿Necesito titulación náutica?",
-      "uk": "Чи потрібна ліцензія шкіпера?"
+      "uk": "Чи потрібна ліцензія шкіпера?",
+      "fr": "Ai-je besoin d'un permis bateau ?",
+      "pl": "Czy potrzebuję patentu żeglarskiego?",
+      "it": "Serve la patente nautica?",
+      "nl": "Heb ik een vaarbewijs nodig?"
     },
     "answer": {
       "en": "For a bareboat yacht you need a licence recognised in the country of the charter, and in most destinations a radio certificate as well. If you take the yacht with a skipper or with a crew, no licence is needed.",
       "de": "Für eine Yacht ohne Crew brauchen Sie einen im Charterland anerkannten Schein, in den meisten Revieren zusätzlich ein Funkzeugnis. Wenn Sie die Yacht mit Skipper oder mit Crew nehmen, ist kein Schein erforderlich.",
       "es": "Para un yate sin tripulación necesitas una titulación reconocida en el país del chárter y, en la mayoría de los destinos, también un certificado de radio. Si tomas el yate con patrón o con tripulación, no hace falta titulación.",
-      "uk": "Для яхти без екіпажу потрібні права, визнані в країні чартеру, а на більшості напрямків додатково радіосертифікат. Якщо ви берете яхту зі шкіпером або з екіпажем, ліцензія не потрібна."
+      "uk": "Для яхти без екіпажу потрібні права, визнані в країні чартеру, а на більшості напрямків додатково радіосертифікат. Якщо ви берете яхту зі шкіпером або з екіпажем, ліцензія не потрібна.",
+      "fr": "Pour une location sans skipper, il vous faut un permis reconnu dans le pays de location et, dans la plupart des destinations, un certificat radio. Si vous louez le yacht avec un skipper ou un équipage, aucun permis n'est nécessaire.",
+      "pl": "Do czarteru jachtu bez załogi (bareboat) potrzebny jest patent uznawany w kraju czarteru, a w większości miejsc także świadectwo operatora radiowego. Jeśli bierzesz jacht ze skipperem lub z załogą, patent nie jest potrzebny.",
+      "it": "Per uno yacht senza skipper (bareboat) serve una patente nautica riconosciuta nel paese del charter e, nella maggior parte delle destinazioni, anche un certificato radio. Se prendete lo yacht con skipper o con equipaggio, la patente non serve.",
+      "nl": "Voor een bareboat-jacht heb je een vaarbewijs nodig dat erkend wordt in het land van de charter, en op de meeste bestemmingen ook een marifooncertificaat. Neem je het jacht met schipper of bemanning, dan heb je geen vaarbewijs nodig."
     }
   },
   {
@@ -200,13 +304,21 @@
       "en": "Can I charter a yacht with a skipper?",
       "de": "Kann ich eine Yacht mit Skipper chartern?",
       "es": "¿Puedo alquilar un yate con patrón?",
-      "uk": "Чи можна орендувати яхту зі шкіпером?"
+      "uk": "Чи можна орендувати яхту зі шкіпером?",
+      "fr": "Puis-je louer un yacht avec un skipper ?",
+      "pl": "Czy mogę wyczarterować jacht ze skipperem?",
+      "it": "Posso noleggiare uno yacht con skipper?",
+      "nl": "Kan ik een jacht met schipper huren?"
     },
     "answer": {
       "en": "Yes, if the operator offers that option. The crew choice is on the yacht's page, and the skipper's cost is added to the price breakdown.",
       "de": "Ja, sofern der Anbieter diese Option anbietet. Die Crew-Auswahl finden Sie auf der Seite der Yacht, und die Kosten für den Skipper kommen in der Preisaufstellung hinzu.",
       "es": "Sí, si el operador ofrece esa opción. La elección de tripulación está en la página del yate, y el coste del patrón se añade al desglose del precio.",
-      "uk": "Так, якщо оператор пропонує таку опцію. Вибір екіпажу є на сторінці яхти, а вартість шкіпера додається до розрахунку."
+      "uk": "Так, якщо оператор пропонує таку опцію. Вибір екіпажу є на сторінці яхти, а вартість шкіпера додається до розрахунку.",
+      "fr": "Oui, si le loueur propose cette option. Le choix de l'équipage se fait sur la page du yacht, et le coût du skipper s'ajoute au détail du prix.",
+      "pl": "Tak, jeśli operator oferuje taką opcję. Wybór załogi znajduje się na stronie jachtu, a koszt skippera jest doliczany do zestawienia ceny.",
+      "it": "Sì, se l'operatore offre questa opzione. La scelta dell'equipaggio si trova nella pagina dello yacht e il costo dello skipper viene aggiunto al dettaglio del prezzo.",
+      "nl": "Ja, als de verhuurder die optie aanbiedt. De keuze voor bemanning staat op de pagina van het jacht, en de kosten van de schipper worden aan de prijsopbouw toegevoegd."
     }
   },
   {
@@ -215,13 +327,21 @@
       "en": "What should I bring with me?",
       "de": "Was sollte ich mitnehmen?",
       "es": "¿Qué debo llevar?",
-      "uk": "Що потрібно взяти із собою?"
+      "uk": "Що потрібно взяти із собою?",
+      "fr": "Que dois-je emporter ?",
+      "pl": "Co warto zabrać ze sobą?",
+      "it": "Cosa devo portare?",
+      "nl": "Wat moet ik meenemen?"
     },
     "answer": {
       "en": "Identity documents for everyone on board, and the skipper's licence if you are sailing bareboat. A soft bag rather than a suitcase, because there is nowhere to stow hard cases. Shoes with light, non-slip soles, sun protection, personal medication. Bed linen and towels are usually provided by the base.",
       "de": "Ausweisdokumente für alle an Bord und den Segelschein, wenn Sie ohne Crew fahren. Eine weiche Tasche statt eines Koffers, denn Hartschalenkoffer lassen sich an Bord nicht verstauen. Schuhe mit heller, rutschfester Sohle, Sonnenschutz, persönliche Medikamente. Bettwäsche und Handtücher stellt in der Regel die Basis.",
       "es": "La documentación de todos los que van a bordo y la titulación del patrón si navegas sin tripulación. Una bolsa blanda en lugar de maleta, porque las maletas rígidas no se pueden guardar a bordo. Calzado de suela clara y antideslizante, protección solar y tu medicación personal. La ropa de cama y las toallas suele proporcionarlas la base.",
-      "uk": "Документи на всіх, хто на борту, і права шкіпера, якщо ви йдете без екіпажу. М'яку сумку замість валізи, бо тверді валізи ніде зберігати. Взуття зі світлою нековзкою підошвою, сонцезахист, особисті ліки. Постіль і рушники зазвичай видає база."
+      "uk": "Документи на всіх, хто на борту, і права шкіпера, якщо ви йдете без екіпажу. М'яку сумку замість валізи, бо тверді валізи ніде зберігати. Взуття зі світлою нековзкою підошвою, сонцезахист, особисті ліки. Постіль і рушники зазвичай видає база.",
+      "fr": "Les pièces d'identité de toutes les personnes à bord, et le permis du chef de bord si vous naviguez sans skipper. Un sac souple plutôt qu'une valise, car il n'y a pas de place pour ranger les bagages rigides. Des chaussures à semelles claires et antidérapantes, une protection solaire, vos médicaments personnels. Les draps et les serviettes sont généralement fournis par la base.",
+      "pl": "Dokumenty tożsamości wszystkich osób na pokładzie oraz patent skippera, jeśli płyniesz bez załogi. Miękką torbę zamiast walizki, bo nie ma gdzie schować twardych bagaży. Buty z jasną, antypoślizgową podeszwą, ochronę przed słońcem, własne leki. Pościel i ręczniki zwykle zapewnia baza.",
+      "it": "Documenti d'identità per tutte le persone a bordo e la patente nautica dello skipper se navigate senza equipaggio. Una sacca morbida invece di una valigia, perché le valigie rigide non si riescono a stivare. Scarpe con suola chiara e antiscivolo, protezione solare, farmaci personali. Biancheria da letto e asciugamani sono di solito forniti dalla base.",
+      "nl": "Identiteitsbewijzen van iedereen aan boord, en het vaarbewijs van de schipper als je bareboat vaart. Een zachte tas in plaats van een koffer, want harde koffers kun je nergens opbergen. Schoenen met lichte, antislipzolen, zonbescherming en persoonlijke medicijnen. Beddengoed en handdoeken worden meestal door de basis verzorgd."
     }
   },
   {
@@ -230,13 +350,21 @@
       "en": "What are the check-in / check-out times?",
       "de": "Wann sind Check-in und Check-out?",
       "es": "¿A qué hora son el check-in y el check-out?",
-      "uk": "Який час check-in / check-out?"
+      "uk": "Який час check-in / check-out?",
+      "fr": "Quels sont les horaires d'embarquement et de débarquement ?",
+      "pl": "Jakie są godziny zaokrętowania i wyokrętowania?",
+      "it": "Quali sono gli orari di check-in / check-out?",
+      "nl": "Wat zijn de check-in- en check-outtijden?"
     },
     "answer": {
       "en": "Check-in and check-out times are set by the charter base and are stated on each yacht's page. Most often check-in is in the afternoon and check-out in the morning.",
       "de": "Die Check-in- und Check-out-Zeiten legt die Charterbasis fest; sie stehen auf der Seite jeder Yacht. Meist ist der Check-in am Nachmittag und der Check-out am Vormittag.",
       "es": "Los horarios de check-in y check-out los fija la base de chárter y aparecen en la página de cada yate. Lo más habitual es entrar por la tarde y salir por la mañana.",
-      "uk": "Час заїзду й виїзду встановлює чартерна база, і він указаний на сторінці кожної яхти. Найчастіше заїзд у другій половині дня, а виїзд уранці."
+      "uk": "Час заїзду й виїзду встановлює чартерна база, і він указаний на сторінці кожної яхти. Найчастіше заїзд у другій половині дня, а виїзд уранці.",
+      "fr": "Les horaires d'embarquement et de débarquement sont fixés par la base de location et indiqués sur la page de chaque yacht. Le plus souvent, l'embarquement a lieu l'après-midi et le débarquement le matin.",
+      "pl": "Godziny zaokrętowania i wyokrętowania ustala baza czarterowa i są podane na stronie każdego jachtu. Najczęściej zaokrętowanie odbywa się po południu, a wyokrętowanie rano.",
+      "it": "Gli orari di check-in e check-out sono stabiliti dalla base charter e indicati nella pagina di ogni yacht. Di solito il check-in è nel pomeriggio e il check-out al mattino.",
+      "nl": "De check-in- en check-outtijden worden bepaald door de charterbasis en staan op de pagina van elk jacht. Meestal is de check-in 's middags en de check-out 's ochtends."
     }
   },
   {
@@ -245,13 +373,21 @@
       "en": "Can the route be changed?",
       "de": "Kann die Route geändert werden?",
       "es": "¿Se puede cambiar la ruta?",
-      "uk": "Чи можна змінити маршрут?"
+      "uk": "Чи можна змінити маршрут?",
+      "fr": "Peut-on modifier l'itinéraire ?",
+      "pl": "Czy można zmienić trasę?",
+      "it": "Si può cambiare itinerario?",
+      "nl": "Kan de route worden aangepast?"
     },
     "answer": {
       "en": "Yes, you choose the route yourself within the permitted sailing area. Individual restrictions do exist, for example crossing into another country or sailing out to remote islands, and those are agreed with the base in advance.",
       "de": "Ja, die Route wählen Sie selbst innerhalb des zugelassenen Fahrtgebiets. Einzelne Einschränkungen gibt es dennoch, etwa das Überqueren einer Landesgrenze oder Törns zu abgelegenen Inseln; sie werden vorab mit der Basis abgestimmt.",
       "es": "Sí, la ruta la eliges tú dentro de la zona de navegación permitida. Hay algunas restricciones, por ejemplo salir a otro país o navegar hasta islas remotas, y esas se acuerdan con la base por adelantado.",
-      "uk": "Так, маршрут ви обираєте самі в межах дозволеної акваторії. Окремі обмеження бувають, наприклад вихід в іншу країну чи перехід до віддалених островів, і їх узгоджують з базою заздалегідь."
+      "uk": "Так, маршрут ви обираєте самі в межах дозволеної акваторії. Окремі обмеження бувають, наприклад вихід в іншу країну чи перехід до віддалених островів, і їх узгоджують з базою заздалегідь.",
+      "fr": "Oui, vous choisissez vous-même l'itinéraire dans la zone de navigation autorisée. Certaines restrictions existent, par exemple pour passer dans un autre pays ou rejoindre des îles éloignées : elles se conviennent à l'avance avec la base.",
+      "pl": "Tak, trasę wybierasz sam w granicach dozwolonego akwenu. Istnieją jednak pewne ograniczenia, na przykład wypłynięcie do innego kraju lub na odległe wyspy, i te kwestie uzgadnia się z bazą z wyprzedzeniem.",
+      "it": "Sì, l'itinerario lo scegliete voi all'interno dell'area di navigazione consentita. Esistono alcune limitazioni, per esempio l'ingresso in un altro paese o la navigazione verso isole remote, che vanno concordate in anticipo con la base.",
+      "nl": "Ja, je kiest de route zelf binnen het toegestane vaargebied. Er zijn wel beperkingen, bijvoorbeeld het oversteken naar een ander land of het varen naar afgelegen eilanden, en die worden vooraf met de basis afgestemd."
     }
   },
   {
@@ -260,13 +396,21 @@
       "en": "What should I do in bad weather?",
       "de": "Was tun bei schlechtem Wetter?",
       "es": "¿Qué hacer si hace mal tiempo?",
-      "uk": "Що робити при поганій погоді?"
+      "uk": "Що робити при поганій погоді?",
+      "fr": "Que faire en cas de mauvais temps ?",
+      "pl": "Co zrobić przy złej pogodzie?",
+      "it": "Cosa fare in caso di maltempo?",
+      "nl": "Wat doe ik bij slecht weer?"
     },
     "answer": {
       "en": "Go by the forecast and by the base's advice. In dangerous conditions the base can restrict going out to sea. It is a question of safety, and deciding to sit the weather out in the marina is a normal part of sailing.",
       "de": "Richten Sie sich nach der Wettervorhersage und den Empfehlungen der Basis. Bei gefährlichen Bedingungen kann die Basis das Auslaufen einschränken. Das ist eine Frage der Sicherheit, und die Entscheidung, das Wetter in der Marina abzuwarten, gehört ganz normal zum Segeln.",
       "es": "Guíate por la previsión meteorológica y por las recomendaciones de la base. En condiciones peligrosas la base puede restringir la salida a mar abierto. Es una cuestión de seguridad, y decidir esperar en la marina a que pase el mal tiempo forma parte normal de la navegación.",
-      "uk": "Орієнтуйтесь на прогноз і рекомендації бази. За небезпечних умов база може обмежити вихід у море. Це питання безпеки, і рішення перечекати негоду в марині є нормальною частиною плавання."
+      "uk": "Орієнтуйтесь на прогноз і рекомендації бази. За небезпечних умов база може обмежити вихід у море. Це питання безпеки, і рішення перечекати негоду в марині є нормальною частиною плавання.",
+      "fr": "Fiez-vous aux prévisions et aux conseils de la base. En cas de conditions dangereuses, la base peut restreindre les sorties en mer. C'est une question de sécurité, et décider d'attendre la fin du mauvais temps à la marina fait partie de la navigation.",
+      "pl": "Kieruj się prognozą i radami bazy. W niebezpiecznych warunkach baza może ograniczyć wypływanie w morze. To kwestia bezpieczeństwa, a decyzja o przeczekaniu pogody w marinie to normalna część żeglowania.",
+      "it": "Seguite le previsioni e i consigli della base. In condizioni pericolose la base può limitare le uscite in mare. È una questione di sicurezza, e decidere di aspettare in marina che il tempo migliori fa parte della normale vita di bordo.",
+      "nl": "Ga uit van de weersverwachting en het advies van de basis. Bij gevaarlijke omstandigheden kan de basis het uitvaren beperken. Het is een kwestie van veiligheid, en besluiten om het weer in de haven af te wachten is een normaal onderdeel van zeilen."
     }
   },
   {
@@ -275,13 +419,21 @@
       "en": "What are the cancellation terms?",
       "de": "Wie lauten die Stornierungsbedingungen?",
       "es": "¿Cuáles son las condiciones de cancelación?",
-      "uk": "Які умови скасування?"
+      "uk": "Які умови скасування?",
+      "fr": "Quelles sont les conditions d'annulation ?",
+      "pl": "Jakie są warunki anulowania?",
+      "it": "Quali sono le condizioni di cancellazione?",
+      "nl": "Wat zijn de annuleringsvoorwaarden?"
     },
     "answer": {
       "en": "Cancellation terms are set by the charter company and differ between operators and rates. Before booking, contact us to request the cancellation terms for your chosen yacht and dates.",
       "de": "Die Stornierungsbedingungen legt das Charterunternehmen fest; sie unterscheiden sich je nach Anbieter und Tarif. Kontaktieren Sie uns vor der Buchung, um die Bedingungen für Ihre gewählte Yacht und den gewünschten Zeitraum anzufordern.",
       "es": "Las condiciones de cancelación las fija la empresa de chárter y varían según el operador y la tarifa. Antes de reservar, contacta con nosotros para solicitar las condiciones del yate y las fechas elegidas.",
-      "uk": "Умови скасування встановлює чартерна компанія, і вони відрізняються між операторами й тарифами. Перед бронюванням зверніться до нас, щоб отримати умови скасування для обраної яхти та дат."
+      "uk": "Умови скасування встановлює чартерна компанія, і вони відрізняються між операторами й тарифами. Перед бронюванням зверніться до нас, щоб отримати умови скасування для обраної яхти та дат.",
+      "fr": "Les conditions d'annulation sont fixées par la société de location et varient selon les loueurs et les tarifs. Avant de réserver, contactez-nous pour obtenir les conditions d'annulation du yacht et des dates choisis.",
+      "pl": "Warunki anulowania ustala firma czarterowa i różnią się one w zależności od operatora i taryfy. Przed rezerwacją skontaktuj się z nami, aby poznać warunki anulowania dla wybranego jachtu i terminu.",
+      "it": "Le condizioni di cancellazione sono stabilite dalla società di charter e variano a seconda dell'operatore e della tariffa. Prima di prenotare, contattateci per richiedere le condizioni di cancellazione per lo yacht e le date che avete scelto.",
+      "nl": "De annuleringsvoorwaarden worden bepaald door de charteraar en verschillen per verhuurder en tarief. Neem voor het boeken contact met ons op om de annuleringsvoorwaarden voor je gekozen jacht en data op te vragen."
     }
   },
   {
@@ -290,13 +442,21 @@
       "en": "Can a booking be rescheduled?",
       "de": "Kann eine Buchung verschoben werden?",
       "es": "¿Se puede cambiar la reserva a otras fechas?",
-      "uk": "Чи можна перенести бронювання?"
+      "uk": "Чи можна перенести бронювання?",
+      "fr": "Peut-on reporter une réservation ?",
+      "pl": "Czy można zmienić termin rezerwacji?",
+      "it": "Si può spostare una prenotazione?",
+      "nl": "Kan een boeking worden verzet?"
     },
     "answer": {
       "en": "Rescheduling depends on the charter company and on whether other dates are free. Write to us and we will put the request to the operator.",
       "de": "Eine Verschiebung hängt vom Charterunternehmen und von freien Terminen ab. Schreiben Sie uns, und wir stellen die Anfrage beim Anbieter.",
       "es": "El cambio de fechas depende de la empresa de chárter y de que haya fechas libres. Escríbenos y trasladaremos la solicitud al operador.",
-      "uk": "Перенесення залежить від чартерної компанії та наявності вільних дат. Напишіть нам, і ми зробимо запит оператору."
+      "uk": "Перенесення залежить від чартерної компанії та наявності вільних дат. Напишіть нам, і ми зробимо запит оператору.",
+      "fr": "Le report dépend de la société de location et de la disponibilité d'autres dates. Écrivez-nous et nous transmettrons la demande au loueur.",
+      "pl": "Zmiana terminu zależy od firmy czarterowej i od tego, czy inne terminy są wolne. Napisz do nas, a przekażemy prośbę operatorowi.",
+      "it": "Lo spostamento dipende dalla società di charter e dalla disponibilità di altre date. Scriveteci e inoltreremo la richiesta all'operatore.",
+      "nl": "Verzetten hangt af van de charteraar en van de vraag of andere data vrij zijn. Stuur ons een bericht en we leggen het verzoek voor aan de verhuurder."
     }
   }
 ]

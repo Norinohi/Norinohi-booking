@@ -36,6 +36,11 @@ for (const stop of plan.unnamed) {
   console.log(`no words for ${stop.stop} (${stop.routeTitle}): write it on /routes`);
 }
 
+const filled = plan.translationsFilled;
+console.log(
+  `${apply ? "translations filled" : "would fill translations"}  ${filled.routes} route, ${filled.stops} stop`,
+);
+
 if (apply) {
   /* The home page caches its routes for hours; without this the seed would look like it failed. */
   const cache = await revalidateCatalogCache();

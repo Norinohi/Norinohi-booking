@@ -2,6 +2,8 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { z } from "zod";
 
+import { perSiteLocale, SITE_LOCALES, type SiteLocale } from "./locales";
+
 import catalogueRoutesJson from "./catalogue-routes.json" with { type: "json" };
 import stopRefreshJson from "./catalogue-stop-refresh.json" with { type: "json" };
 
@@ -15,10 +17,11 @@ import {
   suggestedRouteTranslation,
 } from "./schema/route";
 import { freeRouteSlug } from "./routes/library";
+import { fillMissingRouteTranslations, type FilledTranslations } from "./routes/fill-translations";
 
 type Database = NodePgDatabase<typeof schema>;
-type Locale = "en" | "uk" | "de" | "es";
-const LOCALES: Locale[] = ["en", "uk", "de", "es"];
+type Locale = SiteLocale;
+const LOCALES = SITE_LOCALES;
 type Copy = { title: string; description: string };
 
 /**
@@ -64,6 +67,10 @@ export const RETURN_NOTE = {
   uk: "Повернення на базу: яхту здають уранці.",
   de: "Zurück an der Basis: Das Boot wird am Morgen übergeben.",
   es: "De vuelta en la base: el barco se entrega por la mañana.",
+  fr: "Retour à la base : le bateau est restitué le matin.",
+  pl: "Powrót do bazy: jacht jest zdawany rano.",
+  it: "Rientro alla base: la barca si riconsegna in mattinata.",
+  nl: "Terug op de basis: de boot wordt 's ochtends overgedragen.",
 } satisfies Record<Locale, string>;
 
 const copySchema = z.object({ title: z.string(), description: z.string() });
@@ -72,7 +79,7 @@ const seedStopSchema = z.object({
   name: z.string(),
   lat: z.number(),
   lng: z.number(),
-  note: z.object({ en: z.string(), uk: z.string(), de: z.string(), es: z.string() }),
+  note: perSiteLocale(z.string()),
 });
 
 const seedRouteSchema = z.object({
@@ -80,7 +87,7 @@ const seedRouteSchema = z.object({
   difficulty: z.enum(["easy", "moderate", "advanced"]),
   draft: z.boolean().optional(),
   fallbackRegion: z.object({ country: z.string(), names: z.array(z.string()) }).optional(),
-  copy: z.object({ en: copySchema, uk: copySchema, de: copySchema, es: copySchema }),
+  copy: perSiteLocale(copySchema),
   stops: z.array(seedStopSchema),
 });
 
@@ -225,6 +232,8 @@ export type CatalogueRoutesPlan = {
   stopsRefreshed: { routeId: string; stops: number }[];
   /** Routes in STOP_REFRESH that this database does not have, so nothing was refreshed for them. */
   missingRefreshTargets: string[];
+  /** Rows written for locales an existing route or stop had none in. */
+  translationsFilled: FilledTranslations;
 };
 
 /**
@@ -292,6 +301,7 @@ export async function seedCatalogueRoutes(
     unresolved: [],
     stopsRefreshed: [],
     missingRefreshTargets: [],
+    translationsFilled: { routes: 0, stops: 0 },
   };
 
   const ids = CATALOGUE_ROUTES.map((route) => route.id);
@@ -412,6 +422,12 @@ export async function seedCatalogueRoutes(
     plan.backfilled.push({ routeTitle: stop.routeTitle, stop: stop.name });
     toName.push({ id: stop.id, note });
   }
+
+  plan.translationsFilled = await fillMissingRouteTranslations(
+    db,
+    CATALOGUE_ROUTES.filter((route) => existing.has(route.id)),
+    { apply },
+  );
 
   if (!apply) return plan;
 

@@ -14,6 +14,22 @@
       "es": {
         "label": "Catamarán",
         "description": "Estable, amplio y de poco calado. La opción habitual para familias y grupos."
+      },
+      "fr": {
+        "label": "Catamaran",
+        "description": "Stable, large et à faible tirant d'eau. Le choix naturel des familles et des groupes."
+      },
+      "pl": {
+        "label": "Katamaran",
+        "description": "Stabilny, szeroki, o małym zanurzeniu. Domyślny wybór dla rodzin i grup."
+      },
+      "it": {
+        "label": "Catamarano",
+        "description": "Stabile, ampio e con poco pescaggio. La scelta classica per famiglie e gruppi."
+      },
+      "nl": {
+        "label": "Catamaran",
+        "description": "Stabiel, breed en met weinig diepgang. De standaardkeuze voor gezinnen en groepen."
       }
     }
   },
@@ -32,6 +48,22 @@
       "es": {
         "label": "Velero",
         "description": "El monocasco clásico de alquiler. La mejor relación precio por camarote."
+      },
+      "fr": {
+        "label": "Voilier",
+        "description": "La location classique en monocoque. Le meilleur rapport qualité-prix par cabine à la voile."
+      },
+      "pl": {
+        "label": "Jacht żaglowy",
+        "description": "Klasyczny czarter jednokadłubowca. Najlepsza wartość w przeliczeniu na kabinę pod żaglami."
+      },
+      "it": {
+        "label": "Barca a vela",
+        "description": "Il classico charter in monoscafo. Il miglior rapporto qualità-prezzo per cabina a vela."
+      },
+      "nl": {
+        "label": "Zeiljacht",
+        "description": "De klassieke eenrompcharter. De beste prijs per hut onder zeil."
       }
     }
   },
@@ -50,6 +82,22 @@
       "es": {
         "label": "Lancha a motor",
         "description": "Una opción rápida y ágil para recorrer la costa y realizar excursiones de un día. Ideal para quienes valoran la libertad y la flexibilidad."
+      },
+      "fr": {
+        "label": "Bateau à moteur",
+        "description": "Une option rapide et maniable pour les sorties côtières et les excursions à la journée. Un excellent choix si vous tenez à votre liberté et à votre souplesse."
+      },
+      "pl": {
+        "label": "Łódź motorowa",
+        "description": "Szybka i zwrotna opcja na rejsy przybrzeżne i jednodniowe wycieczki. Świetny wybór dla tych, którzy cenią swobodę i elastyczność."
+      },
+      "it": {
+        "label": "Barca a motore",
+        "description": "Un'opzione veloce e agile per gite lungo la costa ed escursioni giornaliere. Un'ottima scelta per chi cerca libertà e flessibilità."
+      },
+      "nl": {
+        "label": "Motorboot",
+        "description": "Een snelle en wendbare optie voor kusttochten en dagtochten. Een prima keuze als je vrijheid en flexibiliteit belangrijk vindt."
       }
     }
   },
@@ -68,6 +116,22 @@
       "es": {
         "label": "Yate a motor",
         "description": "Más costa por día y sin necesidad de experiencia a vela."
+      },
+      "fr": {
+        "label": "Yacht à moteur",
+        "description": "Parcourez plus de côte chaque jour, sans aucune expérience de la voile."
+      },
+      "pl": {
+        "label": "Jacht motorowy",
+        "description": "Więcej wybrzeża w ciągu dnia, bez potrzeby doświadczenia żeglarskiego."
+      },
+      "it": {
+        "label": "Yacht a motore",
+        "description": "Più costa percorsa ogni giorno, senza bisogno di esperienza di vela."
+      },
+      "nl": {
+        "label": "Motorjacht",
+        "description": "Meer kust per dag, zonder dat je zeilervaring nodig hebt."
       }
     }
   },
@@ -86,6 +150,22 @@
       "es": {
         "label": "Casa flotante",
         "description": "Una casa flotante con un acogedor espacio habitable y todo lo necesario para una estancia confortable. Ideal para disfrutar de viajes tranquilos por aguas interiores."
+      },
+      "fr": {
+        "label": "House-boat",
+        "description": "Une maison flottante avec un espace de vie chaleureux et tout le nécessaire pour un séjour confortable. Idéale pour voyager lentement sur les eaux intérieures."
+      },
+      "pl": {
+        "label": "Houseboat",
+        "description": "Pływający dom z przytulną przestrzenią mieszkalną i wszystkim, czego potrzeba do wygodnego pobytu. Idealny na niespieszne podróże po wodach śródlądowych."
+      },
+      "it": {
+        "label": "Houseboat",
+        "description": "Una casa galleggiante con spazi accoglienti e tutto il necessario per un soggiorno confortevole. Ideale per viaggi lenti nelle acque interne."
+      },
+      "nl": {
+        "label": "Woonboot",
+        "description": "Een drijvend huis met een gezellige leefruimte en alles wat je nodig hebt voor een comfortabel verblijf. Ideaal voor rustige tochten op binnenwateren."
       }
     }
   },
@@ -104,6 +184,22 @@
       "es": {
         "label": "Goleta",
         "description": "Un yate tradicional de madera con una amplia cubierta y cómodas zonas de descanso. Una opción ideal para recorrer la costa sin prisas."
+      },
+      "fr": {
+        "label": "Goélette turque (Gulet)",
+        "description": "Un yacht traditionnel en bois, avec un pont spacieux et des espaces confortables pour se détendre. Un choix idéal pour longer la côte sans hâte."
+      },
+      "pl": {
+        "label": "Gulet",
+        "description": "Tradycyjny drewniany jacht z przestronnym pokładem i wygodnymi strefami wypoczynku. Idealny wybór na niespieszne rejsy wzdłuż wybrzeża."
+      },
+      "it": {
+        "label": "Caicco (Gulet)",
+        "description": "Un'imbarcazione tradizionale in legno con un ampio ponte e comode zone relax. La scelta ideale per navigare senza fretta lungo la costa."
+      },
+      "nl": {
+        "label": "Gulet",
+        "description": "Een traditioneel houten jacht met een ruim dek en comfortabele plekken om te ontspannen. Een ideale keuze voor rustige tochten langs de kust."
       }
     }
   },
@@ -122,6 +218,22 @@
       "es": {
         "label": "Catamarán a motor",
         "description": "Un yate espacioso y estable con cómodas zonas de descanso. Una excelente opción para viajes largos y escapadas en grupo."
+      },
+      "fr": {
+        "label": "Catamaran à moteur",
+        "description": "Un yacht spacieux et stable, avec des espaces confortables pour se détendre. Un excellent choix pour les longs voyages et les escapades en groupe."
+      },
+      "pl": {
+        "label": "Katamaran motorowy",
+        "description": "Przestronny i stabilny jacht z wygodnymi strefami wypoczynku. Świetny wybór na dłuższe rejsy i wyjazdy grupowe."
+      },
+      "it": {
+        "label": "Catamarano a motore",
+        "description": "Un'imbarcazione spaziosa e stabile con comode zone relax. Un'ottima scelta per viaggi più lunghi e vacanze di gruppo."
+      },
+      "nl": {
+        "label": "Motorcatamaran",
+        "description": "Een ruim en stabiel jacht met comfortabele plekken om te ontspannen. Een prima keuze voor langere tochten en groepsreizen."
       }
     }
   },
@@ -140,6 +252,22 @@
       "es": {
         "label": "Yate de lujo",
         "description": "Con tripulación, pensión completa y equipamiento de nivel hotelero."
+      },
+      "fr": {
+        "label": "Yacht de luxe",
+        "description": "Avec équipage, pension complète et prestations de niveau hôtelier."
+      },
+      "pl": {
+        "label": "Jacht luksusowy",
+        "description": "Z załogą, pełnym wyżywieniem i standardem hotelowym."
+      },
+      "it": {
+        "label": "Yacht di lusso",
+        "description": "Con equipaggio, pensione completa e dotazioni di livello alberghiero."
+      },
+      "nl": {
+        "label": "Luxe jacht",
+        "description": "Met bemanning, volledige verzorging en ingericht op hotelniveau."
       }
     }
   }
