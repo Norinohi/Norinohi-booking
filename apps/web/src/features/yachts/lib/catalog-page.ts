@@ -1,6 +1,8 @@
 import type { AppRouterClient } from "@yacht-charter/api/routers/index";
 import type { useTranslations } from "next-intl";
 
+import { prerenderedCatalogLocales } from "@/i18n/config";
+
 export type CatalogPage = Awaited<
   ReturnType<AppRouterClient["charterSearch"]["catalogPages"]>
 >[number];
@@ -24,7 +26,8 @@ export function catalogPageHref(page: CatalogPage): string {
 /**
  * The pages under one root that the build prerenders: the largest by listing count, since those
  * carry the traffic. Every other page in the enumeration still exists and renders on its first
- * request, its reads already cached on the catalog tag.
+ * request, its reads already cached on the catalog tag. Locales outside
+ * `prerenderedCatalogLocales` get only the largest page.
  *
  * Never empty for a root that has pages, because Cache Components fails the build when
  * `generateStaticParams` returns nothing.
@@ -32,12 +35,16 @@ export function catalogPageHref(page: CatalogPage): string {
 export function prerenderedCatalogPages(
   pages: CatalogPage[],
   root: CatalogPage["root"],
+  locale: string,
 ): CatalogPage[] {
   const byCount = pages.toSorted((a, b) => b.count - a.count);
+  const largest = byCount.find((page) => page.root === root);
+  if (!prerenderedCatalogLocales.some((served) => served === locale)) {
+    return largest ? [largest] : [];
+  }
+
   const selected = byCount.slice(0, PRERENDER_LIMIT).filter((page) => page.root === root);
   if (selected.length > 0) return selected;
-
-  const largest = byCount.find((page) => page.root === root);
   return largest ? [largest] : [];
 }
 

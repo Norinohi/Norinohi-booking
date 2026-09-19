@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@yacht-charter/ui/components/overlay/dialog";
+import { TRANSLATED_LOCALES } from "@yacht-charter/api/lib/locales";
 import { ArrowDown, ArrowUp, MapPinned, Pencil, Plus, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
@@ -43,7 +44,7 @@ const RouteStopMap = dynamic(() => import("./route-stop-map"), {
  * back to. The tab strip puts it first all the same, so the author writes it where they write
  * the rest.
  */
-const NOTE_LOCALES = ["uk", "de", "es"] as const;
+const NOTE_LOCALES = TRANSLATED_LOCALES;
 type NoteLocale = (typeof NOTE_LOCALES)[number];
 const NOTE_TABS = ["en", ...NOTE_LOCALES] as const;
 type NoteTab = (typeof NOTE_TABS)[number];
@@ -58,7 +59,8 @@ type Working = {
   point: { lat: number; lng: number } | null;
 };
 
-const emptyNotes = () => ({ uk: "", de: "", es: "" }) satisfies Record<NoteLocale, string>;
+const emptyNotes = () =>
+  ({ uk: "", de: "", es: "", fr: "", pl: "", it: "", nl: "" }) satisfies Record<NoteLocale, string>;
 
 const BLANK: Working = { id: null, name: "", note: "", notes: emptyNotes(), point: null };
 

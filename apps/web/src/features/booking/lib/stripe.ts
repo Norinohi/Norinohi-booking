@@ -34,6 +34,14 @@ export function elementsLocale(locale: Locale): StripeElementLocale {
       return "es";
     case "de":
       return "de";
+    case "fr":
+      return "fr";
+    case "pl":
+      return "pl";
+    case "it":
+      return "it";
+    case "nl":
+      return "nl";
     default:
       return "auto";
   }

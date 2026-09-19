@@ -170,6 +170,10 @@ describe("projectNausysCatalogue", () => {
     expect(propeller?.translations).toEqual({
       de: "3-Blatt Faltpropeller",
       es: "Hélice plegable de 3 palas",
+      fr: "Hélice 3 pales repliable",
+      it: "3 pale pieghevoli",
+      nl: '"3-blads klapschroef"',
+      pl: "3-łopatowa składana śruba",
     });
   });
 
@@ -702,7 +706,14 @@ describe("projectNausysCatalogue", () => {
       const cleaning = listing?.extras.find((extra) => extra.externalId === "52");
 
       expect(cleaning?.name).toBe("Final cleaning");
-      expect(cleaning?.translations).toEqual({ de: "Endreinigung", es: "Limpieza final" });
+      expect(cleaning?.translations).toEqual({
+        de: "Endreinigung",
+        es: "Limpieza final",
+        fr: "Nettoyage final",
+        it: "Pulizia finale",
+        nl: "Eindschoonmaak",
+        pl: "Sprzątanie końcowe",
+      });
     });
 
     it("reads the obligatory service the vendor prices on the season entry", () => {

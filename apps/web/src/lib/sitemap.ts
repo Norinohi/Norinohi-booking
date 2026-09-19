@@ -38,10 +38,10 @@ const WALK_CONCURRENCY = 6;
 /**
  * Listings per sitemap file.
  *
- * Google allows 50,000 URLs or 50 MB per file, whichever comes first. Every listing carries four
- * locale entries with the full alternate set, which measures ~3 KB, so the byte ceiling binds
- * first: the whole catalog in one file is ~55 MB and would be rejected outright. At 2,500 a file
- * is ~7 MB, and Search Console reports coverage per file in slices small enough to act on.
+ * Google allows 50,000 URLs or 50 MB per file, whichever comes first. Every listing carries eight
+ * locale entries, each with the full alternate set, which measures ~11 KB, so the byte ceiling
+ * binds first. At 2,500 a file is ~28 MB, and Search Console reports coverage per file in slices
+ * small enough to act on. Another language multiplies this again: re-measure before raising it.
  */
 export const LISTINGS_PER_SITEMAP = 2500;
 

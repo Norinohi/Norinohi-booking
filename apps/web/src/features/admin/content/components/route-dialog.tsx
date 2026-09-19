@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@yacht-charter/ui/components/overlay/dialog";
+import { SITE_LOCALES } from "@yacht-charter/api/lib/locales";
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
@@ -29,7 +30,7 @@ import RouteTargetPicker, { type RouteTarget } from "./route-target-picker";
  * is a row action and an editor action; the server refuses to publish a route with none.
  */
 
-const ROUTE_LOCALES = ["en", "uk", "de", "es"] as const;
+const ROUTE_LOCALES = SITE_LOCALES;
 type RouteLocale = (typeof ROUTE_LOCALES)[number];
 type Pane = { title: string; description: string };
 
@@ -59,6 +60,10 @@ const emptyPanes = () => ({
   uk: { title: "", description: "" },
   de: { title: "", description: "" },
   es: { title: "", description: "" },
+  fr: { title: "", description: "" },
+  pl: { title: "", description: "" },
+  it: { title: "", description: "" },
+  nl: { title: "", description: "" },
 });
 
 const EMPTY: Draft = {

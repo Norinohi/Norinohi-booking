@@ -28,6 +28,10 @@ const OG_LOCALES = new Map<string, string>(
     es: "es_ES",
     uk: "uk_UA",
     de: "de_DE",
+    fr: "fr_FR",
+    pl: "pl_PL",
+    it: "it_IT",
+    nl: "nl_NL",
   } satisfies Record<Locale, string>),
 );
 

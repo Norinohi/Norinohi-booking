@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { siteLocaleSchema } from "../lib/locales";
+
 import { faqCacheSchema } from "./faq";
 
 /**
@@ -101,7 +103,7 @@ export const popularFacetSetSchema = z.object({
 
 /* --------------------------------------------------------------- editorial copy */
 
-export const facetMediaLocaleSchema = z.enum(["en", "uk", "de", "es"]);
+export const facetMediaLocaleSchema = siteLocaleSchema;
 
 export const popularFacetMediaInputSchema = z.object({
   kind: popularFacetKindSchema,

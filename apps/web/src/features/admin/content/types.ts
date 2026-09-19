@@ -1,3 +1,4 @@
+import { SITE_LOCALES } from "@yacht-charter/api/lib/locales";
 import type { AdminClient } from "../shared/types";
 
 /* Suggested-route authoring, inferred from the oRPC contract. */
@@ -33,7 +34,7 @@ export type FaqGap = NonNullable<Parameters<AdminClient["faq"]["list"]>[0]>["gap
 export type FaqCacheResult = Awaited<ReturnType<AdminClient["faq"]["update"]>>["cache"];
 
 /** The site's locales, in the order the editor's panes and the table's chips read them. */
-export const FAQ_LOCALES: readonly FaqLocale[] = ["en", "de", "es", "uk"];
+export const FAQ_LOCALES: readonly FaqLocale[] = SITE_LOCALES;
 
 /** `faq_category` in its declaration order, which is the order the public page renders. */
 export const FAQ_CATEGORIES: readonly FaqCategory[] = [

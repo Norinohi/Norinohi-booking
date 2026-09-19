@@ -831,7 +831,11 @@
         "en": "English",
         "uk": "Ukrainian",
         "de": "German",
-        "es": "Spanish"
+        "es": "Spanish",
+        "fr": "French",
+        "pl": "Polish",
+        "it": "Italian",
+        "nl": "Dutch"
       }
     },
     "stops": {
@@ -1147,13 +1151,21 @@
       "en": "English",
       "de": "German",
       "es": "Spanish",
-      "uk": "Ukrainian"
+      "uk": "Ukrainian",
+      "fr": "French",
+      "pl": "Polish",
+      "it": "Italian",
+      "nl": "Dutch"
     },
     "localeCodes": {
       "en": "EN",
       "de": "DE",
       "es": "ES",
-      "uk": "UK"
+      "uk": "UK",
+      "fr": "FR",
+      "pl": "PL",
+      "it": "IT",
+      "nl": "NL"
     },
     "state": {
       "answered": "Answered - on the public page",
@@ -1334,7 +1346,11 @@
         "en": "English",
         "uk": "Ukrainian",
         "de": "German",
-        "es": "Spanish"
+        "es": "Spanish",
+        "fr": "French",
+        "pl": "Polish",
+        "it": "Italian",
+        "nl": "Dutch"
       }
     }
   },

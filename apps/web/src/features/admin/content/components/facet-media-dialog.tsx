@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@yacht-charter/ui/components/overlay/dialog";
+import { SITE_LOCALES } from "@yacht-charter/api/lib/locales";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -25,7 +26,7 @@ import {
 import type { PopularFacetKind } from "../types";
 import PhotoField from "./photo-field";
 
-const LOCALES = ["en", "uk", "de", "es"] as const;
+const LOCALES = SITE_LOCALES;
 type Locale = (typeof LOCALES)[number];
 type Pane = { label: string; description: string };
 
@@ -34,6 +35,10 @@ const emptyPanes = () => ({
   uk: { label: "", description: "" },
   de: { label: "", description: "" },
   es: { label: "", description: "" },
+  fr: { label: "", description: "" },
+  pl: { label: "", description: "" },
+  it: { label: "", description: "" },
+  nl: { label: "", description: "" },
 });
 
 interface FacetMediaDialogProps {

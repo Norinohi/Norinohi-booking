@@ -12,10 +12,12 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 
+import { TRANSLATED_LOCALES } from "./locales";
+
 import { db } from "./index";
 import { normalizedKeySql } from "./search/normalize";
 
-const LOCALES = ["uk", "de", "es"] as const;
+const LOCALES = TRANSLATED_LOCALES;
 
 const argsSchema = z.object({
   locale: z.enum(LOCALES).optional(),

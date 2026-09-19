@@ -79,6 +79,10 @@ function toValues(group: FaqGroupRow | null): Values {
     de: { ...EMPTY_PANE },
     es: { ...EMPTY_PANE },
     uk: { ...EMPTY_PANE },
+    fr: { ...EMPTY_PANE },
+    pl: { ...EMPTY_PANE },
+    it: { ...EMPTY_PANE },
+    nl: { ...EMPTY_PANE },
   };
 
   for (const entry of group?.translations ?? []) {
@@ -107,7 +111,16 @@ function useFaqEntrySchema() {
         scope: z.enum(SCOPES),
         listingId: z.string(),
         category: z.string(),
-        translations: z.object({ en: pane, de: pane, es: pane, uk: pane }),
+        translations: z.object({
+          en: pane,
+          de: pane,
+          es: pane,
+          uk: pane,
+          fr: pane,
+          pl: pane,
+          it: pane,
+          nl: pane,
+        }),
       })
       .superRefine((values, ctx) => {
         if (values.scope === "listing" && !values.listingId) {
