@@ -1,0 +1,302 @@
+{
+  "crewTypes": {
+    "bareboat": "Bareboat",
+    "skipper": "Schipper",
+    "full-crew": "Volledige bemanning"
+  },
+  "extras": {
+    "payAtCheckIn": "Te betalen bij het inchecken",
+    "dueWithPrepayment": "Te betalen met de aanbetaling",
+    "payNow": "Inbegrepen in de aanbetaling",
+    "includedInPrice": "Inbegrepen in de prijs",
+    "priceOnRequest": "Prijs op aanvraag",
+    "confirmWithBase": "Prijs niet gepubliceerd, bevestig bij de basis",
+    "percentageOfCharter": "{percent}% van de charterprijs",
+    "oneWayOnly": "Alleen voor enkele reis charters",
+    "measure": {
+      "booking": "{price} per boeking",
+      "day": "{price} per dag",
+      "night": "{price} per nacht",
+      "week": "{price} per week",
+      "person": "{price} per persoon",
+      "nightPerson": "{price} per persoon / nacht",
+      "dayWithFood": "{price} per dag incl. eten",
+      "oneWayPerson": "{price} enkele reis per persoon",
+      "set": "{price} per set",
+      "service": "{price} per dienst",
+      "piece": "{price} per stuk",
+      "weekStarted": "{price} per begonnen week",
+      "oneWay": "{price} enkele reis",
+      "weekPerson": "{price} per persoon / week",
+      "weekFood": "{price} per week incl. eten",
+      "dayPerson": "{price} per persoon / dag",
+      "bookingPerson": "{price} per persoon per boeking",
+      "pet": "{price} per huisdier",
+      "cabin": "{price} per hut",
+      "twoWeeks": "{price} per 2 weken",
+      "hour": "{price} per uur",
+      "engineHour": "{price} per motoruur",
+      "halfHour": "{price} per half uur",
+      "crewChange": "{price} per bemanningswissel",
+      "personCourse": "{price} per persoon per cursus",
+      "boat": "{price} per boot",
+      "pack": "{price} per pakket",
+      "bottle": "{price} per fles",
+      "licence": "{price} per vaarbewijs",
+      "meal": "{price} per maaltijd",
+      "nauticalMile": "{price} per zeemijl",
+      "roundTrip": "{price} retour",
+      "litre": "{price} per liter",
+      "weekStartedPerson": "{price} per persoon per begonnen week"
+    }
+  },
+  "resultsCount": "{count, plural, one {# jacht gevonden} other {# jachten gevonden}}",
+  "removeFilter": "Filter {label} verwijderen",
+  "passwordToggle": {
+    "show": "Wachtwoord tonen",
+    "hide": "Wachtwoord verbergen"
+  },
+  "sorting": {
+    "label": "Sorteren op: {value}",
+    "recommended": "Aanbevolen",
+    "price-asc": "Prijs: laag naar hoog",
+    "price-desc": "Prijs: hoog naar laag",
+    "rating": "Gastbeoordeling",
+    "newest": "Nieuwste eerst"
+  },
+  "priceBasis": {
+    "label": "Prijs: {value}",
+    "aria": "Welke prijs tonen",
+    "boat": "Alleen boot",
+    "charter": "Volledige charter",
+    "hintLabel": "Wat de prijzen omvatten",
+    "boatHint": "de huurprijs van de boot zelf, het bedrag dat andere chartersites vergelijken. Verplichte extra's zoals het charterpakket of de eindschoonmaak worden bij het boeken toegevoegd.",
+    "charterHint": "de boot plus alle verplichte extra's (charterpakket, schoonmaak en andere verplichte kosten): wat de charter echt kost."
+  },
+  "boatCard": {
+    "save": "Opslaan in verlanglijst",
+    "remove": "Verwijderen uit verlanglijst",
+    "viewDetails": "Details bekijken",
+    "imageAlt": "{name} aangemeerd in {marina}",
+    "openGallery": "Fotogalerij openen",
+    "priceHintLabel": "Over deze prijs",
+    "priceFor": "Charterprijs · {days, plural, one {# dag} other {# dagen}}",
+    "priceIndicative": "Charterprijs · basistarief, er kunnen extra kosten gelden",
+    "boatPriceFor": "Bootprijs · {days, plural, one {# dag} other {# dagen}}",
+    "boatPriceIndicative": "Bootprijs · basistarief, er kunnen extra kosten gelden",
+    "priceListRate": "Charterprijs · catalogustarief vóór kortingen, er kunnen extra kosten gelden",
+    "boatPriceListRate": "Bootprijs · catalogustarief vóór kortingen, er kunnen extra kosten gelden",
+    "priceForPeriod": "Charterprijs · voor {from, date, dayCompact} - {to, date, dayCompact}",
+    "boatPriceForPeriod": "Bootprijs · voor {from, date, dayCompact} - {to, date, dayCompact}",
+    "priceListRateForPeriod": "Charterprijs · catalogustarief voor {from, date, dayCompact} - {to, date, dayCompact} vóór kortingen, er kunnen extra kosten gelden",
+    "boatPriceListRateForPeriod": "Bootprijs · catalogustarief voor {from, date, dayCompact} - {to, date, dayCompact} vóór kortingen, er kunnen extra kosten gelden",
+    "priceListEstimate": "Geschatte charterprijs · volgens de prijslijst van de operator voor {nights, plural, one {# nacht} other {# nachten}}, vóór kortingen, de uiteindelijke prijs kan afwijken",
+    "boatPriceListEstimate": "Geschatte bootprijs · volgens de prijslijst van de operator voor {nights, plural, one {# nacht} other {# nachten}}, vóór kortingen, de uiteindelijke prijs kan afwijken",
+    "priceListEstimateForPeriod": "Geschatte charterprijs · volgens de prijslijst van de operator voor {from, date, dayCompact} - {to, date, dayCompact}, vóór kortingen, de uiteindelijke prijs kan afwijken",
+    "boatPriceListEstimateForPeriod": "Geschatte bootprijs · volgens de prijslijst van de operator voor {from, date, dayCompact} - {to, date, dayCompact}, vóór kortingen, de uiteindelijke prijs kan afwijken",
+    "priceListRateMayBeLower": "Charterprijs · catalogustarief vóór kortingen, de uiteindelijke prijs kan lager zijn, er kunnen extra kosten gelden",
+    "boatPriceListRateMayBeLower": "Bootprijs · catalogustarief vóór kortingen, de uiteindelijke prijs kan lager zijn, er kunnen extra kosten gelden",
+    "priceListRateMayBeLowerForPeriod": "Charterprijs · catalogustarief voor {from, date, dayCompact} - {to, date, dayCompact} vóór kortingen, de uiteindelijke prijs kan lager zijn, er kunnen extra kosten gelden",
+    "boatPriceListRateMayBeLowerForPeriod": "Bootprijs · catalogustarief voor {from, date, dayCompact} - {to, date, dayCompact} vóór kortingen, de uiteindelijke prijs kan lager zijn, er kunnen extra kosten gelden",
+    "priceListEstimateFrom": "Geschatte charterprijs vanaf · prijslijst van de operator voor {nights, plural, one {# nacht} other {# nachten}}, vóór kortingen, de uiteindelijke prijs kan afwijken",
+    "boatPriceListEstimateFrom": "Geschatte bootprijs vanaf · prijslijst van de operator voor {nights, plural, one {# nacht} other {# nachten}}, vóór kortingen, de uiteindelijke prijs kan afwijken",
+    "priceListEstimateFromForPeriod": "Geschatte charterprijs vanaf · prijslijst van de operator voor {from, date, dayCompact} - {to, date, dayCompact}, vóór kortingen, de uiteindelijke prijs kan afwijken",
+    "boatPriceListEstimateFromForPeriod": "Geschatte bootprijs vanaf · prijslijst van de operator voor {from, date, dayCompact} - {to, date, dayCompact}, vóór kortingen, de uiteindelijke prijs kan afwijken",
+    "priceListEstimateMayBeLower": "Geschatte charterprijs · volgens de prijslijst van de operator voor {nights, plural, one {# nacht} other {# nachten}}, vóór kortingen, de uiteindelijke prijs kan lager zijn",
+    "boatPriceListEstimateMayBeLower": "Geschatte bootprijs · volgens de prijslijst van de operator voor {nights, plural, one {# nacht} other {# nachten}}, vóór kortingen, de uiteindelijke prijs kan lager zijn",
+    "priceListEstimateMayBeLowerForPeriod": "Geschatte charterprijs · volgens de prijslijst van de operator voor {from, date, dayCompact} - {to, date, dayCompact}, vóór kortingen, de uiteindelijke prijs kan lager zijn",
+    "boatPriceListEstimateMayBeLowerForPeriod": "Geschatte bootprijs · volgens de prijslijst van de operator voor {from, date, dayCompact} - {to, date, dayCompact}, vóór kortingen, de uiteindelijke prijs kan lager zijn",
+    "priceFromLabel": "Vanaf",
+    "plusObligatory": "plus {amount} aan verplichte extra’s",
+    "approximatePrice": "ca.",
+    "chargedIn": "Afgerekend in {currency}: {amount}",
+    "currencyLabel": "Valuta",
+    "priceOnRequest": "Op aanvraag",
+    "getPrice": "Prijs opvragen",
+    "weeklyPriceFrom": "Een week vanaf {price}",
+    "priceForDatesOnPage": "Bekijk de prijs voor jouw data op de jachtpagina",
+    "priceUnavailable": "Niet beschikbaar",
+    "perPerson": "{price} per persoon",
+    "perPersonApprox": "~ {price} per persoon",
+    "perBerth": "{price} per persoon bij {berths} slaapplaatsen",
+    "perNight": "{price} per nacht",
+    "perNightWithEquivalent": "{price} per nacht (≈ {equivalent})",
+    "datesAlternative": "Deze boot is niet te boeken op jouw data. De dichtstbijzijnde charter:",
+    "prepayment": "Aanbetaling: {amount}",
+    "prepaymentInfo": "Dit is het deel van de charterprijs dat je vooraf betaalt om de boeking vast te leggen. Het telt mee voor het totaal, de rest betaal je vóór het inchecken.",
+    "securityDeposit": "Terugbetaalbare borg: {amount}",
+    "securityDepositInfo": "Een terugbetaalbare borg die de charterbasis vasthoudt voor eventuele schade tijdens je trip. Hij wordt bij het inchecken geïnd, maakt geen deel uit van de prijs en wordt na het uitchecken teruggegeven als alles in goede staat is.",
+    "specs": {
+      "year": "Bouwjaar",
+      "people": "Personen",
+      "toilets": "Toiletten",
+      "showers": "Douches",
+      "mainsail": "Type grootzeil",
+      "cabins": "Hutten",
+      "length": "Lengte",
+      "lengthValue": "{length, number} m"
+    },
+    "battenMainsail": "Grootzeil met zeillatten",
+    "badges": {
+      "available": "Beschikbaar",
+      "temporarilyHeld": "Tijdelijk gereserveerd",
+      "onRequest": "Op aanvraag",
+      "unavailable": "Niet beschikbaar",
+      "bestForFamilies": "Ideaal voor gezinnen",
+      "bestValue": "Beste prijs-kwaliteit",
+      "new": "Nieuw",
+      "discount": "{percent}% KORTING",
+      "petsAllowed": "Huisdieren toegestaan",
+      "depositInsurance": "Borgverzekering inbegrepen",
+      "topRated": "Topbeoordeling"
+    },
+    "stats": {
+      "booked": "{count, plural, one {# keer geboekt deze maand} other {# keer geboekt deze maand}}",
+      "viewed": "{count, plural, one {# persoon bekeek dit vandaag} other {# personen bekeken dit vandaag}}"
+    },
+    "amenities": {
+      "wifi": "Gratis wifi",
+      "solar": "3 zonnepanelen",
+      "paddle": "Gratis SUP-board",
+      "air": "Airconditioning",
+      "waterToys": "Waterspeelgoed",
+      "galley": "Volledige kombuis",
+      "fridge": "Koelkast & vriezer",
+      "tender": "Bijboot met buitenboordmotor"
+    },
+    "charterTypes": {
+      "bareboat": "Bareboat",
+      "bareboatSailingYacht": "Bareboat-zeiljacht",
+      "catamaran": "Catamaran"
+    },
+    "crews": {
+      "fullCrew": "Volledige bemanning",
+      "skipperOptional": "Schipper optioneel"
+    },
+    "moreAmenities": "{count, plural, one {Nog # voorziening tonen} other {Nog # voorzieningen tonen}}",
+    "moreAmenitiesShort": "+{count}",
+    "holdEndsIn": "Reservering verloopt over {time}",
+    "holdEnding": "Reservering verloopt, kijk straks nog eens",
+    "holdNoDeadline": "Gereserveerd totdat de andere klant bevestigt"
+  },
+  "gallery": {
+    "close": "Sluiten",
+    "previous": "Vorige",
+    "next": "Volgende",
+    "zoomIn": "Inzoomen",
+    "zoomOut": "Uitzoomen",
+    "slideCounter": "{index} van {total}",
+    "slide": "Dia",
+    "carousel": "Carrousel",
+    "photoGallery": "Fotogalerij",
+    "lightbox": "Fotoviewer",
+    "thumbnails": "Miniaturen"
+  },
+  "marina": {
+    "viewDetails": "Details bekijken"
+  },
+  "map": {
+    "open": "Kaart van {place} openen",
+    "satellite": "Satelliet",
+    "streets": "Kaart",
+    "zoomIn": "Inzoomen",
+    "zoomOut": "Uitzoomen",
+    "locate": "Mijn locatie tonen",
+    "locateUnavailable": "Locatie niet beschikbaar"
+  },
+  "leadForm": {
+    "fields": {
+      "name": {
+        "label": "Volledige naam",
+        "placeholder": "Anna de Vries"
+      },
+      "email": {
+        "label": "E-mail",
+        "placeholder": "jane@example.com"
+      },
+      "phone": {
+        "label": "Telefoon (optioneel)",
+        "placeholder": "+1 234 567 8900"
+      },
+      "country": {
+        "label": "Land",
+        "placeholder": "Selecteer je land"
+      },
+      "message": {
+        "label": "Bericht (optioneel)",
+        "placeholder": "Is er nog iets dat we over je trip moeten weten?"
+      }
+    },
+    "errors": {
+      "nameRequired": "Voer je naam in",
+      "emailInvalid": "Voer een geldig e-mailadres in",
+      "submitFailed": "We konden je aanvraag niet versturen. Probeer het opnieuw."
+    }
+  },
+  "charterPeriod": {
+    "day": {
+      "booked": "Geboekt",
+      "held": "Gereserveerd, kan nog vrijkomen"
+    },
+    "or": ", of ",
+    "daysAndNights": "{days}, {nights}",
+    "weekdayRange": "{from} tot {to}",
+    "wholeWeeksAnyDay": "Elke startdag, in hele weken",
+    "wholeWeeksFromDays": "Start op {days}, in hele weken",
+    "weekdaysToDay": "Start op {days}, eindigt op {to}",
+    "weekdayStart": "Start op {day}",
+    "weekdayEnd": "Eindigt op {day}",
+    "nightsExact": "{count, plural, one {# nacht} other {# nachten}}",
+    "nightsFrom": "vanaf {count, plural, one {# nacht} other {# nachten}}",
+    "nightsUpTo": "tot {count, plural, one {# nacht} other {# nachten}}",
+    "nightsRange": "{min} tot {max} nachten",
+    "label": "Charterperiode",
+    "rulesMore": "Alle charterregels tonen",
+    "rulesLess": "Minder tonen"
+  },
+  "countryPicker": {
+    "search": "Landen zoeken",
+    "loading": "Landen laden…",
+    "empty": "Geen landen gevonden"
+  },
+  "errors": {
+    "requestFailed": "Er is iets misgegaan",
+    "retry": "Opnieuw proberen"
+  },
+  "notFound": {
+    "title": "Pagina niet gevonden",
+    "description": "De pagina die je zoekt bestaat niet of is verplaatst.",
+    "home": "Terug naar home",
+    "browse": "Jachten bekijken"
+  },
+  "error": {
+    "title": "Er is iets misgegaan",
+    "description": "We konden deze pagina niet laden. Probeer het opnieuw of kom zo terug.",
+    "retry": "Opnieuw proberen",
+    "home": "Terug naar home"
+  },
+  "ui": {
+    "close": "Sluiten",
+    "previousPage": "Naar vorige pagina",
+    "nextPage": "Naar volgende pagina",
+    "pagination": "Paginering",
+    "breadcrumb": "Kruimelpad",
+    "previousPhoto": "Vorige foto",
+    "nextPhoto": "Volgende foto",
+    "goToPhoto": "Naar foto {index} van {total}",
+    "showPhoto": "Foto {index} tonen",
+    "clear": "{label} wissen",
+    "noOptions": "Geen opties",
+    "noMatches": "Geen resultaten",
+    "showPassword": "Wachtwoord tonen",
+    "hidePassword": "Wachtwoord verbergen",
+    "previousMonth": "Vorige maand",
+    "nextMonth": "Volgende maand",
+    "rating": "Beoordeling {rating} van {max}"
+  },
+  "quoteLines": {
+    "referral-welcome": "Welkomstkorting via doorverwijzing",
+    "referral-credit": "Verwijstegoed",
+    "provider-discount": "Charterkorting"
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "title": "Kortingen & prijsbeheer",
+  "subtitle": "Beheer promotiecodes en jachtprijzen.",
+  "create": "Korting aanmaken",
+  "tabs": {
+    "discounts": "Kortingen",
+    "managePrices": "Prijzen beheren"
+  },
+  "table": {
+    "name": "Naam korting",
+    "code": "Code",
+    "typeValue": "Type & waarde",
+    "appliesTo": "Geldt voor",
+    "status": "Status",
+    "usage": "Gebruik",
+    "empty": "Geen kortingen gevonden",
+    "error": "Kortingen konden niet worden geladen"
+  },
+  "status": {
+    "active": "Actief",
+    "inactive": "Inactief",
+    "scheduled": "Gepland",
+    "expired": "Verlopen"
+  },
+  "type": {
+    "percentage": "Percentage",
+    "fixed_amount": "Vast bedrag"
+  },
+  "applies": {
+    "allYachts": "Alle jachten",
+    "allCatamarans": "Alle catamarans",
+    "allGullets": "Alle gulets",
+    "allMotorboats": "Alle motorboten",
+    "allMotorYachts": "Alle motorjachten",
+    "allSailboats": "Alle zeilboten",
+    "specific": "Specifieke jachten",
+    "allSailingYachts": "Alle zeiljachten",
+    "nothing": "Niets",
+    "missing": "{type, select, listing {Verwijderd jacht} category {Verwijderde categorie} operator {Verwijderde operator} region {Verwijderde regio} other {Verwijderd doel}} ({id})",
+    "more": "{first} +{count} meer"
+  },
+  "dialog": {
+    "createTitle": "Nieuwe korting aanmaken",
+    "editTitle": "Korting bewerken",
+    "name": {
+      "label": "Naam korting",
+      "placeholder": "bijv. Summer View 2026"
+    },
+    "code": {
+      "label": "Kortingscode",
+      "placeholder": "bijv. SUMMER2026"
+    },
+    "type": {
+      "label": "Type korting"
+    },
+    "price": {
+      "label": "Kortingswaarde",
+      "placeholder": "10"
+    },
+    "expiration": {
+      "label": "Vervaldatum",
+      "placeholder": "Alle data"
+    },
+    "appliesTo": {
+      "label": "Geldt voor"
+    },
+    "search": {
+      "placeholder": "Jacht zoeken"
+    },
+    "submitCreate": "Korting aanmaken",
+    "submitSave": "Wijzigingen opslaan",
+    "created": "Korting aangemaakt",
+    "saved": "Korting bijgewerkt",
+    "errors": {
+      "nameRequired": "Voer een naam voor de korting in",
+      "codeRequired": "Voer een kortingscode in",
+      "priceRequired": "Voer een kortingswaarde in",
+      "appliesRequired": "Kies waarvoor de korting geldt",
+      "usageLimitInvalid": "Voer een heel aantal keer gebruik in, of laat leeg"
+    },
+    "error": "Er is iets misgegaan. Probeer het opnieuw.",
+    "usageLimit": {
+      "label": "Gebruikslimiet",
+      "placeholder": "Onbeperkt",
+      "hint": "Laat leeg voor onbeperkt gebruik"
+    },
+    "active": {
+      "label": "Actief",
+      "on": "Korting geactiveerd",
+      "off": "Korting gedeactiveerd"
+    }
+  },
+  "prices": {
+    "search": "Zoeken op naam",
+    "allTypes": "Alle types",
+    "allLocations": "Alle locaties",
+    "table": {
+      "yacht": "Jacht",
+      "location": "Locatie",
+      "basePrice": "Basisprijs",
+      "currentPrice": "Huidige prijs",
+      "edit": "Prijs bewerken"
+    },
+    "dialog": {
+      "title": "Prijs bewerken",
+      "basePrice": "Basisprijs",
+      "newPrice": "Nieuwe prijs",
+      "newPricePlaceholder": "bijv. €14.539",
+      "submit": "Prijs bijwerken",
+      "updated": "Prijs bijgewerkt",
+      "errors": {
+        "priceRequired": "Voer een nieuwe prijs in"
+      },
+      "reset": "Terugzetten naar providerprijs",
+      "cleared": "Prijs teruggezet naar de providerprijs"
+    },
+    "empty": "Geen jachten gevonden",
+    "error": "Prijzen konden niet worden geladen"
+  }
+}

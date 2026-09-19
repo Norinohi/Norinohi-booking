@@ -1,0 +1,1433 @@
+{
+  "Commissions": {
+    "title": "Commissietarieven",
+    "subtitle": "Wat {brand} per provider verdient, en vanaf wanneer.",
+    "add": "Tarief toevoegen",
+    "edit": "Bewerken",
+    "switchOff": "Uitschakelen",
+    "switchOn": "Inschakelen",
+    "switchedOff": "Tarief uitgeschakeld",
+    "switchedOn": "Tarief ingeschakeld",
+    "created": "Tarief toegevoegd",
+    "updated": "Tarief opgeslagen",
+    "error": "De commissietarieven konden niet worden geladen",
+    "empty": "Nog geen tarieven. Zolang er geen is ingevoerd, speelt commissie geen rol bij welke aanbieding een bezoeker ziet.",
+    "emptyFiltered": "Geen tarieven die aan deze filters voldoen.",
+    "allOperators": "Alle operators",
+    "openEnded": "Geen einddatum",
+    "fromDate": "Vanaf {date}",
+    "untilDate": "Tot {date}",
+    "note": "Een tarief beslist alleen tussen twee aanbiedingen die al gelijk zijn in prijs en verplichte extra's. Het kan nooit de reden zijn dat een bezoeker een duurdere boot te zien krijgt. Het verkoopproces gebruikt deze tarieven nog nergens.",
+    "filters": {
+      "provider": "Provider",
+      "anyProvider": "Alle providers",
+      "status": "Status",
+      "anyStatus": "Elke status"
+    },
+    "status": {
+      "active": "Actief",
+      "scheduled": "Gepland",
+      "expired": "Verlopen",
+      "inactive": "Uitgeschakeld"
+    },
+    "table": {
+      "provider": "Provider",
+      "operator": "Operator",
+      "rate": "Tarief",
+      "window": "Geldig",
+      "status": "Status",
+      "added": "Toegevoegd",
+      "actions": "Acties"
+    },
+    "dialog": {
+      "createTitle": "Commissietarief toevoegen",
+      "editTitle": "Commissietarief bewerken",
+      "description": "Wat we verdienen aan een verkoop via deze provider. Laat de operator leeg om alle charterbedrijven bij deze leverancier te dekken.",
+      "provider": "Provider",
+      "operator": "Operator",
+      "operatorSearch": "Operators zoeken",
+      "allOperators": "Alle operators bij deze provider",
+      "ratePct": "Tarief (%)",
+      "startsAt": "Begint",
+      "endsAt": "Eindigt",
+      "windowHint": "Beide data zijn optioneel en inclusief. Laat ze leeg voor een afspraak die loopt totdat er opnieuw wordt onderhandeld.",
+      "cancel": "Annuleren",
+      "save": "Opslaan",
+      "saving": "Opslaan…",
+      "errors": {
+        "rateRequired": "Voer een tarief in",
+        "rateRange": "Gebruik een getal tussen 0 en 100",
+        "endsBeforeStarts": "De einddatum kan niet vóór de begindatum liggen"
+      }
+    }
+  },
+  "Bookings": {
+    "title": "Boekingen",
+    "subtitle": "Alle boekingen op het platform, nieuwste eerst. Open er een om hem af te handelen.",
+    "createdAt": "Aangemaakt {at}",
+    "excluded": "Geen echte omzet",
+    "empty": "Geen boekingen die aan deze filters voldoen.",
+    "error": "De boekingen konden niet worden geladen.",
+    "filters": {
+      "search": "Zoeken op referentie, naam of e-mail",
+      "status": "Status",
+      "allStatuses": "Alle statussen",
+      "includeExcluded": "Boekingen gemarkeerd als test meenemen"
+    },
+    "table": {
+      "reference": "Referentie",
+      "customer": "Klant",
+      "charter": "Jacht",
+      "dates": "Data",
+      "total": "Totaal",
+      "collected": "Geïnd",
+      "status": "Status"
+    },
+    "status": {
+      "DRAFT": "Concept",
+      "QUOTED": "Offerte",
+      "OPTION_PENDING": "Wordt vastgehouden",
+      "OPTION_HELD": "Vastgehouden",
+      "OPTION_EXPIRED": "Optie verlopen",
+      "QUOTE_EXPIRED": "Offerte verlopen",
+      "PAYMENT_PENDING": "Wacht op betaling",
+      "PAYMENT_FAILED": "Betaling mislukt",
+      "CONFIRMING": "Wordt bevestigd",
+      "CONFIRMED": "Bevestigd",
+      "PROVIDER_REJECTED": "Geweigerd door provider",
+      "CANCELLED": "Geannuleerd",
+      "REFUND_PENDING": "Terugbetaling open",
+      "REFUNDED": "Terugbetaald"
+    }
+  },
+  "Users": {
+    "title": "Gebruikers",
+    "subtitle": "Alle accounts met hun contactgegevens en hoeveel ze hebben geboekt.",
+    "createdAt": "Lid sinds {at}",
+    "unverified": "E-mail niet geverifieerd",
+    "confirmed": "{count, plural, =0 {geen bevestigd} one {# bevestigd} other {# bevestigd}}",
+    "total": "{count, plural, one {# gebruiker} other {# gebruikers}}",
+    "empty": "Geen gebruikers die aan deze filters voldoen.",
+    "error": "De gebruikers konden niet worden geladen.",
+    "filters": {
+      "search": "Zoeken op naam, e-mail of telefoon",
+      "role": "Rol",
+      "allRoles": "Alle rollen",
+      "status": "Status",
+      "allStatuses": "Alle statussen",
+      "bookings": "Boekingen",
+      "anyBookings": "Met of zonder boekingen",
+      "withBookings": "Heeft boekingen",
+      "withoutBookings": "Geen boekingen",
+      "sort": "Sorteren"
+    },
+    "sort": {
+      "newest": "Nieuwste eerst",
+      "mostBookings": "Meeste boekingen",
+      "name": "Naam A-Z"
+    },
+    "table": {
+      "user": "Gebruiker",
+      "email": "E-mail",
+      "phone": "Telefoon",
+      "bookings": "Boekingen",
+      "lastBooking": "Laatste boeking",
+      "status": "Status"
+    },
+    "role": {
+      "customer": "Klant",
+      "staff": "Medewerker",
+      "admin": "Beheerder"
+    },
+    "status": {
+      "active": "Actief",
+      "guest": "Gast, niet geclaimd",
+      "deactivated": "Gedeactiveerd"
+    }
+  },
+  "Duplicates": {
+    "title": "Duplicaten controleren",
+    "subtitle": "Voeg vergelijkbare advertenties samen die twee providers voor hetzelfde jacht hebben gestuurd.",
+    "metrics": {
+      "title": "Nauwkeurigheid van de matcher",
+      "subtitle": "Hoe vaak elke regel tot nu toe gelijk had.",
+      "decided": "{count, plural, =0 {Nog geen beoordeelde paren} one {# beoordeeld paar achter deze cijfers} other {# beoordeelde paren achter deze cijfers}}",
+      "error": "De nauwkeurigheidscijfers konden niet worden geladen",
+      "empty": "Er is nog niets voorgesteld.",
+      "noSample": "Te weinig beslissingen",
+      "note": "Precisie is het aantal bevestigde paren gedeeld door bevestigde en afgewezen paren samen. Samenvoegingen die later met een splitsing ongedaan zijn gemaakt, tellen tegen de regel. Opzijgezette paren tellen niet mee: niemand kon erover beslissen, en ze als fouten tellen zou een regel onderschatten die het goed doet bij de paren die hij wel beslist.",
+      "table": {
+        "rule": "Regel",
+        "band": "Betrouwbaarheid",
+        "proposed": "Voorgesteld",
+        "confirmed": "Samengevoegd",
+        "rejected": "Geen duplicaten",
+        "undone": "Ongedaan",
+        "precision": "Precisie"
+      }
+    },
+    "filter": {
+      "label": "Beslissing",
+      "pending": "Open",
+      "confirmed": "Samengevoegde duplicaten",
+      "rejected": "Geen duplicaten",
+      "deferred": "Niet beslist"
+    },
+    "empty": {
+      "pending": "Niets te controleren. Alle mogelijke duplicaten zijn afgehandeld.",
+      "confirmed": "Er zijn nog geen paren samengevoegd.",
+      "rejected": "Er zijn nog geen paren als verschillende jachten gemarkeerd.",
+      "deferred": "Er is nog niets opzijgezet.",
+      "filtered": "Geen paren die aan deze filters voldoen. Verruim het filter op betrouwbaarheid of regel om de rest te zien."
+    },
+    "error": "De duplicatenwachtrij kon niet worden geladen",
+    "confidence": "{value}% overeenkomst",
+    "confidenceUnknown": "Betrouwbaarheid onbekend",
+    "proposed": "Voorgesteld {date}",
+    "reviewed": "Beoordeeld {date}",
+    "undone": "Ongedaan gemaakt",
+    "signals": "Gematcht op {signals}",
+    "sideA": "Kant A",
+    "sideB": "Kant B",
+    "keep": "Deze advertentie behouden",
+    "keeping": "Samenvoegen…",
+    "reject": "Geen duplicaat",
+    "reopen": "Terug naar wachtrij",
+    "differs": "verschilt",
+    "differsLegend": "Gemarkeerde waarden verschillen tussen de twee kanten.",
+    "noImage": "Geen afbeelding",
+    "unavailable": {
+      "title": "Advertentie niet beschikbaar",
+      "description": "Deze advertentie is verwijderd nadat het paar werd voorgesteld."
+    },
+    "fields": {
+      "provider": "Provider",
+      "externalId": "Provider-ID",
+      "status": "Status advertentie",
+      "matchStatus": "Matchstatus",
+      "operator": "Operator",
+      "model": "Model",
+      "year": "Bouwjaar",
+      "length": "Lengte",
+      "cabins": "Hutten",
+      "berths": "Slaapplaatsen",
+      "base": "Thuishaven",
+      "location": "Locatie"
+    },
+    "lengthValue": "{value} m",
+    "listingStatus": {
+      "draft": "Concept",
+      "published": "Gepubliceerd",
+      "hidden": "Verborgen"
+    },
+    "matchStatus": {
+      "unmatched": "Niet gematcht",
+      "auto": "Automatisch gematcht",
+      "confirmed": "Bevestigd",
+      "rejected": "Afgewezen"
+    },
+    "showDetail": "Alle details bekijken",
+    "showSources": "Bronnen",
+    "detailTitle": "Volledige vergelijking",
+    "detailSubtitle": "Alle foto’s en specificaties die beide providers voor dit paar hebben gestuurd.",
+    "detailError": "De volledige vergelijking kon niet worden geladen",
+    "photoPosition": "{index} / {total}",
+    "openPhoto": "Foto {index} openen",
+    "amenitiesTitle": "Voorzieningen ({count})",
+    "noAmenities": "Geen voorzieningen vastgelegd",
+    "descriptionTitle": "Beschrijving van de provider",
+    "noDescription": "Geen beschrijving van de provider",
+    "yes": "Ja",
+    "no": "Nee",
+    "litresValue": "{value} L",
+    "detailFields": {
+      "category": "Categorie",
+      "builder": "Werf",
+      "crewType": "Bemanning",
+      "beam": "Breedte",
+      "draft": "Diepgang",
+      "heads": "Toiletten",
+      "showers": "Douches",
+      "engines": "Motoren",
+      "enginePower": "Motorvermogen",
+      "fuelType": "Brandstoftype",
+      "fuelCapacity": "Brandstofcapaciteit",
+      "waterCapacity": "Watercapaciteit",
+      "propulsion": "Aandrijving",
+      "steering": "Besturing",
+      "sail": "Tuigage",
+      "deposit": "Borg",
+      "depositInsurance": "Borgverzekering",
+      "pets": "Huisdieren toegestaan",
+      "currency": "Valuta",
+      "rating": "Beoordeling bij provider",
+      "reviews": "Reviews bij provider",
+      "freshness": "Laatst gesynchroniseerd",
+      "updated": "Laatst bijgewerkt"
+    },
+    "summary": "{pairs, plural, =0 {Geen paren} one {# paar} other {# paren}} · {yachts, plural, =0 {geen jachten} one {# jacht} other {# jachten}}",
+    "sortNote": "hoogste betrouwbaarheid eerst",
+    "sortNoteReviewed": "meest recent beslist eerst",
+    "optionCount": "{label} ({count})",
+    "filters": {
+      "confidence": "Betrouwbaarheid match",
+      "anyConfidence": "Elke betrouwbaarheid",
+      "matchType": "Gematcht op",
+      "anyMatchType": "Elke regel",
+      "any": "Alle",
+      "confidenceValue": "Betrouwbaarheid: {value}",
+      "matchTypeValue": "Regel: {value}"
+    },
+    "confidenceBand": {
+      "high": "Hoog (90%+)",
+      "medium": "Gemiddeld (70-89%)",
+      "low": "Laag (onder 70%)",
+      "unknown": "Geen score"
+    },
+    "matchType": {
+      "name+model+year": "Naam + model + jaar",
+      "base+model+year": "Basis + model + jaar",
+      "model+year": "Alleen model + jaar",
+      "model+yearBuilt": "Model + bouwjaar",
+      "name+base": "Naam + ligplaats"
+    },
+    "signalFields": {
+      "name": "Naam",
+      "base": "Basis",
+      "area": "Gebied",
+      "length": "Lengte",
+      "cabins": "Hutten",
+      "berths": "Slaapplaatsen",
+      "heads": "Toiletten",
+      "builder": "Werf",
+      "operator": "Operator",
+      "model": "Model",
+      "year": "Bouwjaar"
+    },
+    "toast": {
+      "confirmed": "Samengevoegd. {count} providerbronnen verwijzen nu naar de behouden advertentie.",
+      "confirmedWithClosed": "Samengevoegd. {count} providerbronnen verwijzen nu naar de behouden advertentie, en {closed} andere paren zijn daarmee gesloten.",
+      "rejected": "Vastgelegd als twee verschillende jachten.",
+      "conflict": "Iemand anders heeft dit paar al beoordeeld. De wachtrij wordt opnieuw geladen.",
+      "error": "Er is iets misgegaan. Probeer het opnieuw.",
+      "deferred": "Opzijgezet voor later. Het telt niet voor of tegen de matcher.",
+      "reopened": "Terug in de wachtrij, wacht op een nieuwe beslissing."
+    },
+    "defer": "Opzijzetten",
+    "notePlaceholder": "Waarom? (optioneel)",
+    "noteLabel": "Notitie van beoordelaar",
+    "noteWas": "Notitie: {note}"
+  },
+  "Sync": {
+    "reliability": {
+      "title": "Betrouwbaarheid van providers",
+      "subtitle": "Hoe vaak elke leverancier antwoordde terwijl een bezoeker bij het afrekenen stond.",
+      "window": "Meetperiode",
+      "windowValue": "Laatste {days} dagen",
+      "error": "De betrouwbaarheidscijfers konden niet worden geladen",
+      "empty": "In deze periode is geen enkele leverancier om een offerte gevraagd.",
+      "noSample": "Geen steekproef",
+      "milliseconds": "{value} ms",
+      "note": "Een weigering telt als antwoord: de leverancier was bereikbaar en meldde dat de periode weg is, wat iets zegt over de boot en niet over een kapotte connector. Alleen een fout of time-out telt tegen een leverancier. Aanvragen die onze eigen gecachte kalender al weigerde voordat een leverancier werd aangeroepen, tellen helemaal niet mee. Het verkoopproces gebruikt deze cijfers nog nergens.",
+      "table": {
+        "provider": "Provider",
+        "asked": "Gevraagd",
+        "answered": "Beantwoord",
+        "failed": "Geen antwoord",
+        "successRatio": "Beantwoord",
+        "latency": "Mediane reactietijd"
+      }
+    },
+    "title": "Synchronisatiegeschiedenis",
+    "subtitle": "Alle catalogus- en beschikbaarheidsruns, nieuwste eerst.",
+    "controls": {
+      "provider": "Provider om te synchroniseren",
+      "allProviders": "Alle providers",
+      "startCatalogue": "Catalogus synchroniseren",
+      "startAvailability": "Beschikbaarheid synchroniseren",
+      "started": "{count, plural, one {# run gestart} other {# runs gestart}}",
+      "skipped": "{count, plural, one {# provider is al aan het importeren} other {# providers zijn al aan het importeren}}",
+      "noProviders": "Er is geen connector ingeschakeld.",
+      "capabilities": "Actieve connector: {provider}",
+      "capability": {
+        "supportsLiveQuote": "Live offerte",
+        "supportsOptions": "Opties",
+        "supportsExtrasMutation": "Bewerkbare extra's",
+        "supportsWebhooks": "Webhooks"
+      },
+      "hint": "Een run wordt direct gestart en loopt door nadat deze pagina is gesloten. Het resultaat verschijnt in de tabel hieronder."
+    },
+    "maintenance": {
+      "sweep": "Verlopen opties laten vervallen",
+      "remind": "Herinneringen voor restbedrag versturen",
+      "swept": "{count, plural, one {# boeking verlopen} other {# boekingen verlopen}}, {reaped, plural, one {# synchronisatierun opgeruimd} other {# synchronisatieruns opgeruimd}}.",
+      "staleConfirmations": "{count, plural, one {# boeking blijft hangen in bevestigen} other {# boekingen blijven hangen in bevestigen}}. Vraag de provider of de reservering bestaat.",
+      "releaseFailures": "{count, plural, one {# providerslot kon niet worden vrijgegeven} other {# providerslots konden niet worden vrijgegeven}}.",
+      "reminded": "{count, plural, one {# herinnering verstuurd} other {# herinneringen verstuurd}}.",
+      "remindSkipped": "{count, plural, one {# boeking heeft geen e-mailadres om naar te sturen} other {# boekingen hebben geen e-mailadres om naar te sturen}}.",
+      "hint": "Beide draaien al volgens een schema. Handmatig starten is veilig: verlopen gebeurt via compare-and-set en voor elke termijn wordt maar één keer een herinnering gestuurd."
+    },
+    "filters": {
+      "provider": "Provider",
+      "kind": "Soort",
+      "status": "Status",
+      "allProviders": "Alle providers",
+      "allKinds": "Alle soorten",
+      "allStatuses": "Alle statussen"
+    },
+    "table": {
+      "provider": "Provider",
+      "kind": "Soort",
+      "status": "Status",
+      "results": "Resultaten",
+      "errors": "Fouten",
+      "started": "Gestart",
+      "finished": "Voltooid",
+      "details": "Details"
+    },
+    "kind": {
+      "catalogue": "Catalogus",
+      "availability": "Beschikbaarheid",
+      "pricing": "Prijzen",
+      "media": "Media"
+    },
+    "status": {
+      "pending": "In afwachting",
+      "running": "Bezig",
+      "success": "Geslaagd",
+      "failed": "Mislukt",
+      "partial": "Gedeeltelijk"
+    },
+    "counts": {
+      "created": "{count, plural, one {# aangemaakt} other {# aangemaakt}}",
+      "updated": "{count, plural, one {# bijgewerkt} other {# bijgewerkt}}",
+      "skipped": "{count, plural, one {# overgeslagen} other {# overgeslagen}}",
+      "failed": "{count, plural, one {# mislukt} other {# mislukt}}"
+    },
+    "empty": "Nog geen synchronisatieruns",
+    "error": "Synchronisatieruns konden niet worden geladen",
+    "pending": "Niet gestart",
+    "details": {
+      "show": "Fouten tonen",
+      "hide": "Fouten verbergen",
+      "title": "Fouten van deze run",
+      "empty": "Deze run heeft geen fouten vastgelegd.",
+      "error": "Deze run kon niet worden geladen",
+      "unavailable": "Foutdetails zijn niet beschikbaar voor deze provider."
+    },
+    "errorType": {
+      "rate_limited": "Snelheidslimiet",
+      "transient": "Tijdelijk",
+      "auth": "Authenticatie",
+      "not_found": "Niet gevonden",
+      "contract": "Contract"
+    },
+    "unreleasedOptions": {
+      "title": "Slots die nog door een leverancier worden vastgehouden",
+      "subtitle": "Hier geannuleerd, maar de operator weigerde de week terug te nemen. Niemand kan hem boeken totdat hij is vrijgegeven of de optie van de leverancier zelf verloopt.",
+      "empty": "Er wordt niets voor ons vastgehouden.",
+      "reference": "Boeking",
+      "yacht": "Jacht",
+      "dates": "Data",
+      "period": "{from} tot {to}",
+      "provider": "Leverancier",
+      "optionId": "Optie-ID",
+      "hold": "Optie",
+      "refusedAt": "Geweigerd",
+      "reason": "Wat de leverancier zei",
+      "retry": "Opnieuw vragen",
+      "holdUnknown": "Niet gepubliceerd",
+      "lapsed": "Verlopen",
+      "holdsUntil": "Vastgehouden tot {when}",
+      "released": "{reference}: de leverancier heeft het slot vrijgegeven.",
+      "refusedAgain": "{reference}: de leverancier weigerde opnieuw.",
+      "retryFailed": "{reference}: de leverancier was niet bereikbaar."
+    }
+  },
+  "Audit": {
+    "title": "Auditlog",
+    "subtitle": "Elke actie van medewerkers en elke vastgelegde fout, nieuwste eerst. Items worden één keer geschreven en nooit bewerkt.",
+    "filters": {
+      "entityType": "Type entiteit",
+      "allEntities": "Alle entiteiten",
+      "action": "Actie",
+      "allActions": "Alle acties",
+      "entityId": "Entiteit-ID",
+      "entityIdPlaceholder": "Plak een volledige ID",
+      "source": "Bron",
+      "allSources": "Alle bronnen"
+    },
+    "table": {
+      "when": "Wanneer",
+      "actor": "Wie",
+      "action": "Actie",
+      "entity": "Entiteit",
+      "entityId": "ID",
+      "details": "Details"
+    },
+    "action": {
+      "create": "Aangemaakt",
+      "update": "Bijgewerkt",
+      "delete": "Verwijderd",
+      "sync": "Gesynchroniseerd",
+      "merge": "Samengevoegd",
+      "price_adjustment": "Prijswijziging",
+      "error": "Fout"
+    },
+    "entity": {
+      "booking": "Boeking",
+      "booking_enquiry": "Vraag over boeking",
+      "discount": "Promotiecode",
+      "invoice_request": "Factuur",
+      "lead": "Aanvraag",
+      "listing": "Advertentie",
+      "listing_duplicate_candidate": "Duplicaat",
+      "maintenance": "Onderhoudstaak",
+      "facet_media": "Facetafbeelding",
+      "facet_media_rank": "Volgorde facetafbeeldingen",
+      "faq": "Veelgestelde vraag",
+      "marketplace_settings": "Marktplaatsinstellingen",
+      "popular_yachts_config": "Populaire jachten",
+      "provider_commission": "Providercommissie",
+      "suggested_route": "Voorgestelde route",
+      "suggested_route_featured": "Uitgelichte route",
+      "suggested_route_stop": "Routestop",
+      "procedure": "API-bewerking",
+      "job": "Geplande taak",
+      "stripe_event": "Stripe-event",
+      "outbox_message": "Outboxbericht",
+      "provider": "Provider"
+    },
+    "details": {
+      "show": "Tonen",
+      "hide": "Verbergen",
+      "before": "Voor",
+      "after": "Na",
+      "metadata": "Context"
+    },
+    "source": {
+      "admin_action": "Actie van medewerker",
+      "server": "Server",
+      "provider": "Provider",
+      "stripe_webhook": "Stripe-webhook",
+      "job": "Geplande taak"
+    },
+    "errorDetails": {
+      "title": "Wat er misging",
+      "operation": "Bewerking",
+      "source": "Bron",
+      "code": "Code",
+      "status": "Status",
+      "message": "Bericht",
+      "causes": "Veroorzaakt door",
+      "vendor": "Leverancier",
+      "context": "Context"
+    },
+    "actorGone": "Verwijderd account",
+    "actorSystem": "Systeem",
+    "empty": "Nog niets vastgelegd.",
+    "error": "Het auditlog kon niet worden geladen."
+  },
+  "Inbox": {
+    "title": "Inbox",
+    "subtitle": "Vragen over bestaande boekingen en aanvragen van mensen die nog aan het kiezen zijn.",
+    "tabs": {
+      "enquiries": "Vragen over boekingen",
+      "leads": "Aanvragen"
+    },
+    "enquiries": {
+      "filters": {
+        "status": "Status",
+        "allStatuses": "Alle statussen",
+        "search": "Zoeken op e-mail of boekingsreferentie"
+      },
+      "status": {
+        "open": "Open",
+        "answered": "Beantwoord",
+        "closed": "Gesloten"
+      },
+      "table": {
+        "received": "Ontvangen",
+        "customer": "Klant",
+        "question": "Vraag",
+        "status": "Status",
+        "booking": "Boeking",
+        "actions": "Acties"
+      },
+      "actions": {
+        "reply": "Beantwoorden",
+        "replyAgain": "Opnieuw beantwoorden",
+        "close": "Sluiten",
+        "reopen": "Heropenen"
+      },
+      "answered": "Beantwoord: {answer}",
+      "empty": "Niets te zien - geen vragen die aan deze filters voldoen.",
+      "error": "We konden de vragen niet laden."
+    },
+    "leads": {
+      "filters": {
+        "status": "Status",
+        "allStatuses": "Alle statussen",
+        "kind": "Soort",
+        "allKinds": "Alle soorten",
+        "search": "Zoeken op naam of e-mail"
+      },
+      "status": {
+        "new": "Nieuw",
+        "contacted": "Contact opgenomen",
+        "closed": "Gesloten"
+      },
+      "kind": {
+        "quote_request": "Offerteaanvraag",
+        "booking_request": "Boekingsaanvraag",
+        "charter_expert": "Charterexpert",
+        "consultation": "Adviesgesprek"
+      },
+      "table": {
+        "received": "Ontvangen",
+        "from": "Van",
+        "kind": "Soort",
+        "message": "Bericht",
+        "status": "Status",
+        "actions": "Acties"
+      },
+      "actions": {
+        "reply": "Beantwoorden",
+        "replyAgain": "Opnieuw beantwoorden",
+        "contacted": "Markeren als benaderd",
+        "close": "Sluiten",
+        "reopen": "Heropenen"
+      },
+      "empty": "Niets te zien - geen aanvragen die aan deze filters voldoen.",
+      "error": "We konden de aanvragen niet laden.",
+      "answered": "Beantwoord: {answer}"
+    },
+    "answer": {
+      "title": "Deze vraag beantwoorden",
+      "description": "Boeking {reference}. Je antwoord wordt naar de klant gemaild.",
+      "label": "Je antwoord",
+      "placeholder": "Beantwoord de vraag volledig - dit is wat de klant ontvangt.",
+      "close": "Deze vraag na verzenden sluiten",
+      "cancel": "Annuleren",
+      "send": "Antwoord versturen",
+      "sent": "Antwoord verstuurd",
+      "failed": "We konden het antwoord niet versturen. Probeer het opnieuw."
+    },
+    "leadAnswer": {
+      "title": "Deze aanvraag beantwoorden",
+      "description": "Je antwoord wordt naar {name} gemaild.",
+      "noMessage": "Er is geen bericht achtergelaten.",
+      "label": "Je antwoord",
+      "placeholder": "Beantwoord de aanvraag volledig - dit is wat de ontvanger krijgt.",
+      "close": "Deze aanvraag na verzenden sluiten",
+      "cancel": "Annuleren",
+      "send": "Antwoord versturen",
+      "sent": "Antwoord verstuurd",
+      "failed": "We konden het antwoord niet versturen. Probeer het opnieuw."
+    }
+  },
+  "Listings": {
+    "title": "Advertenties",
+    "subtitle": "Alle advertenties waar medewerkers iets mee kunnen, inclusief concepten. Geïmporteerd aanbod blijft een concept totdat het hier wordt vrijgegeven.",
+    "filters": {
+      "provider": "Provider",
+      "status": "Status",
+      "allProviders": "Alle providers",
+      "operator": "Operator",
+      "allOperators": "Alle operators",
+      "allStatuses": "Alle statussen",
+      "search": "Zoeken op titel of slug"
+    },
+    "table": {
+      "listing": "Advertentie",
+      "provider": "Provider",
+      "operator": "Operator",
+      "model": "Model & bouwjaar",
+      "place": "Basis & locatie",
+      "price": "Vanaf",
+      "status": "Status",
+      "actions": "Acties"
+    },
+    "status": {
+      "draft": "Concept",
+      "published": "Gepubliceerd",
+      "hidden": "Verborgen",
+      "merged": "Samengevoegd"
+    },
+    "actions": {
+      "publish": "Publiceren",
+      "unpublish": "Depubliceren",
+      "draft": "Terug naar concept",
+      "sources": "Bronnen"
+    },
+    "moved": "{title} is nu {status}.",
+    "noProvider": "Geen provider",
+    "noPrice": "Nog geen prijs",
+    "notSet": "Niet ingesteld",
+    "noImage": "Geen foto",
+    "empty": "Geen advertenties die aan deze filters voldoen",
+    "error": "Advertenties konden niet worden geladen",
+    "publishDrafts": {
+      "providerLabel": "Provider om vrij te geven",
+      "choose": "Kies een provider",
+      "action": "Alle concepten publiceren",
+      "hint": "Geeft alle concepten van de gekozen provider vrij. Er moet een provider worden gekozen: dit scherm publiceert nooit de hele catalogus in één keer.",
+      "confirmTitle": "Alle concepten publiceren?",
+      "confirmBody": "Elk concept dat uit {provider} is geïmporteerd, wordt direct zichtbaar voor klanten. Concepten van andere providers blijven ongemoeid.",
+      "cancel": "Annuleren",
+      "confirm": "Concepten publiceren",
+      "publishing": "Publiceren...",
+      "published": "{count, plural, =0 {Geen concepten meer om te publiceren voor {provider}.} one {# concept gepubliceerd voor {provider}.} other {# concepten gepubliceerd voor {provider}.}}",
+      "failed": "De concepten konden niet worden gepubliceerd"
+    },
+    "unpriced": "{count, plural, one {# advertentie heeft data maar geen gepubliceerd tarief} other {# advertenties hebben data maar geen gepubliceerd tarief}} - ze worden getoond als “Op aanvraag” met een lege kalender.",
+    "sources": {
+      "subtitle": "Van welke provider elk deel van deze advertentie komt. Een vastgezette groep wordt door de nachtelijke synchronisatie met rust gelaten.",
+      "error": "De providers van deze advertentie konden niet worden geladen",
+      "field": "Deel van de advertentie",
+      "takenFrom": "Afkomstig van",
+      "locked": "Vastgezet",
+      "automatic": "Automatisch",
+      "release": "Vrijgeven",
+      "pinned": "Vastgezet op die provider. De synchronisatie laat het met rust.",
+      "released": "Terug naar automatisch. De synchronisatie bepaalt het weer.",
+      "model": "Model",
+      "year": "Bouwjaar",
+      "base": "Basis",
+      "operator": "Operator",
+      "photos": "Foto's",
+      "descriptions": "Beschrijvingen",
+      "fields": {
+        "media": "Foto's",
+        "title": "Naam",
+        "spec": "Specificaties",
+        "description": "Beschrijving",
+        "taxonomy": "Werf, model, type",
+        "operator": "Operator",
+        "home_base": "Thuishaven",
+        "pets": "Huisdieren toegestaan"
+      },
+      "takeOut": "Uit deze advertentie halen",
+      "splitRestored": "Eruit gehaald en teruggezet naar de advertentie waar het vandaan kwam.",
+      "splitNew": "Eruit gehaald en in een eigen advertentie geplaatst.",
+      "confirmSplitBody": "Het aanbod van {provider} gaat terug naar een eigen advertentie en deze advertentie bevat niet langer beide providers. Je kunt het paar opnieuw samenvoegen via het tabblad Samengevoegde duplicaten van Duplicaten controleren.",
+      "confirmSplitAction": "Eruit halen",
+      "confirmSplitBusy": "Eruit halen…",
+      "confirmSplitCancel": "Annuleren"
+    }
+  },
+  "Routes": {
+    "title": "Voorgestelde routes",
+    "subtitle": "Handmatig geschreven vaarplannen. Een route hoort bij één charterbasis of één vaargebied, en een advertentiepagina toont hem alleen als iemand er een heeft geschreven - hier wordt niets gegenereerd.",
+    "filters": {
+      "country": "Land",
+      "allCountries": "Alle landen",
+      "kind": "Soort",
+      "allKinds": "Alle soorten",
+      "status": "Status",
+      "allStatuses": "Alle statussen",
+      "search": "Zoeken op titel"
+    },
+    "table": {
+      "title": "Route",
+      "target": "Basis of regio",
+      "kind": "Soort",
+      "nights": "Nachten",
+      "stops": "Stops",
+      "status": "Status",
+      "actions": "Acties"
+    },
+    "kinds": {
+      "seven_days": "7 dagen",
+      "fourteen_days": "14 dagen",
+      "family": "Familie",
+      "first_time_sailors": "Beginnende zeilers",
+      "active_sailing": "Actief zeilen"
+    },
+    "status": {
+      "live": "Live",
+      "draft": "Concept"
+    },
+    "actions": {
+      "create": "Nieuwe route",
+      "stops": "Stops",
+      "preview": "Voorbeeld",
+      "edit": "Bewerken",
+      "publish": "Publiceren",
+      "unpublish": "Depubliceren",
+      "delete": "Verwijderen",
+      "featured": "Homepage"
+    },
+    "stopCount": "{count, plural, =0 {Geen stops} one {# stop} other {# stops}}",
+    "published": "{title} is live.",
+    "unpublished": "{title} is terug naar concept.",
+    "deleted": "{title} is verwijderd.",
+    "empty": "Geen routes die aan deze filters voldoen",
+    "error": "Routes konden niet worden geladen",
+    "target": {
+      "country": "Land",
+      "allCountries": "Alle landen",
+      "level": "Koppelen aan",
+      "levelBase": "Een charterbasis",
+      "levelRegion": "Een vaargebied",
+      "base": "Basis",
+      "region": "Regio",
+      "searchBase": "Zoek een jachthaven of plaats",
+      "searchRegion": "Zoek een regio",
+      "chooseBase": "Kies een basis",
+      "chooseRegion": "Kies een regio",
+      "baseOption": "{base} · {place} ({count, plural, =0 {geen jachten} one {# jacht} other {# jachten}})",
+      "regionOption": "{region} · {country} ({count, plural, =0 {geen jachten} one {# jacht} other {# jachten}})",
+      "noMatches": "Niets gevonden voor deze zoekopdracht",
+      "hint": "Een route wordt gekoppeld aan een basis of aan een regio, nooit aan beide. Een basisroute gaat voor een regioroute bij elk jacht dat daar ligt. Beide lijsten zijn gesorteerd op het aantal gepubliceerde jachten achter elk item."
+    },
+    "dialog": {
+      "createTitle": "Nieuwe route",
+      "editTitle": "Route bewerken",
+      "description": "De gegevens van de route zelf. De stops worden in het volgende scherm op een kaart getekend.",
+      "fields": {
+        "title": "Titel",
+        "titlePlaceholder": "Split naar Vis en terug",
+        "kind": "Soort",
+        "nights": "Nachten",
+        "sortOrder": "Volgorde",
+        "sortOrderHint": "Laagste eerst als een basis meerdere routes heeft",
+        "description": "Beschrijving",
+        "descriptionPlaceholder": "Hoe het is om dit vaarplan te zeilen, in een zin of twee.",
+        "defaultHint": "Getoond in elke taal zonder vertaling hieronder.",
+        "difficulty": "Moeilijkheid",
+        "imageUrl": "Foto-URL",
+        "imageUrlHint": "Getoond op de routekaart, op de kaart met routes en in linkvoorbeelden.",
+        "translations": "Vertalingen",
+        "translationsHint": "Titel en beschrijving per taal. Een lege taal valt terug op de standaardtekst hierboven.",
+        "slug": "Paginaadres",
+        "slugPlaceholder": "gemaakt op basis van de titel",
+        "slugHint": "De openbare pagina van de route. Kleine letters, cijfers en koppeltekens.",
+        "slugCreateHint": "Laat leeg om het uit de titel te maken. Kleine letters, cijfers en koppeltekens.",
+        "slugMoved": "Als je dit wijzigt, verhuist de pagina: links naar {previous} werken dan niet meer.",
+        "imageHint": "Getoond op de routekaart, op de kaart met routes en in linkvoorbeelden. Upload een foto of plak de URL.",
+        "upload": "Foto uploaden",
+        "uploading": "Uploaden..."
+      },
+      "errors": {
+        "target": "Kies een basis of een regio voor deze route",
+        "nights": "Tussen 1 en 28 nachten",
+        "failed": "De route kon niet worden opgeslagen",
+        "slug": "Gebruik kleine letters, cijfers en enkele koppeltekens, bijvoorbeeld split-naar-vis.",
+        "upload": "De foto kon niet worden geüpload."
+      },
+      "cancel": "Annuleren",
+      "create": "Route aanmaken",
+      "save": "Wijzigingen opslaan",
+      "created": "{title} is aangemaakt. Voeg nu de stops toe.",
+      "updated": "{title} is opgeslagen.",
+      "difficulty": {
+        "none": "Niet ingesteld",
+        "easy": "Makkelijk",
+        "moderate": "Gemiddeld",
+        "advanced": "Gevorderd"
+      },
+      "locales": {
+        "en": "Engels",
+        "uk": "Oekraïens",
+        "de": "Duits",
+        "es": "Spaans",
+        "fr": "Frans",
+        "pl": "Pools",
+        "it": "Italiaans",
+        "nl": "Nederlands"
+      }
+    },
+    "stops": {
+      "subtitle": "{target} · {nights} nachten",
+      "listTitle": "Vaarplan ({count})",
+      "add": "Stop toevoegen",
+      "day": "Dag {day}",
+      "moveUp": "Eerder zetten",
+      "moveDown": "Later zetten",
+      "edit": "Bewerken",
+      "remove": "Stop verwijderen",
+      "empty": {
+        "title": "Nog geen stops",
+        "body": "De route bestaat, maar er valt niets te tekenen, dus hij kan niet worden gepubliceerd en geen enkele advertentiepagina toont hem. Zoek rechts naar een haven of tik op de kaart, geef de stop een naam en voeg hem toe."
+      },
+      "form": {
+        "addTitle": "Een stop toevoegen",
+        "editTitle": "Deze stop bewerken",
+        "name": "Naam stop",
+        "namePlaceholder": "Vis-stad",
+        "note": "Notitie",
+        "noteHint": "Een taal zonder eigen notitie valt terug op de Engelse.",
+        "noteFor": "Notitie ({locale})",
+        "notePlaceholder": "Wat je hier doet - de ankerplek, de wandeling, het restaurant.",
+        "placed": "Speld op {lat}, {lng}. Sleep hem om de stop te verplaatsen.",
+        "unplaced": "Nog geen positie. Zoek een plek of tik op de kaart om de speld te plaatsen.",
+        "save": "Stop opslaan",
+        "append": "Aan vaarplan toevoegen",
+        "cancelEdit": "Annuleren"
+      },
+      "search": {
+        "label": "Zoek een plek",
+        "placeholder": "Vis, Hvar, Bol…",
+        "hint": "Verplaatst de speld naar het resultaat. Sleep hem daarna als de ankerplek niet in het dorp zelf ligt.",
+        "searching": "Zoeken…"
+      },
+      "preview": "Voorbeeld",
+      "close": "Sluiten",
+      "saved": "{name} is opgeslagen.",
+      "added": "{name} is toegevoegd.",
+      "removed": "{name} is verwijderd.",
+      "failed": "De stop kon niet worden opgeslagen",
+      "missingNotes": "Geen notitie in: {locales}",
+      "deleteDialog": {
+        "title": "Deze stop verwijderen?",
+        "description": "“{name}” (dag {day}) wordt verwijderd uit “{title}” en elke latere stop schuift een dag naar voren. Dit kan niet ongedaan worden gemaakt.",
+        "cancel": "Annuleren",
+        "confirm": "Stop verwijderen",
+        "deleting": "Verwijderen..."
+      }
+    },
+    "previewDialog": {
+      "title": "Voorbeeld van de route",
+      "subtitle": "Precies zoals hij verschijnt bij een jacht in {target}.",
+      "empty": "Voeg een stop toe voordat je een voorbeeld bekijkt - er valt nog niets te tekenen."
+    },
+    "featured": {
+      "title": "Routes op de homepage",
+      "description": "De lijst met populaire routes, in de volgorde waarin de site hem toont. De eerste zes vullen de slider; de rest verschijnt onder “Alle populaire bekijken”.",
+      "chosen": "Gekozen ({count})",
+      "add": "Een route toevoegen",
+      "addAction": "Toevoegen",
+      "remove": "Verwijderen",
+      "search": "Gepubliceerde routes zoeken",
+      "noCandidates": "Niets meer toe te voegen uit deze zoekopdracht",
+      "moveUp": "Omhoog",
+      "moveDown": "Omlaag",
+      "cancel": "Annuleren",
+      "save": "Volgorde opslaan",
+      "saved": "De homepage toont nu {count, plural, =0 {geen routes} one {# route} other {# routes}}.",
+      "failed": "De volgorde kon niet worden opgeslagen",
+      "placement": {
+        "slider": "In de slider",
+        "grid": "Onder Alle bekijken",
+        "hidden": "Niet getoond"
+      },
+      "empty": {
+        "title": "Geen routes gekozen",
+        "body": "Deze sectie op de homepage blijft leeg totdat hier een route wordt toegevoegd. Kies uit de gepubliceerde routes rechts."
+      }
+    },
+    "deleteDialog": {
+      "title": "Deze route verwijderen?",
+      "description": "“{title}” wordt verwijderd samen met {stops, plural, one {# stop} other {# stops}}. Dit kan niet ongedaan worden gemaakt. Wil je hem van de site halen maar bewaren, gebruik dan Depubliceren.",
+      "cancel": "Annuleren",
+      "confirm": "Route verwijderen",
+      "deleting": "Verwijderen..."
+    }
+  },
+  "Payments": {
+    "title": "Betalingen",
+    "subtitle": "Bankoverschrijvingen die nog moeten worden verwerkt en geld dat klanten terug moeten krijgen.",
+    "tabs": {
+      "invoices": "Factuuraanvragen",
+      "refunds": "Terug te betalen"
+    },
+    "invoices": {
+      "filters": {
+        "status": "Filteren op status",
+        "allStatuses": "Alle statussen"
+      },
+      "table": {
+        "issued": "Uitgegeven",
+        "invoice": "Factuur",
+        "customer": "Klant",
+        "booking": "Boeking",
+        "amount": "Bedrag",
+        "status": "Status",
+        "actions": "Acties"
+      },
+      "status": {
+        "pending": "In afwachting",
+        "sent": "Verstuurd",
+        "paid": "Betaald",
+        "cancelled": "Ingetrokken"
+      },
+      "due": "Te betalen vóór {date}",
+      "settledAt": "Verwerkt op {date}",
+      "actions": {
+        "settle": "Overschrijving ontvangen",
+        "withdraw": "Intrekken"
+      },
+      "empty": "Geen factuuraanvragen.",
+      "error": "Factuuraanvragen konden niet worden geladen."
+    },
+    "refunds": {
+      "filters": {
+        "search": "Zoeken op referentie, naam of e-mail"
+      },
+      "table": {
+        "cancelled": "Geannuleerd",
+        "customer": "Klant",
+        "booking": "Boeking",
+        "charter": "Charter",
+        "collected": "Geïnd",
+        "actions": "Acties"
+      },
+      "ofTotal": "van {total}",
+      "actions": {
+        "refund": "Geld terugbetalen"
+      },
+      "empty": "Er hoeft op dit moment niets te worden terugbetaald.",
+      "error": "De wachtrij met terugbetalingen kon niet worden geladen."
+    },
+    "settle": {
+      "title": "Ontvangen overschrijving vastleggen",
+      "description": "Boeking {reference} wordt bij de operator vastgelegd zodra dit is geregistreerd.",
+      "invoiced": "Factuur {number} · {amount} gefactureerd",
+      "amountLabel": "Ontvangen bedrag ({currency})",
+      "amountHint": "Pas dit aan als er door bankkosten een ander bedrag is binnengekomen.",
+      "noteLabel": "Notitie",
+      "notePlaceholder": "Kenmerk van de overschrijving, wie het heeft bevestigd…",
+      "cancel": "Annuleren",
+      "confirm": "Overschrijving vastleggen",
+      "settling": "Vastleggen…",
+      "settled": "Overschrijving vastgelegd - boeking {reference} is bevestigd.",
+      "rejected": "Overschrijving vastgelegd, maar de operator weigerde: {reason}. Voor de boeking moet nu worden terugbetaald.",
+      "failed": "De overschrijving kon niet worden vastgelegd."
+    },
+    "withdraw": {
+      "title": "Deze factuuraanvraag intrekken",
+      "description": "Boeking {reference} wordt geannuleerd en de optie bij de operator wordt vrijgegeven.",
+      "reasonLabel": "Reden",
+      "reasonPlaceholder": "Geen reactie na drie herinneringen…",
+      "cancel": "Behouden",
+      "confirm": "Intrekken en annuleren",
+      "withdrawing": "Intrekken…",
+      "withdrawn": "Factuur ingetrokken en boeking {reference} geannuleerd.",
+      "failed": "De factuur kon niet worden ingetrokken."
+    },
+    "refund": {
+      "title": "Geld terugbetalen",
+      "description": "Betaalt geld terug dat voor boeking {reference} is geïnd.",
+      "collected": "{amount} geïnd",
+      "cancelReason": "Geannuleerd: {reason}",
+      "amountLabel": "Terug te betalen bedrag",
+      "amountPlaceholder": "Alles ({amount})",
+      "amountHint": "Laat leeg om alles terug te betalen. Vul minder in om te houden wat het annuleringsbeleid inhoudt.",
+      "amountInvalid": "Voer een bedrag in tussen 0 en het geïnde bedrag.",
+      "reasonLabel": "Reden",
+      "reasonPlaceholder": "Operator heeft het jacht teruggetrokken…",
+      "manualLabel": "Ik heb de bankoverschrijving teruggestuurd",
+      "manualHint": "Vink dit pas aan als het geld echt is overgemaakt. Kaartbetalingen worden automatisch via Stripe teruggestort.",
+      "cancel": "Annuleren",
+      "confirm": "Terugbetalen",
+      "refunding": "Terugbetalen…",
+      "refunded": "{amount} terugbetaald.",
+      "partial": "{amount} terugbetaald. Er moet nog {outstanding} worden terugbetaald.",
+      "manualPending": "Kaartbetalingen teruggestort. {count, plural, one {# bankoverschrijving moet} other {# bankoverschrijvingen moeten}} nog handmatig worden verstuurd.",
+      "failed": "De terugbetaling kon niet worden verwerkt."
+    }
+  },
+  "StaffBooking": {
+    "back": "Boekingen",
+    "staffOnly": "Medewerkersweergave - dit is de boeking van een klant. Deel deze pagina niet.",
+    "error": "Deze boeking kon niet worden geladen.",
+    "guestAccount": "Gastaccount",
+    "guests": "{count, plural, one {# gast} other {# gasten}}",
+    "noReservationId": "Nog geen reserverings-ID",
+    "outstanding": "{amount} openstaand",
+    "dueAtCheckIn": "{amount} te betalen in de jachthaven",
+    "createdAt": "Aangemaakt {at}",
+    "holdExpiresAt": "Optie verloopt {at}",
+    "confirmedAt": "Bevestigd {at}",
+    "cancelledAt": "Geannuleerd {at}",
+    "cancelReason": "Reden van annulering: {reason}",
+    "fields": {
+      "customer": "Klant",
+      "charter": "Charter",
+      "provider": "Provider",
+      "total": "Totaal",
+      "collected": "Geïnd",
+      "timeline": "Tijdlijn"
+    },
+    "invoice": {
+      "title": "Factuuraanvraag",
+      "number": "Nummer",
+      "amount": "Bedrag",
+      "status": "Status",
+      "billedTo": "Gefactureerd aan",
+      "issued": "Uitgegeven",
+      "due": "Vervaldatum"
+    },
+    "payments": {
+      "title": "Betalingen",
+      "kind": "Termijn",
+      "amount": "Bedrag",
+      "method": "Methode",
+      "status": "Status",
+      "paidAt": "Betaald",
+      "empty": "Er is nog niets geïnd.",
+      "disputed": "Betwist: {state}",
+      "methods": {
+        "card": "Kaart",
+        "transfer": "Bankoverschrijving"
+      },
+      "disputeStatus": {
+        "open": "open"
+      }
+    },
+    "schedule": {
+      "title": "Betalingsschema",
+      "kind": "Termijn",
+      "amount": "Bedrag",
+      "dueAt": "Vervaldatum",
+      "status": "Status",
+      "empty": "Geen schema voor deze boeking.",
+      "statuses": {
+        "pending": "In afwachting",
+        "paid": "Betaald",
+        "cancelled": "Geannuleerd",
+        "refunded": "Terugbetaald"
+      }
+    },
+    "priceLines": {
+      "title": "Prijsopbouw",
+      "labels": {
+        "charterPrice": "Charterprijs",
+        "charterExtra": "Charterextra",
+        "charterDiscount": "Charterkorting",
+        "referralWelcome": "Welkomstkorting via doorverwijzing",
+        "referralCredit": "Verwijstegoed"
+      }
+    },
+    "excluded": {
+      "chip": "Geen echte omzet",
+      "exclude": "Markeren als testboeking",
+      "restore": "Terugzetten in de wachtrijen",
+      "excludedAt": "Uitgesloten van wachtrijen en totalen {at}",
+      "help": "Een uitgesloten boeking behoudt haar status, betalingen en reservering bij de provider. Ze telt alleen niet meer mee in de wachtrijen van medewerkers en in de geldtotalen."
+    },
+    "cancel": {
+      "action": "Boeking annuleren",
+      "title": "Deze boeking annuleren?",
+      "description": "{reference} voor {customer}",
+      "confirmedWarning": "Deze boeking is bevestigd. Annuleren verplaatst haar naar de wachtrij voor terugbetalingen; het geld wordt pas teruggestort als iemand het daar terugbetaalt.",
+      "reasonLabel": "Reden (optioneel)",
+      "reasonPlaceholder": "Operator heeft het jacht teruggetrokken",
+      "keep": "Behouden",
+      "confirm": "Boeking annuleren",
+      "success": "Boeking geannuleerd.",
+      "successRefund": "Boeking geannuleerd en verplaatst naar de wachtrij voor terugbetalingen.",
+      "providerHeld": "Hier geannuleerd, maar {provider} heeft de reservering behouden: {error}",
+      "providerHeldUnknown": "de provider gaf geen reden",
+      "error": "Deze boeking kon niet worden geannuleerd."
+    },
+    "providerHold": {
+      "title": "{provider} houdt deze reservering nog vast",
+      "body": "We hebben onze kant geannuleerd, maar de provider heeft de reservering niet losgelaten. De charter staat nog bij de operator, dus regel het met hen voordat er wordt terugbetaald, anders gaat het geld terug voor een week die ons nog in rekening wordt gebracht."
+    }
+  },
+  "providers": {
+    "mock": "Mock",
+    "booking_manager": "Booking Manager",
+    "nausys": "NauSYS"
+  },
+  "Faq": {
+    "title": "Veelgestelde vragen",
+    "subtitle": "Alle vragen op de site, met alle vier de talen op één rij. Een vraag verschijnt alleen op een pagina in de talen die een antwoord hebben.",
+    "scope": {
+      "site": "Hele site",
+      "listing": "Eén jacht"
+    },
+    "categories": {
+      "booking": "Boeken",
+      "payment": "Betaling",
+      "prices": "Prijzen",
+      "licences": "Vaarbewijzen",
+      "travel": "Reizen",
+      "cancellation": "Annulering"
+    },
+    "locales": {
+      "en": "Engels",
+      "de": "Duits",
+      "es": "Spaans",
+      "uk": "Oekraïens",
+      "fr": "Frans",
+      "pl": "Pools",
+      "it": "Italiaans",
+      "nl": "Nederlands"
+    },
+    "localeCodes": {
+      "en": "EN",
+      "de": "DE",
+      "es": "ES",
+      "uk": "UK",
+      "fr": "FR",
+      "pl": "PL",
+      "it": "IT",
+      "nl": "NL"
+    },
+    "state": {
+      "answered": "Beantwoord - op de openbare pagina",
+      "unanswered": "Nog geen antwoord - verborgen op de pagina",
+      "missing": "Geen vertaling"
+    },
+    "gaps": {
+      "missing_answer": "Antwoord ontbreekt",
+      "missing_locale": "Vertaling ontbreekt"
+    },
+    "filters": {
+      "scope": "Bereik",
+      "category": "Categorie",
+      "locale": "Te controleren taal",
+      "gap": "Wat tonen",
+      "allCategories": "Alle categorieën",
+      "anyLocale": "Elke taal",
+      "allEntries": "Alle items",
+      "search": "Vragen en antwoorden zoeken",
+      "listing": "Jacht",
+      "listingSearch": "Jachten zoeken op naam"
+    },
+    "legend": {
+      "title": "Taalstatus:"
+    },
+    "table": {
+      "order": "Volgorde",
+      "question": "Vraag",
+      "locales": "Talen",
+      "category": "Categorie",
+      "actions": "Acties"
+    },
+    "actions": {
+      "create": "Nieuw item",
+      "edit": "Bewerken",
+      "delete": "Verwijderen",
+      "moveUp": "Omhoog",
+      "moveDown": "Omlaag"
+    },
+    "reorderDisabled": "Kies één categorie en één taal en wis de zoekopdracht en filters om de volgorde te wijzigen.",
+    "reordered": "Volgorde opgeslagen, in alle talen.",
+    "deleted": "{count, plural, one {# vertaling verwijderd.} other {# vertalingen verwijderd.}}",
+    "deleteDialog": {
+      "title": "Deze vraag verwijderen?",
+      "description": "“{question}” wordt verwijderd in alle talen waarin hij bestaat ({locales}). Dit kan niet ongedaan worden gemaakt. Om maar één taal te verwijderen, open je Bewerken en gebruik je Deze vertaling verwijderen.",
+      "cancel": "Annuleren",
+      "confirm": "Verwijderen in alle talen",
+      "deleting": "Verwijderen..."
+    },
+    "unpublished": "Nog op geen enkele pagina",
+    "noCategory": "Geen categorie",
+    "noQuestion": "Zonder titel",
+    "chooseListing": "Kies een jacht om de eigen items ervan te zien",
+    "empty": "Geen items die aan deze filters voldoen",
+    "error": "De veelgestelde vragen konden niet worden geladen",
+    "summary": {
+      "missingAnswer": "{count} van {total} items hebben nog geen antwoord en worden daarom niet op de openbare pagina getoond. Gecontroleerd: {locale}.",
+      "missingLocale": "Bij {count} van {total} items ontbreekt een vertaling. Gecontroleerd: {locale}."
+    },
+    "dialog": {
+      "createTitle": "Nieuw FAQ-item",
+      "editTitle": "FAQ-item bewerken",
+      "description": "Eén vraag, alle vier de talen. Een taal die leeg blijft, behoudt wat die al had - gebruik Deze vertaling verwijderen om er een van de site te halen.",
+      "scope": {
+        "label": "Waar het verschijnt"
+      },
+      "category": {
+        "label": "Categorie",
+        "placeholder": "Kies een categorie"
+      },
+      "listing": {
+        "label": "Jacht",
+        "search": "Jachten zoeken op naam",
+        "clear": "Gekozen jacht wissen",
+        "noResults": "Geen jachten met die naam"
+      },
+      "question": {
+        "label": "Vraag",
+        "placeholder": "Schrijf de vraag in deze taal"
+      },
+      "answer": {
+        "label": "Antwoord",
+        "placeholder": "Laat leeg totdat het antwoord is geschreven",
+        "hint": "Zonder antwoord blijft de vraag hier en komt hij nooit op de openbare pagina."
+      },
+      "removeTranslation": "Deze vertaling verwijderen",
+      "translationRemoved": "De vertaling ({locale}) is verwijderd.",
+      "cancel": "Annuleren",
+      "save": "Opslaan",
+      "create": "Aanmaken",
+      "created": "Item aangemaakt.",
+      "saved": "Item opgeslagen.",
+      "failed": "Het item kon niet worden opgeslagen",
+      "cacheRefreshing": "De openbare pagina wordt gecachet, dus het kan even duren voordat die is bijgewerkt.",
+      "cacheStale": "Opgeslagen, maar de cache van de openbare pagina kon niet worden gewist - die kan nog even de oude tekst tonen.",
+      "errors": {
+        "listingRequired": "Kies een jacht voor dit item",
+        "categoryRequired": "Een item voor de hele site heeft een categorie nodig - er is geen jachtpagina waar het op staat",
+        "questionRequired": "Schrijf de vraag in minstens één taal",
+        "answerWithoutQuestion": "Deze taal heeft een antwoord maar geen vraag",
+        "questionTooLong": "Houd de vraag onder de 500 tekens",
+        "answerTooLong": "Houd het antwoord onder de 8000 tekens"
+      }
+    }
+  },
+  "Popular": {
+    "title": "Populaire keuzes",
+    "subtitle": "Welke waarden bovenaan een filterlijst staan en welke de homepage aanvoeren.",
+    "kinds": {
+      "country": "Landen",
+      "category": "Boottypes",
+      "equipment": "Voorzieningen",
+      "region": "Vaargebieden",
+      "marina": "Jachthavens",
+      "model": "Modellen",
+      "location": "Locaties",
+      "crew": "Soorten bemanning",
+      "sail_type": "Soorten grootzeil"
+    },
+    "surfaces": {
+      "popular": "Vastgezet in filter",
+      "featured": "Homepage",
+      "filter": "Filterlijst"
+    },
+    "surfaceHint": {
+      "popular": "Getoond als groep “Populair” bovenaan de zoekfilters.",
+      "featured": "De volgorde die de sliders en rasters op de homepage gebruiken.",
+      "filter": "De enige waarden die het zoekfilter aanbiedt. Leeg biedt het elke waarde uit de catalogus aan."
+    },
+    "filters": {
+      "kind": "Facet",
+      "surface": "Waar het verschijnt",
+      "search": "Waarden zoeken"
+    },
+    "table": {
+      "order": "Volgorde",
+      "value": "Waarde",
+      "count": "Jachten",
+      "actions": "Acties"
+    },
+    "actions": {
+      "moveUp": "Omhoog",
+      "moveDown": "Omlaag",
+      "remove": "Verwijderen",
+      "edit": "Foto en tekst bewerken"
+    },
+    "empty": "Nog niets samengesteld. Kies hierboven waarden om ze vast te zetten.",
+    "emptyFilter": "Niets gekozen, dus het filter biedt elke waarde aan. Kies hierboven waarden om de lijst in te korten.",
+    "error": "De volgorde kon niet worden opgeslagen.",
+    "saved": "Volgorde opgeslagen.",
+    "cacheWarning": "Opgeslagen, maar de gecachte pagina's van de site konden nog niet worden vernieuwd.",
+    "noListings": "Geen jachten",
+    "media": {
+      "title": "{name} bewerken",
+      "description": "De foto en tekst op de homepagekaart van deze waarde. Opgeslagen tekst wordt nooit overschreven door een providersynchronisatie.",
+      "imageUrl": "Foto-URL",
+      "imageHint": "Upload een bestand of plak een URL. JPEG, PNG, WebP of AVIF, tot 10 MB.",
+      "imageHintNoUpload": "Plak een URL. Bestanden uploaden is in deze omgeving niet ingesteld.",
+      "hoverImageUrl": "Hoverfoto",
+      "hoverImageHint": "Getoond op de uitgelichte tegels van de homepage als de cursor boven de kaart staat, bijv. de plek van bovenaf. Laat leeg om één foto te houden.",
+      "gridUsesHoverImage": "De hoverfoto gebruiken in het raster \"Alle populaire bekijken\"",
+      "gridUsesHoverImageHint": "Het raster heeft geen hover en toont dus één foto. Aangevinkt is dat de hoverfoto; uitgevinkt de hoofdfoto.",
+      "upload": "Foto uploaden",
+      "uploading": "Uploaden...",
+      "uploadFailed": "De foto kon niet worden geüpload.",
+      "label": "Naam",
+      "labelHint": "Laat leeg om de catalogusnaam {name} of de vertaling van de provider te gebruiken.",
+      "descriptionField": "Beschrijving",
+      "descriptionHintEn": "Ook getoond in elke taal die geen eigen beschrijving heeft.",
+      "descriptionHint": "Laat leeg om de Engelse beschrijving te tonen.",
+      "cancel": "Annuleren",
+      "save": "Opslaan",
+      "saving": "Opslaan...",
+      "saved": "Opgeslagen.",
+      "saveFailed": "Kon niet worden opgeslagen.",
+      "cacheWarning": "Opgeslagen, maar de gecachte pagina's van de site konden nog niet worden vernieuwd.",
+      "locales": {
+        "en": "Engels",
+        "uk": "Oekraïens",
+        "de": "Duits",
+        "es": "Spaans",
+        "fr": "Frans",
+        "pl": "Pools",
+        "it": "Italiaans",
+        "nl": "Nederlands"
+      }
+    }
+  },
+  "PopularYachts": {
+    "title": "Slider met populaire jachten",
+    "subtitle": "Hoe de slider met populaire jachten op de homepage wordt samengesteld. De verdeling per type is een streefwaarde: als de limieten een type tekortdoen, gaan de resterende plekken naar de volgende beste boten.",
+    "limit": "Getoonde boten",
+    "maxAgeYears": "Maximale leeftijd (jaren)",
+    "maxPerCountry": "Maximaal per land",
+    "maxPerBase": "Maximaal per basis",
+    "mix": "Boten per type",
+    "mixHint": "Alleen de bestemmingen hieronder worden gebruikt. Een type dat op nul staat, wordt weggelaten.",
+    "destinations": "Bestemmingen",
+    "destinationsHint": "Eén land per regel, in volgorde van prioriteit: \"Croatia: Split / Trogir; Zadar / Sukošan\". Plaatsen worden gescheiden door \";\" en \"/\" scheidt schrijfwijzen van dezelfde plaats, die worden vergeleken met de jachthaven, locatie en regio van de boot. Elke plaats telt als één basis. Een land zonder plaatsen gebruikt het hele land; een lege lijst valt terug op de samengestelde populaire landen.",
+    "save": "Wijzigingen opslaan",
+    "saving": "Opslaan...",
+    "saved": "Slider opgeslagen.",
+    "saveFailed": "De slider kon niet worden opgeslagen.",
+    "cacheWarning": "Opgeslagen, maar de gecachte pagina's van de site konden nog niet worden vernieuwd."
+  },
+  "Settings": {
+    "title": "Marktplaatsinstellingen",
+    "subtitle": "Hoeveel van een charter vooraf wordt geïnd en via welke provider we verkopen als de aanbiedingen gelijk zijn.",
+    "source": {
+      "legend": "Welk betalingsplan we gebruiken",
+      "vendor": {
+        "title": "Het eigen schema van de provider",
+        "hint": "Elke offerte volgt de termijnen die de provider voor dat jacht en die data heeft doorgegeven, inclusief de eigen vervaldatum voor het restbedrag. Providers verschillen, dus het percentage verschilt per boeking."
+      },
+      "marketplace": {
+        "title": "Ons eigen beleid",
+        "hint": "Elke offerte gebruikt het percentage hieronder en het schema van de provider wordt volledig genegeerd, inclusief de vervaldatum."
+      }
+    },
+    "ourPolicy": {
+      "deposit": "Aanbetaling vragen",
+      "full": "Volledige betaling vragen",
+      "percentLabel": "Percentage aanbetaling",
+      "percentError": "Voer een percentage tussen 1 en 100 in."
+    },
+    "leadTime": {
+      "legend": "Volledige betaling kort voor vertrek",
+      "toggle": "Volledige betaling vereisen voor charters die binnenkort beginnen",
+      "hint": "Een ondergrens bovenop het plan dat hierboven is gekozen, nooit een apart derde plan. Uitgeschakeld blijft de 30% van een provider staan, zelfs bij een charter die morgen vertrekt.",
+      "daysLabel": "Dagen vóór het inchecken",
+      "daysError": "Voer een heel aantal dagen tussen 0 en 365 in."
+    },
+    "preference": {
+      "legend": "Voorkeursprovider",
+      "hint": "Welke leverancier wint als beschikbaarheid, prijs en verplichte kosten gelijk zijn. Dit gaat nooit boven een goedkoper aanbod: het beslist alleen bij een gelijkspel.",
+      "rebuildNote": "Geldt direct voor nieuwe offertes en de beschikbaarheidskalender. Cataloguskaarten worden direct na het opslaan op de achtergrond opnieuw opgebouwd, wat ruim binnen een minuut klaar is."
+    },
+    "currency": {
+      "legend": "Weergavevaluta",
+      "toggle": "Prijzen tonen in de eigen valuta van de bezoeker",
+      "hint": "Alleen voor weergave. Een boeking wordt afgerekend in de valuta waarin ze is geprijsd, en het betaalscherm vermeldt het bedrag dat daadwerkelijk wordt afgeschreven als de twee verschillen. Omgerekende bedragen zijn gemarkeerd als bij benadering: referentiekoersen zijn niet wat een kaartnetwerk hanteert. Prijzen blijven in de valuta van de leverancier als de koersen verouderd zijn.",
+      "fallback": "Als het land onbekend is"
+    },
+    "ranking": {
+      "reliabilityToggle": "Bij gelijkspel beslissen op hoe vaak een provider antwoordt",
+      "reliabilityHint": "Alleen als prijs, verplichte extra's en commissie allemaal gelijk zijn. Wordt overgeslagen voor elk paar waarbij een van de providers te weinig aanvragen in de periode heeft om te meten, zodat een nieuw gekoppelde leverancier nooit lager wordt gerangschikt omdat hij nog stil is. De cijfers staan op de pagina Synchronisatiegeschiedenis.",
+      "windowDays": "Gemeten over de laatste (dagen)",
+      "catalogueToggle": "Het chartertarief op kaarten tonen",
+      "catalogueHint": "Uit toont een kaart het totaalbedrag inclusief alles. Aan toont hij het chartertarief met de verplichte extra's eronder vermeld, en de sortering, het prijsfilter en de slider volgen allemaal hetzelfde bedrag. Los van de schakelaar hierboven: wat een kaart toont en via welke leverancier we verkopen zijn aparte beslissingen.",
+      "legend": "Rangschikking van aanbiedingen",
+      "toggle": "Rangschikken op het chartertarief",
+      "hint": "Uit wint de leverancier met het laagste totaalbedrag, wat de gast daadwerkelijk betaalt. Aan beslist het chartertarief en bepalen de verplichte extra's alleen een gelijkspel daarop. Rangschikken op het tarief kan de charter kiezen die de gast in totaal meer kost."
+    },
+    "nameSearch": {
+      "legend": "Vrij zoeken op tekst",
+      "toggle": "Het vrije tekstveld in de zoekbalk tonen",
+      "hint": "Een hulpmiddel voor testen, geen onderdeel van het ontwerp. Ingeschakeld krijgt de zoekbalk voor jachten een veld dat zoekt op naam, model, werf, charterbedrijf of basis van een boot, woord voor woord en in willekeurige volgorde."
+    },
+    "save": "Wijzigingen opslaan",
+    "saving": "Opslaan...",
+    "saved": "Instellingen opgeslagen.",
+    "saveFailed": "De instellingen konden niet worden opgeslagen.",
+    "appliesNext": "Geldt voor nieuwe offertes. Een offerte die een klant al heeft, behoudt het beleid waaronder die is geprijsd."
+  }
+}

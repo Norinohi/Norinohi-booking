@@ -1,0 +1,20 @@
+{
+  "title": "Tegoed & saldo",
+  "balance": {
+    "label": "Beschikbaar saldo",
+    "expiringSoon": "{amount} vervalt binnen 30 dagen",
+    "hint": "Tegoed is te gebruiken voor elke jachtboeking boven €1000 en wordt afgetrokken van wat je vandaag betaalt."
+  },
+  "ledger": {
+    "title": "Tegoedgeschiedenis",
+    "expires": "Vervalt op {date}",
+    "emptyTitle": "Nog geen tegoed",
+    "emptyDescription": "Nodig een vriend uit - je verdient tegoed zodra die de trip heeft gemaakt.",
+    "kind": {
+      "referral_reward": "Beloning voor doorverwijzing",
+      "booking_redemption": "Gebruikt voor boeking",
+      "expiry": "Vervallen",
+      "adjustment": "Correctie"
+    }
+  }
+}

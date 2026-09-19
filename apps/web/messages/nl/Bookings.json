@@ -1,0 +1,22 @@
+{
+  "title": "Mijn boekingen",
+  "history": "Geschiedenis",
+  "anyDates": "Alle data",
+  "clearDates": "Data wissen",
+  "emptyTitle": "Nog geen jachten",
+  "emptyDescription": "Ontdek jachten en plan je eerste trip - je boekingen verschijnen hier.",
+  "cancel": {
+    "action": "Boeking annuleren",
+    "title": "Deze boeking annuleren?",
+    "description": "Dit kan niet ongedaan worden gemaakt en het charterbedrijf wordt op de hoogte gebracht.",
+    "reasonLabel": "Reden (optioneel)",
+    "reasonPlaceholder": "Vertel ons waarom je annuleert",
+    "confirm": "Boeking annuleren",
+    "keep": "Boeking behouden",
+    "success": "Je boeking is geannuleerd.",
+    "error": "We konden je boeking niet annuleren. Probeer het opnieuw."
+  },
+  "statusCancelled": "Geannuleerd",
+  "payBalance": "{amount} betalen",
+  "completePayment": "Betaling afronden {amount}"
+}

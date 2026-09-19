@@ -1,0 +1,62 @@
+{
+  "title": "Jouw doorverwijzingen",
+  "invite": {
+    "heading": "Nodig vrienden uit. Verdien zeiltegoed.",
+    "description": "Geef je vrienden €100 voor hun eerste boeking en ontvang zelf €100 tegoed zodra ze gaan zeilen.",
+    "copy": "Verwijslink kopiëren",
+    "copied": "Link gekopieerd",
+    "generate": "Nieuwe code genereren",
+    "generated": "Nieuwe verwijscode gegenereerd",
+    "generateFailed": "Er kon geen nieuwe code worden gegenereerd. Probeer het opnieuw.",
+    "information": "Informatie",
+    "rules": {
+      "minBooking": "Tegoed is te gebruiken voor elke jachtboeking boven €1000.",
+      "expiry": "Verwijstegoed vervalt 12 maanden nadat het is verdiend.",
+      "cash": "Tegoed kan niet als contant geld worden opgenomen.",
+      "firstTime": "Alleen geldig voor de eerste boeking van uitgenodigde vrienden."
+    },
+    "stats": {
+      "invited": "Uitgenodigde gebruikers",
+      "completed": "Voltooide boekingen",
+      "earned": "Totaal verdiend",
+      "balance": "Beschikbaar saldo"
+    }
+  },
+  "how": {
+    "title": "Zo werkt het",
+    "steps": {
+      "share": {
+        "title": "Deel je link",
+        "description": "Stuur je persoonlijke verwijslink naar vrienden die van reizen houden"
+      },
+      "book": {
+        "title": "Je vriend boekt",
+        "description": "Ze krijgen €100 korting op hun eerste jachtboeking boven €1000"
+      },
+      "credit": {
+        "title": "Jij krijgt tegoed",
+        "description": "Zodra ze hun trip hebben gemaakt, ontvang je €100 tegoed"
+      }
+    },
+    "level": {
+      "title": "Jouw niveau",
+      "current": "Huidig:",
+      "next": "Volgende: {level}",
+      "left": "Nog {count, plural, one {# boeking} other {# boekingen}} tot het volgende niveau",
+      "perks": {
+        "extra": "5% extra tegoed op alle doorverwijzingen",
+        "early": "Vroege toegang tot luxe aanbiedingen",
+        "concierge": "Persoonlijke conciërgeservice"
+      }
+    }
+  },
+  "history": {
+    "title": "Verwijsgeschiedenis",
+    "today": "Vandaag",
+    "daysAgo": "{count, plural, one {# dag geleden} other {# dagen geleden}}",
+    "credited": "Voltooid",
+    "pending": "In behandeling",
+    "void": "Geannuleerd",
+    "empty": "Nog geen doorverwijzingen. Deel je link om te beginnen."
+  }
+}

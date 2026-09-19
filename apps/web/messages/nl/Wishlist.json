@@ -1,0 +1,12 @@
+{
+  "title": "Jouw verlanglijst",
+  "back": "Terug",
+  "saved": "Opgeslagen in je verlanglijst.",
+  "removed": "Verwijderd uit je verlanglijst.",
+  "emptyTitle": "Nog geen opgeslagen jachten",
+  "emptyDescription": "Ga op ontdekking en bewaar je favorieten voor later",
+  "someUnavailable": "Sommige van je opgeslagen jachten zijn niet meer beschikbaar.",
+  "toggleFailed": "Je verlanglijst kon niet worden bijgewerkt. Probeer het opnieuw.",
+  "merged": "{count, plural, one {# opgeslagen jacht} other {# opgeslagen jachten}} toegevoegd aan je account.",
+  "paginationSummary": "{from}-{to} van {total}"
+}

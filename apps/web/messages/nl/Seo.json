@@ -1,0 +1,191 @@
+{
+  "Commissions": {
+    "title": "Commissietarieven",
+    "description": "Wat {brand} per provider verdient."
+  },
+  "Yachts": {
+    "title": "Jachtcharter zoeken",
+    "description": "Zoek jachten en catamarans om te charteren in de Middellandse Zee en daarbuiten. Filter op bestemming, data, gasten en prijs."
+  },
+  "YachtsMap": {
+    "title": "Jachten op de kaart",
+    "description": "Bekijk beschikbare jachten en catamarans op een interactieve kaart. Ontdek jachthavens en bestemmingen en filter op data, gasten en prijs."
+  },
+  "YachtDetail": {
+    "title": "Jachtdetails",
+    "description": "Bekijk foto’s, specificaties, bemanningsopties en prijzen van dit jacht en controleer de beschikbaarheid voor jouw data.",
+    "titleAtPlace": "{boat} charteren in {place}",
+    "titlePlain": "{boat} charteren",
+    "metaSpecs": "{category} met {cabins, plural, one {# hut} other {# hutten}} voor maximaal {guests} gasten.",
+    "metaPlace": "{crew} charter vanuit {place}.",
+    "metaPriceFrom": "Vanaf {price}.",
+    "metaPriceForDays": "{price} voor {days, plural, one {# dag} other {# dagen}}.",
+    "metaCta": "Controleer de beschikbaarheid voor jouw data."
+  },
+  "Booking": {
+    "title": "Boek je jacht",
+    "description": "Rond je jachtcharterboeking af - gastgegevens, extra's en veilig betalen."
+  },
+  "BookingConfirmation": {
+    "title": "Boeking bevestigd",
+    "description": "Je jachtcharterboeking is bevestigd. Bekijk de details van je trip en de volgende stappen."
+  },
+  "PlanMyTrip": {
+    "title": "Plan mijn trip",
+    "description": "Vertel ons over je ideale trip en we stellen de juiste jachten, routes en data voor je voor."
+  },
+  "Login": {
+    "title": "Inloggen",
+    "description": "Log in op je YachtSkanner-account om je boekingen en opgeslagen jachten te beheren."
+  },
+  "Register": {
+    "title": "Account aanmaken",
+    "description": "Maak een YachtSkanner-account aan om jachten te boeken, favorieten te bewaren en je trips te beheren."
+  },
+  "Wishlist": {
+    "title": "Jouw verlanglijst",
+    "description": "De jachten en catamarans die je hebt opgeslagen. Vergelijk je favorieten en controleer de beschikbaarheid voor jouw data."
+  },
+  "Profile": {
+    "title": "Jouw profiel",
+    "description": "Beheer je YachtSkanner-accountgegevens, contactinformatie en voorkeuren."
+  },
+  "Bookings": {
+    "title": "Mijn boekingen",
+    "description": "Bekijk je jachtcharterboekingen, tripdetails en boekingsgeschiedenis."
+  },
+  "Referrals": {
+    "title": "Jouw doorverwijzingen",
+    "description": "Volg de vrienden die je voor YachtSkanner hebt uitgenodigd en de beloningen die je hebt verdiend."
+  },
+  "Credits": {
+    "title": "Tegoed & saldo",
+    "description": "Bekijk je beschikbare verwijstegoed, wat binnenkort vervalt en elke boeking achter je saldo."
+  },
+  "Discounts": {
+    "title": "Kortingen & prijsbeheer",
+    "description": "Beheer promotiecodes en jachtprijzen voor je advertenties."
+  },
+  "Duplicates": {
+    "title": "Duplicaten controleren",
+    "description": "Controleer en voeg vergelijkbare jachtadvertenties samen die de catalogussynchronisatie voorstelt."
+  },
+  "Sync": {
+    "title": "Synchronisatiegeschiedenis",
+    "description": "Synchronisaties van catalogus en beschikbaarheid met hun aantallen en fouten."
+  },
+  "Listings": {
+    "title": "Advertenties",
+    "description": "Controleer geïmporteerde jachtadvertenties en geef concepten vrij voor de catalogus."
+  },
+  "Routes": {
+    "title": "Voorgestelde routes",
+    "description": "Schrijf de zeilroutes die op een advertentiepagina worden getoond, per basis."
+  },
+  "Audit": {
+    "title": "Auditlog",
+    "description": "Elke actie van medewerkers, vastgelegd bij een boeking, advertentie, korting of aanvraag."
+  },
+  "Invoice": {
+    "title": "Factuur",
+    "description": "De factuur voor je jachtcharterboeking, met betalingsgegevens."
+  },
+  "ForgotPassword": {
+    "title": "Wachtwoord vergeten",
+    "description": "Stel het wachtwoord van je YachtSkanner-account opnieuw in."
+  },
+  "ResetPassword": {
+    "title": "Wachtwoord resetten",
+    "description": "Kies een nieuw wachtwoord voor je YachtSkanner-account."
+  },
+  "SetPassword": {
+    "title": "Wachtwoord instellen",
+    "description": "Kies een wachtwoord voor je YachtSkanner-account."
+  },
+  "Balance": {
+    "title": "Betaal je restbedrag",
+    "description": "Betaal het resterende bedrag van je jachtcharterboeking."
+  },
+  "BookingDetail": {
+    "title": "Jouw boeking",
+    "description": "Details, betalingen en documenten van je jachtcharterboeking."
+  },
+  "Inbox": {
+    "title": "Inbox",
+    "description": "Vragen en aanvragen van klanten die op een antwoord wachten."
+  },
+  "Payments": {
+    "title": "Betalingen",
+    "description": "Factuuraanvragen en terugbetalingen die op medewerkers wachten."
+  },
+  "StaffBooking": {
+    "title": "Boeking (medewerkers)",
+    "description": "Medewerkersweergave van een klantboeking."
+  },
+  "StaffBookings": {
+    "title": "Boekingen (medewerkers)",
+    "description": "Alle boekingen op het platform, voor medewerkers."
+  },
+  "Users": {
+    "title": "Gebruikers",
+    "description": "Alle accounts op het platform, voor medewerkers."
+  },
+  "CatalogPage": {
+    "country": "Jachtcharter in {place}",
+    "geo": "Jachtcharter in {place}, {country}",
+    "marina": "Jachtcharter in {place}",
+    "type": "{type} charteren",
+    "typeCountry": "{type} charteren in {place}",
+    "typeGeo": "{type} charteren in {place}, {country}",
+    "builder": "{brand} jachtcharter",
+    "model": "{model} charteren",
+    "intro": "{count, plural, one {# boot} other {# boten}} beschikbaar, vanaf {price} per week.",
+    "introNoPrice": "{count, plural, one {# boot} other {# boten}} beschikbaar.",
+    "description": "Vergelijk {count, plural, one {# jacht} other {# jachten}} om te charteren. Filter op data, gasten, hutten en prijs en controleer de beschikbaarheid voor je trip.",
+    "siblings": "Ook de moeite waard",
+    "regions": "Regio’s",
+    "empty": "Er zijn nu geen boten die hieraan voldoen. Probeer de volledige catalogus."
+  },
+  "Support": {
+    "title": "Support",
+    "description": "Stel ons al je vragen over je boeking."
+  },
+  "Consultation": {
+    "title": "Neem contact op",
+    "description": "Plan een gesprek of stuur ons een bericht over je trip."
+  },
+  "Faq": {
+    "title": "Veelgestelde vragen",
+    "description": "Schrijf en vertaal de vragen die op jachtpagina's worden getoond."
+  },
+  "Popular": {
+    "title": "Populaire keuzes",
+    "description": "Bepaal welke filterwaarden bovenaan de filters en op de homepage staan."
+  },
+  "PopularYachts": {
+    "title": "Populaire jachten",
+    "description": "Stel in hoe de slider met populaire jachten op de homepage wordt samengesteld."
+  },
+  "Contact": {
+    "title": "Contact",
+    "description": "Praat met een charterexpert over je volgende trip."
+  },
+  "Legal": {
+    "terms": {
+      "title": "Algemene voorwaarden",
+      "description": "De voorwaarden en huurovereenkomst voor charters die via YachtSkanner zijn geboekt."
+    },
+    "privacy": {
+      "title": "Privacybeleid",
+      "description": "Hoe YachtSkanner met je persoonsgegevens omgaat."
+    },
+    "cancellation": {
+      "title": "Annuleringsbeleid",
+      "description": "Wat er gebeurt als een via YachtSkanner geboekte charter wordt geannuleerd."
+    }
+  },
+  "RoutesMap": {
+    "title": "Kaart met zeilroutes",
+    "description": "Ontdek zeilroutes op de kaart en vind jachthavens met jachten vlak bij het startpunt van elke route."
+  }
+}

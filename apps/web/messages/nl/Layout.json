@@ -1,0 +1,124 @@
+{
+  "Footer": {
+    "tagline": "Ontdek de wereld per jacht.",
+    "description": "Meer dan 30.000 boten wereldwijd klaar voor je volgende trip.",
+    "columns": {
+      "destinations": "Bestemmingen",
+      "charterTypes": "Soorten charter",
+      "explore": "Ontdekken"
+    },
+    "links": {
+      "croatia": "Kroatië",
+      "greece": "Griekenland",
+      "italy": "Italië",
+      "turkey": "Turkije",
+      "caribbean": "Caribisch gebied",
+      "thailand": "Thailand",
+      "catamaran": "Catamaran",
+      "sailingYacht": "Zeiljacht",
+      "motorYacht": "Motorjacht",
+      "bareboat": "Bareboat",
+      "skippered": "Met schipper",
+      "planTrip": "Help me mijn trip te plannen",
+      "popularYachts": "Populaire jachten",
+      "customerReviews": "Wat onze klanten zeggen",
+      "howItWorks": "Zo werkt het",
+      "contact": "Neem contact op"
+    },
+    "privacy": "Privacybeleid",
+    "terms": "Servicevoorwaarden",
+    "copyright": "© {year} YachtSkanner Platform. Alle rechten voorbehouden."
+  },
+  "Nav": {
+    "boatTypes": "Boottypes",
+    "closeMenu": "Menu sluiten",
+    "destinations": "Bestemmingen",
+    "findByBudget": "Zoeken op budget",
+    "findYacht": "Jacht vinden",
+    "helpPlan": "Help me mijn trip te plannen",
+    "language": "Taal",
+    "openMenu": "Menu openen",
+    "popularRoutes": "Populaire routes",
+    "saved": "Opgeslagen",
+    "tryIt": "Probeer het"
+  },
+  "Sidebar": {
+    "menu": "Accountmenu",
+    "trigger": "Menu",
+    "greeting": "Hallo, {name}!",
+    "profile": "Mijn profiel",
+    "bookings": "Mijn boekingen",
+    "referrals": "Doorverwijzingen",
+    "credits": "Tegoed & saldo",
+    "discount": "Kortingsbeheer",
+    "logout": "Uitloggen",
+    "commission": "Commissietarieven",
+    "duplicates": "Duplicaten controleren",
+    "sync": "Synchronisatiegeschiedenis",
+    "audit": "Auditlog",
+    "inbox": "Inbox",
+    "staffBookings": "Boekingen",
+    "users": "Gebruikers",
+    "payments": "Betalingen",
+    "listings": "Advertenties",
+    "routes": "Voorgestelde routes",
+    "sections": {
+      "account": "Account",
+      "admin": "Beheer"
+    },
+    "faq": "Veelgestelde vragen",
+    "groups": {
+      "fleet": "Jachten",
+      "content": "Website-inhoud"
+    },
+    "settings": "Marktplaatsinstellingen",
+    "popular": "Populaire keuzes",
+    "popularYachts": "Populaire jachten"
+  },
+  "UserMenu": {
+    "account": "Account",
+    "signIn": "Inloggen",
+    "signOut": "Uitloggen",
+    "profile": "Mijn profiel",
+    "bookings": "Mijn boekingen",
+    "referrals": "Doorverwijzingen",
+    "credits": "Tegoed & saldo"
+  },
+  "description": "Huur wereldwijd jachten en catamarans. Vergelijk boten, data en prijzen en boek je volgende zeiltrip in een paar minuten.",
+  "title": "YachtSkanner - Jacht- en catamaranverhuur wereldwijd",
+  "CookieConsent": {
+    "title": "Cookies",
+    "description": "We gebruiken analytische cookies om te zien hoe de site wordt gebruikt, zodat we hem kunnen verbeteren. Er wordt niets gemeten totdat je akkoord gaat.",
+    "manage": "Voorkeuren beheren",
+    "accept": "Accepteren",
+    "decline": "Weigeren",
+    "footerLink": "Cookies",
+    "dialog": {
+      "title": "Jouw privacy",
+      "description": "Kies welke cookies deze site mag gebruiken. Je keuze wordt op dit apparaat opgeslagen en je kunt die altijd wijzigen via de footer.",
+      "close": "Sluiten",
+      "alwaysActive": "Altijd actief",
+      "necessary": {
+        "title": "Noodzakelijk",
+        "description": "Houden je ingelogd, beschermen betalingen tegen fraude en onthouden deze cookiekeuze. De site werkt niet zonder deze cookies."
+      },
+      "functional": {
+        "title": "Functioneel",
+        "description": "Onthouden welke boten je hebt opgeslagen en tellen een herhaald bezoek aan een advertentie maar één keer. Opgeslagen in je browser en nooit gedeeld."
+      },
+      "analytics": {
+        "title": "Analytisch",
+        "description": "Google Analytics, zodat we zien welke pagina's mensen gebruiken en waar ze vastlopen. Geen advertenties en geen profilering."
+      },
+      "save": "Mijn keuze opslaan",
+      "acceptAll": "Alles accepteren"
+    }
+  },
+  "Legal": {
+    "terms": "Algemene voorwaarden",
+    "privacy": "Privacybeleid",
+    "cancellation": "Annuleringsbeleid",
+    "pending": "Dit document wordt voorbereid en verschijnt hier binnenkort. Heb je in de tussentijd een vraag, dan helpt ons supportteam je graag.",
+    "contact": "Contact opnemen met support"
+  }
+}
