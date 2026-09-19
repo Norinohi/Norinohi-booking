@@ -1,0 +1,25 @@
+{
+  "title": "Contactez-nous",
+  "subtitle": "Réservez un appel ou envoyez-nous un message, comme vous préférez.",
+  "options": {
+    "call": {
+      "title": "Réserver un appel rapide",
+      "description": "Choisissez le créneau qui vous convient pour un court appel avec un expert en location de yachts."
+    },
+    "message": {
+      "title": "Envoyer un message",
+      "description": "Dites-nous ce que vous recherchez et nous vous répondrons par e-mail."
+    }
+  },
+  "placeholder": {
+    "title": "La prise de rendez-vous arrive bientôt",
+    "description": "La planification en ligne n'est pas encore disponible. Envoyez-nous un message et nous conviendrons d'un créneau qui vous convient.",
+    "cta": "Envoyer plutôt un message"
+  },
+  "send": "Envoyer le message",
+  "sent": "Merci ! Un expert en location de yachts vous contactera sous peu.",
+  "submitted": {
+    "title": "Merci, nous vous recontacterons",
+    "description": "L'un de nos experts en location de yachts reviendra vers vous sous peu."
+  }
+}

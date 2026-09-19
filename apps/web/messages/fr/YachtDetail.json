@@ -1,0 +1,207 @@
+{
+  "backToSearch": "Retour à la recherche",
+  "breadcrumbSearch": "Recherche",
+  "share": "Partager",
+  "linkCopied": "Lien copié",
+  "seeOnMap": "Voir sur la carte",
+  "addToWishlist": "Ajouter aux favoris",
+  "removeFromWishlist": "Retirer des favoris",
+  "included": "Inclus",
+  "amenities": {
+    "groups": {
+      "navigation-and-safety": "Navigation et sécurité",
+      "deck-and-cockpit": "Pont et cockpit",
+      "interior-and-cabins": "Intérieur et cabines",
+      "galley": "Cuisine",
+      "entertainment-and-water-toys": "Divertissement et jeux nautiques",
+      "systems-and-power": "Systèmes et énergie",
+      "other": "Autres équipements"
+    },
+    "itemCount": "{count, plural, one {# élément} other {# éléments}}",
+    "allIncluded": "Tous les équipements listés sont inclus dans le prix de la location.",
+    "dismissNote": "Fermer"
+  },
+  "importantInfo": {
+    "charterCompany": "Loueur",
+    "pickUpAddress": "Adresse de prise en charge du yacht",
+    "pickUp": "Prise en charge du yacht",
+    "dropOff": "Restitution du yacht",
+    "policies": "Conditions d’annulation / de paiement",
+    "securityDeposit": "Caution remboursable",
+    "securityDepositNote": "Retenue par la base de location à l’embarquement et restituée après une remise du bateau sans dommage.",
+    "securityDepositInsured": "Réduite à {amount} si vous souscrivez l’assurance caution de la base.",
+    "license": "Permis bateau",
+    "pets": "Animaux",
+    "paymentMethods": "Moyens de paiement acceptés par le loueur",
+    "marinaInfo": "Informations sur la marina",
+    "policiesVariesBySelection": "Les conditions d’annulation et d’acompte varient selon votre sélection. Les conditions de paiement sont confirmées lors du devis et de la réservation.",
+    "licenseRequired": "Permis bateau valide ou équivalent local requis.",
+    "licenseNotRequired": "Aucun permis n’est nécessaire pour une location avec équipage ou skipper.",
+    "petsAllowedWithConfirmation": "Les animaux sont acceptés à bord de ce yacht sous réserve de confirmation du loueur.",
+    "petsAskBase": "La politique relative aux animaux est fixée par la base de location : renseignez-vous avant de réserver.",
+    "marinaInfoText": "{marina} se trouve à {location}, {country}. Les horaires d’embarquement et de débarquement sont communiqués par la base de location.",
+    "paymentMethod": {
+      "card": "Carte",
+      "bank_transfer": "Virement bancaire",
+      "cash": "Espèces"
+    }
+  },
+  "popular": {
+    "from": "À partir de",
+    "perPeriod": "/ {days, plural, one {# jour} other {# jours}}",
+    "seeAll": "Voir tous les yachts",
+    "previous": "Yachts précédents",
+    "next": "Yachts suivants"
+  },
+  "route": {
+    "start": "Départ",
+    "finish": "Arrivée",
+    "day": "Jour {day}",
+    "stopTitle": "Jour {day} - {place}",
+    "disclaimer": "Itinéraire indicatif. L’itinéraire final et les escales de nuit dépendent de la météo, des disponibilités et de la décision du skipper."
+  },
+  "review": {
+    "count": "({count, plural, one {# avis} other {# avis}})",
+    "summary": "{shown} sur {total} affichés",
+    "empty": "Aucun avis écrit pour le moment",
+    "operatorRated": "La note provient de {count, plural, one {# évaluation client} other {# évaluations clients}} recueillies par le loueur."
+  },
+  "sidebar": {
+    "crew": "Équipage",
+    "people": "Personnes",
+    "datesPlaceholder": "Sélectionnez les dates",
+    "selectDates": "Veuillez sélectionner des dates pour voir le prix",
+    "unavailable": "Ce yacht n’a aucune date disponible",
+    "unavailableHint": "Interrogez-nous sur d’autres dates ou un yacht similaire.",
+    "slotRefused": "Ces dates ne sont pas réservables. Veuillez choisir une autre période.",
+    "searchedPeriodRefused": "Du {from} au {to}, ce yacht n’est pas disponible. Choisissez une autre période ou utilisez les dates affichées.",
+    "loadFailed": "Nous n’avons pas pu charger le prix de cette réservation.",
+    "loadRetry": "Réessayer",
+    "pricingUnavailable": "Nous ne parvenons pas à obtenir un prix pour ces dates auprès du fournisseur du yacht pour le moment. C’est généralement temporaire.",
+    "prepayment": "Acompte de réservation de {percent} %",
+    "boatPrice": "Prix du bateau",
+    "boatPriceHint": "Prix total de la location",
+    "deposit": "Caution remboursable",
+    "howItWorks": "Voir comment ça marche",
+    "scheduleDetails": "Ce que couvre ce paiement",
+    "scheduleIncludes": "Comprend",
+    "scheduleSplit": "Réparti sur les deux paiements",
+    "groups": {
+      "mandatory": "Suppléments obligatoires",
+      "selectedExtras": "Options sélectionnées",
+      "crew": "Équipage"
+    },
+    "payNow": "Acompte de réservation (à payer maintenant)",
+    "payAt": "À payer le : {date}",
+    "payAtCheckIn": "À payer à l’embarquement : {date}",
+    "firstPayment": "{amount} (1er paiement)",
+    "fullPayment": "{amount} (paiement intégral)",
+    "secondPayment": "{amount} (2e paiement)",
+    "extrasPayment": "{amount} (options)",
+    "depositNote": "+ {amount} (caution remboursable)",
+    "totalPrice": "Prix total",
+    "discountsHeading": "Inclus dans le prix de location ci-dessus",
+    "dueNow": "À payer maintenant",
+    "payNowCta": "Payer {amount} maintenant",
+    "requestBookingCta": "Envoyer la demande de réservation",
+    "requestBookingHint": "Le loueur de ce yacht confirme personnellement chaque réservation. Nous lui soumettrons vos dates et reviendrons vers vous. Aucun montant n’est débité maintenant.",
+    "requestQuote": "Demander un devis",
+    "promo": {
+      "label": "Code promo",
+      "placeholder": "Saisissez le code",
+      "apply": "Appliquer",
+      "remove": "Retirer",
+      "applied": "{amount} de réduction",
+      "rejected": {
+        "unknown_code": "Nous ne reconnaissons pas ce code.",
+        "inactive": "Ce code n’est plus actif.",
+        "not_started": "Ce code n’est pas encore valide.",
+        "expired": "Ce code a expiré.",
+        "usage_limit_reached": "Ce code a atteint sa limite d’utilisation.",
+        "not_applicable": "Ce code ne s’applique pas à ce yacht."
+      }
+    },
+    "credit": {
+      "label": "Crédit de parrainage",
+      "available": "{amount} disponible pour cette réservation",
+      "applied": "{amount} appliqué",
+      "apply": "Appliquer",
+      "remove": "Retirer"
+    },
+    "onRequest": "Le prix de ce yacht est sur demande",
+    "onRequestHint": "Nous avons des dates pour ce yacht, mais aucun tarif publié ne les couvre. Indiquez-nous quand vous souhaitez naviguer et nous reviendrons vers vous avec un prix.",
+    "dropOff": "Marina de restitution",
+    "pickUp": "Prise en charge : {marina}",
+    "boatPriceHintDiscounted": "Prix de location après remise",
+    "depositWhenInsured": "ou {amount} avec l’assurance dommages"
+  },
+  "panels": {
+    "details": "Détails du yacht",
+    "booking": "Récapitulatif de la réservation"
+  },
+  "tabs": {
+    "overview": "Aperçu",
+    "amenities": "Équipements",
+    "mandatory-extras": "Suppléments obligatoires",
+    "optional-extras": "Options",
+    "description": "Description",
+    "important-info": "Infos importantes",
+    "suggested-route": "Itinéraire suggéré",
+    "review": "Avis",
+    "faq": "FAQ",
+    "popular-yachts": "Yachts populaires"
+  },
+  "sections": {
+    "overview": "Aperçu",
+    "amenities": "Équipements",
+    "mandatoryExtras": "Suppléments obligatoires",
+    "optionalExtras": "Options",
+    "description": "Description",
+    "media": "Vidéo et visite",
+    "importantInfo": "Informations importantes",
+    "suggestedRoute": "Itinéraire suggéré",
+    "review": "Avis",
+    "faq": "FAQ",
+    "popularYachts": "Autres yachts populaires"
+  },
+  "faqCategories": {
+    "booking": "Réservation",
+    "payment": "Paiement",
+    "prices": "Prix",
+    "licences": "Permis",
+    "travel": "Voyage",
+    "cancellation": "Annulation"
+  },
+  "overview": {
+    "location": "Emplacement",
+    "mainsail": "Type de grand-voile",
+    "year": "Année",
+    "draught": "Tirant d’eau",
+    "boatType": "Type de bateau",
+    "beam": "Largeur",
+    "cabins": "Cabines",
+    "fuelTank": "Réservoir de carburant",
+    "bathrooms": "Salles de bain",
+    "waterTank": "Réservoir d’eau",
+    "length": "Longueur",
+    "engine": "Moteur",
+    "showers": "Douches",
+    "notSpecified": "Non précisé"
+  },
+  "bookingRequestDialog": {
+    "title": "Demander cette réservation",
+    "description": "Le loueur confirme personnellement chaque location de ce yacht. Laissez vos coordonnées et un expert en location confirmera ces dates avec lui, puis reviendra vers vous sous un jour ouvré.",
+    "submit": "Envoyer la demande de réservation",
+    "success": "Merci ! Nous avons envoyé votre demande et vous recontacterons très prochainement."
+  },
+  "quoteDialog": {
+    "title": "Demander un devis",
+    "description": "Laissez vos coordonnées et un expert en location vous enverra un devis personnalisé pour ces dates.",
+    "submit": "Envoyer la demande",
+    "success": "Merci ! Nous vous recontacterons très prochainement."
+  },
+  "media": {
+    "video": "Regarder la vidéo",
+    "tour": "Visite 360°"
+  }
+}

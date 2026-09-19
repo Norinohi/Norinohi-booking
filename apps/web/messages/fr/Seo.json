@@ -1,0 +1,191 @@
+{
+  "Commissions": {
+    "title": "Taux de commission",
+    "description": "Ce que {brand} perçoit via chaque fournisseur."
+  },
+  "Yachts": {
+    "title": "Recherche de location de yacht",
+    "description": "Trouvez des voiliers et catamarans à louer en Méditerranée et ailleurs. Filtrez par destination, dates, nombre de passagers et prix."
+  },
+  "YachtsMap": {
+    "title": "Yachts sur la carte",
+    "description": "Parcourez les voiliers et catamarans disponibles sur une carte interactive. Explorez marinas et destinations, puis filtrez par dates, passagers et prix."
+  },
+  "YachtDetail": {
+    "title": "Détails du yacht",
+    "description": "Découvrez les photos, caractéristiques, options d’équipage et tarifs de ce yacht, et vérifiez ses disponibilités pour vos dates.",
+    "titleAtPlace": "Location {boat} à {place}",
+    "titlePlain": "Location {boat}",
+    "metaSpecs": "{category} avec {cabins, plural, one {# cabine} other {# cabines}} pour {guests} passagers maximum.",
+    "metaPlace": "Location {crew} au départ de {place}.",
+    "metaPriceFrom": "À partir de {price}.",
+    "metaPriceForDays": "{price} pour {days, plural, one {# jour} other {# jours}}.",
+    "metaCta": "Vérifiez les disponibilités pour vos dates."
+  },
+  "Booking": {
+    "title": "Réservez votre yacht",
+    "description": "Finalisez la réservation de votre location de yacht : informations des passagers, options et paiement sécurisé."
+  },
+  "BookingConfirmation": {
+    "title": "Réservation confirmée",
+    "description": "Votre location de yacht est confirmée. Consultez les détails de votre voyage et les prochaines étapes."
+  },
+  "PlanMyTrip": {
+    "title": "Planifier mon voyage",
+    "description": "Décrivez-nous votre voyage idéal et nous vous proposerons les yachts, itinéraires et dates qui vous conviennent."
+  },
+  "Login": {
+    "title": "Connexion",
+    "description": "Connectez-vous à votre compte YachtSkanner pour gérer vos réservations et vos yachts enregistrés."
+  },
+  "Register": {
+    "title": "Créer un compte",
+    "description": "Créez un compte YachtSkanner pour réserver des yachts, enregistrer vos favoris et gérer vos voyages."
+  },
+  "Wishlist": {
+    "title": "Vos favoris",
+    "description": "Les voiliers et catamarans que vous avez enregistrés. Comparez vos favoris et vérifiez leurs disponibilités pour vos dates."
+  },
+  "Profile": {
+    "title": "Votre profil",
+    "description": "Gérez les informations de votre compte YachtSkanner, vos coordonnées et vos préférences."
+  },
+  "Bookings": {
+    "title": "Mes réservations",
+    "description": "Consultez vos réservations de location de yacht, les détails de vos voyages et votre historique."
+  },
+  "Referrals": {
+    "title": "Vos parrainages",
+    "description": "Suivez les amis que vous avez invités sur YachtSkanner et les récompenses que vous avez gagnées."
+  },
+  "Credits": {
+    "title": "Crédits et solde",
+    "description": "Consultez votre crédit de parrainage disponible, ce qui expire bientôt et chaque opération derrière votre solde."
+  },
+  "Discounts": {
+    "title": "Gestion des remises et des prix",
+    "description": "Gérez les codes promotionnels et les tarifs des yachts de vos annonces."
+  },
+  "Duplicates": {
+    "title": "Revue des doublons",
+    "description": "Examinez et fusionnez les annonces de yachts similaires proposées par la synchronisation du catalogue."
+  },
+  "Sync": {
+    "title": "Historique de synchronisation",
+    "description": "Synchronisations du catalogue et des disponibilités, avec leurs volumes et leurs erreurs."
+  },
+  "Listings": {
+    "title": "Annonces",
+    "description": "Examinez les annonces de yachts importées et publiez les brouillons dans le catalogue."
+  },
+  "Routes": {
+    "title": "Itinéraires suggérés",
+    "description": "Rédigez les itinéraires de navigation affichés sur une page d’annonce, base par base."
+  },
+  "Audit": {
+    "title": "Journal d’audit",
+    "description": "Chaque action du personnel enregistrée sur une réservation, une annonce, une remise ou une demande."
+  },
+  "Invoice": {
+    "title": "Facture",
+    "description": "La facture de votre location de yacht, avec les détails de paiement."
+  },
+  "ForgotPassword": {
+    "title": "Mot de passe oublié",
+    "description": "Réinitialisez le mot de passe de votre compte YachtSkanner."
+  },
+  "ResetPassword": {
+    "title": "Réinitialiser le mot de passe",
+    "description": "Choisissez un nouveau mot de passe pour votre compte YachtSkanner."
+  },
+  "SetPassword": {
+    "title": "Définir le mot de passe",
+    "description": "Choisissez un mot de passe pour votre compte YachtSkanner."
+  },
+  "Balance": {
+    "title": "Payer le solde",
+    "description": "Réglez le montant restant de votre location de yacht."
+  },
+  "BookingDetail": {
+    "title": "Votre réservation",
+    "description": "Détails, paiements et documents de votre location de yacht."
+  },
+  "Inbox": {
+    "title": "Boîte de réception",
+    "description": "Questions et demandes de clients en attente de réponse."
+  },
+  "Payments": {
+    "title": "Paiements",
+    "description": "Demandes de facture et remboursements en attente de traitement."
+  },
+  "StaffBooking": {
+    "title": "Réservation (personnel)",
+    "description": "Vue personnel d’une réservation client."
+  },
+  "StaffBookings": {
+    "title": "Réservations (personnel)",
+    "description": "Toutes les réservations de la plateforme, pour le personnel."
+  },
+  "Users": {
+    "title": "Utilisateurs",
+    "description": "Tous les comptes de la plateforme, pour le personnel."
+  },
+  "CatalogPage": {
+    "country": "Location de yacht en {place}",
+    "geo": "Location de yacht à {place}, {country}",
+    "marina": "Location de yacht à {place}",
+    "type": "Location {type}",
+    "typeCountry": "Location {type} en {place}",
+    "typeGeo": "Location {type} à {place}, {country}",
+    "builder": "Location de yacht {brand}",
+    "model": "Location {model}",
+    "intro": "{count, plural, one {# bateau disponible} other {# bateaux disponibles}}, à partir de {price} par semaine.",
+    "introNoPrice": "{count, plural, one {# bateau disponible} other {# bateaux disponibles}}.",
+    "description": "Comparez {count, plural, one {# yacht} other {# yachts}} à louer. Filtrez par dates, passagers, cabines et prix, puis vérifiez les disponibilités pour votre voyage.",
+    "siblings": "À découvrir aussi",
+    "regions": "Régions",
+    "empty": "Aucun bateau ne correspond pour le moment. Consultez le catalogue complet."
+  },
+  "Support": {
+    "title": "Assistance",
+    "description": "Posez-nous toutes vos questions sur votre réservation."
+  },
+  "Consultation": {
+    "title": "Nous contacter",
+    "description": "Réservez un appel ou envoyez-nous un message au sujet de votre voyage."
+  },
+  "Faq": {
+    "title": "FAQ",
+    "description": "Rédigez et traduisez les questions affichées sur les pages des yachts."
+  },
+  "Popular": {
+    "title": "Sélections populaires",
+    "description": "Choisissez les valeurs mises en avant en tête des filtres et sur la page d’accueil."
+  },
+  "PopularYachts": {
+    "title": "Yachts populaires",
+    "description": "Configurez la composition du carrousel des yachts populaires de la page d’accueil."
+  },
+  "Contact": {
+    "title": "Contact",
+    "description": "Échangez avec un expert en location de yachts au sujet de votre prochain voyage."
+  },
+  "Legal": {
+    "terms": {
+      "title": "Conditions générales",
+      "description": "Les conditions et le contrat de location des charters réservés sur YachtSkanner."
+    },
+    "privacy": {
+      "title": "Politique de confidentialité",
+      "description": "Comment YachtSkanner traite vos données personnelles."
+    },
+    "cancellation": {
+      "title": "Politique d’annulation",
+      "description": "Ce qui se passe lorsqu’une location réservée sur YachtSkanner est annulée."
+    }
+  },
+  "RoutesMap": {
+    "title": "Carte des itinéraires de navigation",
+    "description": "Explorez les itinéraires de navigation sur la carte et trouvez des marinas avec des yachts près du point de départ de chaque itinéraire."
+  }
+}

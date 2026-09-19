@@ -1,0 +1,224 @@
+{
+  "title": "Aidez-moi à planifier mon voyage",
+  "close": "Fermer le planificateur",
+  "progress": "Étape {current} sur {total}",
+  "stepHeading": "Étape {current}",
+  "placeholder": "La question et ses options apparaîtront ici à l'étape suivante.",
+  "back": "Retour",
+  "next": "Suivant",
+  "steps": {
+    "destination": {
+      "question": "Où souhaitez-vous naviguer ?",
+      "subtitle": "Choisissez une destination ou laissez-nous vous suggérer la meilleure option",
+      "options": {
+        "croatia": {
+          "label": "Croatie",
+          "description": "Idéale pour passer d'île en île et pour une première navigation. Eaux calmes, courtes distances entre les îles et une grande variété d'itinéraires, parfaite pour les débutants et les voyages détendus."
+        },
+        "greece": {
+          "label": "Grèce",
+          "description": "Idéale pour les itinéraires pittoresques et la richesse culturelle. Naviguez entre des îles emblématiques aux eaux cristallines et des villes historiques, entre aventure et confort."
+        },
+        "italy": {
+          "label": "Italie",
+          "description": "Idéale pour les expériences haut de gamme et les panoramas côtiers. De superbes itinéraires le long des côtes, des marinas prestigieuses et des destinations inoubliables comme Amalfi, pour un voyage plus luxueux."
+        },
+        "spain": {
+          "label": "Espagne",
+          "description": "Idéale pour l'art de vivre et l'ambiance festive. Un climat agréable, une atmosphère animée et des destinations comme Ibiza ou Majorque, parfaites pour s'amuser, voyager en groupe et rester actif."
+        },
+        "notSure": {
+          "label": "Je ne sais pas"
+        }
+      }
+    },
+    "groupSize": {
+      "question": "Combien de personnes participent ?",
+      "subtitle": "La taille du groupe influe sur le type de yacht, l'espace et le prix total par personne",
+      "options": {
+        "twoToFour": {
+          "label": "2-4 personnes",
+          "description": "Plus d'intimité, coût par personne plus élevé"
+        },
+        "fiveToEight": {
+          "label": "5-8 personnes",
+          "description": "Le meilleur équilibre entre confort et prix"
+        },
+        "ninePlus": {
+          "label": "9+ personnes",
+          "description": "Nécessite des yachts plus grands ou plusieurs bateaux"
+        },
+        "notSure": {
+          "label": "Je ne sais pas"
+        }
+      }
+    },
+    "experience": {
+      "question": "Avez-vous de l'expérience en navigation ?",
+      "subtitle": "Un skipper peut être ajouté quel que soit votre niveau, cela détermine seulement qui tient la barre.",
+      "options": {
+        "none": {
+          "label": "Aucune expérience",
+          "description": "J'ai besoin d'un skipper pour piloter le bateau"
+        },
+        "some": {
+          "label": "Un peu d'expérience",
+          "description": "J'ai déjà navigué, mais j'ai besoin d'un skipper"
+        },
+        "licensed": {
+          "label": "Titulaire d'un permis",
+          "description": "J'ai un permis valide et je piloterai moi-même"
+        }
+      }
+    },
+    "tripVibe": {
+      "question": "Quel type de voyage recherchez-vous ?",
+      "subtitle": "Ce que vous attendez de la semaine détermine le bateau, l'itinéraire et le rythme.",
+      "options": {
+        "adventure": {
+          "label": "Aventure",
+          "description": "Navigation active et exploration. Plus de mouvement, des itinéraires plus longs et une navigation participative"
+        },
+        "relax": {
+          "label": "Détente",
+          "description": "Rythme tranquille, nature et baies paisibles. Parfait pour naviguer au calme, se baigner et déconnecter."
+        },
+        "family": {
+          "label": "Famille",
+          "description": "Sûr, confortable et spacieux. Idéal pour les enfants, avec de la stabilité et des itinéraires faciles."
+        },
+        "luxury": {
+          "label": "Luxe",
+          "description": "Yachts haut de gamme et service complet. Équipage, confort et destinations prestigieuses."
+        },
+        "party": {
+          "label": "Fête",
+          "description": "Musique, vie nocturne et ambiance conviviale. Idéal pour des itinéraires façon Ibiza et l'énergie de groupe."
+        }
+      }
+    },
+    "duration": {
+      "question": "Combien de temps souhaitez-vous partir ?",
+      "subtitle": "Choisissez la durée qui correspond le mieux à vos projets. Cela nous aide à vous proposer les yachts, les itinéraires et l'expérience les plus adaptés.",
+      "options": {
+        "week": {
+          "label": "7 jours"
+        },
+        "twoWeeks": {
+          "label": "14 jours"
+        },
+        "threeWeeks": {
+          "label": "21 jours"
+        },
+        "more": {
+          "label": "21+ jours"
+        }
+      }
+    },
+    "budget": {
+      "question": "Quel budget vous convient ?",
+      "subtitle": "Par personne pour une semaine à bord, pour pouvoir comparer avec des vacances que vous connaissez.",
+      "perPersonWeek": "par personne/semaine",
+      "options": {
+        "low": {
+          "label": "300-600 €"
+        },
+        "mid": {
+          "label": "600-1000 €"
+        },
+        "high": {
+          "label": "1000-1200 €"
+        },
+        "upper": {
+          "label": "1200-2000 €"
+        },
+        "premium": {
+          "label": "2000+ €"
+        }
+      }
+    }
+  },
+  "result": {
+    "title": "Votre voyage en yacht idéal",
+    "subtitle": "Selon vos préférences, voici ce que nous vous recommandons.",
+    "labels": {
+      "yachtType": "Type de yacht",
+      "skipper": "Skipper",
+      "style": "Style",
+      "duration": "Durée"
+    },
+    "yachtType": {
+      "sailing": "Voilier",
+      "catamaran": "Catamaran",
+      "gulet": "Goélette",
+      "motor": "Yacht à moteur",
+      "luxury": "Yacht de luxe"
+    },
+    "skipper": {
+      "yes": "Oui",
+      "no": "Non"
+    },
+    "difficulty": {
+      "easy": "Facile",
+      "moderate": "Intermédiaire",
+      "advanced": "Avancé"
+    },
+    "getConsultation": "Obtenir un conseil",
+    "viewDetails": "Voir les détails",
+    "seeAllMatches": "Voir tous les résultats",
+    "durationDays": "{days, plural, one {# jour} other {# jours}}",
+    "price": {
+      "perPerson": "≈ {price} par personne",
+      "similar": "Yachts similaires",
+      "perPersonWeek": "≈ {range} par personne et par semaine",
+      "estimate": "Prix estimé",
+      "perPersonDays": "≈ {price} par personne pour {days, plural, one {# jour} other {# jours}}"
+    },
+    "noMatch": {
+      "title": "Aucune correspondance exacte pour l'instant",
+      "description": "Nous n'avons pas trouvé de yacht correspondant à toutes vos réponses, mais voici ce que nous rechercherions.",
+      "seeAllMatches": "Voir tous les yachts"
+    },
+    "error": {
+      "title": "Une erreur est survenue",
+      "description": "Impossible de charger votre recommandation. Veuillez réessayer.",
+      "retry": "Réessayer"
+    },
+    "consultationDialog": {
+      "title": "Obtenez un conseil gratuit",
+      "description": "Indiquez-nous comment vous joindre et l'un de nos experts en location vous recontactera avec des options sur mesure.",
+      "submit": "Envoyer la demande",
+      "cancel": "Annuler",
+      "success": "Merci ! Nous vous contacterons très prochainement."
+    }
+  },
+  "consultation": {
+    "close": "Fermer",
+    "title": "Contactez-nous",
+    "subtitle": "Réservez un appel ou envoyez-nous un message, comme vous préférez.",
+    "options": {
+      "call": {
+        "title": "Réserver un appel rapide",
+        "description": "Choisissez le créneau qui vous convient pour un court appel avec un expert en location."
+      },
+      "message": {
+        "title": "Envoyer un message",
+        "description": "Parlez-nous de votre voyage et nous vous répondrons par e-mail."
+      }
+    },
+    "placeholder": {
+      "title": "La prise de rendez-vous arrive bientôt",
+      "description": "La prise de rendez-vous en ligne n'est pas encore disponible. Envoyez-nous un message et nous fixerons un créneau qui vous convient.",
+      "cta": "Envoyer plutôt un message"
+    },
+    "submitted": {
+      "title": "Merci, nous vous recontacterons",
+      "description": "L'un de nos experts en location vous recontactera très prochainement."
+    },
+    "error": {
+      "title": "Une erreur est survenue",
+      "description": "Impossible de charger les détails de votre voyage. Veuillez réessayer.",
+      "retry": "Réessayer"
+    }
+  }
+}

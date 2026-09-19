@@ -1,0 +1,62 @@
+{
+  "title": "Vos parrainages",
+  "invite": {
+    "heading": "Invitez vos amis. Gagnez des crédits de navigation.",
+    "description": "Offrez 100 € à vos amis pour leur première réservation et recevez 100 € de crédit lorsqu’ils partent en mer.",
+    "copy": "Copier le lien de parrainage",
+    "copied": "Lien copié",
+    "generate": "Générer un nouveau code",
+    "generated": "Nouveau code de parrainage généré",
+    "generateFailed": "Impossible de générer un nouveau code. Veuillez réessayer.",
+    "information": "Informations",
+    "rules": {
+      "minBooking": "Les crédits sont utilisables pour toute réservation de yacht supérieure à 1000 €.",
+      "expiry": "Les crédits de parrainage expirent 12 mois après leur obtention.",
+      "cash": "Les crédits ne peuvent pas être retirés en espèces.",
+      "firstTime": "Valable uniquement pour la première réservation des amis invités."
+    },
+    "stats": {
+      "invited": "Utilisateurs invités",
+      "completed": "Réservations effectuées",
+      "earned": "Total gagné",
+      "balance": "Solde disponible"
+    }
+  },
+  "how": {
+    "title": "Comment ça marche",
+    "steps": {
+      "share": {
+        "title": "Partagez le lien",
+        "description": "Envoyez votre lien de parrainage unique à vos amis qui aiment voyager"
+      },
+      "book": {
+        "title": "Votre ami réserve",
+        "description": "Il bénéficie de 100 € de réduction sur sa première réservation de yacht supérieure à 1000 €"
+      },
+      "credit": {
+        "title": "Vous recevez un crédit",
+        "description": "Une fois son voyage terminé, vous recevez 100 € de crédit"
+      }
+    },
+    "level": {
+      "title": "Votre niveau",
+      "current": "Actuel :",
+      "next": "Suivant : {level}",
+      "left": "Encore {count, plural, one {# réservation} other {# réservations}} avant le niveau suivant",
+      "perks": {
+        "extra": "5 % de crédit supplémentaire sur tous les parrainages",
+        "early": "Accès anticipé aux offres de luxe",
+        "concierge": "Service de conciergerie personnel"
+      }
+    }
+  },
+  "history": {
+    "title": "Historique des parrainages",
+    "today": "Aujourd’hui",
+    "daysAgo": "{count, plural, one {il y a # jour} other {il y a # jours}}",
+    "credited": "Terminé",
+    "pending": "En attente",
+    "void": "Annulé",
+    "empty": "Aucun parrainage pour le moment. Partagez votre lien pour commencer."
+  }
+}

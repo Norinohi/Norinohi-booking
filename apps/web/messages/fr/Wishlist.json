@@ -1,0 +1,12 @@
+{
+  "title": "Votre liste d'envies",
+  "back": "Retour",
+  "saved": "Ajouté à votre liste d'envies.",
+  "removed": "Retiré de votre liste d'envies.",
+  "emptyTitle": "Aucun yacht enregistré pour l'instant",
+  "emptyDescription": "Explorez et enregistrez vos favoris pour plus tard",
+  "someUnavailable": "Certains de vos yachts enregistrés ne sont plus disponibles.",
+  "toggleFailed": "Impossible de mettre à jour votre liste d'envies. Veuillez réessayer.",
+  "merged": "{count, plural, one {# yacht enregistré ajouté} other {# yachts enregistrés ajoutés}} à votre compte.",
+  "paginationSummary": "Affichage de {from}-{to} sur {total}"
+}
