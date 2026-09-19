@@ -1,0 +1,22 @@
+{
+  "title": "Le mie prenotazioni",
+  "history": "Cronologia",
+  "anyDates": "Qualsiasi data",
+  "clearDates": "Cancella date",
+  "emptyTitle": "Ancora nessuno yacht",
+  "emptyDescription": "Inizia a esplorare gli yacht e pianifica il tuo primo viaggio: le tue prenotazioni appariranno qui.",
+  "cancel": {
+    "action": "Annulla prenotazione",
+    "title": "Annullare questa prenotazione?",
+    "description": "L’operazione non può essere annullata e la società di charter verrà informata.",
+    "reasonLabel": "Motivo (facoltativo)",
+    "reasonPlaceholder": "Dicci perché annulli",
+    "confirm": "Annulla prenotazione",
+    "keep": "Mantieni prenotazione",
+    "success": "La tua prenotazione è stata annullata.",
+    "error": "Non è stato possibile annullare la prenotazione. Riprova."
+  },
+  "statusCancelled": "Annullata",
+  "payBalance": "Paga {amount}",
+  "completePayment": "Completa il pagamento {amount}"
+}

@@ -1,0 +1,62 @@
+{
+  "title": "I tuoi inviti",
+  "invite": {
+    "heading": "Invita gli amici. Guadagna credito per navigare.",
+    "description": "Regala €100 ai tuoi amici per la loro prima prenotazione e ricevi €100 di credito quando salpano.",
+    "copy": "Copia link di invito",
+    "copied": "Link copiato",
+    "generate": "Genera nuovo codice",
+    "generated": "Nuovo codice di invito generato",
+    "generateFailed": "Impossibile generare un nuovo codice. Riprova.",
+    "information": "Informazioni",
+    "rules": {
+      "minBooking": "I crediti sono utilizzabili per qualsiasi prenotazione di yacht superiore a €1000.",
+      "expiry": "I crediti da invito scadono 12 mesi dopo essere stati guadagnati.",
+      "cash": "I crediti non possono essere prelevati in contanti.",
+      "firstTime": "Valido solo per la prima prenotazione degli amici invitati."
+    },
+    "stats": {
+      "invited": "Utenti invitati",
+      "completed": "Prenotazioni completate",
+      "earned": "Totale guadagnato",
+      "balance": "Saldo disponibile"
+    }
+  },
+  "how": {
+    "title": "Come funziona",
+    "steps": {
+      "share": {
+        "title": "Condividi il link",
+        "description": "Invia il tuo link di invito personale agli amici che amano viaggiare"
+      },
+      "book": {
+        "title": "L’amico prenota",
+        "description": "Ricevono €100 di sconto sulla prima prenotazione di yacht superiore a €1000"
+      },
+      "credit": {
+        "title": "Ricevi il credito",
+        "description": "Quando completano il viaggio, ricevi €100 di crediti"
+      }
+    },
+    "level": {
+      "title": "Il tuo livello",
+      "current": "Attuale:",
+      "next": "Prossimo: {level}",
+      "left": "{count, plural, one {Manca # prenotazione} other {Mancano # prenotazioni}} al livello successivo",
+      "perks": {
+        "extra": "5% di credito extra su tutti gli inviti",
+        "early": "Accesso anticipato alle offerte di lusso",
+        "concierge": "Servizio di concierge personale"
+      }
+    }
+  },
+  "history": {
+    "title": "Cronologia inviti",
+    "today": "Oggi",
+    "daysAgo": "{count, plural, one {# giorno fa} other {# giorni fa}}",
+    "credited": "Completato",
+    "pending": "In attesa",
+    "void": "Annullato",
+    "empty": "Ancora nessun invito. Condividi il tuo link per iniziare."
+  }
+}

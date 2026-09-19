@@ -1,0 +1,14 @@
+{
+  "loading": "Caricamento yacht…",
+  "noResults": "Nessuno yacht corrisponde a questi filtri. Prova a modificarli.",
+  "title": "Yacht sulla mappa",
+  "backToSearch": "Torna alla ricerca",
+  "viewInCatalogue": "Vedi nel catalogo",
+  "showAllList": "Mostra l’elenco completo",
+  "closeList": "Chiudi elenco",
+  "marker": "Marina {name}",
+  "clusterCount": "{count, plural, one {# yacht} other {# yacht}}",
+  "previousBoat": "Yacht precedente",
+  "nextBoat": "Yacht successivo",
+  "allInCatalogue": "{count, plural, one {# yacht nel catalogo} other {Tutti i # yacht nel catalogo}}"
+}

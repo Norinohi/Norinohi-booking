@@ -1,0 +1,124 @@
+{
+  "Footer": {
+    "tagline": "Esplora il mondo in yacht.",
+    "description": "Oltre 30.000 barche in tutto il mondo pronte per il tuo prossimo viaggio.",
+    "columns": {
+      "destinations": "Destinazioni",
+      "charterTypes": "Tipi di charter",
+      "explore": "Esplora"
+    },
+    "links": {
+      "croatia": "Croazia",
+      "greece": "Grecia",
+      "italy": "Italia",
+      "turkey": "Turchia",
+      "caribbean": "Caraibi",
+      "thailand": "Thailandia",
+      "catamaran": "Catamarano",
+      "sailingYacht": "Yacht a vela",
+      "motorYacht": "Yacht a motore",
+      "bareboat": "Senza skipper",
+      "skippered": "Con skipper",
+      "planTrip": "Aiutami a pianificare il viaggio",
+      "popularYachts": "Yacht popolari",
+      "customerReviews": "Cosa dicono i nostri clienti",
+      "howItWorks": "Come funziona",
+      "contact": "Contattaci"
+    },
+    "privacy": "Informativa sulla privacy",
+    "terms": "Termini di servizio",
+    "copyright": "© {year} YachtSkanner Platform. Tutti i diritti riservati."
+  },
+  "Nav": {
+    "boatTypes": "Tipi di barca",
+    "closeMenu": "Chiudi menu",
+    "destinations": "Destinazioni",
+    "findByBudget": "Cerca per budget",
+    "findYacht": "Trova yacht",
+    "helpPlan": "Aiutami a pianificare il viaggio",
+    "language": "Lingua",
+    "openMenu": "Apri menu",
+    "popularRoutes": "Itinerari popolari",
+    "saved": "Salvati",
+    "tryIt": "Provalo"
+  },
+  "Sidebar": {
+    "menu": "Menu account",
+    "trigger": "Menu",
+    "greeting": "Ciao, {name}!",
+    "profile": "Il mio profilo",
+    "bookings": "Le mie prenotazioni",
+    "referrals": "Inviti",
+    "credits": "Crediti e saldo",
+    "discount": "Gestione sconti",
+    "logout": "Esci",
+    "commission": "Commissioni",
+    "duplicates": "Revisione duplicati",
+    "sync": "Cronologia sincronizzazioni",
+    "audit": "Registro attività",
+    "inbox": "Posta in arrivo",
+    "staffBookings": "Prenotazioni",
+    "users": "Utenti",
+    "payments": "Pagamenti",
+    "listings": "Annunci",
+    "routes": "Itinerari suggeriti",
+    "sections": {
+      "account": "Account",
+      "admin": "Amministrazione"
+    },
+    "faq": "FAQ",
+    "groups": {
+      "fleet": "Yacht",
+      "content": "Contenuti del sito"
+    },
+    "settings": "Impostazioni del marketplace",
+    "popular": "Scelte popolari",
+    "popularYachts": "Yacht popolari"
+  },
+  "UserMenu": {
+    "account": "Account",
+    "signIn": "Accedi",
+    "signOut": "Esci",
+    "profile": "Il mio profilo",
+    "bookings": "Le mie prenotazioni",
+    "referrals": "Inviti",
+    "credits": "Crediti e saldo"
+  },
+  "description": "Noleggia yacht e catamarani in tutto il mondo. Confronta barche, date e prezzi e prenota la tua prossima vacanza in barca a vela in pochi minuti.",
+  "title": "YachtSkanner - Noleggio yacht e catamarani in tutto il mondo",
+  "CookieConsent": {
+    "title": "Cookie",
+    "description": "Usiamo cookie analitici per capire come viene utilizzato il sito e migliorarlo. Non misuriamo nulla finché non dai il tuo consenso.",
+    "manage": "Gestisci preferenze",
+    "accept": "Accetta",
+    "decline": "Rifiuta",
+    "footerLink": "Cookie",
+    "dialog": {
+      "title": "La tua privacy",
+      "description": "Scegli quali cookie può usare questo sito. La tua scelta viene salvata su questo dispositivo e puoi modificarla in qualsiasi momento dal piè di pagina.",
+      "close": "Chiudi",
+      "alwaysActive": "Sempre attivi",
+      "necessary": {
+        "title": "Necessari",
+        "description": "Mantengono l’accesso attivo, proteggono i pagamenti dalle frodi e ricordano questa scelta sui cookie. Il sito non funziona senza di essi."
+      },
+      "functional": {
+        "title": "Funzionali",
+        "description": "Ricordano le barche che hai salvato e contano una sola volta le visite ripetute a un annuncio. Salvati nel tuo browser e mai condivisi."
+      },
+      "analytics": {
+        "title": "Analitici",
+        "description": "Google Analytics, per vedere quali pagine vengono usate e dove le persone si bloccano. Nessuna pubblicità e nessuna profilazione."
+      },
+      "save": "Salva la mia scelta",
+      "acceptAll": "Accetta tutti"
+    }
+  },
+  "Legal": {
+    "terms": "Termini e condizioni",
+    "privacy": "Informativa sulla privacy",
+    "cancellation": "Condizioni di cancellazione",
+    "pending": "Questo documento è in preparazione e sarà pubblicato qui a breve. Se nel frattempo hai domande in merito, il nostro team di assistenza sarà lieto di aiutarti.",
+    "contact": "Contatta l’assistenza"
+  }
+}

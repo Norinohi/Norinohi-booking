@@ -1,0 +1,207 @@
+{
+  "backToSearch": "Torna alla ricerca",
+  "breadcrumbSearch": "Ricerca",
+  "share": "Condividi",
+  "linkCopied": "Link copiato",
+  "seeOnMap": "Vedi sulla mappa",
+  "addToWishlist": "Aggiungi ai preferiti",
+  "removeFromWishlist": "Rimuovi dai preferiti",
+  "included": "Incluso",
+  "amenities": {
+    "groups": {
+      "navigation-and-safety": "Navigazione e sicurezza",
+      "deck-and-cockpit": "Coperta e pozzetto",
+      "interior-and-cabins": "Interni e cabine",
+      "galley": "Cucina",
+      "entertainment-and-water-toys": "Intrattenimento e giochi d’acqua",
+      "systems-and-power": "Impianti ed energia",
+      "other": "Altre dotazioni"
+    },
+    "itemCount": "{count, plural, one {# elemento} other {# elementi}}",
+    "allIncluded": "Tutte le dotazioni elencate sono incluse nel prezzo del noleggio.",
+    "dismissNote": "Chiudi"
+  },
+  "importantInfo": {
+    "charterCompany": "Società di charter",
+    "pickUpAddress": "Indirizzo di ritiro dello yacht",
+    "pickUp": "Ritiro dello yacht",
+    "dropOff": "Riconsegna dello yacht",
+    "policies": "Condizioni di cancellazione / pagamento",
+    "securityDeposit": "Cauzione rimborsabile",
+    "securityDepositNote": "Trattenuta dalla base charter al check-in e restituita dopo una riconsegna senza danni.",
+    "securityDepositInsured": "Ridotta a {amount} se sottoscrivi l’assicurazione sulla cauzione della base.",
+    "license": "Patente nautica",
+    "pets": "Animali",
+    "paymentMethods": "Metodi di pagamento accettati dalla società di charter",
+    "marinaInfo": "Informazioni sul marina",
+    "policiesVariesBySelection": "Le condizioni di cancellazione e di pagamento anticipato variano in base alla tua selezione. Le condizioni di pagamento vengono confermate durante il preventivo e la prenotazione.",
+    "licenseRequired": "È richiesta una patente nautica valida o un equivalente locale.",
+    "licenseNotRequired": "Non serve la patente se prenoti con equipaggio o skipper.",
+    "petsAllowedWithConfirmation": "Gli animali sono ammessi su questo yacht previa conferma della società di charter.",
+    "petsAskBase": "La politica sugli animali è stabilita dalla base charter: chiedi prima di prenotare.",
+    "marinaInfoText": "{marina} si trova a {location}, {country}. Gli orari di check-in e check-out sono comunicati dalla base charter.",
+    "paymentMethod": {
+      "card": "Carta",
+      "bank_transfer": "Bonifico bancario",
+      "cash": "Contanti"
+    }
+  },
+  "popular": {
+    "from": "Da",
+    "perPeriod": "/ {days, plural, one {# giorno} other {# giorni}}",
+    "seeAll": "Vedi tutti gli yacht",
+    "previous": "Yacht precedenti",
+    "next": "Yacht successivi"
+  },
+  "route": {
+    "start": "Partenza",
+    "finish": "Arrivo",
+    "day": "Giorno {day}",
+    "stopTitle": "Giorno {day} - {place}",
+    "disclaimer": "Itinerario indicativo. L’itinerario definitivo e le soste notturne dipendono dal meteo, dalla disponibilità e dalla decisione dello skipper."
+  },
+  "review": {
+    "count": "({count, plural, one {# recensione} other {# recensioni}})",
+    "summary": "Visualizzate {shown} di {total}",
+    "empty": "Ancora nessuna recensione scritta",
+    "operatorRated": "Il punteggio deriva da {count, plural, one {# valutazione degli ospiti raccolta} other {# valutazioni degli ospiti raccolte}} dall’operatore charter."
+  },
+  "sidebar": {
+    "crew": "Equipaggio",
+    "people": "Persone",
+    "datesPlaceholder": "Seleziona le date",
+    "selectDates": "Seleziona le date per vedere il prezzo",
+    "unavailable": "Questo yacht non ha date disponibili",
+    "unavailableHint": "Chiedici altre date o uno yacht simile.",
+    "slotRefused": "Queste date non sono prenotabili. Scegli un altro periodo.",
+    "searchedPeriodRefused": "Dal {from} al {to} questo yacht non è disponibile. Scegli un altro periodo o usa le date indicate.",
+    "loadFailed": "Non è stato possibile caricare il prezzo di questa prenotazione.",
+    "loadRetry": "Riprova",
+    "pricingUnavailable": "Al momento non riusciamo a ottenere dal fornitore dello yacht un prezzo per queste date. Di solito è un problema temporaneo.",
+    "prepayment": "Acconto di prenotazione del {percent}%",
+    "boatPrice": "Prezzo della barca",
+    "boatPriceHint": "Prezzo di noleggio completo",
+    "deposit": "Cauzione rimborsabile",
+    "howItWorks": "Scopri come funziona",
+    "scheduleDetails": "Cosa copre questo pagamento",
+    "scheduleIncludes": "Include",
+    "scheduleSplit": "Suddiviso tra i due pagamenti",
+    "groups": {
+      "mandatory": "Extra obbligatori",
+      "selectedExtras": "Extra selezionati",
+      "crew": "Equipaggio"
+    },
+    "payNow": "Acconto di prenotazione (paga ora)",
+    "payAt": "Da pagare il: {date}",
+    "payAtCheckIn": "Da pagare al check-in: {date}",
+    "firstPayment": "{amount} (1° pagamento)",
+    "fullPayment": "{amount} (pagamento completo)",
+    "secondPayment": "{amount} (2° pagamento)",
+    "extrasPayment": "{amount} (extra)",
+    "depositNote": "+ {amount} (cauzione rimborsabile)",
+    "totalPrice": "Prezzo totale",
+    "discountsHeading": "Inclusi nel prezzo di noleggio sopra indicato",
+    "dueNow": "Da pagare ora",
+    "payNowCta": "Paga ora {amount}",
+    "requestBookingCta": "Invia richiesta di prenotazione",
+    "requestBookingHint": "L’operatore di questo yacht conferma personalmente ogni prenotazione. Gli chiederemo le tue date e ti ricontatteremo. Al momento non ti viene addebitato nulla.",
+    "requestQuote": "Richiedi preventivo",
+    "promo": {
+      "label": "Codice promozionale",
+      "placeholder": "Inserisci il codice",
+      "apply": "Applica",
+      "remove": "Rimuovi",
+      "applied": "{amount} di sconto",
+      "rejected": {
+        "unknown_code": "Non riconosciamo questo codice.",
+        "inactive": "Questo codice non è più attivo.",
+        "not_started": "Questo codice non è ancora valido.",
+        "expired": "Questo codice è scaduto.",
+        "usage_limit_reached": "Questo codice è già stato utilizzato il numero massimo di volte.",
+        "not_applicable": "Questo codice non si applica a questo yacht."
+      }
+    },
+    "credit": {
+      "label": "Credito da invito",
+      "available": "{amount} disponibile per questa prenotazione",
+      "applied": "{amount} applicato",
+      "apply": "Applica",
+      "remove": "Rimuovi"
+    },
+    "onRequest": "Il prezzo di questo yacht è su richiesta",
+    "onRequestHint": "Abbiamo date disponibili, ma nessuna tariffa pubblicata le copre. Dicci quando vorresti navigare e ti faremo sapere il prezzo.",
+    "dropOff": "Marina di riconsegna",
+    "pickUp": "Ritiro: {marina}",
+    "boatPriceHintDiscounted": "Prezzo di noleggio scontato",
+    "depositWhenInsured": "oppure {amount} con l’assicurazione danni"
+  },
+  "panels": {
+    "details": "Dettagli dello yacht",
+    "booking": "Riepilogo prenotazione"
+  },
+  "tabs": {
+    "overview": "Panoramica",
+    "amenities": "Dotazioni",
+    "mandatory-extras": "Extra obbligatori",
+    "optional-extras": "Extra facoltativi",
+    "description": "Descrizione",
+    "important-info": "Info importanti",
+    "suggested-route": "Itinerario suggerito",
+    "review": "Recensioni",
+    "faq": "FAQ",
+    "popular-yachts": "Yacht popolari"
+  },
+  "sections": {
+    "overview": "Panoramica",
+    "amenities": "Dotazioni",
+    "mandatoryExtras": "Extra obbligatori",
+    "optionalExtras": "Extra facoltativi",
+    "description": "Descrizione",
+    "media": "Video e tour",
+    "importantInfo": "Informazioni importanti",
+    "suggestedRoute": "Itinerario suggerito",
+    "review": "Recensioni",
+    "faq": "FAQ",
+    "popularYachts": "Altri yacht popolari"
+  },
+  "faqCategories": {
+    "booking": "Prenotazione",
+    "payment": "Pagamento",
+    "prices": "Prezzi",
+    "licences": "Patenti",
+    "travel": "Viaggio",
+    "cancellation": "Cancellazione"
+  },
+  "overview": {
+    "location": "Località",
+    "mainsail": "Tipo di randa",
+    "year": "Anno",
+    "draught": "Pescaggio",
+    "boatType": "Tipo di barca",
+    "beam": "Larghezza",
+    "cabins": "Cabine",
+    "fuelTank": "Serbatoio carburante",
+    "bathrooms": "Bagni",
+    "waterTank": "Serbatoio acqua",
+    "length": "Lunghezza",
+    "engine": "Motore",
+    "showers": "Docce",
+    "notSpecified": "Non specificato"
+  },
+  "bookingRequestDialog": {
+    "title": "Richiedi questa prenotazione",
+    "description": "L’operatore conferma personalmente ogni noleggio di questo yacht. Lascia i tuoi dati e un esperto di charter verificherà queste date con lui e ti risponderà entro un giorno lavorativo.",
+    "submit": "Invia richiesta di prenotazione",
+    "success": "Grazie! Abbiamo inviato la tua richiesta e ti contatteremo a breve."
+  },
+  "quoteDialog": {
+    "title": "Richiedi un preventivo",
+    "description": "Lascia i tuoi dati e un esperto di charter ti invierà un preventivo su misura per queste date.",
+    "submit": "Invia richiesta",
+    "success": "Grazie! Ti contatteremo a breve."
+  },
+  "media": {
+    "video": "Guarda il video",
+    "tour": "Tour a 360°"
+  }
+}

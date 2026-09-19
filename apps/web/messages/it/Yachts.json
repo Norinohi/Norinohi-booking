@@ -1,0 +1,29 @@
+{
+  "heading": "Ricerca noleggio yacht",
+  "searchByMap": "Cerca sulla mappa",
+  "emptyTitle": "Nessuno yacht trovato con questi filtri",
+  "emptyDescription": "Prova a modificare date, budget o località: ti aiuteremo a trovare la soluzione perfetta.",
+  "searchBar": {
+    "location": "Località",
+    "startTyping": "Inizia a digitare",
+    "searchCountries": "Cerca paesi...",
+    "addDates": "Aggiungi date",
+    "clearDates": "Cancella date",
+    "anyBoat": "Qualsiasi barca",
+    "search": "Cerca",
+    "noLocations": "Nessuna destinazione corrispondente",
+    "popularCountries": "Paesi popolari",
+    "popularBoatTypes": "Tipi di barca popolari",
+    "allBoatTypes": "Tutti i tipi di barca",
+    "clearLocation": "Cancella località",
+    "freeText": "Nome, modello o società",
+    "kinds": {
+      "country": "Paese",
+      "region": "Area di navigazione",
+      "city": "Città",
+      "base": "Marina"
+    },
+    "clearBoatType": "Cancella tipo di barca"
+  },
+  "paginationSummary": "Visualizzati {from}-{to} di {total}"
+}

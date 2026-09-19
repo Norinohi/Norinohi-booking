@@ -1,0 +1,120 @@
+{
+  "title": "Gestione sconti e prezzi",
+  "subtitle": "Gestisci i codici promozionali e i prezzi degli yacht.",
+  "create": "Crea sconto",
+  "tabs": {
+    "discounts": "Sconti",
+    "managePrices": "Gestisci prezzi"
+  },
+  "table": {
+    "name": "Nome sconto",
+    "code": "Codice",
+    "typeValue": "Tipo e valore",
+    "appliesTo": "Si applica a",
+    "status": "Stato",
+    "usage": "Utilizzi",
+    "empty": "Nessuno sconto trovato",
+    "error": "Impossibile caricare gli sconti"
+  },
+  "status": {
+    "active": "Attivo",
+    "inactive": "Inattivo",
+    "scheduled": "Programmato",
+    "expired": "Scaduto"
+  },
+  "type": {
+    "percentage": "Percentuale",
+    "fixed_amount": "Fisso"
+  },
+  "applies": {
+    "allYachts": "Tutti gli yacht",
+    "allCatamarans": "Tutti i catamarani",
+    "allGullets": "Tutti i caicchi",
+    "allMotorboats": "Tutte le barche a motore",
+    "allMotorYachts": "Tutti gli yacht a motore",
+    "allSailboats": "Tutte le barche a vela",
+    "specific": "Yacht specifici",
+    "allSailingYachts": "Tutti gli yacht a vela",
+    "nothing": "Nessuno",
+    "missing": "{type, select, listing {Yacht eliminato} category {Categoria eliminata} operator {Operatore eliminato} region {Regione eliminata} other {Destinazione eliminata}} ({id})",
+    "more": "{first} +{count} altri"
+  },
+  "dialog": {
+    "createTitle": "Crea nuovo sconto",
+    "editTitle": "Modifica sconto",
+    "name": {
+      "label": "Nome sconto",
+      "placeholder": "es. Summer View 2026"
+    },
+    "code": {
+      "label": "Codice sconto",
+      "placeholder": "es. SUMMER2026"
+    },
+    "type": {
+      "label": "Tipo di sconto"
+    },
+    "price": {
+      "label": "Valore dello sconto",
+      "placeholder": "10"
+    },
+    "expiration": {
+      "label": "Data di scadenza",
+      "placeholder": "Qualsiasi data"
+    },
+    "appliesTo": {
+      "label": "Si applica a"
+    },
+    "search": {
+      "placeholder": "Cerca yacht"
+    },
+    "submitCreate": "Crea sconto",
+    "submitSave": "Salva modifiche",
+    "created": "Sconto creato",
+    "saved": "Sconto aggiornato",
+    "errors": {
+      "nameRequired": "Inserisci un nome per lo sconto",
+      "codeRequired": "Inserisci un codice sconto",
+      "priceRequired": "Inserisci un valore per lo sconto",
+      "appliesRequired": "Scegli a cosa si applica lo sconto",
+      "usageLimitInvalid": "Inserisci un numero intero di utilizzi o lascia vuoto"
+    },
+    "error": "Si è verificato un errore. Riprova.",
+    "usageLimit": {
+      "label": "Limite di utilizzi",
+      "placeholder": "Illimitato",
+      "hint": "Lascia vuoto per utilizzi illimitati"
+    },
+    "active": {
+      "label": "Attivo",
+      "on": "Sconto attivato",
+      "off": "Sconto disattivato"
+    }
+  },
+  "prices": {
+    "search": "Cerca per nome",
+    "allTypes": "Tutti i tipi",
+    "allLocations": "Tutte le località",
+    "table": {
+      "yacht": "Yacht",
+      "location": "Località",
+      "basePrice": "Prezzo base",
+      "currentPrice": "Prezzo attuale",
+      "edit": "Modifica prezzo"
+    },
+    "dialog": {
+      "title": "Modifica prezzo",
+      "basePrice": "Prezzo base",
+      "newPrice": "Nuovo prezzo",
+      "newPricePlaceholder": "es. €14.539",
+      "submit": "Aggiorna prezzo",
+      "updated": "Prezzo aggiornato",
+      "errors": {
+        "priceRequired": "Inserisci un nuovo prezzo"
+      },
+      "reset": "Ripristina il prezzo del fornitore",
+      "cleared": "Prezzo ripristinato al prezzo del fornitore"
+    },
+    "empty": "Nessuno yacht trovato",
+    "error": "Impossibile caricare i prezzi"
+  }
+}

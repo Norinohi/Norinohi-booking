@@ -1,0 +1,184 @@
+{
+  "BoatTypes": {
+    "heading": "Scegli il tipo di barca",
+    "previous": "Tipi di barca precedenti",
+    "next": "Tipi di barca successivi"
+  },
+  "BudgetFinder": {
+    "heading": "Trova yacht in base al tuo budget",
+    "viewResults": "Vedi risultati",
+    "labels": {
+      "budget": "Budget a persona",
+      "people": "Persone",
+      "skipper": "Skipper",
+      "destinations": "Destinazioni (facoltativo)"
+    },
+    "options": {
+      "any": "Qualsiasi",
+      "budgetFrom": "{from}+",
+      "peopleNotSure": "Non so",
+      "skipperYes": "Sì",
+      "skipperNo": "No",
+      "destinationsAll": "Tutte le destinazioni"
+    }
+  },
+  "EarnCta": {
+    "heading": "Guadagna con il tuo yacht",
+    "description": "Pubblica il tuo yacht sulla nostra piattaforma e inizia a ricevere prenotazioni da viaggiatori di tutto il mondo. Noi ci occupiamo di visibilità, domanda e strumenti: tu mantieni il controllo del calendario e dei prezzi.",
+    "cta": "Pubblica il tuo yacht",
+    "dialog": {
+      "title": "Invia una richiesta",
+      "description": "Lascia i tuoi dati e il nostro team ti contatterà per la pubblicazione del tuo yacht.",
+      "submit": "Invia richiesta",
+      "success": "Grazie! Ti contatteremo a breve."
+    }
+  },
+  "Hero": {
+    "tagline": "Oltre 30.000 yacht in 1.200 destinazioni. Noleggi da €120/giorno",
+    "heading": "Esplora il mondo in yacht",
+    "wherePlaceholder": "Dove?",
+    "datesPlaceholder": "Qualsiasi data",
+    "clearDates": "Cancella date",
+    "boatPlaceholder": "Qualsiasi barca",
+    "captainPlaceholder": "Con capitano",
+    "search": "Cerca",
+    "dontKnow": "Non sai come scegliere?",
+    "helpPlan": "Aiutami a pianificare il viaggio",
+    "options": {
+      "croatia": "Croazia",
+      "greece": "Grecia",
+      "italy": "Italia",
+      "turkey": "Turchia",
+      "caribbean": "Caraibi",
+      "thailand": "Thailandia",
+      "catamaran": "Catamarano",
+      "sailingYacht": "Yacht a vela",
+      "motorYacht": "Yacht a motore",
+      "gulet": "Caicco",
+      "luxuryYacht": "Yacht di lusso",
+      "withCaptain": "Con capitano",
+      "bareboat": "Senza skipper",
+      "skippered": "Con skipper"
+    },
+    "stats": {
+      "yachts": {
+        "label": "yacht"
+      },
+      "destinations": {
+        "label": "destinazioni"
+      },
+      "travelers": {
+        "label": "viaggiatori soddisfatti"
+      },
+      "rating": {
+        "label": "valutazione media"
+      }
+    }
+  },
+  "HowItWorks": {
+    "heading": "Come funziona",
+    "intro": "Prenotare uno yacht è più facile di quanto pensi.",
+    "introSecondLine": "Ti accompagniamo dalla scelta della destinazione fino all’imbarco, senza bisogno di esperienza.",
+    "cta": "Trova yacht",
+    "steps": {
+      "destination": {
+        "title": "Scegli la destinazione",
+        "description": "Esplora oltre 1.200 destinazioni di navigazione in tutto il mondo. Dalla Croazia ai Caraibi, scegli il luogo adatto al tuo viaggio."
+      },
+      "yacht": {
+        "title": "Seleziona il tuo yacht",
+        "description": "Sfoglia gli yacht in base alle dimensioni del gruppo, al budget e alle preferenze. Confronta le opzioni e trova quella più adatta al tuo viaggio."
+      },
+      "book": {
+        "title": "Prenota il viaggio",
+        "description": "Conferma le date, aggiungi eventuali extra e completa la prenotazione online. Sei pronto a salpare."
+      }
+    }
+  },
+  "PlanTrip": {
+    "heading": "Non sai cosa scegliere? Pianifica la tua vacanza in yacht perfetta in 30 secondi",
+    "cta": "Aiutami a pianificare il viaggio",
+    "checklist": {
+      "questions": "Rispondi a poche semplici domande",
+      "recommendation": "Ricevi un consiglio personalizzato",
+      "explore": "Scopri gli yacht migliori per il tuo viaggio"
+    },
+    "steps": {
+      "preferences": {
+        "title": "Scegli le preferenze",
+        "description": "Indica le tue destinazioni ideali, dalle coste turchesi di Palawan agli storici porti di La Valletta."
+      },
+      "recommendation": {
+        "title": "Ricevi un consiglio",
+        "description": "Ti suggeriremo yacht in base alle esigenze del tuo gruppo. Valuta i nostri consigli e scegli lo yacht perfetto."
+      },
+      "yachts": {
+        "title": "Guarda gli yacht",
+        "description": "Definisci i dettagli, aggiungi eventuali extra e prenota. Ora puoi pregustare la tua indimenticabile avventura in yacht."
+      }
+    }
+  },
+  "PopularDestinations": {
+    "heading": "Destinazioni popolari",
+    "previous": "Destinazioni precedenti",
+    "next": "Destinazioni successive",
+    "seeAll": "Vedi tutte le più popolari",
+    "showLess": "Mostra meno",
+    "perPersonWeek": "Da {price} a persona/settimana",
+    "yachtCount": "{count, plural, one {# yacht} other {# yacht}}"
+  },
+  "PopularYachts": {
+    "heading": "Yacht popolari",
+    "previous": "Yacht precedenti",
+    "next": "Yacht successivi",
+    "seeAll": "Vedi tutti gli yacht",
+    "from": "Da",
+    "viewDetails": "Vedi dettagli",
+    "perDay": "/ al giorno"
+  },
+  "SailingRoutes": {
+    "heading": "Itinerari di navigazione popolari",
+    "previous": "Itinerari precedenti",
+    "next": "Itinerari successivi",
+    "seeAll": "Vedi tutti i più popolari",
+    "showLess": "Mostra meno",
+    "exploreRoute": "Esplora l’itinerario",
+    "days": "{count, plural, one {# giorno} other {# giorni}}",
+    "levels": {
+      "easy": "Facile",
+      "moderate": "Intermedio",
+      "advanced": "Avanzato"
+    }
+  },
+  "Testimonials": {
+    "heading": "Cosa dicono i nostri clienti",
+    "allReviews": "Tutte le recensioni",
+    "comingSoon": "Prossimamente",
+    "items": {
+      "weber": {
+        "quote": "Abbiamo prenotato uno yacht in Croazia per la prima volta ed è andato tutto liscio. La procedura è stata semplice e la barca era esattamente come ce l’aspettavamo.",
+        "location": "Germania"
+      },
+      "martin": {
+        "quote": "Non avevo esperienza di vela, ma la piattaforma mi ha permesso di trovare facilmente uno skipper e pianificare tutto il viaggio. Sembrava una normale vacanza, solo migliore.",
+        "location": "Francia"
+      },
+      "carter": {
+        "quote": "La trasparenza dei prezzi è stata la sorpresa più grande. Abbiamo visto il costo totale in anticipo e l’abbiamo diviso tra amici, comodissimo.",
+        "location": "Regno Unito"
+      },
+      "rossi": {
+        "quote": "Abbiamo confrontato alcuni yacht e trovato quello perfetto per il nostro gruppo. I suggerimenti di itinerario sono stati davvero utili: non abbiamo dovuto pianificare nulla.",
+        "location": "Italia"
+      },
+      "kowalska": {
+        "quote": "Ottima scelta di barche e filtri molto chiari. Abbiamo trovato esattamente ciò che ci serviva in pochi minuti.",
+        "location": "Polonia"
+      },
+      "jensen": {
+        "quote": "Dalla prenotazione all’imbarco, tutto è stato semplicissimo. Comunicazione chiara, nessun costo nascosto e una barca ancora più bella dal vivo.",
+        "location": "Danimarca"
+      }
+    }
+  }
+}
