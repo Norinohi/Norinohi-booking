@@ -82,6 +82,8 @@ export async function notifyLeadReceived(lead: LeadReceivedEmail): Promise<void>
     body: lead.message,
     path: "/inbox",
     actionLabel: "Open the inbox",
+    // A lead has no booking yet, whatever it is about — even a quote request naming a yacht.
+    audience: "general",
   });
 }
 

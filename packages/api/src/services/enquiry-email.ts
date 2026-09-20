@@ -74,18 +74,32 @@ export type StaffAlert = {
   /** App-relative, e.g. `/inbox` — the alert links staff straight at the queue. */
   path: string;
   actionLabel: string;
+  /**
+   * Which desk this is for. `booking` is about a charter that already exists and belongs with
+   * whoever runs it; `general` is someone who has not booked anything yet. The same split the
+   * customer-facing reply-to addresses make, on the internal side, so an answer typed into
+   * either alert stays in the thread it came from.
+   */
+  audience: "booking" | "general";
 };
 
+/** Mirrors `replyToFor` in the transactional package: unset falls back rather than going quiet. */
+function staffInbox(audience: StaffAlert["audience"]): string | undefined {
+  if (audience === "booking") return env.BOOKING_STAFF_EMAIL ?? env.STAFF_EMAIL;
+  return env.STAFF_EMAIL;
+}
+
 /**
- * The internal announcement. Silently does nothing when `STAFF_EMAIL` is unset, which is the
- * configured state for a local machine: nothing is queued or retried, because the inbox is the
- * durable record and this is only the tap on the shoulder.
+ * The internal announcement. Silently does nothing when no staff address is configured, which is
+ * the state on a local machine: nothing is queued or retried, because the inbox is the durable
+ * record and this is only the tap on the shoulder.
  */
 export async function notifyStaff(alert: StaffAlert): Promise<void> {
-  if (!env.STAFF_EMAIL) return;
+  const to = staffInbox(alert.audience);
+  if (!to) return;
 
   try {
-    await sendStaffAlertEmail(env.STAFF_EMAIL, {
+    await sendStaffAlertEmail(to, {
       title: alert.title,
       facts: alert.facts,
       body: alert.body,

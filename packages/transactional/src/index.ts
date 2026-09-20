@@ -29,14 +29,38 @@ function getClient() {
   return client;
 }
 
-/*
- * Whether an answer typed into a mail client reaches a person. `sendHtml` only sets `replyTo`
- * when REPLY_TO_EMAIL is configured, and without it a reply goes to the sending identity, which
- * is a noreply address on most domains. The two mails that invite a reply ask this before they
- * promise one, so the copy and the header can never disagree.
+/**
+ * Which inbox an answer to this mail should land in.
+ *
+ * A reply to a confirmation is about a charter somebody is running and belongs with whoever runs
+ * it; a reply to a welcome mail or an enquiry answer is not. Routing both to one address meant
+ * one of the two teams reading the other's mail, and the volume only goes one way. `none` is for
+ * internal alerts, which must never carry the public reply-to: an answer to one would arrive in
+ * the customer-facing inbox looking like a customer wrote it.
  */
-function isReplyable(): boolean {
-  return Boolean(env.REPLY_TO_EMAIL);
+type Mailbox = "booking" | "general" | "none";
+
+/**
+ * The address replies to this mailbox go to, or undefined for no header at all.
+ *
+ * Booking mail falls back to the general address rather than to nothing, because an unset
+ * BOOKING_REPLY_TO_EMAIL is far more likely to be a deployment that has not split its inboxes
+ * yet than a deliberate "send booking mail with no way to answer it".
+ */
+function replyToFor(mailbox: Mailbox): string | undefined {
+  if (mailbox === "none") return undefined;
+  if (mailbox === "booking") return env.BOOKING_REPLY_TO_EMAIL ?? env.REPLY_TO_EMAIL;
+  return env.REPLY_TO_EMAIL;
+}
+
+/*
+ * Whether an answer typed into a mail client reaches a person. Without a reply-to a reply goes
+ * to the sending identity, which is a noreply address on most domains. The three mails that
+ * invite a reply ask this before they promise one, so the copy and the header can never
+ * disagree.
+ */
+function isReplyable(mailbox: Mailbox): boolean {
+  return Boolean(replyToFor(mailbox));
 }
 
 // Optional as a pair like the Google/Stripe keys: without RESEND_API_KEY and EMAIL_FROM
@@ -46,7 +70,7 @@ async function sendHtml(
   to: string,
   subject: string,
   html: string,
-  { replyable = true }: { replyable?: boolean } = {},
+  { mailbox = "general" }: { mailbox?: Mailbox } = {},
 ) {
   const resend = getClient();
   if (!resend || !env.EMAIL_FROM) {
@@ -55,14 +79,16 @@ async function sendHtml(
   }
 
   /*
-   * Customer mail is answerable; internal alerts are not. Sending an alert with the public
-   * reply-to would route a colleague's answer to the customer-facing inbox as if a customer
-   * had written it.
+   * One sending identity for everything, and the routing done with `replyTo` instead. The
+   * alternative -- a second verified From per inbox -- would put two sender addresses in front
+   * of customers for what is one company, and every domain-reputation gain of a verified sender
+   * would then have to be earned twice.
    */
   const from = env.EMAIL_FROM_NAME ? `${env.EMAIL_FROM_NAME} <${env.EMAIL_FROM}>` : env.EMAIL_FROM;
 
   const payload: CreateEmailOptions = { from, to, subject, html };
-  if (replyable && env.REPLY_TO_EMAIL) payload.replyTo = env.REPLY_TO_EMAIL;
+  const replyTo = replyToFor(mailbox);
+  if (replyTo) payload.replyTo = replyTo;
 
   const result = await resend.emails.send(payload);
   if (result.error) {
@@ -91,7 +117,9 @@ export async function sendBookingReceivedEmail(
   const html = await render(
     createElement(BookingReceivedEmail, { ...booking, appUrl: env.CORS_ORIGIN }),
   );
-  return sendHtml(to, `We're holding ${booking.yachtName} — booking ${booking.reference}`, html);
+  return sendHtml(to, `We're holding ${booking.yachtName} — booking ${booking.reference}`, html, {
+    mailbox: "booking",
+  });
 }
 
 /** The charter is real: sent once the operator has committed the reservation. */
@@ -102,7 +130,9 @@ export async function sendBookingConfirmedEmail(
   const html = await render(
     createElement(BookingConfirmedEmail, { ...booking, appUrl: env.CORS_ORIGIN }),
   );
-  return sendHtml(to, `Confirmed: ${booking.yachtName} — booking ${booking.reference}`, html);
+  return sendHtml(to, `Confirmed: ${booking.yachtName} — booking ${booking.reference}`, html, {
+    mailbox: "booking",
+  });
 }
 
 /**
@@ -116,7 +146,9 @@ export async function sendPaymentReceivedEmail(
   const html = await render(
     createElement(PaymentReceivedEmail, { ...payment, appUrl: env.CORS_ORIGIN }),
   );
-  return sendHtml(to, `${payment.amount} received — booking ${payment.reference}`, html);
+  return sendHtml(to, `${payment.amount} received — booking ${payment.reference}`, html, {
+    mailbox: "booking",
+  });
 }
 
 /**
@@ -130,7 +162,9 @@ export async function sendInvoiceIssuedEmail(
   const html = await render(
     createElement(InvoiceIssuedEmail, { ...invoice, appUrl: env.CORS_ORIGIN }),
   );
-  return sendHtml(to, `Invoice ${invoice.invoiceNumber} — ${invoice.amount} due`, html);
+  return sendHtml(to, `Invoice ${invoice.invoiceNumber} — ${invoice.amount} due`, html, {
+    mailbox: "booking",
+  });
 }
 
 /** Confirmation that a booking is off, for the case where no money was ever taken. */
@@ -141,7 +175,7 @@ export async function sendBookingCancelledEmail(
   const html = await render(
     createElement(BookingCancelledEmail, { ...booking, appUrl: env.CORS_ORIGIN }),
   );
-  return sendHtml(to, `Booking ${booking.reference} is cancelled`, html);
+  return sendHtml(to, `Booking ${booking.reference} is cancelled`, html, { mailbox: "booking" });
 }
 
 /**
@@ -161,7 +195,7 @@ export async function sendBalanceReminderEmail(
     reminder.stage === "overdue"
       ? `${reminder.amount} overdue since ${reminder.dueAt} — booking ${reminder.reference}`
       : `${reminder.amount} due ${reminder.dueAt} — booking ${reminder.reference}`;
-  return sendHtml(to, subject, html);
+  return sendHtml(to, subject, html, { mailbox: "booking" });
 }
 
 /** The last word before an unpaid hold is released by the expiry sweep. */
@@ -174,6 +208,7 @@ export async function sendHoldExpiringEmail(
     to,
     `${hold.yachtName} is held until ${hold.holdExpiresAt} — booking ${hold.reference}`,
     html,
+    { mailbox: "booking" },
   );
 }
 
@@ -185,7 +220,9 @@ export async function sendRefundIssuedEmail(
   const html = await render(
     createElement(RefundIssuedEmail, { ...refund, appUrl: env.CORS_ORIGIN }),
   );
-  return sendHtml(to, `${refund.refunded} refunded — booking ${refund.reference}`, html);
+  return sendHtml(to, `${refund.refunded} refunded — booking ${refund.reference}`, html, {
+    mailbox: "booking",
+  });
 }
 
 /** The acknowledgement an enquiry gets — quote request, charter expert, or consultation. */
@@ -196,7 +233,7 @@ export async function sendLeadFollowUpEmail(
   const html = await render(
     createElement(LeadFollowUpEmail, {
       ...lead,
-      replyable: isReplyable(),
+      replyable: isReplyable("general"),
       appUrl: env.CORS_ORIGIN,
     }),
   );
@@ -211,17 +248,20 @@ export async function sendEnquiryAnswerEmail(
   to: string,
   enquiry: Omit<EnquiryAnswerEmailProps, "appUrl" | "replyable">,
 ) {
+  // The one mail that is either kind: a question carrying a reference is about a charter, and
+  // the answer to it belongs with the people running that charter.
+  const mailbox: Mailbox = enquiry.reference ? "booking" : "general";
   const html = await render(
     createElement(EnquiryAnswerEmail, {
       ...enquiry,
-      replyable: isReplyable(),
+      replyable: isReplyable(mailbox),
       appUrl: env.CORS_ORIGIN,
     }),
   );
   const subject = enquiry.reference
     ? `Re: your question about booking ${enquiry.reference}`
     : "Re: your enquiry — YachtSkanner";
-  return sendHtml(to, subject, html);
+  return sendHtml(to, subject, html, { mailbox });
 }
 
 /**
@@ -231,7 +271,7 @@ export async function sendEnquiryAnswerEmail(
  */
 export async function sendStaffAlertEmail(to: string, alert: Omit<StaffAlertEmailProps, "appUrl">) {
   const html = await render(createElement(StaffAlertEmail, { ...alert, appUrl: env.CORS_ORIGIN }));
-  return sendHtml(to, alert.title, html, { replyable: false });
+  return sendHtml(to, alert.title, html, { mailbox: "none" });
 }
 
 /**
@@ -250,7 +290,7 @@ export async function sendWelcomeEmail({ to, name }: { to: string; name?: string
       profileUrl: `${base}/profile`,
       wishlistUrl: `${base}/wishlist`,
       supportUrl: `${base}/support`,
-      replyable: isReplyable(),
+      replyable: isReplyable("general"),
       appUrl: env.CORS_ORIGIN,
     }),
   );

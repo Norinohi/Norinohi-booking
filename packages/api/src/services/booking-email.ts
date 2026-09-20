@@ -19,6 +19,7 @@ import {
 
 import { COMPANY } from "../lib/company";
 import { atCheckInMinor } from "./checkout-amounts";
+import { notifyStaff } from "./enquiry-email";
 
 /*
  * The emails checkout and the refund flow send. The confirmation screen has always promised the
@@ -197,6 +198,61 @@ const PAYMENT_KIND_LABEL = {
   checkin_extras: "extras payment",
   security_deposit: "security deposit",
 } satisfies Record<PaymentKind, string>;
+
+export type BookingStaffAlert = {
+  bookingId: string;
+  reference: string;
+  snapshot: CommercialSnapshot;
+  priced: typeof quote.$inferSelect;
+  guestName: string | null;
+  guestEmail: string | null;
+  paidMinor: number;
+  outstandingMinor: number;
+  /** The operator's own reservation number, which is what the marina answers to. */
+  providerReference: string | null;
+};
+
+/**
+ * Tells the team a charter now exists.
+ *
+ * Only on confirmation, and deliberately not on the hold that precedes it: a held booking is a
+ * customer part-way through a checkout, most of which either pay within the hour or lapse, and
+ * an alert per attempt would be a queue nobody reads. By the time this fires the operator has
+ * committed the reservation and there is something to act on.
+ *
+ * Sent whether or not the customer left an address — a booking with no guest email is exactly
+ * the one staff most need to know about, since nothing else will reach that customer.
+ */
+export async function announceBookingToStaff(alert: BookingStaffAlert): Promise<void> {
+  const { snapshot, priced } = alert;
+
+  await notifyStaff({
+    title: `New booking ${alert.reference} — ${snapshot.listingTitle}`,
+    facts: [
+      {
+        label: "Guest",
+        value: alert.guestEmail
+          ? `${alert.guestName ?? "Guest"} (${alert.guestEmail})`
+          : `${alert.guestName ?? "Guest"} (no email on the booking)`,
+      },
+      { label: "Yacht", value: snapshot.listingTitle },
+      { label: "Base", value: placeLine(snapshot.baseName, snapshot.countryName) },
+      { label: "Charter", value: `${day(priced.checkIn)} → ${day(priced.checkOut)}` },
+      { label: "Guests", value: String(priced.guests) },
+      { label: "Total", value: money(priced.totalMinor, priced.currency) },
+      { label: "Paid", value: money(alert.paidMinor, priced.currency) },
+      ...(alert.outstandingMinor > 0
+        ? [{ label: "Still to pay", value: money(alert.outstandingMinor, priced.currency) }]
+        : []),
+      ...(alert.providerReference
+        ? [{ label: "Operator reference", value: alert.providerReference }]
+        : []),
+    ],
+    path: `/admin/staff/bookings/${alert.bookingId}`,
+    actionLabel: "Open the booking",
+    audience: "booking",
+  });
+}
 
 export type PaymentReceivedEmail = {
   to: string;

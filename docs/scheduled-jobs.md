@@ -499,11 +499,16 @@ stay at its `mock` default there. What they do need is the mailer, and need it m
 than anything else on this page needs its optional variables:
 
 ```
-RESEND_API_KEY         ${{api.RESEND_API_KEY}}
-EMAIL_FROM             ${{api.EMAIL_FROM}}
-EMAIL_FROM_NAME        ${{api.EMAIL_FROM_NAME}}
-REPLY_TO_EMAIL         ${{api.REPLY_TO_EMAIL}}
+RESEND_API_KEY           ${{api.RESEND_API_KEY}}
+EMAIL_FROM               ${{api.EMAIL_FROM}}
+EMAIL_FROM_NAME          ${{api.EMAIL_FROM_NAME}}
+REPLY_TO_EMAIL           ${{api.REPLY_TO_EMAIL}}
+BOOKING_REPLY_TO_EMAIL   ${{api.BOOKING_REPLY_TO_EMAIL}}
 ```
+
+The reminder service sends booking mail only, so `BOOKING_REPLY_TO_EMAIL` is the one
+that matters to it; `REPLY_TO_EMAIL` is referenced because the booking address falls
+back to it when it is unset.
 
 `RESEND_API_KEY` and `EMAIL_FROM` are optional in the schema, and a send without
 them is skipped rather than failed. That is right for a checkout that must not be
