@@ -1,0 +1,184 @@
+{
+  "BoatTypes": {
+    "heading": "Kies je boottype",
+    "previous": "Vorige boottypes",
+    "next": "Volgende boottypes"
+  },
+  "BudgetFinder": {
+    "heading": "Vind jachten binnen je budget",
+    "viewResults": "Resultaten bekijken",
+    "labels": {
+      "budget": "Budget per persoon",
+      "people": "Personen",
+      "skipper": "Schipper",
+      "destinations": "Bestemmingen (optioneel)"
+    },
+    "options": {
+      "any": "Alle",
+      "budgetFrom": "{from}+",
+      "peopleNotSure": "Weet ik nog niet",
+      "skipperYes": "Ja",
+      "skipperNo": "Nee",
+      "destinationsAll": "Alle bestemmingen"
+    }
+  },
+  "EarnCta": {
+    "heading": "Verdien met je jacht",
+    "description": "Zet je jacht op ons platform en ontvang boekingen van reizigers over de hele wereld. Wij zorgen voor zichtbaarheid, vraag en tools - jij houdt de regie over je planning en prijzen.",
+    "cta": "Plaats je jacht",
+    "dialog": {
+      "title": "Stuur een aanvraag",
+      "description": "Laat je gegevens achter en ons team neemt contact met je op over het plaatsen van je jacht.",
+      "submit": "Aanvraag versturen",
+      "success": "Bedankt! We nemen snel contact met je op."
+    }
+  },
+  "Hero": {
+    "tagline": "Meer dan 30.000 jachten op 1.200 bestemmingen. Charters vanaf €120/dag",
+    "heading": "Ontdek de wereld per jacht",
+    "wherePlaceholder": "Waarheen?",
+    "datesPlaceholder": "Alle data",
+    "clearDates": "Data wissen",
+    "boatPlaceholder": "Elke boot",
+    "captainPlaceholder": "Met kapitein",
+    "search": "Zoeken",
+    "dontKnow": "Weet je niet wat je moet kiezen?",
+    "helpPlan": "Help me mijn trip te plannen",
+    "options": {
+      "croatia": "Kroatië",
+      "greece": "Griekenland",
+      "italy": "Italië",
+      "turkey": "Turkije",
+      "caribbean": "Caribisch gebied",
+      "thailand": "Thailand",
+      "catamaran": "Catamaran",
+      "sailingYacht": "Zeiljacht",
+      "motorYacht": "Motorjacht",
+      "gulet": "Gulet",
+      "luxuryYacht": "Luxe jacht",
+      "withCaptain": "Met kapitein",
+      "bareboat": "Bareboat",
+      "skippered": "Met schipper"
+    },
+    "stats": {
+      "yachts": {
+        "label": "jachten"
+      },
+      "destinations": {
+        "label": "bestemmingen"
+      },
+      "travelers": {
+        "label": "tevreden reizigers"
+      },
+      "rating": {
+        "label": "gemiddelde beoordeling"
+      }
+    }
+  },
+  "HowItWorks": {
+    "heading": "Zo werkt het",
+    "intro": "Een jacht boeken is makkelijker dan je denkt.",
+    "introSecondLine": "We begeleiden je van het kiezen van een bestemming tot het moment dat je aan boord stapt - ervaring is niet nodig.",
+    "cta": "Jachten vinden",
+    "steps": {
+      "destination": {
+        "title": "Kies een bestemming",
+        "description": "Ontdek meer dan 1.200 zeilbestemmingen wereldwijd. Van Kroatië tot het Caribisch gebied - kies de plek die bij je trip past."
+      },
+      "yacht": {
+        "title": "Kies je jacht",
+        "description": "Bekijk jachten op basis van je groepsgrootte, budget en voorkeuren. Vergelijk opties en vind wat het beste bij je trip past."
+      },
+      "book": {
+        "title": "Boek je trip",
+        "description": "Bevestig je data, voeg eventueel extra's toe en boek veilig online. Je bent klaar om te zeilen."
+      }
+    }
+  },
+  "PlanTrip": {
+    "heading": "Twijfel je nog? Plan je perfecte jachttrip in 30 seconden",
+    "cta": "Help me mijn trip te plannen",
+    "checklist": {
+      "questions": "Beantwoord een paar eenvoudige vragen",
+      "recommendation": "Krijg een persoonlijk advies",
+      "explore": "Ontdek de beste jachten voor je trip"
+    },
+    "steps": {
+      "preferences": {
+        "title": "Kies je voorkeuren",
+        "description": "Geef je ideale bestemmingen op, van de turquoise kusten van Palawan tot de historische havens van Valletta."
+      },
+      "recommendation": {
+        "title": "Ontvang advies",
+        "description": "We stellen jachten voor op basis van de wensen van je groep. Bekijk onze aanbevelingen en kies het perfecte jacht."
+      },
+      "yachts": {
+        "title": "Bekijk jachten",
+        "description": "Regel de laatste details, voeg extra's toe en boek. Nu kun je uitkijken naar je onvergetelijke zeilavontuur."
+      }
+    }
+  },
+  "PopularDestinations": {
+    "heading": "Populaire bestemmingen",
+    "previous": "Vorige bestemmingen",
+    "next": "Volgende bestemmingen",
+    "seeAll": "Alle populaire bekijken",
+    "showLess": "Minder tonen",
+    "perPersonWeek": "Vanaf {price} per persoon/week",
+    "yachtCount": "{count, plural, one {# jacht} other {# jachten}}"
+  },
+  "PopularYachts": {
+    "heading": "Populaire jachten",
+    "previous": "Vorige jachten",
+    "next": "Volgende jachten",
+    "seeAll": "Alle jachten bekijken",
+    "from": "Vanaf",
+    "viewDetails": "Details bekijken",
+    "perDay": "/ per dag"
+  },
+  "SailingRoutes": {
+    "heading": "Populaire zeilroutes",
+    "previous": "Vorige routes",
+    "next": "Volgende routes",
+    "seeAll": "Alle populaire bekijken",
+    "showLess": "Minder tonen",
+    "exploreRoute": "Route ontdekken",
+    "days": "{count, plural, one {# dag} other {# dagen}}",
+    "levels": {
+      "easy": "Makkelijk",
+      "moderate": "Gemiddeld",
+      "advanced": "Gevorderd"
+    }
+  },
+  "Testimonials": {
+    "heading": "Wat onze klanten zeggen",
+    "allReviews": "Alle reviews",
+    "comingSoon": "Binnenkort",
+    "items": {
+      "weber": {
+        "quote": "We boekten voor het eerst een jacht in Kroatië en alles werkte gewoon. Het proces was eenvoudig en de boot was precies wat we verwachtten.",
+        "location": "Duitsland"
+      },
+      "martin": {
+        "quote": "Ik had geen zeilervaring, maar via het platform vond ik makkelijk een schipper en kon ik de hele trip plannen. Het voelde als een gewone vakantie, alleen beter.",
+        "location": "Frankrijk"
+      },
+      "carter": {
+        "quote": "De transparante prijzen waren de grootste verrassing. We zagen de totale kosten vooraf en konden ze met vrienden delen - superhandig.",
+        "location": "Verenigd Koninkrijk"
+      },
+      "rossi": {
+        "quote": "We vergeleken een paar jachten en vonden het perfecte voor onze groep. De routesuggesties waren echt handig - we hoefden niets te plannen.",
+        "location": "Italië"
+      },
+      "kowalska": {
+        "quote": "Ruime keuze aan boten en heel duidelijke filters. We vonden binnen een paar minuten precies wat we zochten.",
+        "location": "Polen"
+      },
+      "jensen": {
+        "quote": "Van boeken tot aan boord gaan voelde alles moeiteloos. Duidelijke communicatie, geen verborgen kosten en een boot die in het echt nog mooier was.",
+        "location": "Denemarken"
+      }
+    }
+  }
+}

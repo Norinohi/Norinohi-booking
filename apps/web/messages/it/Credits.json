@@ -1,0 +1,20 @@
+{
+  "title": "Crediti e saldo",
+  "balance": {
+    "label": "Saldo disponibile",
+    "expiringSoon": "{amount} in scadenza entro 30 giorni",
+    "hint": "I crediti sono utilizzabili per qualsiasi prenotazione di yacht superiore a €1000 e vengono detratti da quanto paghi oggi."
+  },
+  "ledger": {
+    "title": "Cronologia dei crediti",
+    "expires": "Scade il {date}",
+    "emptyTitle": "Ancora nessun credito",
+    "emptyDescription": "Invita un amico: guadagni credito quando completa il suo viaggio.",
+    "kind": {
+      "referral_reward": "Premio per invito",
+      "booking_redemption": "Applicato alla prenotazione",
+      "expiry": "Scaduto",
+      "adjustment": "Rettifica"
+    }
+  }
+}

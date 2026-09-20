@@ -14,7 +14,7 @@
   "noResults": "Жоден маршрут не відповідає фільтрам.",
   "resetFilters": "Скинути фільтри",
   "allRoutes": "Усі маршрути",
-  "showRouteYachts": "Яхти для цього маршруту",
+  "showRouteYachts": "Показати яхти",
   "itinerary": "Маршрут по днях",
   "nearbyMarinas": "Марини з яхтами вздовж маршруту",
   "loadingMarinas": "Шукаємо марини…",
@@ -33,5 +33,9 @@
   "filtersButton": "Фільтри{count, plural, =0 {} other { (#)}}",
   "back": "Назад",
   "closeFilters": "Закрити фільтри",
-  "showRoutes": "{count, plural, =0 {Немає маршрутів} one {Показати # маршрут} few {Показати # маршрути} many {Показати # маршрутів} other {Показати # маршруту}}"
+  "showRoutes": "{count, plural, =0 {Немає маршрутів} one {Показати # маршрут} few {Показати # маршрути} many {Показати # маршрутів} other {Показати # маршруту}}",
+  "hidePanel": "Згорнути панель",
+  "showDetails": "Деталі маршруту",
+  "closeDetails": "Закрити деталі маршруту",
+  "showOnMap": "На карті"
 }

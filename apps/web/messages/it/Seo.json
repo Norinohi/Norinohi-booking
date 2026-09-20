@@ -1,0 +1,191 @@
+{
+  "Commissions": {
+    "title": "Commissioni",
+    "description": "Quanto guadagna {brand} tramite ciascun fornitore."
+  },
+  "Yachts": {
+    "title": "Ricerca noleggio yacht",
+    "description": "Cerca yacht e catamarani a noleggio nel Mediterraneo e oltre. Filtra per destinazione, date, ospiti e prezzo."
+  },
+  "YachtsMap": {
+    "title": "Yacht sulla mappa",
+    "description": "Sfoglia yacht e catamarani disponibili su una mappa interattiva. Esplora marina e destinazioni, poi filtra per date, ospiti e prezzo."
+  },
+  "YachtDetail": {
+    "title": "Dettagli dello yacht",
+    "description": "Guarda foto, caratteristiche, opzioni di equipaggio e prezzi di questo yacht e verifica la disponibilità per le tue date.",
+    "titleAtPlace": "Noleggio {boat} a {place}",
+    "titlePlain": "Noleggio {boat}",
+    "metaSpecs": "{category} con {cabins, plural, one {# cabina} other {# cabine}} per un massimo di {guests} ospiti.",
+    "metaPlace": "Noleggio {crew} da {place}.",
+    "metaPriceFrom": "Da {price}.",
+    "metaPriceForDays": "{price} per {days, plural, one {# giorno} other {# giorni}}.",
+    "metaCta": "Verifica la disponibilità per le tue date."
+  },
+  "Booking": {
+    "title": "Prenota il tuo yacht",
+    "description": "Completa la prenotazione del noleggio yacht: dati degli ospiti, extra e pagamento sicuro."
+  },
+  "BookingConfirmation": {
+    "title": "Prenotazione confermata",
+    "description": "La prenotazione del tuo noleggio yacht è confermata. Controlla i dettagli del viaggio e i prossimi passi."
+  },
+  "PlanMyTrip": {
+    "title": "Pianifica il mio viaggio",
+    "description": "Raccontaci il tuo viaggio ideale e ti suggeriremo gli yacht, gli itinerari e le date giusti."
+  },
+  "Login": {
+    "title": "Accedi",
+    "description": "Accedi al tuo account YachtSkanner per gestire prenotazioni e yacht salvati."
+  },
+  "Register": {
+    "title": "Crea account",
+    "description": "Crea un account YachtSkanner per prenotare yacht, salvare i preferiti e gestire i tuoi viaggi."
+  },
+  "Wishlist": {
+    "title": "I tuoi preferiti",
+    "description": "Gli yacht e i catamarani che hai salvato. Confronta i preferiti e verifica la disponibilità per le tue date."
+  },
+  "Profile": {
+    "title": "Il tuo profilo",
+    "description": "Gestisci i dati del tuo account YachtSkanner, le informazioni di contatto e le preferenze."
+  },
+  "Bookings": {
+    "title": "Le mie prenotazioni",
+    "description": "Consulta le prenotazioni dei tuoi noleggi yacht, i dettagli dei viaggi e la cronologia."
+  },
+  "Referrals": {
+    "title": "I tuoi inviti",
+    "description": "Segui gli amici che hai invitato su YachtSkanner e i premi che hai guadagnato."
+  },
+  "Credits": {
+    "title": "Crediti e saldo",
+    "description": "Consulta il credito da inviti disponibile, quello in scadenza e ogni movimento del saldo."
+  },
+  "Discounts": {
+    "title": "Gestione sconti e prezzi",
+    "description": "Gestisci i codici promozionali e i prezzi degli yacht dei tuoi annunci."
+  },
+  "Duplicates": {
+    "title": "Revisione duplicati",
+    "description": "Esamina e unisci gli annunci di yacht simili proposti dalla sincronizzazione del catalogo."
+  },
+  "Sync": {
+    "title": "Cronologia sincronizzazioni",
+    "description": "Esecuzioni della sincronizzazione di catalogo e disponibilità con conteggi ed errori."
+  },
+  "Listings": {
+    "title": "Annunci",
+    "description": "Esamina gli annunci di yacht importati e pubblica le bozze nel catalogo."
+  },
+  "Routes": {
+    "title": "Itinerari suggeriti",
+    "description": "Scrivi gli itinerari di navigazione mostrati nella pagina dell’annuncio, base per base."
+  },
+  "Audit": {
+    "title": "Registro attività",
+    "description": "Ogni azione dello staff registrata su una prenotazione, un annuncio, uno sconto o una richiesta."
+  },
+  "Invoice": {
+    "title": "Fattura",
+    "description": "La fattura della prenotazione del tuo noleggio yacht, con i dettagli di pagamento."
+  },
+  "ForgotPassword": {
+    "title": "Password dimenticata",
+    "description": "Reimposta la password del tuo account YachtSkanner."
+  },
+  "ResetPassword": {
+    "title": "Reimposta password",
+    "description": "Scegli una nuova password per il tuo account YachtSkanner."
+  },
+  "SetPassword": {
+    "title": "Imposta password",
+    "description": "Scegli una password per il tuo account YachtSkanner."
+  },
+  "Balance": {
+    "title": "Paga il saldo",
+    "description": "Salda l’importo residuo della prenotazione del tuo noleggio yacht."
+  },
+  "BookingDetail": {
+    "title": "La tua prenotazione",
+    "description": "Dettagli, pagamenti e documenti della prenotazione del tuo noleggio yacht."
+  },
+  "Inbox": {
+    "title": "Posta in arrivo",
+    "description": "Domande e richieste dei clienti in attesa di risposta."
+  },
+  "Payments": {
+    "title": "Pagamenti",
+    "description": "Richieste di fattura e rimborsi in attesa dello staff."
+  },
+  "StaffBooking": {
+    "title": "Prenotazione (staff)",
+    "description": "Vista dello staff di una prenotazione cliente."
+  },
+  "StaffBookings": {
+    "title": "Prenotazioni (staff)",
+    "description": "Tutte le prenotazioni della piattaforma, per lo staff."
+  },
+  "Users": {
+    "title": "Utenti",
+    "description": "Tutti gli account della piattaforma, per lo staff."
+  },
+  "CatalogPage": {
+    "country": "Noleggio yacht in {place}",
+    "geo": "Noleggio yacht a {place}, {country}",
+    "marina": "Noleggio yacht a {place}",
+    "type": "Noleggio {type}",
+    "typeCountry": "Noleggio {type} in {place}",
+    "typeGeo": "Noleggio {type} a {place}, {country}",
+    "builder": "Noleggio yacht {brand}",
+    "model": "Noleggio {model}",
+    "intro": "{count, plural, one {# barca disponibile} other {# barche disponibili}}, da {price} a settimana.",
+    "introNoPrice": "{count, plural, one {# barca disponibile} other {# barche disponibili}}.",
+    "description": "Confronta {count, plural, one {# yacht} other {# yacht}} a noleggio. Filtra per date, ospiti, cabine e prezzo, poi verifica la disponibilità per il tuo viaggio.",
+    "siblings": "Da vedere anche",
+    "regions": "Regioni",
+    "empty": "Al momento nessuna barca corrisponde. Prova il catalogo completo."
+  },
+  "Support": {
+    "title": "Assistenza",
+    "description": "Chiedici qualsiasi cosa sulla tua prenotazione."
+  },
+  "Consultation": {
+    "title": "Contattaci",
+    "description": "Prenota una chiamata o inviaci un messaggio sul tuo viaggio."
+  },
+  "Faq": {
+    "title": "FAQ",
+    "description": "Scrivi e traduci le domande mostrate nelle pagine degli yacht."
+  },
+  "Popular": {
+    "title": "Scelte popolari",
+    "description": "Scegli quali valori compaiono in cima ai filtri e nella home page."
+  },
+  "PopularYachts": {
+    "title": "Yacht popolari",
+    "description": "Configura la composizione dello slider degli yacht popolari nella home page."
+  },
+  "Contact": {
+    "title": "Contatti",
+    "description": "Parla con un esperto di charter del tuo prossimo viaggio."
+  },
+  "Legal": {
+    "terms": {
+      "title": "Termini e condizioni",
+      "description": "I termini e il contratto di noleggio per i charter prenotati su YachtSkanner."
+    },
+    "privacy": {
+      "title": "Informativa sulla privacy",
+      "description": "Come YachtSkanner tratta i tuoi dati personali."
+    },
+    "cancellation": {
+      "title": "Condizioni di cancellazione",
+      "description": "Cosa succede quando un charter prenotato su YachtSkanner viene cancellato."
+    }
+  },
+  "RoutesMap": {
+    "title": "Mappa degli itinerari di navigazione",
+    "description": "Esplora gli itinerari di navigazione sulla mappa e trova marina con yacht vicino al punto di partenza di ogni itinerario."
+  }
+}

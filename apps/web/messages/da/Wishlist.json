@@ -1,0 +1,12 @@
+{
+  "title": "Din ønskeliste",
+  "back": "Tilbage",
+  "saved": "Gemt på din ønskeliste.",
+  "removed": "Fjernet fra din ønskeliste.",
+  "emptyTitle": "Ingen gemte både endnu",
+  "emptyDescription": "Gå på opdagelse og gem dine favoritter til senere",
+  "someUnavailable": "Nogle af dine gemte både er ikke længere ledige.",
+  "toggleFailed": "Vi kunne ikke opdatere din ønskeliste. Prøv igen.",
+  "merged": "{count, plural, one {# gemt båd} other {# gemte både}} er føjet til din konto.",
+  "paginationSummary": "Viser {from}-{to} af {total}"
+}

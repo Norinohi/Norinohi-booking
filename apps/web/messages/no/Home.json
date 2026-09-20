@@ -1,0 +1,184 @@
+{
+  "BoatTypes": {
+    "heading": "Velg båttypen din",
+    "previous": "Forrige båttyper",
+    "next": "Neste båttyper"
+  },
+  "BudgetFinder": {
+    "heading": "Finn yachter etter budsjettet ditt",
+    "viewResults": "Se resultater",
+    "labels": {
+      "budget": "Budsjett per person",
+      "people": "Personer",
+      "skipper": "Skipper",
+      "destinations": "Destinasjoner (valgfritt)"
+    },
+    "options": {
+      "any": "Alle",
+      "budgetFrom": "{from}+",
+      "peopleNotSure": "Vet ikke",
+      "skipperYes": "Ja",
+      "skipperNo": "Nei",
+      "destinationsAll": "Alle destinasjoner"
+    }
+  },
+  "EarnCta": {
+    "heading": "Tjen penger på yachten din",
+    "description": "Legg ut yachten din på plattformen vår og begynn å ta imot bookinger fra reisende over hele verden. Vi tar oss av synlighet, etterspørsel og verktøy - du beholder kontrollen over kalender og priser.",
+    "cta": "Legg ut yachten din",
+    "dialog": {
+      "title": "Send en forespørsel",
+      "description": "Legg igjen kontaktopplysningene dine, så tar teamet vårt kontakt om å legge ut yachten din.",
+      "submit": "Send forespørsel",
+      "success": "Takk! Vi tar kontakt med deg snart."
+    }
+  },
+  "Hero": {
+    "tagline": "Over 30 000 yachter på 1 200 destinasjoner. Charter fra 120 €/dag",
+    "heading": "Utforsk verden med yacht",
+    "wherePlaceholder": "Hvor skal du?",
+    "datesPlaceholder": "Alle datoer",
+    "clearDates": "Fjern datoer",
+    "boatPlaceholder": "Alle båter",
+    "captainPlaceholder": "Med kaptein",
+    "search": "Søk",
+    "dontKnow": "Vet du ikke hva du skal velge?",
+    "helpPlan": "Hjelp meg å planlegge turen",
+    "options": {
+      "croatia": "Kroatia",
+      "greece": "Hellas",
+      "italy": "Italia",
+      "turkey": "Tyrkia",
+      "caribbean": "Karibia",
+      "thailand": "Thailand",
+      "catamaran": "Katamaran",
+      "sailingYacht": "Seilyacht",
+      "motorYacht": "Motoryacht",
+      "gulet": "Gulet",
+      "luxuryYacht": "Luksusyacht",
+      "withCaptain": "Med kaptein",
+      "bareboat": "Uten mannskap",
+      "skippered": "Med skipper"
+    },
+    "stats": {
+      "yachts": {
+        "label": "yachter"
+      },
+      "destinations": {
+        "label": "destinasjoner"
+      },
+      "travelers": {
+        "label": "fornøyde reisende"
+      },
+      "rating": {
+        "label": "gjennomsnittlig vurdering"
+      }
+    }
+  },
+  "HowItWorks": {
+    "heading": "Slik fungerer det",
+    "intro": "Å booke en yacht er enklere enn du tror.",
+    "introSecondLine": "Vi følger deg fra valg av destinasjon til du går om bord - ingen erfaring nødvendig.",
+    "cta": "Finn yachter",
+    "steps": {
+      "destination": {
+        "title": "Velg destinasjon",
+        "description": "Utforsk over 1 200 seildestinasjoner verden over. Fra Kroatia til Karibia - velg stedet som passer turen din."
+      },
+      "yacht": {
+        "title": "Velg yachten din",
+        "description": "Bla gjennom yachter ut fra gruppestørrelse, budsjett og preferanser. Sammenlign alternativer og finn den som passer turen din best."
+      },
+      "book": {
+        "title": "Book turen din",
+        "description": "Bekreft datoene, legg til ekstra utstyr om du trenger det, og sikre bookingen på nett. Da er du klar til å seile."
+      }
+    }
+  },
+  "PlanTrip": {
+    "heading": "Usikker på hva du skal velge? Planlegg den perfekte yachtturen på 30 sekunder",
+    "cta": "Hjelp meg å planlegge turen",
+    "checklist": {
+      "questions": "Svar på noen enkle spørsmål",
+      "recommendation": "Få en personlig anbefaling",
+      "explore": "Utforsk de beste yachtene for turen din"
+    },
+    "steps": {
+      "preferences": {
+        "title": "Velg preferanser",
+        "description": "Fortell oss hvilke destinasjoner du drømmer om, fra de turkise kystene på Palawan til de historiske havnene i Valletta."
+      },
+      "recommendation": {
+        "title": "Få en anbefaling",
+        "description": "Vi foreslår yachter ut fra gruppens behov. Se gjennom anbefalingene våre og velg den perfekte yachten."
+      },
+      "yachts": {
+        "title": "Se yachter",
+        "description": "Bli ferdig med detaljene, legg til ekstra utstyr og book. Nå kan du glede deg til et uforglemmelig yachteventyr."
+      }
+    }
+  },
+  "PopularDestinations": {
+    "heading": "Populære destinasjoner",
+    "previous": "Forrige destinasjoner",
+    "next": "Neste destinasjoner",
+    "seeAll": "Se alle populære",
+    "showLess": "Vis færre",
+    "perPersonWeek": "Fra {price} per person/uke",
+    "yachtCount": "{count, plural, one {# yacht} other {# yachter}}"
+  },
+  "PopularYachts": {
+    "heading": "Populære yachter",
+    "previous": "Forrige yachter",
+    "next": "Neste yachter",
+    "seeAll": "Se alle yachter",
+    "from": "Fra",
+    "viewDetails": "Se detaljer",
+    "perDay": "/ per dag"
+  },
+  "SailingRoutes": {
+    "heading": "Populære seilruter",
+    "previous": "Forrige ruter",
+    "next": "Neste ruter",
+    "seeAll": "Se alle populære",
+    "showLess": "Vis færre",
+    "exploreRoute": "Utforsk ruten",
+    "days": "{count, plural, one {# dag} other {# dager}}",
+    "levels": {
+      "easy": "Enkel",
+      "moderate": "Middels",
+      "advanced": "Avansert"
+    }
+  },
+  "Testimonials": {
+    "heading": "Hva kundene våre sier",
+    "allReviews": "Alle anmeldelser",
+    "comingSoon": "Kommer snart",
+    "items": {
+      "weber": {
+        "quote": "Vi booket yacht i Kroatia for første gang, og alt gikk på skinner. Prosessen var enkel, og båten var akkurat slik vi hadde forventet.",
+        "location": "Tyskland"
+      },
+      "martin": {
+        "quote": "Jeg hadde ingen seilerfaring, men plattformen gjorde det lett å finne en skipper og planlegge hele turen. Det føltes som en helt vanlig ferie, bare bedre.",
+        "location": "Frankrike"
+      },
+      "carter": {
+        "quote": "Den store overraskelsen var hvor tydelige prisene var. Vi så hele kostnaden på forhånd og kunne dele den mellom venner - kjempepraktisk.",
+        "location": "Storbritannia"
+      },
+      "rossi": {
+        "quote": "Vi sammenlignet noen yachter og fant den perfekte for gruppen vår. Ruteforslagene var virkelig nyttige - vi slapp å planlegge noe selv.",
+        "location": "Italia"
+      },
+      "kowalska": {
+        "quote": "Flott utvalg av båter og veldig tydelige filtre. Vi fant akkurat det vi trengte på bare noen minutter.",
+        "location": "Polen"
+      },
+      "jensen": {
+        "quote": "Alt fra booking til ombordstigning gikk helt uanstrengt. Tydelig kommunikasjon, ingen skjulte gebyrer og en båt som var enda finere i virkeligheten.",
+        "location": "Danmark"
+      }
+    }
+  }
+}

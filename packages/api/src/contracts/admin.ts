@@ -1,6 +1,8 @@
 import { PROVIDER_KEYS } from "@yacht-charter/env/providers";
 import { z } from "zod";
 
+import { DISPLAY_CURRENCIES } from "../lib/display-currency";
+
 import {
   currencySchema,
   dateRangeRefinement,
@@ -1084,11 +1086,11 @@ export const displayCurrencyEnabledSchema = z
   );
 
 export const displayCurrencyDefaultSchema = z
-  .enum(["EUR", "USD", "GBP", "PLN", "UAH"])
+  .enum(DISPLAY_CURRENCIES)
   .describe("The currency shown where a visitor's country is unknown or not on the list.");
 
 export const displayCurrencyByCountrySchema = z
-  .record(z.string().length(2).toUpperCase(), z.enum(["EUR", "USD", "GBP", "PLN", "UAH"]))
+  .record(z.string().length(2).toUpperCase(), z.enum(DISPLAY_CURRENCIES))
   .describe(
     "Per-country overrides on top of the built-in list, keyed by ISO country code. Empty leaves the built-in list in force.",
   );

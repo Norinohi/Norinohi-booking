@@ -1,0 +1,191 @@
+{
+  "Commissions": {
+    "title": "Kommissionssatser",
+    "description": "Hvad {brand} tjener gennem hver udbyder."
+  },
+  "Yachts": {
+    "title": "Søg bådcharter",
+    "description": "Søg blandt både og katamaraner til charter i Middelhavet og resten af verden. Filtrer efter destination, datoer, gæster og pris."
+  },
+  "YachtsMap": {
+    "title": "Både på kortet",
+    "description": "Se ledige både og katamaraner på et interaktivt kort. Udforsk marinaer og destinationer, og filtrer efter datoer, gæster og pris."
+  },
+  "YachtDetail": {
+    "title": "Bådens detaljer",
+    "description": "Se billeder, specifikationer, besætningsmuligheder og priser for denne båd, og tjek ledigheden på dine datoer.",
+    "titleAtPlace": "{boat} charter i {place}",
+    "titlePlain": "{boat} charter",
+    "metaSpecs": "{category} med {cabins, plural, one {# kahyt} other {# kahytter}} til op til {guests} gæster.",
+    "metaPlace": "{crew} charter fra {place}.",
+    "metaPriceFrom": "Fra {price}.",
+    "metaPriceForDays": "{price} for {days, plural, one {# dag} other {# dage}}.",
+    "metaCta": "Tjek ledigheden på dine datoer."
+  },
+  "Booking": {
+    "title": "Book din båd",
+    "description": "Gennemfør din bådbooking - gæsteoplysninger, tillæg og sikker betaling."
+  },
+  "BookingConfirmation": {
+    "title": "Bookingen er bekræftet",
+    "description": "Din bådbooking er bekræftet. Se detaljerne om turen og de næste skridt."
+  },
+  "PlanMyTrip": {
+    "title": "Planlæg min tur",
+    "description": "Fortæl os om din drømmetur, så foreslår vi de rigtige både, ruter og datoer til dig."
+  },
+  "Login": {
+    "title": "Log ind",
+    "description": "Log ind på din YachtSkanner-konto for at styre bookinger og gemte både."
+  },
+  "Register": {
+    "title": "Opret konto",
+    "description": "Opret en YachtSkanner-konto for at booke både, gemme favoritter og holde styr på dine ture."
+  },
+  "Wishlist": {
+    "title": "Din ønskeliste",
+    "description": "De både og katamaraner, du har gemt. Sammenlign dine favoritter og tjek ledigheden på dine datoer."
+  },
+  "Profile": {
+    "title": "Din profil",
+    "description": "Administrer oplysningerne på din YachtSkanner-konto, dine kontaktoplysninger og indstillinger."
+  },
+  "Bookings": {
+    "title": "Mine bookinger",
+    "description": "Se dine bådbookinger, turdetaljer og bookinghistorik."
+  },
+  "Referrals": {
+    "title": "Dine henvisninger",
+    "description": "Følg de venner, du har inviteret til YachtSkanner, og de belønninger, du har optjent."
+  },
+  "Credits": {
+    "title": "Tilgodehavende og saldo",
+    "description": "Se dit disponible tilgodehavende fra henvisninger, hvad der snart udløber, og hver enkelt postering bag saldoen."
+  },
+  "Discounts": {
+    "title": "Rabat- og prisstyring",
+    "description": "Administrer rabatkoder og bådpriser for dine annoncer."
+  },
+  "Duplicates": {
+    "title": "Gennemgang af dubletter",
+    "description": "Gennemgå og flet bådannoncer, der ligner hinanden, og som katalogsynkroniseringen har foreslået."
+  },
+  "Sync": {
+    "title": "Synkroniseringshistorik",
+    "description": "Kørsler af katalog- og ledighedssynkronisering med antal og fejl."
+  },
+  "Listings": {
+    "title": "Annoncer",
+    "description": "Gennemgå importerede bådannoncer og frigiv kladder til kataloget."
+  },
+  "Routes": {
+    "title": "Foreslåede ruter",
+    "description": "Skriv de sejlruter, der vises på en annonceside, base for base."
+  },
+  "Audit": {
+    "title": "Revisionslog",
+    "description": "Hver medarbejderhandling registreret på en booking, annonce, rabat eller forespørgsel."
+  },
+  "Invoice": {
+    "title": "Faktura",
+    "description": "Fakturaen for din bådbooking med betalingsoplysninger."
+  },
+  "ForgotPassword": {
+    "title": "Glemt adgangskode",
+    "description": "Nulstil adgangskoden til din YachtSkanner-konto."
+  },
+  "ResetPassword": {
+    "title": "Nulstil adgangskode",
+    "description": "Vælg en ny adgangskode til din YachtSkanner-konto."
+  },
+  "SetPassword": {
+    "title": "Vælg adgangskode",
+    "description": "Vælg en adgangskode til din YachtSkanner-konto."
+  },
+  "Balance": {
+    "title": "Betal restbeløbet",
+    "description": "Betal det resterende beløb på din bådbooking."
+  },
+  "BookingDetail": {
+    "title": "Din booking",
+    "description": "Detaljer, betalinger og dokumenter til din bådbooking."
+  },
+  "Inbox": {
+    "title": "Indbakke",
+    "description": "Kundespørgsmål og forespørgsler, der venter på svar."
+  },
+  "Payments": {
+    "title": "Betalinger",
+    "description": "Fakturaanmodninger og refusioner, der venter på en medarbejder."
+  },
+  "StaffBooking": {
+    "title": "Booking (medarbejder)",
+    "description": "Medarbejdervisning af en kundebooking."
+  },
+  "StaffBookings": {
+    "title": "Bookinger (medarbejder)",
+    "description": "Alle bookinger på platformen, til medarbejdere."
+  },
+  "Users": {
+    "title": "Brugere",
+    "description": "Alle konti på platformen, til medarbejdere."
+  },
+  "CatalogPage": {
+    "country": "Bådcharter i {place}",
+    "geo": "Bådcharter i {place}, {country}",
+    "marina": "Bådcharter i {place}",
+    "type": "{type} charter",
+    "typeCountry": "{type} charter i {place}",
+    "typeGeo": "{type} charter i {place}, {country}",
+    "builder": "{brand} bådcharter",
+    "model": "{model} charter",
+    "intro": "{count, plural, one {# båd} other {# både}} ledig, fra {price} pr. uge.",
+    "introNoPrice": "{count, plural, one {# båd} other {# både}} ledig.",
+    "description": "Sammenlign {count, plural, one {# båd} other {# både}} til charter. Filtrer efter datoer, gæster, kahytter og pris, og tjek så ledigheden til din tur.",
+    "siblings": "Også værd at se",
+    "regions": "Områder",
+    "empty": "Ingen både matcher lige nu. Prøv hele kataloget."
+  },
+  "Support": {
+    "title": "Support",
+    "description": "Spørg os om alt vedrørende din booking."
+  },
+  "Consultation": {
+    "title": "Kontakt os",
+    "description": "Book en samtale eller send os en besked om din tur."
+  },
+  "Faq": {
+    "title": "FAQ",
+    "description": "Skriv og oversæt de spørgsmål, der vises på bådsiderne."
+  },
+  "Popular": {
+    "title": "Populære valg",
+    "description": "Vælg hvilke facetværdier der står øverst i filtrene og på forsiden."
+  },
+  "PopularYachts": {
+    "title": "Populære både",
+    "description": "Indstil, hvordan forsidens slider med populære både sættes sammen."
+  },
+  "Contact": {
+    "title": "Kontakt",
+    "description": "Tal med en charterekspert om din næste tur."
+  },
+  "Legal": {
+    "terms": {
+      "title": "Vilkår og betingelser",
+      "description": "Vilkårene og lejeaftalen for charter booket på YachtSkanner."
+    },
+    "privacy": {
+      "title": "Privatlivspolitik",
+      "description": "Sådan behandler YachtSkanner dine personoplysninger."
+    },
+    "cancellation": {
+      "title": "Afbestillingsbetingelser",
+      "description": "Hvad der sker, når et charter booket på YachtSkanner bliver afbestilt."
+    }
+  },
+  "RoutesMap": {
+    "title": "Kort over sejlruter",
+    "description": "Udforsk sejlruter på kortet og find marinaer med både i nærheden af, hvor hver rute starter."
+  }
+}

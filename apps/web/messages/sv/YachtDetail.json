@@ -1,0 +1,207 @@
+{
+  "backToSearch": "Tillbaka till sökningen",
+  "breadcrumbSearch": "Sök",
+  "share": "Dela",
+  "linkCopied": "Länken har kopierats",
+  "seeOnMap": "Visa på kartan",
+  "addToWishlist": "Lägg till i önskelistan",
+  "removeFromWishlist": "Ta bort från önskelistan",
+  "included": "Ingår",
+  "amenities": {
+    "groups": {
+      "navigation-and-safety": "Navigation och säkerhet",
+      "deck-and-cockpit": "Däck och sittbrunn",
+      "interior-and-cabins": "Interiör och hytter",
+      "galley": "Pentry",
+      "entertainment-and-water-toys": "Underhållning och vattenleksaker",
+      "systems-and-power": "System och el",
+      "other": "Övrig utrustning"
+    },
+    "itemCount": "{count, plural, one {# sak} other {# saker}}",
+    "allIncluded": "All listad utrustning ingår i charterpriset.",
+    "dismissNote": "Stäng"
+  },
+  "importantInfo": {
+    "charterCompany": "Charterbolag",
+    "pickUpAddress": "Adress för upphämtning av båten",
+    "pickUp": "Upphämtning av båten",
+    "dropOff": "Återlämning av båten",
+    "policies": "Avboknings- och betalningsvillkor",
+    "securityDeposit": "Återbetalningsbar deposition",
+    "securityDepositNote": "Tas av charterbasen vid incheckning och återbetalas efter en skadefri återlämning.",
+    "securityDepositInsured": "Sänks till {amount} om du tecknar basens depositionsförsäkring.",
+    "license": "Förarintyg",
+    "pets": "Husdjur",
+    "paymentMethods": "Betalsätt som charterbolaget accepterar",
+    "marinaInfo": "Information om marinan",
+    "policiesVariesBySelection": "Avboknings- och förskottsvillkor varierar beroende på ditt val. Betalningsvillkoren bekräftas vid offert och bokning.",
+    "licenseRequired": "Giltigt förarintyg för segling eller lokal motsvarighet krävs.",
+    "licenseNotRequired": "Inget intyg behövs när du bokar med besättning eller skeppare.",
+    "petsAllowedWithConfirmation": "Husdjur är tillåtna på den här båten efter charterbolagets bekräftelse.",
+    "petsAskBase": "Reglerna för husdjur sätts av charterbasen: fråga innan du bokar.",
+    "marinaInfoText": "{marina} ligger i {location}, {country}. Tider för incheckning och utcheckning anges av charterbasen.",
+    "paymentMethod": {
+      "card": "Kort",
+      "bank_transfer": "Banköverföring",
+      "cash": "Kontant"
+    }
+  },
+  "popular": {
+    "from": "Från",
+    "perPeriod": "/ {days, plural, one {# dag} other {# dagar}}",
+    "seeAll": "Visa alla båtar",
+    "previous": "Föregående båtar",
+    "next": "Nästa båtar"
+  },
+  "route": {
+    "start": "Start",
+    "finish": "Mål",
+    "day": "Dag {day}",
+    "stopTitle": "Dag {day} - {place}",
+    "disclaimer": "Vägledande rutt. Den slutliga resplanen och övernattningsstoppen beror på väder, tillgänglighet och skepparens beslut."
+  },
+  "review": {
+    "count": "({count, plural, one {# omdöme} other {# omdömen}})",
+    "summary": "Visar {shown} av {total}",
+    "empty": "Inga skrivna omdömen än",
+    "operatorRated": "Betyget kommer från {count, plural, one {# gästbetyg} other {# gästbetyg}} som charteroperatören har samlat in."
+  },
+  "sidebar": {
+    "crew": "Besättning",
+    "people": "Personer",
+    "datesPlaceholder": "Välj datum",
+    "selectDates": "Välj datum för att se priset",
+    "unavailable": "Den här båten har inga lediga datum",
+    "unavailableHint": "Fråga oss om andra datum eller en liknande båt.",
+    "slotRefused": "De datumen går inte att boka. Välj en annan period.",
+    "searchedPeriodRefused": "{from} till {to} är inte tillgängligt för den här båten. Välj en annan period, eller använd datumen som visas.",
+    "loadFailed": "Vi kunde inte ladda priset för den här bokningen.",
+    "loadRetry": "Försök igen",
+    "pricingUnavailable": "Vi kunde inte få något pris för de här datumen från båtens leverantör just nu. Det brukar vara tillfälligt.",
+    "prepayment": "{percent} % förskottsbetalning vid bokning",
+    "boatPrice": "Båtpris",
+    "boatPriceHint": "Fullt hyrespris",
+    "deposit": "Återbetalningsbar deposition",
+    "howItWorks": "Se hur det fungerar",
+    "scheduleDetails": "Vad den här betalningen täcker",
+    "scheduleIncludes": "Inkluderar",
+    "scheduleSplit": "Fördelat över båda betalningarna",
+    "groups": {
+      "mandatory": "Obligatoriska tillval",
+      "selectedExtras": "Valda tillval",
+      "crew": "Besättning"
+    },
+    "payNow": "Förskottsbetalning vid bokning (betala nu)",
+    "payAt": "Betalas: {date}",
+    "payAtCheckIn": "Betalas vid incheckning: {date}",
+    "firstPayment": "{amount} (1:a betalningen)",
+    "fullPayment": "{amount} (hela betalningen)",
+    "secondPayment": "{amount} (2:a betalningen)",
+    "extrasPayment": "{amount} (tillval)",
+    "depositNote": "+ {amount} (återbetalningsbar deposition)",
+    "totalPrice": "Totalpris",
+    "discountsHeading": "Ingår i hyrespriset ovan",
+    "dueNow": "Att betala nu",
+    "payNowCta": "Betala {amount} nu",
+    "requestBookingCta": "Skicka bokningsförfrågan",
+    "requestBookingHint": "Den här båtens operatör bekräftar varje bokning personligen. Vi frågar dem om dina datum och återkommer till dig. Inget dras nu.",
+    "requestQuote": "Begär offert",
+    "promo": {
+      "label": "Kampanjkod",
+      "placeholder": "Ange kod",
+      "apply": "Använd",
+      "remove": "Ta bort",
+      "applied": "{amount} rabatt",
+      "rejected": {
+        "unknown_code": "Vi känner inte igen den koden.",
+        "inactive": "Den koden är inte längre aktiv.",
+        "not_started": "Den koden gäller inte än.",
+        "expired": "Den koden har gått ut.",
+        "usage_limit_reached": "Den koden är slutanvänd.",
+        "not_applicable": "Den koden gäller inte för den här båten."
+      }
+    },
+    "credit": {
+      "label": "Värvningstillgodohavande",
+      "available": "{amount} tillgängligt på den här bokningen",
+      "applied": "{amount} använt",
+      "apply": "Använd",
+      "remove": "Ta bort"
+    },
+    "onRequest": "Den här båten prissätts på förfrågan",
+    "onRequestHint": "Vi har datum för den, men inget publicerat pris täcker dem. Berätta när du vill segla så återkommer vi med ett pris.",
+    "dropOff": "Marina för återlämning",
+    "pickUp": "Upphämtning: {marina}",
+    "boatPriceHintDiscounted": "Hyrespris efter rabatt",
+    "depositWhenInsured": "eller {amount} med självriskreducering"
+  },
+  "panels": {
+    "details": "Båtens detaljer",
+    "booking": "Bokningssammanfattning"
+  },
+  "tabs": {
+    "overview": "Översikt",
+    "amenities": "Utrustning",
+    "mandatory-extras": "Obligatoriska tillval",
+    "optional-extras": "Valfria tillval",
+    "description": "Beskrivning",
+    "important-info": "Viktig information",
+    "suggested-route": "Föreslagen rutt",
+    "review": "Omdömen",
+    "faq": "Vanliga frågor",
+    "popular-yachts": "Populära båtar"
+  },
+  "sections": {
+    "overview": "Översikt",
+    "amenities": "Utrustning",
+    "mandatoryExtras": "Obligatoriska tillval",
+    "optionalExtras": "Valfria tillval",
+    "description": "Beskrivning",
+    "media": "Video och rundtur",
+    "importantInfo": "Viktig information",
+    "suggestedRoute": "Föreslagen rutt",
+    "review": "Omdömen",
+    "faq": "Vanliga frågor",
+    "popularYachts": "Andra populära båtar"
+  },
+  "faqCategories": {
+    "booking": "Bokning",
+    "payment": "Betalning",
+    "prices": "Priser",
+    "licences": "Intyg",
+    "travel": "Resa",
+    "cancellation": "Avbokning"
+  },
+  "overview": {
+    "location": "Plats",
+    "mainsail": "Storsegelstyp",
+    "year": "År",
+    "draught": "Djupgående",
+    "boatType": "Båttyp",
+    "beam": "Bredd",
+    "cabins": "Hytter",
+    "fuelTank": "Bränsletank",
+    "bathrooms": "Badrum",
+    "waterTank": "Vattentank",
+    "length": "Längd",
+    "engine": "Motor",
+    "showers": "Duschar",
+    "notSpecified": "Ej angivet"
+  },
+  "bookingRequestDialog": {
+    "title": "Begär den här bokningen",
+    "description": "Operatören bekräftar varje charter av den här båten personligen. Lämna dina uppgifter så bekräftar en charterexpert datumen med dem och återkommer till dig inom en arbetsdag.",
+    "submit": "Skicka bokningsförfrågan",
+    "success": "Tack! Vi har skickat din förfrågan och hör av oss inom kort."
+  },
+  "quoteDialog": {
+    "title": "Begär en offert",
+    "description": "Lämna dina uppgifter så skickar en charterexpert en skräddarsydd offert för de här datumen.",
+    "submit": "Skicka förfrågan",
+    "success": "Tack! Vi hör av oss inom kort."
+  },
+  "media": {
+    "video": "Se videon",
+    "tour": "360°-rundtur"
+  }
+}

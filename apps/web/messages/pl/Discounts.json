@@ -1,0 +1,120 @@
+{
+  "title": "Menedżer rabatów i cen",
+  "subtitle": "Zarządzaj kodami promocyjnymi i cenami jachtów.",
+  "create": "Utwórz rabat",
+  "tabs": {
+    "discounts": "Rabaty",
+    "managePrices": "Zarządzaj cenami"
+  },
+  "table": {
+    "name": "Nazwa rabatu",
+    "code": "Kod",
+    "typeValue": "Rodzaj i wartość",
+    "appliesTo": "Dotyczy",
+    "status": "Status",
+    "usage": "Wykorzystanie",
+    "empty": "Nie znaleziono rabatów",
+    "error": "Nie udało się wczytać rabatów"
+  },
+  "status": {
+    "active": "Aktywny",
+    "inactive": "Nieaktywny",
+    "scheduled": "Zaplanowany",
+    "expired": "Wygasły"
+  },
+  "type": {
+    "percentage": "Procentowy",
+    "fixed_amount": "Kwotowy"
+  },
+  "applies": {
+    "allYachts": "Wszystkie jachty",
+    "allCatamarans": "Wszystkie katamarany",
+    "allGullets": "Wszystkie gulety",
+    "allMotorboats": "Wszystkie łodzie motorowe",
+    "allMotorYachts": "Wszystkie jachty motorowe",
+    "allSailboats": "Wszystkie żaglówki",
+    "specific": "Wybrane jachty",
+    "allSailingYachts": "Wszystkie jachty żaglowe",
+    "nothing": "Nic",
+    "missing": "{type, select, listing {Usunięty jacht} category {Usunięta kategoria} operator {Usunięty operator} region {Usunięty region} other {Usunięty obiekt}} ({id})",
+    "more": "{first} +{count} więcej"
+  },
+  "dialog": {
+    "createTitle": "Utwórz nowy rabat",
+    "editTitle": "Edytuj rabat",
+    "name": {
+      "label": "Nazwa rabatu",
+      "placeholder": "np. Summer View 2026"
+    },
+    "code": {
+      "label": "Kod rabatowy",
+      "placeholder": "np. SUMMER2026"
+    },
+    "type": {
+      "label": "Rodzaj rabatu"
+    },
+    "price": {
+      "label": "Wartość rabatu",
+      "placeholder": "10"
+    },
+    "expiration": {
+      "label": "Data wygaśnięcia",
+      "placeholder": "Dowolne daty"
+    },
+    "appliesTo": {
+      "label": "Dotyczy"
+    },
+    "search": {
+      "placeholder": "Szukaj jachtu"
+    },
+    "submitCreate": "Utwórz rabat",
+    "submitSave": "Zapisz zmiany",
+    "created": "Rabat został utworzony",
+    "saved": "Rabat został zaktualizowany",
+    "errors": {
+      "nameRequired": "Wpisz nazwę rabatu",
+      "codeRequired": "Wpisz kod rabatowy",
+      "priceRequired": "Wpisz wartość rabatu",
+      "appliesRequired": "Wybierz, czego dotyczy rabat",
+      "usageLimitInvalid": "Wpisz liczbę całkowitą użyć lub pozostaw puste"
+    },
+    "error": "Coś poszło nie tak. Spróbuj ponownie.",
+    "usageLimit": {
+      "label": "Limit użyć",
+      "placeholder": "Bez limitu",
+      "hint": "Pozostaw puste, aby nie ograniczać liczby użyć"
+    },
+    "active": {
+      "label": "Aktywny",
+      "on": "Rabat został aktywowany",
+      "off": "Rabat został dezaktywowany"
+    }
+  },
+  "prices": {
+    "search": "Szukaj po nazwie",
+    "allTypes": "Wszystkie rodzaje",
+    "allLocations": "Wszystkie lokalizacje",
+    "table": {
+      "yacht": "Jacht",
+      "location": "Lokalizacja",
+      "basePrice": "Cena bazowa",
+      "currentPrice": "Aktualna cena",
+      "edit": "Edytuj cenę"
+    },
+    "dialog": {
+      "title": "Edytuj cenę",
+      "basePrice": "Cena bazowa",
+      "newPrice": "Nowa cena",
+      "newPricePlaceholder": "np. 14 539 €",
+      "submit": "Zaktualizuj cenę",
+      "updated": "Cena została zaktualizowana",
+      "errors": {
+        "priceRequired": "Wpisz nową cenę"
+      },
+      "reset": "Przywróć cenę dostawcy",
+      "cleared": "Przywrócono cenę dostawcy"
+    },
+    "empty": "Nie znaleziono jachtów",
+    "error": "Nie udało się wczytać cen"
+  }
+}

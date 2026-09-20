@@ -1,0 +1,29 @@
+{
+  "heading": "Recherche de location de yacht",
+  "searchByMap": "Rechercher sur la carte",
+  "emptyTitle": "Aucun yacht ne correspond à vos filtres",
+  "emptyDescription": "Essayez de modifier vos dates, votre budget ou votre destination, nous vous aiderons à trouver le bateau idéal.",
+  "searchBar": {
+    "location": "Destination",
+    "startTyping": "Commencez à saisir",
+    "searchCountries": "Rechercher un pays...",
+    "addDates": "Ajouter des dates",
+    "clearDates": "Effacer les dates",
+    "anyBoat": "Tout bateau",
+    "search": "Rechercher",
+    "noLocations": "Aucune destination correspondante",
+    "popularCountries": "Pays populaires",
+    "popularBoatTypes": "Types de bateaux populaires",
+    "allBoatTypes": "Tous les types de bateaux",
+    "clearLocation": "Effacer la destination",
+    "freeText": "Nom, modèle ou loueur",
+    "kinds": {
+      "country": "Pays",
+      "region": "Zone de navigation",
+      "city": "Ville",
+      "base": "Marina"
+    },
+    "clearBoatType": "Effacer le type de bateau"
+  },
+  "paginationSummary": "Affichage de {from}-{to} sur {total}"
+}

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { perTranslatedLocale } from "../locales";
+
 import facetLabelsJson from "./facet-labels.json" with { type: "json" };
 
 /**
@@ -23,8 +25,5 @@ import facetLabelsJson from "./facet-labels.json" with { type: "json" };
  * the hand-written editorial copy in `seed.ts` is never touched.
  */
 export const facetLabels = z
-  .record(
-    z.string(),
-    z.record(z.string(), z.object({ de: z.string(), es: z.string(), uk: z.string() })),
-  )
+  .record(z.string(), z.record(z.string(), perTranslatedLocale(z.string())))
   .parse(facetLabelsJson);

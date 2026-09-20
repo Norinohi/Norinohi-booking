@@ -1,0 +1,224 @@
+{
+  "title": "Aiutami a pianificare il viaggio",
+  "close": "Chiudi il pianificatore",
+  "progress": "Passaggio {current} di {total}",
+  "stepHeading": "Passaggio {current}",
+  "placeholder": "La domanda e le relative opzioni appariranno qui nella fase successiva.",
+  "back": "Indietro",
+  "next": "Avanti",
+  "steps": {
+    "destination": {
+      "question": "Dove ti piacerebbe navigare?",
+      "subtitle": "Scegli una destinazione o lascia che ti suggeriamo l’opzione migliore",
+      "options": {
+        "croatia": {
+          "label": "Croazia",
+          "description": "Ideale per saltare da un’isola all’altra e per la prima esperienza in barca. Acque calme, brevi distanze tra le isole e un’enorme varietà di itinerari: perfetta per principianti e viaggi rilassanti."
+        },
+        "greece": {
+          "label": "Grecia",
+          "description": "Ideale per itinerari panoramici e un mix culturale. Naviga tra isole iconiche con acque cristalline e città storiche, in equilibrio tra avventura e comfort."
+        },
+        "italy": {
+          "label": "Italia",
+          "description": "Ideale per esperienze premium e panorami costieri. Splendidi itinerari lungo la costa, marina di alto livello e mete indimenticabili come Amalfi: perfetta per un viaggio più lussuoso."
+        },
+        "spain": {
+          "label": "Spagna",
+          "description": "Ideale per stile di vita e atmosfera sociale. Clima splendido, ambiente vivace e mete come Ibiza o Maiorca: perfetta per divertimento, gruppi e viaggi attivi."
+        },
+        "notSure": {
+          "label": "Non so"
+        }
+      }
+    },
+    "groupSize": {
+      "question": "Quante persone parteciperanno?",
+      "subtitle": "Le dimensioni del gruppo influiscono sul tipo di yacht, sullo spazio e sul prezzo a persona",
+      "options": {
+        "twoToFour": {
+          "label": "2-4 persone",
+          "description": "Più privacy, costo a persona più alto"
+        },
+        "fiveToEight": {
+          "label": "5-8 persone",
+          "description": "Il miglior equilibrio tra comfort e prezzo"
+        },
+        "ninePlus": {
+          "label": "9+ persone",
+          "description": "Servono yacht più grandi o più barche"
+        },
+        "notSure": {
+          "label": "Non so"
+        }
+      }
+    },
+    "experience": {
+      "question": "Hai esperienza di navigazione?",
+      "subtitle": "Uno skipper può essere aggiunto a qualsiasi livello: questo decide solo chi sta al timone.",
+      "options": {
+        "none": {
+          "label": "Nessuna esperienza",
+          "description": "Mi serve uno skipper per condurre la barca"
+        },
+        "some": {
+          "label": "Un po’ di esperienza",
+          "description": "Ho già navigato, ma mi serve uno skipper"
+        },
+        "licensed": {
+          "label": "Con patente nautica",
+          "description": "Ho una patente valida e condurrò la barca da solo"
+        }
+      }
+    },
+    "tripVibe": {
+      "question": "Che tipo di viaggio stai cercando?",
+      "subtitle": "Ciò che desideri dalla settimana determina la barca, l’itinerario e il ritmo.",
+      "options": {
+        "adventure": {
+          "label": "Avventura",
+          "description": "Navigazione attiva ed esplorazione. Più movimento, itinerari più lunghi e vela in prima persona"
+        },
+        "relax": {
+          "label": "Relax",
+          "description": "Ritmo lento, natura e baie tranquille. Perfetto per navigare con calma, nuotare e staccare la spina."
+        },
+        "family": {
+          "label": "Famiglia",
+          "description": "Sicuro, comodo e spazioso. Ideale per i bambini, con stabilità e itinerari facili."
+        },
+        "luxury": {
+          "label": "Lusso",
+          "description": "Yacht premium ed esperienza all inclusive. Equipaggio, comfort e destinazioni di alto livello."
+        },
+        "party": {
+          "label": "Festa",
+          "description": "Musica, vita notturna e atmosfera sociale. Ideale per itinerari in stile Ibiza e gruppi pieni di energia."
+        }
+      }
+    },
+    "duration": {
+      "question": "Quanto vorresti che durasse il viaggio?",
+      "subtitle": "Scegli la durata più adatta ai tuoi programmi. Ci aiuta a suggerirti gli yacht, gli itinerari e l’esperienza giusti.",
+      "options": {
+        "week": {
+          "label": "7 giorni"
+        },
+        "twoWeeks": {
+          "label": "14 giorni"
+        },
+        "threeWeeks": {
+          "label": "21 giorni"
+        },
+        "more": {
+          "label": "21+ giorni"
+        }
+      }
+    },
+    "budget": {
+      "question": "Quale budget ti sembra adeguato?",
+      "subtitle": "A persona per una settimana a bordo, così puoi confrontarlo con una vacanza che conosci.",
+      "perPersonWeek": "a persona/settimana",
+      "options": {
+        "low": {
+          "label": "€300-600"
+        },
+        "mid": {
+          "label": "€600-1000"
+        },
+        "high": {
+          "label": "€1000-1200"
+        },
+        "upper": {
+          "label": "€1200-2000"
+        },
+        "premium": {
+          "label": "€2000+"
+        }
+      }
+    }
+  },
+  "result": {
+    "title": "La tua vacanza in yacht perfetta",
+    "subtitle": "In base alle tue preferenze, ecco cosa ti consigliamo.",
+    "labels": {
+      "yachtType": "Tipo di yacht",
+      "skipper": "Skipper",
+      "style": "Stile",
+      "duration": "Durata"
+    },
+    "yachtType": {
+      "sailing": "Yacht a vela",
+      "catamaran": "Catamarano",
+      "gulet": "Caicco",
+      "motor": "Yacht a motore",
+      "luxury": "Yacht di lusso"
+    },
+    "skipper": {
+      "yes": "Sì",
+      "no": "No"
+    },
+    "difficulty": {
+      "easy": "Facile",
+      "moderate": "Intermedio",
+      "advanced": "Avanzato"
+    },
+    "getConsultation": "Richiedi una consulenza",
+    "viewDetails": "Vedi dettagli",
+    "seeAllMatches": "Vedi tutti i risultati",
+    "durationDays": "{days, plural, one {# giorno} other {# giorni}}",
+    "price": {
+      "perPerson": "≈ {price} a persona",
+      "similar": "Yacht simili",
+      "perPersonWeek": "≈ {range} a persona a settimana",
+      "estimate": "Prezzo stimato",
+      "perPersonDays": "≈ {price} a persona per {days, plural, one {# giorno} other {# giorni}}"
+    },
+    "noMatch": {
+      "title": "Ancora nessuna corrispondenza esatta",
+      "description": "Non abbiamo trovato uno yacht che corrisponda a tutte le risposte, ma ecco cosa cercheremmo.",
+      "seeAllMatches": "Vedi tutti gli yacht"
+    },
+    "error": {
+      "title": "Si è verificato un errore",
+      "description": "Non è stato possibile caricare il tuo consiglio. Riprova.",
+      "retry": "Riprova"
+    },
+    "consultationDialog": {
+      "title": "Richiedi una consulenza gratuita",
+      "description": "Dicci come contattarti e uno dei nostri esperti di charter ti proporrà opzioni su misura.",
+      "submit": "Invia richiesta",
+      "cancel": "Annulla",
+      "success": "Grazie! Ti contatteremo a breve."
+    }
+  },
+  "consultation": {
+    "close": "Chiudi",
+    "title": "Contattaci",
+    "subtitle": "Prenota una chiamata o inviaci un messaggio, come preferisci.",
+    "options": {
+      "call": {
+        "title": "Prenota una breve chiamata",
+        "description": "Scegli l’orario che preferisci per una breve chiamata con un esperto di charter."
+      },
+      "message": {
+        "title": "Invia un messaggio",
+        "description": "Raccontaci del tuo viaggio e ti risponderemo via email."
+      }
+    },
+    "placeholder": {
+      "title": "La prenotazione delle chiamate arriverà presto",
+      "description": "La pianificazione online non è ancora disponibile. Inviaci un messaggio e fisseremo un orario adatto a te.",
+      "cta": "Invia invece un messaggio"
+    },
+    "submitted": {
+      "title": "Grazie, ti contatteremo presto",
+      "description": "Uno dei nostri esperti di charter ti risponderà a breve."
+    },
+    "error": {
+      "title": "Si è verificato un errore",
+      "description": "Non è stato possibile caricare i dettagli del tuo viaggio. Riprova.",
+      "retry": "Riprova"
+    }
+  }
+}

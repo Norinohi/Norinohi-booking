@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import type { MapInstance } from "@/components/shared/map/map-canvas";
 import MapMarker from "@/components/shared/map/map-marker";
 import MapPopup from "@/components/shared/map/map-popup";
-import RouteLine from "@/components/shared/map/route-line";
+import RouteLine, { SAILED_ROUTE_STROKES } from "@/components/shared/map/route-line";
 import {
   arrivalOf,
   ROUTE_DRAW_MS,
@@ -20,9 +20,12 @@ import { MarinaYachtsPopup } from "@/features/yachts";
 import type { MapRoute, RouteMarina } from "../api/queries";
 import { routeCatalogueHref } from "../lib/catalogue-href";
 import { routeStart, toRouteStops } from "../lib/route-geometry";
-import { DayMarker } from "./route-markers";
+import { DayMarker, RouteStartMarker } from "./route-markers";
 
 type StartGroup = { lat: number; lng: number; routes: MapRoute[] };
+
+/* Roughly a bay across the screen: close enough that a name has somewhere to sit. */
+const NAME_ZOOM = 9;
 
 /*
  * Most routes start from a handful of charter hubs, so one pin per route would be a dozen pins on
@@ -61,25 +64,23 @@ export function RouteStartsLayer({ routes, map, onSelect, dismissSignal }: Route
       {groups.map((group, index) => {
         const [first] = group.routes;
         if (!first) return null;
-        const key = `${group.lat},${group.lng}`;
-        return group.routes.length > 1 ? (
-          <MapMarker
-            key={key}
-            variant="cluster"
+        return (
+          <RouteStartMarker
+            key={`${group.lat},${group.lng}`}
             coordinates={group}
             count={group.routes.length}
-            label={t("routesHere", { count: group.routes.length })}
+            label={
+              group.routes.length > 1
+                ? t("routesHere", { count: group.routes.length })
+                : first.title
+            }
+            hint={
+              group.routes.length > 1
+                ? t("routesHere", { count: group.routes.length })
+                : `${first.title} · ${t("nights", { count: first.nights })}`
+            }
             order={index}
-            onSelect={() => setOpen(group)}
-          />
-        ) : (
-          <MapMarker
-            key={key}
-            variant="pin"
-            coordinates={group}
-            label={first.title}
-            order={index}
-            onSelect={() => onSelect(first.slug)}
+            onSelect={() => (group.routes.length > 1 ? setOpen(group) : onSelect(first.slug))}
           />
         );
       })}
@@ -134,6 +135,20 @@ export function SelectedRouteLayer({
   const reduced = useReducedMotion();
   useEffect(() => onOpenMarina(null), [dismissSignal, onOpenMarina]);
 
+  /*
+   * Stop names are worth the room only once the coast is drawn at a size that has any: further out
+   * seven plates over one gulf are a wall of text, so the ends keep their "Start" and "Finish"
+   * there and the names arrive with the zoom.
+   */
+  const [named, setNamed] = useState((map?.getZoom() ?? 0) >= NAME_ZOOM);
+  useEffect(() => {
+    if (!map) return;
+    const follow = () => setNamed(map.getZoom() >= NAME_ZOOM);
+    follow();
+    map.on("zoomend", follow);
+    return () => void map.off("zoomend", follow);
+  }, [map]);
+
   const stops = toRouteStops(route);
   const points = routePoints(stops);
   const curve = routeCurve(stops);
@@ -155,6 +170,7 @@ export function SelectedRouteLayer({
           <MapMarker
             key={marina.value}
             variant="cluster"
+            size="sm"
             coordinates={marina}
             count={marina.listingCount}
             label={label}
@@ -165,6 +181,7 @@ export function SelectedRouteLayer({
           <MapMarker
             key={marina.value}
             variant="pin"
+            size="sm"
             coordinates={marina}
             label={label}
             selected={openMarina?.value === marina.value}
@@ -174,7 +191,7 @@ export function SelectedRouteLayer({
         );
       })}
 
-      <RouteLine key={route.id} curve={curve} animate={!reduced} />
+      <RouteLine key={route.id} curve={curve} animate={!reduced} strokes={SAILED_ROUTE_STROKES} />
 
       {points.map((point) => {
         const [day = 1] = point.days;
@@ -185,8 +202,11 @@ export function SelectedRouteLayer({
             coordinates={point}
             day={day}
             label={point.stops.map((stop) => stop.title).join(", ")}
-            /* Only the ends are named: the dot already carries the day's number. */
-            caption={caption === captions.day(day) ? undefined : caption}
+            /* The dot carries the day's number, so the plate is for what it cannot say: the place
+               up close, and which end this is while the whole route is in view. */
+            caption={
+              named ? point.stops[0]?.title : caption === captions.day(day) ? undefined : caption
+            }
             delayMs={reduced ? 0 : arrivalOf(curve, point) * ROUTE_DRAW_MS}
             onSelect={() => onOpenMarina(null)}
           />

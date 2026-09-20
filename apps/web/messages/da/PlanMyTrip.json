@@ -1,0 +1,224 @@
+{
+  "title": "Hjælp mig med at planlægge turen",
+  "close": "Luk planlæggeren",
+  "progress": "Trin {current} af {total}",
+  "stepHeading": "Trin {current}",
+  "placeholder": "Spørgsmålet og svarmulighederne kommer her i næste trin.",
+  "back": "Tilbage",
+  "next": "Næste",
+  "steps": {
+    "destination": {
+      "question": "Hvor vil du gerne sejle?",
+      "subtitle": "Vælg en destination, eller lad os foreslå det bedste valg til dig",
+      "options": {
+        "croatia": {
+          "label": "Kroatien",
+          "description": "Bedst til ø-hop og førstegangssejlads. Rolige farvande, korte afstande mellem øerne og et kæmpe udvalg af ruter - perfekt til begyndere og afslappede ture."
+        },
+        "greece": {
+          "label": "Grækenland",
+          "description": "Bedst til smukke ruter og kulturel variation. Sejl mellem ikoniske øer med krystalklart vand, historiske byer og en god balance mellem eventyr og komfort."
+        },
+        "italy": {
+          "label": "Italien",
+          "description": "Bedst til premiumoplevelser og kystudsigter. Smukke kystruter, eksklusive marinaer og uforglemmelige destinationer som Amalfi - ideelt til en mere luksuriøs tur."
+        },
+        "spain": {
+          "label": "Spanien",
+          "description": "Bedst til livsstil og socialt liv. Godt vejr, livlig stemning og destinationer som Ibiza og Mallorca - perfekt til sjov, grupper og aktive ture."
+        },
+        "notSure": {
+          "label": "Ved ikke"
+        }
+      }
+    },
+    "groupSize": {
+      "question": "Hvor mange kommer med?",
+      "subtitle": "Gruppens størrelse har betydning for bådtype, plads og samlet pris pr. person",
+      "options": {
+        "twoToFour": {
+          "label": "2-4 personer",
+          "description": "Mere privatliv, højere pris pr. person"
+        },
+        "fiveToEight": {
+          "label": "5-8 personer",
+          "description": "Den bedste balance mellem komfort og pris"
+        },
+        "ninePlus": {
+          "label": "9+ personer",
+          "description": "Kræver større både eller flere både"
+        },
+        "notSure": {
+          "label": "Ved ikke"
+        }
+      }
+    },
+    "experience": {
+      "question": "Har du sejlerfaring?",
+      "subtitle": "En skipper kan tilvælges uanset niveau - dette afgør kun, hvem der styrer.",
+      "options": {
+        "none": {
+          "label": "Ingen erfaring",
+          "description": "Jeg har brug for en skipper til at sejle båden"
+        },
+        "some": {
+          "label": "Lidt erfaring",
+          "description": "Jeg har sejlet før, men har brug for en skipper"
+        },
+        "licensed": {
+          "label": "Har duelighedsbevis",
+          "description": "Jeg har et gyldigt bevis og sejler selv"
+        }
+      }
+    },
+    "tripVibe": {
+      "question": "Hvilken slags tur leder du efter?",
+      "subtitle": "Det, du vil have ud af ugen, bestemmer båden, ruten og tempoet.",
+      "options": {
+        "adventure": {
+          "label": "Eventyr",
+          "description": "Aktiv sejlads og opdagelse. Mere bevægelse, længere ruter og hænderne i sejlene"
+        },
+        "relax": {
+          "label": "Afslapning",
+          "description": "Roligt tempo, natur og stille bugter. Perfekt til rolig sejlads, badning og at koble af."
+        },
+        "family": {
+          "label": "Familie",
+          "description": "Sikkert, komfortabelt og med god plads. Ideelt til børn, stabilitet og nemme ruter."
+        },
+        "luxury": {
+          "label": "Luksus",
+          "description": "Eksklusive både og oplevelse med fuld service. Besætning, komfort og eksklusive destinationer."
+        },
+        "party": {
+          "label": "Fest",
+          "description": "Musik, natteliv og social stemning. Bedst til ruter i Ibiza-stil og gruppeenergi."
+        }
+      }
+    },
+    "duration": {
+      "question": "Hvor lang skal din tur være?",
+      "subtitle": "Vælg den varighed, der passer bedst til dine planer. Det hjælper os med at foreslå de rigtige både, ruter og den rette oplevelse.",
+      "options": {
+        "week": {
+          "label": "7 dage"
+        },
+        "twoWeeks": {
+          "label": "14 dage"
+        },
+        "threeWeeks": {
+          "label": "21 dage"
+        },
+        "more": {
+          "label": "21+ dage"
+        }
+      }
+    },
+    "budget": {
+      "question": "Hvilket budget føles rigtigt?",
+      "subtitle": "Pr. person for en uge om bord, så du kan sammenligne med en ferie, du kender.",
+      "perPersonWeek": "pr. person/uge",
+      "options": {
+        "low": {
+          "label": "300-600 €"
+        },
+        "mid": {
+          "label": "600-1000 €"
+        },
+        "high": {
+          "label": "1000-1200 €"
+        },
+        "upper": {
+          "label": "1200-2000 €"
+        },
+        "premium": {
+          "label": "2000+ €"
+        }
+      }
+    }
+  },
+  "result": {
+    "title": "Din perfekte bådtur",
+    "subtitle": "Ud fra dine svar er her, hvad vi anbefaler.",
+    "labels": {
+      "yachtType": "Bådtype",
+      "skipper": "Skipper",
+      "style": "Stil",
+      "duration": "Varighed"
+    },
+    "yachtType": {
+      "sailing": "Sejlyacht",
+      "catamaran": "Katamaran",
+      "gulet": "Gulet",
+      "motor": "Motoryacht",
+      "luxury": "Luksusyacht"
+    },
+    "skipper": {
+      "yes": "Ja",
+      "no": "Nej"
+    },
+    "difficulty": {
+      "easy": "Let",
+      "moderate": "Middel",
+      "advanced": "Øvet"
+    },
+    "getConsultation": "Få rådgivning",
+    "viewDetails": "Se detaljer",
+    "seeAllMatches": "Se alle match",
+    "durationDays": "{days, plural, one {# dag} other {# dage}}",
+    "price": {
+      "perPerson": "≈ {price} pr. person",
+      "similar": "Lignende både",
+      "perPersonWeek": "≈ {range} pr. person pr. uge",
+      "estimate": "Anslået pris",
+      "perPersonDays": "≈ {price} pr. person for {days, plural, one {# dag} other {# dage}}"
+    },
+    "noMatch": {
+      "title": "Intet præcist match endnu",
+      "description": "Vi kunne ikke finde en båd, der matcher alle dine svar, men her er, hvad vi ville lede efter.",
+      "seeAllMatches": "Se alle både"
+    },
+    "error": {
+      "title": "Noget gik galt",
+      "description": "Vi kunne ikke indlæse din anbefaling. Prøv igen.",
+      "retry": "Prøv igen"
+    },
+    "consultationDialog": {
+      "title": "Få gratis rådgivning",
+      "description": "Fortæl os, hvordan vi får fat i dig, så følger en af vores chartereksperter op med skræddersyede forslag.",
+      "submit": "Send forespørgsel",
+      "cancel": "Annuller",
+      "success": "Tak! Vi vender tilbage inden længe."
+    }
+  },
+  "consultation": {
+    "close": "Luk",
+    "title": "Kontakt os",
+    "subtitle": "Book en samtale eller send os en besked, alt efter hvad der passer dig.",
+    "options": {
+      "call": {
+        "title": "Book en kort samtale",
+        "description": "Vælg et tidspunkt, der passer dig - en kort samtale med en charterekspert."
+      },
+      "message": {
+        "title": "Send en besked",
+        "description": "Fortæl os om din tur, så vender vi tilbage på mail."
+      }
+    },
+    "placeholder": {
+      "title": "Booking er på vej",
+      "description": "Online tidsbestilling er ikke klar endnu. Send os en besked, så finder vi et tidspunkt, der passer dig.",
+      "cta": "Send en besked i stedet"
+    },
+    "submitted": {
+      "title": "Tak - vi vender tilbage",
+      "description": "En af vores chartereksperter følger op inden længe."
+    },
+    "error": {
+      "title": "Noget gik galt",
+      "description": "Vi kunne ikke indlæse oplysningerne om din tur. Prøv igen.",
+      "retry": "Prøv igen"
+    }
+  }
+}

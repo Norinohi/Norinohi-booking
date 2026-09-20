@@ -1,0 +1,120 @@
+{
+  "title": "Rabat- og prisstyring",
+  "subtitle": "Administrer rabatkoder og bådpriser.",
+  "create": "Opret rabat",
+  "tabs": {
+    "discounts": "Rabatter",
+    "managePrices": "Administrer priser"
+  },
+  "table": {
+    "name": "Rabatnavn",
+    "code": "Kode",
+    "typeValue": "Type og værdi",
+    "appliesTo": "Gælder for",
+    "status": "Status",
+    "usage": "Forbrug",
+    "empty": "Ingen rabatter fundet",
+    "error": "Rabatterne kunne ikke indlæses"
+  },
+  "status": {
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "scheduled": "Planlagt",
+    "expired": "Udløbet"
+  },
+  "type": {
+    "percentage": "Procent",
+    "fixed_amount": "Fast beløb"
+  },
+  "applies": {
+    "allYachts": "Alle både",
+    "allCatamarans": "Alle katamaraner",
+    "allGullets": "Alle gulets",
+    "allMotorboats": "Alle motorbåde",
+    "allMotorYachts": "Alle motoryachter",
+    "allSailboats": "Alle sejlbåde",
+    "specific": "Bestemte både",
+    "allSailingYachts": "Alle sejlyachter",
+    "nothing": "Ingenting",
+    "missing": "{type, select, listing {Slettet båd} category {Slettet kategori} operator {Slettet udbyder} region {Slettet område} other {Slettet mål}} ({id})",
+    "more": "{first} +{count} mere"
+  },
+  "dialog": {
+    "createTitle": "Opret ny rabat",
+    "editTitle": "Rediger rabat",
+    "name": {
+      "label": "Rabatnavn",
+      "placeholder": "f.eks. Summer View 2026"
+    },
+    "code": {
+      "label": "Rabatkode",
+      "placeholder": "f.eks. SUMMER2026"
+    },
+    "type": {
+      "label": "Rabattype"
+    },
+    "price": {
+      "label": "Rabatbeløb",
+      "placeholder": "10"
+    },
+    "expiration": {
+      "label": "Udløbsdato",
+      "placeholder": "Alle datoer"
+    },
+    "appliesTo": {
+      "label": "Gælder for"
+    },
+    "search": {
+      "placeholder": "Søg båd"
+    },
+    "submitCreate": "Opret rabat",
+    "submitSave": "Gem ændringer",
+    "created": "Rabatten er oprettet",
+    "saved": "Rabatten er opdateret",
+    "errors": {
+      "nameRequired": "Indtast et rabatnavn",
+      "codeRequired": "Indtast en rabatkode",
+      "priceRequired": "Indtast en rabatværdi",
+      "appliesRequired": "Vælg, hvad rabatten gælder for",
+      "usageLimitInvalid": "Indtast et helt antal anvendelser, eller lad feltet stå tomt"
+    },
+    "error": "Noget gik galt. Prøv igen.",
+    "usageLimit": {
+      "label": "Forbrugsgrænse",
+      "placeholder": "Ubegrænset",
+      "hint": "Lad feltet stå tomt for ubegrænset brug"
+    },
+    "active": {
+      "label": "Aktiv",
+      "on": "Rabatten er aktiveret",
+      "off": "Rabatten er deaktiveret"
+    }
+  },
+  "prices": {
+    "search": "Søg på navn",
+    "allTypes": "Alle typer",
+    "allLocations": "Alle destinationer",
+    "table": {
+      "yacht": "Båd",
+      "location": "Destination",
+      "basePrice": "Grundpris",
+      "currentPrice": "Nuværende pris",
+      "edit": "Rediger pris"
+    },
+    "dialog": {
+      "title": "Rediger pris",
+      "basePrice": "Grundpris",
+      "newPrice": "Ny pris",
+      "newPricePlaceholder": "f.eks. 14.539 €",
+      "submit": "Opdater pris",
+      "updated": "Prisen er opdateret",
+      "errors": {
+        "priceRequired": "Indtast en ny pris"
+      },
+      "reset": "Nulstil til udbyderens pris",
+      "cleared": "Prisen er nulstillet til udbyderens pris"
+    },
+    "empty": "Ingen både fundet",
+    "error": "Priserne kunne ikke indlæses"
+  }
+}

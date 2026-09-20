@@ -1,0 +1,20 @@
+{
+  "title": "Środki i saldo",
+  "balance": {
+    "label": "Dostępne saldo",
+    "expiringSoon": "{amount} wygasa w ciągu 30 dni",
+    "hint": "Środki można wykorzystać przy każdej rezerwacji jachtu powyżej 1000 €, pomniejszają kwotę płaconą dzisiaj."
+  },
+  "ledger": {
+    "title": "Historia środków",
+    "expires": "Wygasa {date}",
+    "emptyTitle": "Brak środków",
+    "emptyDescription": "Zaproś znajomego - otrzymasz środki, gdy zakończy on swój rejs.",
+    "kind": {
+      "referral_reward": "Nagroda za polecenie",
+      "booking_redemption": "Wykorzystano przy rezerwacji",
+      "expiry": "Wygasło",
+      "adjustment": "Korekta"
+    }
+  }
+}

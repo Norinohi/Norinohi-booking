@@ -30,6 +30,7 @@ import type {
   popularFacetValueSchema,
 } from "../contracts/popular-facets";
 import { writeAuditLog } from "./audit";
+import { SITE_LOCALES } from "../lib/locales";
 import { ConflictError, InternalError, PreconditionFailedError } from "../errors";
 
 type Kind = z.infer<typeof popularFacetKindSchema>;
@@ -46,7 +47,7 @@ type MediaUpdateInput = z.infer<typeof popularFacetMediaUpdateInputSchema>;
 type MediaSaved = z.infer<typeof popularFacetMediaSavedSchema>;
 type ImageUploadInput = z.infer<typeof popularFacetImageUploadInputSchema>;
 
-const MEDIA_LOCALES: MediaLocale[] = ["en", "uk", "de", "es"];
+const MEDIA_LOCALES: readonly MediaLocale[] = SITE_LOCALES;
 
 const ENTITY_TYPE = "facet_media_rank";
 const DEFAULT_LOCALE = "en";

@@ -79,7 +79,7 @@ describe("facetLabels", () => {
     const [label] = facetLabels({
       ...empty,
       amenities: [
-        amenity("Autopilot", { de: "Autopilot", es: "Piloto", it: "Pilota", ru: "Автопилот" }),
+        amenity("Autopilot", { de: "Autopilot", es: "Piloto", hr: "Autopilot", ru: "Автопилот" }),
       ],
     });
 
@@ -88,9 +88,9 @@ describe("facetLabels", () => {
 
   it("skips a facet the provider named in one language", () => {
     expect(facetLabels({ ...empty, amenities: [amenity("Autopilot")] })).toEqual([]);
-    expect(facetLabels({ ...empty, amenities: [amenity("Autopilot", { it: "Pilota" })] })).toEqual(
-      [],
-    );
+    expect(
+      facetLabels({ ...empty, amenities: [amenity("Autopilot", { hr: "Autopilot" })] }),
+    ).toEqual([]);
   });
 
   it("folds spellings the read join cannot tell apart into one facet", () => {

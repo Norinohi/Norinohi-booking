@@ -17,6 +17,8 @@ import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 
+import { DISPLAY_CURRENCIES, type DisplayCurrency } from "@yacht-charter/api/lib/display-currency";
+
 import {
   useMarketplaceSettings,
   useUpdateMarketplaceSettings,
@@ -24,7 +26,6 @@ import {
 
 type PaymentSource = "vendor" | "marketplace";
 type PaymentMode = "deposit" | "full";
-type DisplayCurrency = "EUR" | "USD" | "GBP" | "PLN" | "UAH";
 
 interface FormState {
   source: PaymentSource;
@@ -44,9 +45,6 @@ interface FormState {
   displayCurrencyDefault: DisplayCurrency;
   nameSearchEnabled: boolean;
 }
-
-/** The currencies the client named. The overrides map is edited in the database for now. */
-const DISPLAY_CURRENCIES: readonly DisplayCurrency[] = ["EUR", "USD", "GBP", "PLN", "UAH"];
 
 const PRESET_PERCENTS = ["30", "50", "100"] as const;
 

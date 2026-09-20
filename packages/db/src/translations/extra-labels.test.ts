@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { extraLabels } from "./extra-labels";
-import { ukTranslations } from "./uk";
+import { generatedTranslations } from "./generated";
 
 /** Mirrors extraNameKeySql in search/repository.ts and extraNameKey in apply-translations.ts. */
 function nameKey(name: string): string {
@@ -13,9 +13,16 @@ function nameKey(name: string): string {
 }
 
 describe("extraLabels", () => {
-  it("names every locale the site serves for every entry", () => {
+  it("names every original locale for every entry, and the later ones all together or not at all", () => {
     for (const [name, byLocale] of Object.entries(extraLabels)) {
-      expect(Object.keys(byLocale).sort(), name).toEqual(["de", "es", "uk"]);
+      const keys = Object.keys(byLocale).sort();
+      expect(
+        [
+          ["de", "es", "uk"],
+          ["da", "de", "es", "fr", "it", "nl", "no", "pl", "sv", "uk"],
+        ],
+        name,
+      ).toContainEqual(keys);
     }
   });
 
@@ -57,20 +64,24 @@ describe("extraLabels", () => {
   });
 });
 
-describe("ukTranslations", () => {
+describe("generatedTranslations", () => {
   it("keys facets on values the catalogue can hold", () => {
-    for (const labels of Object.values(ukTranslations.facets)) {
-      for (const value of Object.keys(labels)) {
-        expect(value.trim(), value).toBe(value);
-        expect(value.length).toBeGreaterThan(0);
+    for (const [locale, set] of Object.entries(generatedTranslations)) {
+      for (const labels of Object.values(set.facets)) {
+        for (const value of Object.keys(labels)) {
+          expect(value.trim(), `${locale}: ${value}`).toBe(value);
+          expect(value.length).toBeGreaterThan(0);
+        }
       }
     }
   });
 
   it("keys extras on the provider's own id space", () => {
-    for (const labels of Object.values(ukTranslations.extras)) {
-      for (const key of Object.keys(labels)) {
-        expect(key, key).toMatch(/^(service|equipment):\d+$/);
+    for (const [locale, set] of Object.entries(generatedTranslations)) {
+      for (const labels of Object.values(set.extras)) {
+        for (const key of Object.keys(labels)) {
+          expect(key, `${locale}: ${key}`).toMatch(/^(service|equipment):\d+$/);
+        }
       }
     }
   });

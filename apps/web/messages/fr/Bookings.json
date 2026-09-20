@@ -1,0 +1,22 @@
+{
+  "title": "Mes réservations",
+  "history": "Historique",
+  "anyDates": "Toutes dates",
+  "clearDates": "Effacer les dates",
+  "emptyTitle": "Aucun yacht pour l'instant",
+  "emptyDescription": "Commencez à explorer les yachts et planifiez votre premier voyage - vos réservations apparaîtront ici.",
+  "cancel": {
+    "action": "Annuler la réservation",
+    "title": "Annuler cette réservation ?",
+    "description": "Cette action est irréversible et la société de location sera informée.",
+    "reasonLabel": "Motif (facultatif)",
+    "reasonPlaceholder": "Dites-nous pourquoi vous annulez",
+    "confirm": "Annuler la réservation",
+    "keep": "Conserver la réservation",
+    "success": "Votre réservation a été annulée.",
+    "error": "Nous n'avons pas pu annuler votre réservation. Veuillez réessayer."
+  },
+  "statusCancelled": "Annulée",
+  "payBalance": "Payer {amount}",
+  "completePayment": "Finaliser le paiement {amount}"
+}

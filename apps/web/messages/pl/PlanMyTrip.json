@@ -1,0 +1,224 @@
+{
+  "title": "Pomóż mi zaplanować rejs",
+  "close": "Zamknij planer",
+  "progress": "Krok {current} z {total}",
+  "stepHeading": "Krok {current}",
+  "placeholder": "Pytanie i odpowiedzi pojawią się tutaj w kolejnym etapie.",
+  "back": "Wstecz",
+  "next": "Dalej",
+  "steps": {
+    "destination": {
+      "question": "Gdzie chcesz żeglować?",
+      "subtitle": "Wybierz kierunek albo pozwól nam zaproponować najlepszą opcję",
+      "options": {
+        "croatia": {
+          "label": "Chorwacja",
+          "description": "Idealna do skakania po wyspach i na pierwszy rejs. Spokojne wody, krótkie odległości między wyspami i ogromny wybór tras - świetna dla początkujących i na relaksujące wyjazdy."
+        },
+        "greece": {
+          "label": "Grecja",
+          "description": "Idealna dla malowniczych tras i kultury. Żegluj wśród słynnych wysp z krystalicznie czystą wodą i historycznymi miasteczkami, łącząc przygodę z komfortem."
+        },
+        "italy": {
+          "label": "Włochy",
+          "description": "Idealne na rejs premium z widokiem na wybrzeże. Piękne trasy przybrzeżne, ekskluzywne mariny i niezapomniane miejsca, takie jak Amalfi - świetne na bardziej luksusowy wyjazd."
+        },
+        "spain": {
+          "label": "Hiszpania",
+          "description": "Idealna dla stylu życia i towarzyskiej atmosfery. Świetna pogoda, tętniąca życiem atmosfera i miejsca takie jak Ibiza czy Majorka - doskonała na zabawę, rejsy w grupie i aktywny wypoczynek."
+        },
+        "notSure": {
+          "label": "Nie wiem"
+        }
+      }
+    },
+    "groupSize": {
+      "question": "Ile osób płynie?",
+      "subtitle": "Wielkość grupy wpływa na typ jachtu, przestrzeń i cenę na osobę",
+      "options": {
+        "twoToFour": {
+          "label": "2-4 osoby",
+          "description": "Więcej prywatności, wyższy koszt na osobę"
+        },
+        "fiveToEight": {
+          "label": "5-8 osób",
+          "description": "Najlepsza równowaga komfortu i ceny"
+        },
+        "ninePlus": {
+          "label": "9+ osób",
+          "description": "Wymaga większego jachtu lub kilku łodzi"
+        },
+        "notSure": {
+          "label": "Nie wiem"
+        }
+      }
+    },
+    "experience": {
+      "question": "Czy masz doświadczenie żeglarskie?",
+      "subtitle": "Skippera można dodać na każdym poziomie - to decyduje tylko o tym, kto steruje.",
+      "options": {
+        "none": {
+          "label": "Brak doświadczenia",
+          "description": "Potrzebuję skippera, który poprowadzi jacht"
+        },
+        "some": {
+          "label": "Trochę doświadczenia",
+          "description": "Żeglowałem już, ale potrzebuję skippera"
+        },
+        "licensed": {
+          "label": "Mam patent",
+          "description": "Mam ważny patent i poprowadzę jacht sam"
+        }
+      }
+    },
+    "tripVibe": {
+      "question": "Jakiego rejsu szukasz?",
+      "subtitle": "To, czego oczekujesz od tygodnia na wodzie, decyduje o jachcie, trasie i tempie.",
+      "options": {
+        "adventure": {
+          "label": "Przygoda",
+          "description": "Aktywne żeglowanie i odkrywanie. Więcej ruchu, dłuższe trasy i praca przy żaglach"
+        },
+        "relax": {
+          "label": "Relaks",
+          "description": "Wolne tempo, natura i ciche zatoki. Idealny na spokojne żeglowanie, pływanie i odpoczynek od codzienności."
+        },
+        "family": {
+          "label": "Rodzina",
+          "description": "Bezpiecznie, wygodnie i przestronnie. Idealny dla dzieci, ze stabilnym jachtem i łatwymi trasami."
+        },
+        "luxury": {
+          "label": "Luksus",
+          "description": "Jachty premium i pełna obsługa. Załoga, komfort i ekskluzywne miejsca."
+        },
+        "party": {
+          "label": "Impreza",
+          "description": "Muzyka, życie nocne i towarzyska atmosfera. Najlepszy na trasy w stylu Ibizy i grupową energię."
+        }
+      }
+    },
+    "duration": {
+      "question": "Jak długo ma trwać Twój rejs?",
+      "subtitle": "Wybierz długość, która najlepiej pasuje do Twoich planów. Dzięki temu zaproponujemy odpowiednie jachty, trasy i cały wyjazd.",
+      "options": {
+        "week": {
+          "label": "7 dni"
+        },
+        "twoWeeks": {
+          "label": "14 dni"
+        },
+        "threeWeeks": {
+          "label": "21 dni"
+        },
+        "more": {
+          "label": "Ponad 21 dni"
+        }
+      }
+    },
+    "budget": {
+      "question": "Jaki budżet jest dla Ciebie wygodny?",
+      "subtitle": "Na osobę za tydzień na pokładzie, abyś mógł porównać go ze znanym Ci urlopem.",
+      "perPersonWeek": "za osobę/tydzień",
+      "options": {
+        "low": {
+          "label": "€300-600"
+        },
+        "mid": {
+          "label": "€600-1000"
+        },
+        "high": {
+          "label": "€1000-1200"
+        },
+        "upper": {
+          "label": "€1200-2000"
+        },
+        "premium": {
+          "label": "€2000+"
+        }
+      }
+    }
+  },
+  "result": {
+    "title": "Twój idealny rejs jachtem",
+    "subtitle": "Na podstawie Twoich preferencji polecamy:",
+    "labels": {
+      "yachtType": "Typ jachtu",
+      "skipper": "Skipper",
+      "style": "Styl",
+      "duration": "Czas trwania"
+    },
+    "yachtType": {
+      "sailing": "Jacht żaglowy",
+      "catamaran": "Katamaran",
+      "gulet": "Gulet",
+      "motor": "Jacht motorowy",
+      "luxury": "Jacht luksusowy"
+    },
+    "skipper": {
+      "yes": "Tak",
+      "no": "Nie"
+    },
+    "difficulty": {
+      "easy": "Łatwy",
+      "moderate": "Średni",
+      "advanced": "Zaawansowany"
+    },
+    "getConsultation": "Umów konsultację",
+    "viewDetails": "Zobacz szczegóły",
+    "seeAllMatches": "Zobacz wszystkie dopasowania",
+    "durationDays": "{days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}",
+    "price": {
+      "perPerson": "≈ {price} za osobę",
+      "similar": "Podobne jachty",
+      "perPersonWeek": "≈ {range} za osobę za tydzień",
+      "estimate": "Szacunkowa cena",
+      "perPersonDays": "≈ {price} za osobę za {days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}"
+    },
+    "noMatch": {
+      "title": "Brak dokładnego dopasowania",
+      "description": "Nie znaleźliśmy jachtu pasującego do wszystkich odpowiedzi, ale oto czego byśmy szukali.",
+      "seeAllMatches": "Zobacz wszystkie jachty"
+    },
+    "error": {
+      "title": "Coś poszło nie tak",
+      "description": "Nie udało się wczytać rekomendacji. Spróbuj ponownie.",
+      "retry": "Spróbuj ponownie"
+    },
+    "consultationDialog": {
+      "title": "Umów bezpłatną konsultację",
+      "description": "Podaj dane kontaktowe, a jeden z naszych ekspertów czarterowych przygotuje dla Ciebie dopasowane propozycje.",
+      "submit": "Wyślij zapytanie",
+      "cancel": "Anuluj",
+      "success": "Dziękujemy! Wkrótce się z Tobą skontaktujemy."
+    }
+  },
+  "consultation": {
+    "close": "Zamknij",
+    "title": "Skontaktuj się z nami",
+    "subtitle": "Umów rozmowę lub wyślij wiadomość, jak Ci wygodniej.",
+    "options": {
+      "call": {
+        "title": "Umów krótką rozmowę",
+        "description": "Wybierz dogodny termin - krótka rozmowa z ekspertem czarterowym."
+      },
+      "message": {
+        "title": "Wyślij wiadomość",
+        "description": "Opowiedz nam o swoim rejsie, a odpowiemy e-mailem."
+      }
+    },
+    "placeholder": {
+      "title": "Rezerwacja terminów już wkrótce",
+      "description": "Umawianie online nie jest jeszcze dostępne. Wyślij nam wiadomość, a ustalimy dogodny termin.",
+      "cta": "Wyślij wiadomość"
+    },
+    "submitted": {
+      "title": "Dziękujemy, wkrótce się odezwiemy",
+      "description": "Jeden z naszych ekspertów czarterowych wkrótce się z Tobą skontaktuje."
+    },
+    "error": {
+      "title": "Coś poszło nie tak",
+      "description": "Nie udało się wczytać szczegółów rejsu. Spróbuj ponownie.",
+      "retry": "Spróbuj ponownie"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "loading": "Jachten laden…",
+  "noResults": "Geen jachten die aan deze filters voldoen. Probeer ze aan te passen.",
+  "title": "Jachten op de kaart",
+  "backToSearch": "Terug naar zoeken",
+  "viewInCatalogue": "Bekijken in catalogus",
+  "showAllList": "Volledige lijst tonen",
+  "closeList": "Lijst sluiten",
+  "marker": "Jachthaven {name}",
+  "clusterCount": "{count, plural, one {# jacht} other {# jachten}}",
+  "previousBoat": "Vorig jacht",
+  "nextBoat": "Volgend jacht",
+  "allInCatalogue": "{count, plural, one {# jacht in de catalogus} other {Alle # jachten in de catalogus}}"
+}

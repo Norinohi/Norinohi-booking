@@ -1,0 +1,25 @@
+{
+  "title": "Contattaci",
+  "subtitle": "Prenota una chiamata o inviaci un messaggio, come preferisci.",
+  "options": {
+    "call": {
+      "title": "Prenota una breve chiamata",
+      "description": "Scegli l’orario che preferisci per una breve chiamata con un esperto di charter."
+    },
+    "message": {
+      "title": "Invia un messaggio",
+      "description": "Dicci cosa stai cercando e ti risponderemo via email."
+    }
+  },
+  "placeholder": {
+    "title": "La prenotazione delle chiamate arriverà presto",
+    "description": "La pianificazione online non è ancora disponibile. Inviaci un messaggio e fisseremo un orario adatto a te.",
+    "cta": "Invia invece un messaggio"
+  },
+  "send": "Invia messaggio",
+  "sent": "Grazie! Un esperto di charter ti contatterà a breve.",
+  "submitted": {
+    "title": "Grazie, ti contatteremo presto",
+    "description": "Uno dei nostri esperti di charter ti risponderà a breve."
+  }
+}

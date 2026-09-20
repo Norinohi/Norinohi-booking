@@ -15,6 +15,9 @@ import { stripLocalePrefix } from "@/i18n/locale-path";
 import { useRouter } from "@/i18n/navigation";
 import { isBrowser } from "@/utils/runtime";
 
+/* Alphabetical by the English name, so eight entries scan like a list rather than a history. */
+const menuLocales = locales.toSorted((a, b) => localeNames[a].localeCompare(localeNames[b], "en"));
+
 /*
  * LanguageSwitcher — Figma "Menu Item" (node 972:54534). A white 8px-radius card with a 1px
  * natural-100 border and a 4/4/10 shadow, holding 14 SemiBold rows; the active row carries a
@@ -55,7 +58,7 @@ export default function LanguageSwitcher() {
         align="end"
         className="w-auto min-w-45 gap-2 rounded-lg border border-border bg-card px-4 py-3 shadow-popover ring-0"
       >
-        {locales.map((locale) => (
+        {menuLocales.map((locale) => (
           <DropdownMenuItem
             key={locale}
             onClick={() => {

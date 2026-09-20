@@ -1,0 +1,207 @@
+{
+  "backToSearch": "Terug naar zoeken",
+  "breadcrumbSearch": "Zoeken",
+  "share": "Delen",
+  "linkCopied": "Link gekopieerd",
+  "seeOnMap": "Bekijk op kaart",
+  "addToWishlist": "Aan verlanglijst toevoegen",
+  "removeFromWishlist": "Van verlanglijst verwijderen",
+  "included": "Inbegrepen",
+  "amenities": {
+    "groups": {
+      "navigation-and-safety": "Navigatie en veiligheid",
+      "deck-and-cockpit": "Dek en kuip",
+      "interior-and-cabins": "Interieur en hutten",
+      "galley": "Kombuis",
+      "entertainment-and-water-toys": "Entertainment en waterspeelgoed",
+      "systems-and-power": "Systemen en stroom",
+      "other": "Overige uitrusting"
+    },
+    "itemCount": "{count, plural, one {# item} other {# items}}",
+    "allIncluded": "Alle vermelde voorzieningen zijn bij de charterprijs inbegrepen.",
+    "dismissNote": "Sluiten"
+  },
+  "importantInfo": {
+    "charterCompany": "Charterbedrijf",
+    "pickUpAddress": "Ophaaladres van het jacht",
+    "pickUp": "Ophalen jacht",
+    "dropOff": "Terugbrengen jacht",
+    "policies": "Annulerings- en betalingsvoorwaarden",
+    "securityDeposit": "Terugbetaalbare borg",
+    "securityDepositNote": "Wordt bij het inchecken door de charterbasis vastgehouden en teruggegeven na een overdracht zonder schade.",
+    "securityDepositInsured": "Verlaagd naar {amount} als je de borgverzekering van de basis afsluit.",
+    "license": "Vaarbewijs",
+    "pets": "Huisdieren",
+    "paymentMethods": "Betaalmethoden die het charterbedrijf accepteert",
+    "marinaInfo": "Informatie over de jachthaven",
+    "policiesVariesBySelection": "Annulerings- en aanbetalingsvoorwaarden verschillen per keuze. De betalingsvoorwaarden worden bevestigd bij de offerte en de boeking.",
+    "licenseRequired": "Geldig vaarbewijs of lokaal equivalent vereist.",
+    "licenseNotRequired": "Er is geen vaarbewijs nodig als je met bemanning of schipper boekt.",
+    "petsAllowedWithConfirmation": "Huisdieren zijn toegestaan op dit jacht na bevestiging door het charterbedrijf.",
+    "petsAskBase": "Het huisdierenbeleid wordt door de charterbasis bepaald - vraag het na voordat je boekt.",
+    "marinaInfoText": "{marina} ligt in {location}, {country}. De in- en uitchecktijden worden door de charterbasis doorgegeven.",
+    "paymentMethod": {
+      "card": "Kaart",
+      "bank_transfer": "Bankoverschrijving",
+      "cash": "Contant"
+    }
+  },
+  "popular": {
+    "from": "Vanaf",
+    "perPeriod": "/ {days, plural, one {# dag} other {# dagen}}",
+    "seeAll": "Alle jachten bekijken",
+    "previous": "Vorige jachten",
+    "next": "Volgende jachten"
+  },
+  "route": {
+    "start": "Start",
+    "finish": "Finish",
+    "day": "Dag {day}",
+    "stopTitle": "Dag {day} - {place}",
+    "disclaimer": "Indicatieve route. Het uiteindelijke vaarplan en de overnachtingsplekken hangen af van het weer, de beschikbaarheid en de beslissing van de schipper."
+  },
+  "review": {
+    "count": "({count, plural, one {# review} other {# reviews}})",
+    "summary": "{shown} van {total}",
+    "empty": "Nog geen geschreven reviews",
+    "operatorRated": "De score is gebaseerd op {count, plural, one {# gastbeoordeling} other {# gastbeoordelingen}} die door de charteroperator zijn verzameld."
+  },
+  "sidebar": {
+    "crew": "Bemanning",
+    "people": "Personen",
+    "datesPlaceholder": "Kies data",
+    "selectDates": "Kies data om de prijs te zien",
+    "unavailable": "Dit jacht heeft geen beschikbare data",
+    "unavailableHint": "Vraag ons naar andere data of een vergelijkbaar jacht.",
+    "slotRefused": "Deze data zijn niet te boeken. Kies een andere periode.",
+    "searchedPeriodRefused": "{from} tot {to} is niet beschikbaar voor dit jacht. Kies een andere periode of gebruik de getoonde data.",
+    "loadFailed": "We konden de prijs van deze boeking niet laden.",
+    "loadRetry": "Opnieuw proberen",
+    "pricingUnavailable": "We konden op dit moment geen prijs voor deze data krijgen van de leverancier van het jacht. Dit is meestal tijdelijk.",
+    "prepayment": "{percent}% aanbetaling",
+    "boatPrice": "Bootprijs",
+    "boatPriceHint": "Volledige huurprijs",
+    "deposit": "Terugbetaalbare borg",
+    "howItWorks": "Zo werkt het",
+    "scheduleDetails": "Wat deze betaling dekt",
+    "scheduleIncludes": "Inclusief",
+    "scheduleSplit": "Verdeeld over beide betalingen",
+    "groups": {
+      "mandatory": "Verplichte extra's",
+      "selectedExtras": "Gekozen extra's",
+      "crew": "Bemanning"
+    },
+    "payNow": "Aanbetaling (nu betalen)",
+    "payAt": "Te betalen op: {date}",
+    "payAtCheckIn": "Te betalen bij het inchecken: {date}",
+    "firstPayment": "{amount} (1e betaling)",
+    "fullPayment": "{amount} (volledige betaling)",
+    "secondPayment": "{amount} (2e betaling)",
+    "extrasPayment": "{amount} (extra’s)",
+    "depositNote": "+ {amount} (terugbetaalbare borg)",
+    "totalPrice": "Totaalprijs",
+    "discountsHeading": "Inbegrepen in de huurprijs hierboven",
+    "dueNow": "Nu te betalen",
+    "payNowCta": "Betaal nu {amount}",
+    "requestBookingCta": "Boekingsaanvraag versturen",
+    "requestBookingHint": "De operator van dit jacht bevestigt elke boeking persoonlijk. We vragen je data bij hen na en komen bij je terug. Er wordt nu niets in rekening gebracht.",
+    "requestQuote": "Offerte aanvragen",
+    "promo": {
+      "label": "Promotiecode",
+      "placeholder": "Voer code in",
+      "apply": "Toepassen",
+      "remove": "Verwijderen",
+      "applied": "{amount} korting",
+      "rejected": {
+        "unknown_code": "We herkennen deze code niet.",
+        "inactive": "Deze code is niet meer actief.",
+        "not_started": "Deze code is nog niet geldig.",
+        "expired": "Deze code is verlopen.",
+        "usage_limit_reached": "Deze code is volledig gebruikt.",
+        "not_applicable": "Deze code geldt niet voor dit jacht."
+      }
+    },
+    "credit": {
+      "label": "Verwijstegoed",
+      "available": "{amount} beschikbaar voor deze boeking",
+      "applied": "{amount} toegepast",
+      "apply": "Toepassen",
+      "remove": "Verwijderen"
+    },
+    "onRequest": "De prijs van dit jacht is op aanvraag",
+    "onRequestHint": "We hebben data voor dit jacht, maar er is geen gepubliceerd tarief voor. Laat ons weten wanneer je wilt zeilen en we komen bij je terug met een prijs.",
+    "dropOff": "Jachthaven voor terugbrengen",
+    "pickUp": "Ophalen: {marina}",
+    "boatPriceHintDiscounted": "Huurprijs na korting",
+    "depositWhenInsured": "of {amount} met de schadeafkoop"
+  },
+  "panels": {
+    "details": "Jachtdetails",
+    "booking": "Boekingsoverzicht"
+  },
+  "tabs": {
+    "overview": "Overzicht",
+    "amenities": "Voorzieningen",
+    "mandatory-extras": "Verplichte extra's",
+    "optional-extras": "Optionele extra's",
+    "description": "Beschrijving",
+    "important-info": "Belangrijke info",
+    "suggested-route": "Voorgestelde route",
+    "review": "Reviews",
+    "faq": "Veelgestelde vragen",
+    "popular-yachts": "Populaire jachten"
+  },
+  "sections": {
+    "overview": "Overzicht",
+    "amenities": "Voorzieningen",
+    "mandatoryExtras": "Verplichte extra's",
+    "optionalExtras": "Optionele extra's",
+    "description": "Beschrijving",
+    "media": "Video en rondleiding",
+    "importantInfo": "Belangrijke informatie",
+    "suggestedRoute": "Voorgestelde route",
+    "review": "Reviews",
+    "faq": "Veelgestelde vragen",
+    "popularYachts": "Andere populaire jachten"
+  },
+  "faqCategories": {
+    "booking": "Boeking",
+    "payment": "Betaling",
+    "prices": "Prijzen",
+    "licences": "Vaarbewijzen",
+    "travel": "Reizen",
+    "cancellation": "Annulering"
+  },
+  "overview": {
+    "location": "Locatie",
+    "mainsail": "Type grootzeil",
+    "year": "Bouwjaar",
+    "draught": "Diepgang",
+    "boatType": "Boottype",
+    "beam": "Breedte",
+    "cabins": "Hutten",
+    "fuelTank": "Brandstoftank",
+    "bathrooms": "Badkamers",
+    "waterTank": "Watertank",
+    "length": "Lengte",
+    "engine": "Motor",
+    "showers": "Douches",
+    "notSpecified": "Niet opgegeven"
+  },
+  "bookingRequestDialog": {
+    "title": "Deze boeking aanvragen",
+    "description": "De operator bevestigt elke charter van dit jacht persoonlijk. Laat je gegevens achter en een charterexpert bevestigt deze data bij hen en neemt binnen één werkdag contact met je op.",
+    "submit": "Boekingsaanvraag versturen",
+    "success": "Bedankt! We hebben je aanvraag verstuurd en nemen snel contact met je op."
+  },
+  "quoteDialog": {
+    "title": "Offerte aanvragen",
+    "description": "Laat je gegevens achter en een charterexpert stuurt je een offerte op maat voor deze data.",
+    "submit": "Aanvraag versturen",
+    "success": "Bedankt! We nemen snel contact met je op."
+  },
+  "media": {
+    "video": "Bekijk de video",
+    "tour": "360°-rondleiding"
+  }
+}

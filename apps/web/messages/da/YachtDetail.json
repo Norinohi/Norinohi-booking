@@ -1,0 +1,207 @@
+{
+  "backToSearch": "Tilbage til søgningen",
+  "breadcrumbSearch": "Søg",
+  "share": "Del",
+  "linkCopied": "Link kopieret",
+  "seeOnMap": "Se på kortet",
+  "addToWishlist": "Føj til ønskelisten",
+  "removeFromWishlist": "Fjern fra ønskelisten",
+  "included": "Inkluderet",
+  "amenities": {
+    "groups": {
+      "navigation-and-safety": "Navigation og sikkerhed",
+      "deck-and-cockpit": "Dæk og cockpit",
+      "interior-and-cabins": "Indretning og kahytter",
+      "galley": "Kabys",
+      "entertainment-and-water-toys": "Underholdning og vandlegetøj",
+      "systems-and-power": "Systemer og strøm",
+      "other": "Andet udstyr"
+    },
+    "itemCount": "{count, plural, one {# ting} other {# ting}}",
+    "allIncluded": "Alt anført udstyr er inkluderet i charterprisen.",
+    "dismissNote": "Luk"
+  },
+  "importantInfo": {
+    "charterCompany": "Charterfirma",
+    "pickUpAddress": "Adresse for afhentning af båden",
+    "pickUp": "Afhentning af båden",
+    "dropOff": "Aflevering af båden",
+    "policies": "Afbestillings- og betalingsbetingelser",
+    "securityDeposit": "Depositum, der refunderes",
+    "securityDepositNote": "Opkræves af charterbasen ved check-in og betales tilbage efter en aflevering uden skader.",
+    "securityDepositInsured": "Nedsættes til {amount}, hvis du tegner basens depositumforsikring.",
+    "license": "Duelighedsbevis",
+    "pets": "Kæledyr",
+    "paymentMethods": "Betalingsmetoder, som charterfirmaet accepterer",
+    "marinaInfo": "Information om marinaen",
+    "policiesVariesBySelection": "Afbestillings- og forudbetalingsbetingelser afhænger af dine valg. Betalingsvilkårene bekræftes ved tilbud og booking.",
+    "licenseRequired": "Gyldigt duelighedsbevis eller tilsvarende lokalt bevis er påkrævet.",
+    "licenseNotRequired": "Der kræves intet bevis, når du booker med besætning eller skipper.",
+    "petsAllowedWithConfirmation": "Kæledyr er tilladt på denne båd efter bekræftelse fra charterfirmaet.",
+    "petsAskBase": "Reglerne for kæledyr fastsættes af charterbasen - spørg før du booker.",
+    "marinaInfoText": "{marina} ligger i {location}, {country}. Tidspunkter for check-in og check-ud oplyses af charterbasen.",
+    "paymentMethod": {
+      "card": "Kort",
+      "bank_transfer": "Bankoverførsel",
+      "cash": "Kontant"
+    }
+  },
+  "popular": {
+    "from": "Fra",
+    "perPeriod": "/ {days, plural, one {# dag} other {# dage}}",
+    "seeAll": "Se alle både",
+    "previous": "Forrige både",
+    "next": "Næste både"
+  },
+  "route": {
+    "start": "Start",
+    "finish": "Mål",
+    "day": "Dag {day}",
+    "stopTitle": "Dag {day} - {place}",
+    "disclaimer": "Vejledende rute. Den endelige rejseplan og overnatningsstederne afhænger af vejret, ledigheden og skipperens beslutning."
+  },
+  "review": {
+    "count": "({count, plural, one {# anmeldelse} other {# anmeldelser}})",
+    "summary": "Viser {shown} af {total}",
+    "empty": "Ingen skrevne anmeldelser endnu",
+    "operatorRated": "Karakteren bygger på {count, plural, one {# gæstebedømmelse} other {# gæstebedømmelser}} indsamlet af charterfirmaet."
+  },
+  "sidebar": {
+    "crew": "Besætning",
+    "people": "Personer",
+    "datesPlaceholder": "Vælg datoer",
+    "selectDates": "Vælg datoer for at se prisen",
+    "unavailable": "Denne båd har ingen ledige datoer",
+    "unavailableHint": "Spørg os om andre datoer eller en lignende båd.",
+    "slotRefused": "De datoer kan ikke bookes. Vælg en anden periode.",
+    "searchedPeriodRefused": "{from} til {to} er ikke ledig for denne båd. Vælg en anden periode, eller brug de viste datoer.",
+    "loadFailed": "Vi kunne ikke indlæse prisen for denne booking.",
+    "loadRetry": "Prøv igen",
+    "pricingUnavailable": "Vi kunne ikke hente en pris for disse datoer fra bådens leverandør lige nu. Det er som regel midlertidigt.",
+    "prepayment": "{percent} % forudbetaling ved booking",
+    "boatPrice": "Bådpris",
+    "boatPriceHint": "Fuld lejepris",
+    "deposit": "Depositum, der refunderes",
+    "howItWorks": "Se hvordan det virker",
+    "scheduleDetails": "Hvad denne betaling dækker",
+    "scheduleIncludes": "Indeholder",
+    "scheduleSplit": "Fordelt over begge betalinger",
+    "groups": {
+      "mandatory": "Obligatoriske tillæg",
+      "selectedExtras": "Valgte tillæg",
+      "crew": "Besætning"
+    },
+    "payNow": "Forudbetaling ved booking (betal nu)",
+    "payAt": "Betales: {date}",
+    "payAtCheckIn": "Betales ved check-in: {date}",
+    "firstPayment": "{amount} (1. betaling)",
+    "fullPayment": "{amount} (fuld betaling)",
+    "secondPayment": "{amount} (2. betaling)",
+    "extrasPayment": "{amount} (tillæg)",
+    "depositNote": "+ {amount} (depositum, der refunderes)",
+    "totalPrice": "Samlet pris",
+    "discountsHeading": "Indeholdt i lejeprisen ovenfor",
+    "dueNow": "Forfalder nu",
+    "payNowCta": "Betal {amount} nu",
+    "requestBookingCta": "Send bookingforespørgsel",
+    "requestBookingHint": "Udbyderen af denne båd bekræfter hver booking personligt. Vi spørger dem om dine datoer og vender tilbage til dig. Der trækkes intet nu.",
+    "requestQuote": "Bed om et tilbud",
+    "promo": {
+      "label": "Rabatkode",
+      "placeholder": "Indtast kode",
+      "apply": "Anvend",
+      "remove": "Fjern",
+      "applied": "{amount} i rabat",
+      "rejected": {
+        "unknown_code": "Vi kender ikke den kode.",
+        "inactive": "Den kode er ikke aktiv længere.",
+        "not_started": "Den kode gælder ikke endnu.",
+        "expired": "Den kode er udløbet.",
+        "usage_limit_reached": "Den kode er brugt op.",
+        "not_applicable": "Den kode gælder ikke for denne båd."
+      }
+    },
+    "credit": {
+      "label": "Tilgodehavende fra henvisning",
+      "available": "{amount} til rådighed på denne booking",
+      "applied": "{amount} anvendt",
+      "apply": "Anvend",
+      "remove": "Fjern"
+    },
+    "onRequest": "Prisen på denne båd er på forespørgsel",
+    "onRequestHint": "Vi har datoer til den, men ingen offentliggjort takst dækker dem. Fortæl os, hvornår du gerne vil sejle, så vender vi tilbage med en pris.",
+    "dropOff": "Marina for aflevering",
+    "pickUp": "Afhentning: {marina}",
+    "boatPriceHintDiscounted": "Lejepris efter rabat",
+    "depositWhenInsured": "eller {amount} med selvrisikodækning"
+  },
+  "panels": {
+    "details": "Bådens detaljer",
+    "booking": "Bookingoversigt"
+  },
+  "tabs": {
+    "overview": "Overblik",
+    "amenities": "Udstyr",
+    "mandatory-extras": "Obligatoriske tillæg",
+    "optional-extras": "Valgfrie tillæg",
+    "description": "Beskrivelse",
+    "important-info": "Vigtig info",
+    "suggested-route": "Foreslået rute",
+    "review": "Anmeldelser",
+    "faq": "FAQ",
+    "popular-yachts": "Populære både"
+  },
+  "sections": {
+    "overview": "Overblik",
+    "amenities": "Udstyr",
+    "mandatoryExtras": "Obligatoriske tillæg",
+    "optionalExtras": "Valgfrie tillæg",
+    "description": "Beskrivelse",
+    "media": "Video og rundvisning",
+    "importantInfo": "Vigtig information",
+    "suggestedRoute": "Foreslået rute",
+    "review": "Anmeldelser",
+    "faq": "FAQ",
+    "popularYachts": "Andre populære både"
+  },
+  "faqCategories": {
+    "booking": "Booking",
+    "payment": "Betaling",
+    "prices": "Priser",
+    "licences": "Beviser",
+    "travel": "Rejse",
+    "cancellation": "Afbestilling"
+  },
+  "overview": {
+    "location": "Beliggenhed",
+    "mainsail": "Storsejlstype",
+    "year": "Årgang",
+    "draught": "Dybgang",
+    "boatType": "Bådtype",
+    "beam": "Bredde",
+    "cabins": "Kahytter",
+    "fuelTank": "Brændstoftank",
+    "bathrooms": "Bad",
+    "waterTank": "Vandtank",
+    "length": "Længde",
+    "engine": "Motor",
+    "showers": "Brusere",
+    "notSpecified": "Ikke oplyst"
+  },
+  "bookingRequestDialog": {
+    "title": "Forespørg på denne booking",
+    "description": "Udbyderen bekræfter hvert charter af denne båd personligt. Læg dine oplysninger, så bekræfter en charterekspert datoerne med dem og vender tilbage til dig inden for én hverdag.",
+    "submit": "Send bookingforespørgsel",
+    "success": "Tak! Vi har sendt din forespørgsel og vender tilbage inden længe."
+  },
+  "quoteDialog": {
+    "title": "Bed om et tilbud",
+    "description": "Læg dine oplysninger, så sender en charterekspert dig et skræddersyet tilbud på disse datoer.",
+    "submit": "Send forespørgsel",
+    "success": "Tak! Vi vender tilbage inden længe."
+  },
+  "media": {
+    "video": "Se videoen",
+    "tour": "360°-rundvisning"
+  }
+}

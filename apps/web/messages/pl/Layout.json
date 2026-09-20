@@ -1,0 +1,124 @@
+{
+  "Footer": {
+    "tagline": "Odkrywaj świat z pokładu jachtu.",
+    "description": "Ponad 30 000 łodzi na całym świecie gotowych na Twój kolejny rejs.",
+    "columns": {
+      "destinations": "Kierunki",
+      "charterTypes": "Rodzaje czarteru",
+      "explore": "Odkrywaj"
+    },
+    "links": {
+      "croatia": "Chorwacja",
+      "greece": "Grecja",
+      "italy": "Włochy",
+      "turkey": "Turcja",
+      "caribbean": "Karaiby",
+      "thailand": "Tajlandia",
+      "catamaran": "Katamaran",
+      "sailingYacht": "Jacht żaglowy",
+      "motorYacht": "Jacht motorowy",
+      "bareboat": "Bez załogi (bareboat)",
+      "skippered": "Ze skipperem",
+      "planTrip": "Pomóż mi zaplanować rejs",
+      "popularYachts": "Popularne jachty",
+      "customerReviews": "Opinie naszych klientów",
+      "howItWorks": "Jak to działa",
+      "contact": "Kontakt"
+    },
+    "privacy": "Polityka prywatności",
+    "terms": "Warunki korzystania z usługi",
+    "copyright": "© {year} YachtSkanner Platform. Wszelkie prawa zastrzeżone."
+  },
+  "Nav": {
+    "boatTypes": "Rodzaje łodzi",
+    "closeMenu": "Zamknij menu",
+    "destinations": "Kierunki",
+    "findByBudget": "Szukaj według budżetu",
+    "findYacht": "Znajdź jacht",
+    "helpPlan": "Pomóż mi zaplanować rejs",
+    "language": "Język",
+    "openMenu": "Otwórz menu",
+    "popularRoutes": "Popularne trasy",
+    "saved": "Zapisane",
+    "tryIt": "Wypróbuj"
+  },
+  "Sidebar": {
+    "menu": "Menu konta",
+    "trigger": "Menu",
+    "greeting": "Witaj, {name}!",
+    "profile": "Mój profil",
+    "bookings": "Moje rezerwacje",
+    "referrals": "Polecenia",
+    "credits": "Środki i saldo",
+    "discount": "Menedżer rabatów",
+    "logout": "Wyloguj się",
+    "commission": "Stawki prowizji",
+    "duplicates": "Przegląd duplikatów",
+    "sync": "Historia synchronizacji",
+    "audit": "Dziennik zdarzeń",
+    "inbox": "Skrzynka odbiorcza",
+    "staffBookings": "Rezerwacje",
+    "users": "Użytkownicy",
+    "payments": "Płatności",
+    "listings": "Oferty",
+    "routes": "Proponowane trasy",
+    "sections": {
+      "account": "Konto",
+      "admin": "Administracja"
+    },
+    "faq": "FAQ",
+    "groups": {
+      "fleet": "Jachty",
+      "content": "Treści strony"
+    },
+    "settings": "Ustawienia platformy",
+    "popular": "Popularne wybory",
+    "popularYachts": "Popularne jachty"
+  },
+  "UserMenu": {
+    "account": "Konto",
+    "signIn": "Zaloguj się",
+    "signOut": "Wyloguj się",
+    "profile": "Mój profil",
+    "bookings": "Moje rezerwacje",
+    "referrals": "Polecenia",
+    "credits": "Środki i saldo"
+  },
+  "description": "Czarter jachtów i katamaranów na całym świecie. Porównaj łodzie, terminy i ceny, a swój kolejny rejs zarezerwujesz w kilka minut.",
+  "title": "YachtSkanner - czarter jachtów i katamaranów na całym świecie",
+  "CookieConsent": {
+    "title": "Pliki cookie",
+    "description": "Używamy analitycznych plików cookie, aby zobaczyć, jak korzystasz ze strony, i ulepszać ją. Nic nie jest mierzone, dopóki nie wyrazisz zgody.",
+    "manage": "Zarządzaj ustawieniami",
+    "accept": "Akceptuję",
+    "decline": "Odrzucam",
+    "footerLink": "Pliki cookie",
+    "dialog": {
+      "title": "Twoja prywatność",
+      "description": "Wybierz, których plików cookie może używać ta strona. Twój wybór jest zapisywany na tym urządzeniu i możesz go w każdej chwili zmienić w stopce strony.",
+      "close": "Zamknij",
+      "alwaysActive": "Zawsze aktywne",
+      "necessary": {
+        "title": "Niezbędne",
+        "description": "Utrzymują Twoje zalogowanie, chronią płatności przed oszustwami i zapamiętują ten wybór dotyczący plików cookie. Bez nich strona nie działa."
+      },
+      "functional": {
+        "title": "Funkcjonalne",
+        "description": "Zapamiętują zapisane łodzie i liczą ponowną wizytę w ofercie tylko raz. Przechowywane w Twojej przeglądarce i nigdy nieudostępniane."
+      },
+      "analytics": {
+        "title": "Analityczne",
+        "description": "Google Analytics, dzięki któremu widzimy, z których stron korzystają użytkownicy i gdzie napotykają trudności. Bez reklam i bez profilowania."
+      },
+      "save": "Zapisz mój wybór",
+      "acceptAll": "Akceptuj wszystkie"
+    }
+  },
+  "Legal": {
+    "terms": "Regulamin",
+    "privacy": "Polityka prywatności",
+    "cancellation": "Zasady anulowania",
+    "pending": "Ten dokument jest w przygotowaniu i wkrótce zostanie tu opublikowany. Jeśli w międzyczasie masz pytania, nasz zespół wsparcia chętnie pomoże.",
+    "contact": "Skontaktuj się z pomocą"
+  }
+}

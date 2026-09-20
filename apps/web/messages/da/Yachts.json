@@ -1,0 +1,29 @@
+{
+  "heading": "Søg bådcharter",
+  "searchByMap": "Søg på kortet",
+  "emptyTitle": "Ingen både fundet med dine filtre",
+  "emptyDescription": "Prøv at justere datoer, budget eller destination - vi hjælper dig med at finde det helt rigtige.",
+  "searchBar": {
+    "location": "Destination",
+    "startTyping": "Begynd at skrive",
+    "searchCountries": "Søg lande...",
+    "addDates": "Tilføj datoer",
+    "clearDates": "Ryd datoer",
+    "anyBoat": "Alle både",
+    "search": "Søg",
+    "noLocations": "Ingen destinationer matcher",
+    "popularCountries": "Populære lande",
+    "popularBoatTypes": "Populære bådtyper",
+    "allBoatTypes": "Alle bådtyper",
+    "clearLocation": "Ryd destination",
+    "freeText": "Navn, model eller firma",
+    "kinds": {
+      "country": "Land",
+      "region": "Sejlområde",
+      "city": "By",
+      "base": "Marina"
+    },
+    "clearBoatType": "Ryd bådtype"
+  },
+  "paginationSummary": "Viser {from}-{to} af {total}"
+}

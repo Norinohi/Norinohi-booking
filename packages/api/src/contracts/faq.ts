@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { siteLocaleSchema } from "../lib/locales";
+
 import {
   idSchema,
   paginatedSchema,
@@ -25,16 +27,16 @@ import {
  */
 
 /**
- * The site's four locales, mirroring `apps/web/src/i18n/config.ts`. Spelled out rather than
+ * The site's locales, from `@yacht-charter/db/locales`. An enum rather than
  * left as a free string because this is an authoring surface: a typo'd locale writes a row the
  * public read can never match, and it would look like a saved translation in this screen.
  */
-export const faqLocaleSchema = z.enum(["en", "de", "es", "uk"]);
+export const faqLocaleSchema = siteLocaleSchema;
 
 export type FaqLocale = z.infer<typeof faqLocaleSchema>;
 
-/** Locale order for the editor's panes — the default first, then the rest as `config.ts` has them. */
-export const FAQ_LOCALES: readonly FaqLocale[] = ["en", "de", "es", "uk"];
+/** Locale order for the editor's panes: the default first, then the rest as the site lists them. */
+export const FAQ_LOCALES: readonly FaqLocale[] = faqLocaleSchema.options;
 
 /** The `faq_category` enum, in its declaration order, which is the order the page renders. */
 export const faqCategorySchema = z.enum([

@@ -1,0 +1,20 @@
+{
+  "title": "Crédits et solde",
+  "balance": {
+    "label": "Solde disponible",
+    "expiringSoon": "{amount} expire d’ici 30 jours",
+    "hint": "Les crédits sont utilisables pour toute réservation de yacht de plus de 1000 €, et sont déduits de ce que vous payez aujourd'hui."
+  },
+  "ledger": {
+    "title": "Historique des crédits",
+    "expires": "Expire le {date}",
+    "emptyTitle": "Aucun crédit pour l'instant",
+    "emptyDescription": "Invitez un ami - vous gagnez du crédit dès qu'il a effectué son voyage.",
+    "kind": {
+      "referral_reward": "Récompense de parrainage",
+      "booking_redemption": "Appliqué à une réservation",
+      "expiry": "Expiré",
+      "adjustment": "Ajustement"
+    }
+  }
+}

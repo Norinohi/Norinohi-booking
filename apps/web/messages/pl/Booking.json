@@ -1,0 +1,459 @@
+{
+  "confirmBooking": "Potwierdź rezerwację",
+  "review": {
+    "title": "Podsumowanie rezerwacji",
+    "yacht": "Jacht",
+    "dates": "Daty",
+    "crew": "Załoga",
+    "people": "Osoby",
+    "extras": "Dodatki",
+    "noExtras": "Nie wybrano",
+    "boatPrice": "Cena jachtu (pełna cena czarteru)",
+    "deposit": "Zwrotna kaucja",
+    "depositRefundable": "Zwrotna, pobierana przez bazę czarterową",
+    "schedule": {
+      "payNow": "Zapłać teraz",
+      "payAt": "Płatne: {date}",
+      "payAtCheckIn": "Płatne przy zaokrętowaniu: {date}",
+      "firstPayment": "1. płatność ({when})",
+      "fullPayment": "Pełna płatność ({when})",
+      "secondPayment": "2. płatność ({when})",
+      "extrasPayment": "Dodatki ({when})",
+      "depositNote": "Zwrotna kaucja ({when})"
+    },
+    "totalPrice": "Cena całkowita",
+    "dueNow": "Do zapłaty teraz",
+    "terms": "Akceptuję <link>Regulamin oraz Umowę czarteru</link>.",
+    "cancellation": "Akceptuję <link>Zasady anulowania</link>.",
+    "operatorTerms": "Warunki operatora, w tym zasady anulowania"
+  },
+  "extras": {
+    "mandatory": "Obowiązkowe",
+    "optional": "Dodatki opcjonalne",
+    "included": "W cenie",
+    "notOnTheseDates": "Niedostępne w tych datach",
+    "notOnTheseDatesAsk": "Niedostępne w tych datach - możesz zapytać w bazie",
+    "requestedAtBase": "Zamawiane w bazie, płatne na miejscu"
+  },
+  "guestDetails": {
+    "notice": "Wykorzystamy te dane, aby potwierdzić Twoją rezerwację i ustalić szczegóły z kierownikiem bazy.",
+    "guestNotice": "Do rezerwacji nie potrzebujesz konta. Utworzymy je dla tej rezerwacji i wyślemy Ci e-mailem link do ustawienia hasła, kiedy zechcesz.",
+    "fullName": "Imię i nazwisko",
+    "fullNamePlaceholder": "Jan Kowalski",
+    "email": "Adres e-mail",
+    "emailPlaceholder": "name@example.com",
+    "phone": "Numer telefonu",
+    "phonePlaceholder": "+48 536 839 555",
+    "country": "Kraj",
+    "countryPlaceholder": "Wybierz swój kraj",
+    "specialRequests": "Specjalne życzenia (opcjonalnie)",
+    "specialRequestsPlaceholder": "Proszę o wcześniejsze zaokrętowanie"
+  },
+  "errors": {
+    "fullName": "Podaj imię i nazwisko",
+    "email": "Podaj prawidłowy adres e-mail",
+    "phone": "Podaj prawidłowy numer telefonu",
+    "country": "Wybierz swój kraj",
+    "terms": "Zaakceptuj warunki, aby kontynuować",
+    "cancellation": "Zaakceptuj zasady anulowania, aby kontynuować",
+    "paymentMessage": "Wpisz swoje pytanie lub prośbę",
+    "hold": {
+      "SLOT_GONE": "Ten jacht nie jest już dostępny w tych datach. Wybierz nowe daty i spróbuj ponownie.",
+      "PROVIDER_TIMEOUT": "System operatora nie odpowiedział na czas. Spróbuj ponownie za chwilę.",
+      "PROVIDER_REFUSED": "Nie udało się sfinalizować tej rezerwacji u operatora. Nasz zespół został powiadomiony, spróbuj ponownie wkrótce lub skontaktuj się z nami.",
+      "SLOT_TAKEN": "Ten jacht został zarezerwowany, gdy finalizowałeś zamówienie. Wybierz nowe daty i spróbuj ponownie.",
+      "HOLD_NEVER_HELD": "Nie udało się wstępnie zarezerwować jachtu. Wybierz daty ponownie, aby otrzymać nową cenę."
+    },
+    "confirmFailed": "Nie udało się potwierdzić rezerwacji. Spróbuj ponownie.",
+    "holdInProgress": "Wciąż kończymy Twoją poprzednią próbę. Odczekaj chwilę i potwierdź ponownie.",
+    "billingName": "Podaj nazwę do faktury",
+    "billingAddress": "Podaj adres rozliczeniowy",
+    "city": "Podaj miasto"
+  },
+  "backToYacht": "Wróć do {name}",
+  "panels": {
+    "main": "Szczegóły rezerwacji",
+    "aside": "Podsumowanie rezerwacji"
+  },
+  "continue": "Dalej",
+  "steps": {
+    "guestDetails": "Dane gościa",
+    "extras": "Dodatki",
+    "reviewAndBook": "Sprawdź i zarezerwuj",
+    "payment": "Płatność"
+  },
+  "payment": {
+    "chargedIn": "Zostaniesz obciążony kwotą {amount} w walucie {currency}. Ceny w innych walutach są przeliczane po kursach referencyjnych i mają charakter orientacyjny.",
+    "heading": "Wybierz, jak chcesz kontynuować",
+    "submitFailed": "Coś poszło nie tak. Spróbuj ponownie.",
+    "tabs": {
+      "card": "Zapłać kartą",
+      "invoice": "Poproś o fakturę",
+      "question": "Zadaj pytanie"
+    },
+    "card": {
+      "notice": "Kwota zostanie teraz zablokowana na Twojej karcie i pobrana dopiero po potwierdzeniu rezerwacji przez operatora. Jeśli operator jej nie przyjmie, blokada zostanie zwolniona i nic nie zapłacisz.",
+      "unavailable": "Płatność kartą online jest obecnie niedostępna. Skorzystaj z opcji Poproś o fakturę lub Zadaj pytanie.",
+      "quoteExpired": "Twoja cena wygasła. Wróć i odśwież wycenę przed płatnością.",
+      "notPayable": "Za tę rezerwację nie można już zapłacić. Rozpocznij nową.",
+      "failed": "Nie udało się zrealizować płatności. Spróbuj ponownie.",
+      "cta": "Zapłać {amount}",
+      "orCard": "lub zapłać kartą",
+      "preparing": "Przygotowujemy metody płatności"
+    },
+    "invoice": {
+      "email": "E-mail do faktury",
+      "emailPlaceholder": "billing@gmail.com",
+      "company": "Nazwa firmy (opcjonalnie)",
+      "companyPlaceholder": "Yachts Adventures",
+      "vat": "Numer VAT (opcjonalnie)",
+      "vatPlaceholder": "GB12312321321312123",
+      "notice": "Wolisz zapłacić offline? Wyślemy Ci fakturę, którą opłacisz przelewem bankowym.",
+      "cta": "Poproś o fakturę (na {amount})",
+      "name": "Nazwa do faktury",
+      "namePlaceholder": "Anna Kowalska",
+      "addressLine1": "Adres",
+      "addressLine1Placeholder": "12 Harbour Road",
+      "addressLine2": "Adres, linia 2 (opcjonalnie)",
+      "addressLine2Placeholder": "Mieszkanie, lokal, piętro",
+      "city": "Miasto",
+      "cityPlaceholder": "Split",
+      "postalCode": "Kod pocztowy (opcjonalnie)",
+      "postalCodePlaceholder": "21000",
+      "country": "Kraj",
+      "countryPlaceholder": "Wybierz kraj",
+      "registration": "Numer rejestrowy (opcjonalnie)",
+      "registrationPlaceholder": "12345678"
+    },
+    "question": {
+      "label": "Twoje pytanie lub prośba",
+      "placeholder": "Wyślij zapytanie przed rezerwacją (np. weryfikacja patentu, specjalne wymagania)",
+      "cta": "Wyślij zapytanie"
+    },
+    "hold": {
+      "until": "Zarezerwowany dla Ciebie do {until} (pozostało {left}). Zapłać przed tym terminem, w przeciwnym razie operator zwolni jacht.",
+      "expiredTitle": "Wstępna rezerwacja tego jachtu wygasła",
+      "expiredBody": "Operator trzymał te daty do {until}. Za tę rezerwację nie można już zapłacić: wróć do jachtu i zarezerwuj daty ponownie.",
+      "backToYacht": "Wróć do jachtu"
+    }
+  },
+  "confirmation": {
+    "reserved": "Twój jacht jest zarezerwowany!",
+    "notFound": "Nie znaleziono rezerwacji",
+    "browse": "Przeglądaj jachty",
+    "remaining": "Pozostała kwota {amount} zostanie zapłacona przy zaokrętowaniu.",
+    "invoiceSent": "Faktura wysłana",
+    "invoiceHold": "Trzymamy Twój jacht do czasu wpłynięcia przelewu na kwotę {amount}, najpóźniej do {date}.",
+    "invoiceEmailed": "Wysłaliśmy Ci e-mailem fakturę {number} z danymi do przelewu i potwierdzimy, gdy przelew dotrze",
+    "remainingBy": "Pozostała kwota {amount} jest płatna do {date}.",
+    "emailed": "Wysłaliśmy Ci szczegóły e-mailem i wyślemy je ponownie, gdy operator potwierdzi rezerwację",
+    "guestEmailed": "Wysłaliśmy Ci szczegóły e-mailem wraz z linkiem do ustawienia hasła, aby zachować tę rezerwację na Twoim koncie",
+    "viewBooking": "Zobacz rezerwację",
+    "summaryTitle": "Podsumowanie rezerwacji",
+    "quote": "„Ten jacht jest idealny do rejsów między wyspami Chorwacji - stabilny, przestronny i świetny dla grup. Twoja trasa obejmuje Hvar i Vis, dwie z najpiękniejszych wysp Adriatyku.”",
+    "shareTrip": "Udostępnij rejs",
+    "downloadReceipt": "Pobierz potwierdzenie",
+    "summary": {
+      "yacht": "Jacht",
+      "dates": "Daty",
+      "crew": "Załoga",
+      "mandatory": "Obowiązkowe",
+      "selectedExtras": "Wybrane dodatki",
+      "boatPrice": "Cena jachtu (pełna cena czarteru)",
+      "deposit": "Zwrotna kaucja",
+      "secondPayment": "2. płatność (płatne: {date})",
+      "secondPaymentAtCheckIn": "2. płatność (płatne przy zaokrętowaniu)",
+      "totalPrice": "Cena całkowita",
+      "perPerson": "~ {price} za osobę",
+      "dueNow": "Do zapłaty teraz"
+    },
+    "viewInvoice": "Zobacz fakturę",
+    "settling": {
+      "title": "Płatność otrzymana",
+      "body": "Potwierdzamy Twoją rezerwację z bazą czarterową. Zwykle trwa to kilka sekund."
+    },
+    "failed": {
+      "title": "Nie udało się potwierdzić tej rezerwacji",
+      "body": "Baza czarterowa nie mogła przyjąć tej rezerwacji. Wszelkie dokonane płatności są zwracane."
+    },
+    "shareText": "Czarterujemy {name}, {dates}!",
+    "shareCopied": "Link skopiowany",
+    "shareFailed": "Nie udało się skopiować linku"
+  },
+  "invoice": {
+    "title": "Faktura",
+    "print": "Drukuj / Zapisz jako PDF",
+    "backToBookings": "Wróć do rezerwacji",
+    "browse": "Przeglądaj jachty",
+    "issuedOn": "Wystawiono {date}",
+    "dueOn": "Termin płatności {date}",
+    "status": {
+      "pending": "Oczekuje na płatność",
+      "sent": "Wysłana",
+      "paid": "Opłacona",
+      "cancelled": "Anulowana"
+    },
+    "from": "Sprzedawca",
+    "billTo": "Nabywca",
+    "vat": "VAT {value}",
+    "registration": "Nr rej. {value}",
+    "summary": {
+      "reference": "Numer rezerwacji",
+      "yacht": "Jacht",
+      "base": "Baza",
+      "dates": "Daty czarteru",
+      "guests": "Goście"
+    },
+    "lines": {
+      "description": "Opis",
+      "collected": "Pobierane",
+      "amount": "Kwota"
+    },
+    "payWhen": {
+      "now": "Z tą fakturą",
+      "at_check_in": "Przy zaokrętowaniu"
+    },
+    "totals": {
+      "charterTotal": "Łączna cena czarteru",
+      "paid": "Już zapłacono",
+      "dueNow": "Do zapłaty teraz",
+      "balance": "Pozostało do zapłaty",
+      "securityDeposit": "Zwrotna kaucja w wysokości {amount} jest pobierana przy zaokrętowaniu i nie jest częścią tej faktury."
+    },
+    "payment": {
+      "title": "Dane do płatności",
+      "beneficiary": "Odbiorca",
+      "bank": "Bank",
+      "iban": "IBAN",
+      "bic": "BIC / SWIFT",
+      "reference": "Tytuł przelewu",
+      "amount": "Kwota przelewu",
+      "note": "Podaj tytuł przelewu, abyśmy mogli przypisać go do Twojej rezerwacji. Rezerwacja zostanie potwierdzona po zaksięgowaniu środków."
+    },
+    "footnote": "Wystawca: {company}. Faktura została wygenerowana elektronicznie i jest ważna bez podpisu.",
+    "error": {
+      "title": "Nie udało się wczytać faktury",
+      "description": "Spróbuj ponownie za chwilę."
+    },
+    "missing": {
+      "title": "Brak faktury dla tej rezerwacji",
+      "description": "Ta rezerwacja nie została opłacona przelewem bankowym, więc nie wystawiono faktury."
+    }
+  },
+  "balance": {
+    "title": "Zapłać pozostałą kwotę",
+    "titleUnpaid": "Dokończ płatność",
+    "reference": "Rezerwacja {reference}",
+    "pay": "Zapłać {amount}",
+    "notFound": "Nie znaleźliśmy tej rezerwacji",
+    "browse": "Przeglądaj jachty",
+    "viewBookings": "Moje rezerwacje",
+    "unavailable": "Płatność online jest obecnie niedostępna. Skontaktuj się z nami, aby rozliczyć tę rezerwację.",
+    "summary": {
+      "total": "Cena całkowita",
+      "paid": "Już zapłacono",
+      "atCheckIn": "Płatne w marinie",
+      "due": "Do zapłaty teraz"
+    },
+    "paid": {
+      "title": "Twoja rezerwacja jest w pełni opłacona",
+      "body": "Za rezerwację {reference} nie pozostało nic do zapłaty. Dodatki i kaucja są rozliczane w marinie.",
+      "viewBooking": "Zobacz rezerwację"
+    },
+    "notPayable": {
+      "title": "Ta cena wygasła",
+      "body": "Nie możemy już przyjąć płatności za tę rezerwację: podana przez nas cena i wstępna rezerwacja operatora wygasły. Sprawdź daty ponownie, a przygotujemy nową cenę.",
+      "action": "Sprawdź dostępność"
+    },
+    "settling": {
+      "title": "Płatność otrzymana",
+      "body": "Aktualizujemy Twoją rezerwację. Zwykle trwa to kilka sekund."
+    },
+    "received": {
+      "title": "Płatność otrzymana",
+      "body": "Dziękujemy. Za ten czarter pozostało {outstanding}, przypomnimy Ci o tym przed terminem płatności.",
+      "viewBooking": "Zobacz rezerwację"
+    }
+  },
+  "detail": {
+    "notFound": "Nie znaleźliśmy tej rezerwacji",
+    "browse": "Przeglądaj jachty",
+    "reference": "Rezerwacja {reference}",
+    "guests": "Goście: {count}",
+    "payBalance": "Zapłać {amount}",
+    "completePayment": "Dokończ płatność {amount}",
+    "viewInvoice": "Zobacz fakturę",
+    "priceTitle": "Szczegóły ceny",
+    "total": "Cena całkowita",
+    "paymentsTitle": "Płatności",
+    "paid": "Dotychczas zapłacono",
+    "outstanding": "Pozostało do zapłaty",
+    "dueAtCheckIn": "Płatne w marinie",
+    "atMarina": "płatne w marinie",
+    "noPayments": "Za tę rezerwację nie dokonano jeszcze żadnych płatności.",
+    "disputed": "zakwestionowana",
+    "kind": {
+      "deposit": "Pierwsza płatność",
+      "balance": "Druga płatność",
+      "full": "Pełna płatność",
+      "checkin_extras": "Dodatki przy zaokrętowaniu",
+      "security_deposit": "Kaucja"
+    },
+    "method": {
+      "card": "Karta",
+      "transfer": "Przelew bankowy"
+    },
+    "paymentStatus": {
+      "requires_payment": "Nieopłacona",
+      "processing": "Przetwarzanie",
+      "authorized": "Zablokowana na karcie",
+      "succeeded": "Opłacona",
+      "failed": "Nieudana",
+      "refunded": "Zwrócona"
+    },
+    "status": {
+      "DRAFT": "Wersja robocza",
+      "QUOTED": "Wyceniona",
+      "OPTION_PENDING": "Rezerwowanie",
+      "OPTION_HELD": "Wstępnie zarezerwowana",
+      "PAYMENT_PENDING": "Oczekuje na płatność",
+      "CONFIRMING": "Potwierdzanie",
+      "CONFIRMED": "Potwierdzona",
+      "QUOTE_EXPIRED": "Wygasła",
+      "OPTION_EXPIRED": "Wygasła",
+      "PAYMENT_FAILED": "Płatność nieudana",
+      "PROVIDER_REJECTED": "Niedostępna",
+      "CANCELLED": "Anulowana",
+      "REFUND_PENDING": "Zwrot w toku",
+      "REFUNDED": "Zwrócona"
+    },
+    "backToBookings": "Wróć do moich rezerwacji",
+    "panels": {
+      "main": "Rezerwacja",
+      "aside": "Cena"
+    },
+    "charterTitle": "Czarter",
+    "dates": "Daty",
+    "guestsLabel": "Goście",
+    "crew": "Załoga",
+    "marina": "Marina",
+    "referenceLabel": "Numer",
+    "settled": "Nic nie pozostało do zapłaty",
+    "viewYacht": "Zobacz stronę jachtu",
+    "supportTitle": "Potrzebujesz pomocy?",
+    "supportBody": "Pytania o czarter, zmiana dat lub cokolwiek innego - nasz zespół odpowiada w ciągu jednego dnia roboczego.",
+    "contactSupport": "Skontaktuj się z obsługą",
+    "supportSubject": "Rezerwacja {reference}",
+    "marinaContact": "Kontakt z mariną",
+    "signInTitle": "Zaloguj się, aby zobaczyć tę rezerwację",
+    "signInBody": "Ta rezerwacja jest powiązana z Twoim kontem. Zaloguj się adresem e-mail użytym przy rezerwacji, a od razu wrócisz tutaj.",
+    "signIn": "Zaloguj się",
+    "cancelledOn": "Data anulowania",
+    "cancelReason": "Powód",
+    "requestCancel": "Poproś o anulowanie",
+    "crewList": {
+      "title": "Lista załogi",
+      "notice": "Firma czarterowa musi przekazać władzom listę wszystkich osób na pokładzie przed wypłynięciem. Wypełnij ją tutaj, a my ją przekażemy - o brakujące dane baza poprosi przy recepcji po Twoim przyjeździe.",
+      "alsoAsked": "Wymagane są też: {fields}, które baza zbierze przy recepcji po Twoim przyjeździe.",
+      "maxPassengers": "Maksymalna liczba osób na liście: {count}.",
+      "loading": "Wczytywanie listy załogi…",
+      "empty": "Nikogo jeszcze nie dodano. Twoja rezerwacja obejmuje liczbę gości: {guests} - dodaj każdą osobę, która będzie na pokładzie, w tym skippera.",
+      "member": "Członek załogi {number}",
+      "remove": "Usuń członka załogi {number}",
+      "add": "Dodaj członka załogi",
+      "save": "Zapisz listę załogi",
+      "saved": "Lista załogi zapisana",
+      "saveFailed": "Nie udało się zapisać listy załogi",
+      "role": "Funkcja",
+      "rolePlaceholder": "Skipper, gość…",
+      "dateOfBirth": "Data urodzenia",
+      "documentNumber": "Numer paszportu lub dowodu osobistego",
+      "documentNumberPlaceholder": "X1234567",
+      "nationality": "Obywatelstwo",
+      "nationalityPlaceholder": "Wybierz kraj",
+      "errors": {
+        "dateOfBirth": "Podaj prawidłową datę",
+        "firstName": "Podaj imię tej osoby",
+        "lastName": "Podaj nazwisko tej osoby",
+        "skipperEmail": "Podaj prawidłowy adres e-mail",
+        "oneSkipper": "Skipperem może być tylko jedna osoba"
+      },
+      "requires": {
+        "shoeSize": "rozmiary obuwia",
+        "disabledPerson": "informacja, czy na pokładzie jest osoba z niepełnosprawnością"
+      },
+      "legend": "Pola oznaczone * są wymagane przez tę firmę czarterową.",
+      "sent": "Wysłano do firmy czarterowej {when}.",
+      "notSent": "Lista nie dotarła jeszcze do firmy czarterowej: {reason} Twoje dane są zapisane - baza zbierze listę po Twoim przyjeździe.",
+      "notSentUnknown": "nie udało się z nią połączyć.",
+      "savedNotSent": "Zapisano, ale firma czarterowa jeszcze jej nie otrzymała",
+      "firstName": "Imię",
+      "firstNamePlaceholder": "Jak w paszporcie",
+      "lastName": "Nazwisko",
+      "lastNamePlaceholder": "Jak w paszporcie",
+      "gender": "Płeć",
+      "genderPlaceholder": "Wybierz",
+      "birthPlace": "Miejsce urodzenia",
+      "birthCountry": "Kraj urodzenia",
+      "livingPlace": "Miejscowość zamieszkania",
+      "livingCountry": "Kraj zamieszkania",
+      "placePlaceholder": "Miejscowość lub miasto",
+      "documentType": "Rodzaj dokumentu",
+      "documentTypePlaceholder": "Wybierz",
+      "isSkipper": "Ta osoba jest skipperem",
+      "skipperLicence": "Patent skippera",
+      "skipperLicencePlaceholder": "Numer patentu",
+      "vhfLicence": "Świadectwo VHF",
+      "skipperEmail": "E-mail skippera",
+      "skipperMobile": "Telefon skippera",
+      "note": "Informacje dla bazy",
+      "notePlaceholder": "Godzina przyjazdu, numer lotu, osoby potrzebujące pomocy…",
+      "documents": {
+        "passport": "Paszport",
+        "idCard": "Dowód osobisty",
+        "other": "Inny"
+      },
+      "genders": {
+        "male": "Mężczyzna",
+        "female": "Kobieta"
+      },
+      "placeSearch": "Szukaj miejscowości",
+      "placeEmpty": "Brak miejscowości o tej nazwie"
+    },
+    "priceLineLabels": {
+      "charterPrice": "Cena czarteru",
+      "charterExtra": "Dodatek do czarteru",
+      "charterDiscount": "Rabat na czarter",
+      "referralWelcome": "Powitalny rabat z polecenia",
+      "referralCredit": "Środki z polecenia"
+    }
+  },
+  "support": {
+    "title": "Jak możemy pomóc?",
+    "subtitle": "Wyślij nam wiadomość, a odpowiemy w ciągu jednego dnia roboczego.",
+    "messageLabel": "Twoja wiadomość",
+    "messagePlaceholder": "Napisz, w czym możemy pomóc - daty, jacht, płatność, cokolwiek.",
+    "required": "Najpierw napisz wiadomość",
+    "send": "Wyślij wiadomość",
+    "sent": "Wiadomość wysłana",
+    "sentTitle": "Wiadomość wysłana",
+    "sentBody": "Otrzymaliśmy ją wraz ze szczegółami Twojej rezerwacji. Odpowiemy Ci e-mailem.",
+    "backToBooking": "Wróć do mojej rezerwacji",
+    "failed": "Nie udało się wysłać wiadomości. Spróbuj ponownie.",
+    "marinaContact": "Lub skontaktuj się bezpośrednio z mariną",
+    "cancellation": {
+      "title": "Poproś o anulowanie",
+      "subtitle": "Wyślij nam prośbę, a odpowiemy, na co pozwalają Twoje zasady anulowania.",
+      "messageLabel": "Dlaczego anulujesz?",
+      "messagePlaceholder": "Wszystko, co nam pomoże - zmiana planów, daty, pogoda, choroba.",
+      "template": "Chcę anulować rezerwację {reference} ({dates}).\n\nPowód: ",
+      "send": "Wyślij prośbę o anulowanie",
+      "sentTitle": "Wysłano prośbę o anulowanie",
+      "sentBody": "Twoja rezerwacja pozostaje bez zmian do czasu rozpatrzenia prośby przez nasz zespół. Odpowiemy Ci e-mailem, informując, na co pozwalają Twoje zasady anulowania."
+    }
+  },
+  "booked": "Zarezerwowano",
+  "consentRequired": "Zaznacz oba pola powyżej, aby potwierdzić rezerwację.",
+  "saveAndContinue": "Zapisz i kontynuuj",
+  "extrasSkipped": "Najpierw zapoznaj się z dodatkami opcjonalnymi, a potem potwierdź."
+}

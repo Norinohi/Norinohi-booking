@@ -1,0 +1,25 @@
+{
+  "title": "Kontakta oss",
+  "subtitle": "Boka ett samtal eller skicka ett meddelande, vad som passar dig bäst.",
+  "options": {
+    "call": {
+      "title": "Boka ett kort samtal",
+      "description": "Välj en tid som passar dig, ett kort samtal med en charterexpert."
+    },
+    "message": {
+      "title": "Skicka ett meddelande",
+      "description": "Berätta vad du letar efter så återkommer vi via e-post."
+    }
+  },
+  "placeholder": {
+    "title": "Bokning kommer snart",
+    "description": "Onlinebokning av tider är inte klar än. Skicka ett meddelande så hittar vi en tid som passar dig.",
+    "cta": "Skicka ett meddelande i stället"
+  },
+  "send": "Skicka meddelande",
+  "sent": "Tack! En charterexpert hör av sig inom kort.",
+  "submitted": {
+    "title": "Tack, vi hör av oss",
+    "description": "En av våra charterexperter återkommer inom kort."
+  }
+}

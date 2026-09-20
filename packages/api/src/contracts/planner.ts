@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { siteLocaleSchema } from "../lib/locales";
+
 import { listingSummarySchema } from "./catalog";
 import { moneySchema } from "./primitives";
 
@@ -12,7 +14,7 @@ import { moneySchema } from "./primitives";
  */
 export const plannerAnswersSchema = z
   .object({
-    locale: z.enum(["en", "uk", "de", "es"]).optional(),
+    locale: siteLocaleSchema.optional(),
     destination: z.enum(["croatia", "greece", "italy", "spain", "not-sure"]).optional(),
     groupSize: z.enum(["2-4", "5-8", "9-plus", "not-sure"]).optional(),
     experience: z.enum(["none", "some", "licensed"]).optional(),

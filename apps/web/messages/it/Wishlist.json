@@ -1,0 +1,12 @@
+{
+  "title": "I tuoi preferiti",
+  "back": "Indietro",
+  "saved": "Salvato nei preferiti.",
+  "removed": "Rimosso dai preferiti.",
+  "emptyTitle": "Ancora nessuno yacht salvato",
+  "emptyDescription": "Inizia a esplorare e salva i tuoi preferiti per dopo",
+  "someUnavailable": "Alcuni degli yacht salvati non sono più disponibili.",
+  "toggleFailed": "Impossibile aggiornare i preferiti. Riprova.",
+  "merged": "{count, plural, one {# yacht salvato aggiunto} other {# yacht salvati aggiunti}} al tuo account.",
+  "paginationSummary": "Visualizzati {from}-{to} di {total}"
+}

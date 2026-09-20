@@ -1,0 +1,20 @@
+{
+  "title": "Tillgodohavande och saldo",
+  "balance": {
+    "label": "Tillgängligt saldo",
+    "expiringSoon": "{amount} löper ut inom 30 dagar",
+    "hint": "Tillgodohavandet kan användas för alla båtbokningar över 1 000 € och dras av från det du betalar i dag."
+  },
+  "ledger": {
+    "title": "Historik för tillgodohavande",
+    "expires": "Löper ut {date}",
+    "emptyTitle": "Inget tillgodohavande än",
+    "emptyDescription": "Bjud in en vän: du får tillgodohavande när de har genomfört sin resa.",
+    "kind": {
+      "referral_reward": "Belöning för värvning",
+      "booking_redemption": "Använt på bokning",
+      "expiry": "Utlöpt",
+      "adjustment": "Justering"
+    }
+  }
+}

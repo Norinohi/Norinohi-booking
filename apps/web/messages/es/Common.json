@@ -1,6 +1,6 @@
 {
   "crewTypes": {
-    "bareboat": "Sin tripulación",
+    "bareboat": "Sin patrón",
     "skipper": "Con patrón",
     "full-crew": "Tripulación completa"
   },
@@ -202,7 +202,8 @@
     "zoomIn": "Acercar",
     "zoomOut": "Alejar",
     "locate": "Mostrar mi ubicación",
-    "locateUnavailable": "Ubicación no disponible"
+    "locateUnavailable": "Ubicación no disponible",
+    "frameAll": "Ver todo"
   },
   "leadForm": {
     "fields": {

@@ -1,0 +1,459 @@
+{
+  "confirmBooking": "Boeking bevestigen",
+  "review": {
+    "title": "Boekingsoverzicht",
+    "yacht": "Jacht",
+    "dates": "Data",
+    "crew": "Bemanning",
+    "people": "Personen",
+    "extras": "Extra's",
+    "noExtras": "Niets geselecteerd",
+    "boatPrice": "Bootprijs (volledige huurprijs)",
+    "deposit": "Terugbetaalbare borg",
+    "depositRefundable": "Terugbetaalbaar, vastgehouden door de charterbasis",
+    "schedule": {
+      "payNow": "Nu betalen",
+      "payAt": "Te betalen op: {date}",
+      "payAtCheckIn": "Te betalen bij het inchecken: {date}",
+      "firstPayment": "1e betaling ({when})",
+      "fullPayment": "Volledige betaling ({when})",
+      "secondPayment": "2e betaling ({when})",
+      "extrasPayment": "Extra’s ({when})",
+      "depositNote": "Terugbetaalbare borg ({when})"
+    },
+    "totalPrice": "Totaalprijs",
+    "dueNow": "Nu te betalen",
+    "terms": "Ik ga akkoord met de <link>Algemene voorwaarden en de huurovereenkomst</link>.",
+    "cancellation": "Ik accepteer het <link>Annuleringsbeleid</link>.",
+    "operatorTerms": "Voorwaarden van de operator, inclusief het annuleringsbeleid"
+  },
+  "extras": {
+    "mandatory": "Verplicht",
+    "optional": "Optionele extra's",
+    "included": "Inbegrepen",
+    "notOnTheseDates": "Niet beschikbaar op deze data",
+    "notOnTheseDatesAsk": "Niet beschikbaar op deze data - je kunt het bij de basis navragen",
+    "requestedAtBase": "Aangevraagd bij de basis, daar te betalen"
+  },
+  "guestDetails": {
+    "notice": "We gebruiken deze gegevens om je boeking te bevestigen en af te stemmen met de basismanager.",
+    "guestNotice": "Je hebt geen account nodig om te boeken. We maken er een aan voor deze reservering en mailen je een link om een wachtwoord te kiezen wanneer het jou uitkomt.",
+    "fullName": "Volledige naam",
+    "fullNamePlaceholder": "Jan Jansen",
+    "email": "E-mailadres",
+    "emailPlaceholder": "name@example.com",
+    "phone": "Telefoonnummer",
+    "phonePlaceholder": "+48 536 839 555",
+    "country": "Land",
+    "countryPlaceholder": "Selecteer je land",
+    "specialRequests": "Speciale verzoeken (optioneel)",
+    "specialRequestsPlaceholder": "Graag vroeg inchecken"
+  },
+  "errors": {
+    "fullName": "Voer je volledige naam in",
+    "email": "Voer een geldig e-mailadres in",
+    "phone": "Voer een geldig telefoonnummer in",
+    "country": "Selecteer je land",
+    "terms": "Accepteer de voorwaarden om verder te gaan",
+    "cancellation": "Accepteer het annuleringsbeleid om verder te gaan",
+    "paymentMessage": "Voer je vraag of verzoek in",
+    "hold": {
+      "SLOT_GONE": "Dit jacht is niet meer beschikbaar op deze data. Kies nieuwe data en probeer het opnieuw.",
+      "PROVIDER_TIMEOUT": "Het systeem van de operator reageerde niet op tijd. Probeer het zo meteen opnieuw.",
+      "PROVIDER_REFUSED": "We konden deze boeking niet afronden bij de operator. Ons team is op de hoogte gebracht, dus probeer het straks opnieuw of neem contact met ons op.",
+      "SLOT_TAKEN": "Dit jacht is geboekt terwijl je aan het afrekenen was. Kies nieuwe data en probeer het opnieuw.",
+      "HOLD_NEVER_HELD": "Deze boeking kon niet worden vastgehouden. Kies je data opnieuw om een nieuwe prijs te krijgen."
+    },
+    "confirmFailed": "Je boeking kon niet worden bevestigd. Probeer het opnieuw.",
+    "holdInProgress": "Je vorige poging wordt nog afgerond. Wacht even en bevestig dan opnieuw.",
+    "billingName": "Voer de factuurnaam in",
+    "billingAddress": "Voer het factuuradres in",
+    "city": "Voer de plaats in"
+  },
+  "backToYacht": "Terug naar {name}",
+  "panels": {
+    "main": "Boekingsgegevens",
+    "aside": "Boekingsoverzicht"
+  },
+  "continue": "Doorgaan",
+  "steps": {
+    "guestDetails": "Gastgegevens",
+    "extras": "Extra's",
+    "reviewAndBook": "Controleren & boeken",
+    "payment": "Betaling"
+  },
+  "payment": {
+    "chargedIn": "Er wordt {amount} in {currency} in rekening gebracht. Prijzen in een andere valuta zijn omgerekend tegen referentiekoersen en zijn bij benadering.",
+    "heading": "Kies hoe je verder wilt gaan",
+    "submitFailed": "Er is iets misgegaan. Probeer het opnieuw.",
+    "tabs": {
+      "card": "Betalen met kaart",
+      "invoice": "Factuur aanvragen",
+      "question": "Stel een vraag"
+    },
+    "card": {
+      "notice": "Het bedrag wordt nu op je kaart gereserveerd en pas afgeschreven zodra de operator de boeking bevestigt. Kan die de boeking niet aannemen, dan vervalt de reservering en betaal je niets.",
+      "unavailable": "Online betalen met kaart is momenteel niet mogelijk. Gebruik Factuur aanvragen of Stel een vraag.",
+      "quoteExpired": "Je prijs is verlopen. Ga terug en vernieuw de offerte voordat je betaalt.",
+      "notPayable": "Deze boeking kan niet meer worden betaald. Begin een nieuwe boeking.",
+      "failed": "De betaling kon niet worden voltooid. Probeer het opnieuw.",
+      "cta": "{amount} betalen",
+      "orCard": "of betaal met kaart",
+      "preparing": "Betaalopties worden voorbereid"
+    },
+    "invoice": {
+      "email": "Factuur-e-mailadres",
+      "emailPlaceholder": "billing@gmail.com",
+      "company": "Bedrijfsnaam (optioneel)",
+      "companyPlaceholder": "Yachts Adventures",
+      "vat": "Btw-nummer (optioneel)",
+      "vatPlaceholder": "GB12312321321312123",
+      "notice": "Liever offline betalen? We sturen je een factuur zodat je per bankoverschrijving kunt betalen.",
+      "cta": "Factuur aanvragen (voor {amount})",
+      "name": "Factuurnaam",
+      "namePlaceholder": "Anna de Vries",
+      "addressLine1": "Adres",
+      "addressLine1Placeholder": "Havenweg 12",
+      "addressLine2": "Adresregel 2 (optioneel)",
+      "addressLine2Placeholder": "Appartement, unit, verdieping",
+      "city": "Plaats",
+      "cityPlaceholder": "Split",
+      "postalCode": "Postcode (optioneel)",
+      "postalCodePlaceholder": "21000",
+      "country": "Land",
+      "countryPlaceholder": "Selecteer land",
+      "registration": "Registratienummer (optioneel)",
+      "registrationPlaceholder": "12345678"
+    },
+    "question": {
+      "label": "Je vraag of verzoek",
+      "placeholder": "Stuur een verzoek voordat je boekt (bijv. controle van je vaarbewijs, speciale wensen)",
+      "cta": "Verzoek versturen"
+    },
+    "hold": {
+      "until": "Voor je vastgehouden tot {until} (nog {left}). Betaal vóór die tijd, anders geeft de operator het jacht weer vrij.",
+      "expiredTitle": "De reservering van dit jacht is verlopen",
+      "expiredBody": "De operator hield deze data vast tot {until}. Deze boeking kan niet meer worden betaald: ga terug naar het jacht en boek de data opnieuw.",
+      "backToYacht": "Terug naar het jacht"
+    }
+  },
+  "confirmation": {
+    "reserved": "Je jacht is gereserveerd!",
+    "notFound": "Boeking niet gevonden",
+    "browse": "Jachten bekijken",
+    "remaining": "Het resterende bedrag van {amount} betaal je bij het inchecken.",
+    "invoiceSent": "Factuur verstuurd",
+    "invoiceHold": "We houden je jacht vast totdat je overschrijving van {amount} binnen is, uiterlijk op {date}.",
+    "invoiceEmailed": "We hebben factuur {number} met de bankgegevens gemaild en laten het je weten zodra de overschrijving binnen is",
+    "remainingBy": "Het resterende bedrag van {amount} moet uiterlijk op {date} betaald zijn.",
+    "emailed": "We hebben je de details gemaild en doen dat opnieuw zodra de operator bevestigt",
+    "guestEmailed": "We hebben je de details gemaild, met een link om een wachtwoord in te stellen en deze boeking in je account te bewaren",
+    "viewBooking": "Boeking bekijken",
+    "summaryTitle": "Boekingsoverzicht",
+    "quote": "\"Dit jacht is ideaal voor eilandhoppen in Kroatië - stabiel, ruim en perfect voor groepsreizen. Je route gaat langs Hvar en Vis, twee van de mooiste eilanden van de Adriatische Zee.\"",
+    "shareTrip": "Trip delen",
+    "downloadReceipt": "Bewijs downloaden",
+    "summary": {
+      "yacht": "Jacht",
+      "dates": "Data",
+      "crew": "Bemanning",
+      "mandatory": "Verplicht",
+      "selectedExtras": "Gekozen extra's",
+      "boatPrice": "Bootprijs (volledige huurprijs)",
+      "deposit": "Terugbetaalbare borg",
+      "secondPayment": "2e betaling (te betalen op: {date})",
+      "secondPaymentAtCheckIn": "2e betaling (te betalen bij het inchecken)",
+      "totalPrice": "Totaalprijs",
+      "perPerson": "~ {price} per persoon",
+      "dueNow": "Nu te betalen"
+    },
+    "viewInvoice": "Factuur bekijken",
+    "settling": {
+      "title": "Betaling ontvangen",
+      "body": "We bevestigen je boeking bij de charterbasis. Dit duurt meestal een paar seconden."
+    },
+    "failed": {
+      "title": "We konden deze boeking niet bevestigen",
+      "body": "De charterbasis kon deze reservering niet aannemen. Een eventuele betaling wordt teruggestort."
+    },
+    "shareText": "We charteren {name}, {dates}!",
+    "shareCopied": "Link gekopieerd",
+    "shareFailed": "We konden de link niet kopiëren"
+  },
+  "invoice": {
+    "title": "Factuur",
+    "print": "Afdrukken / opslaan als pdf",
+    "backToBookings": "Terug naar boekingen",
+    "browse": "Jachten bekijken",
+    "issuedOn": "Uitgegeven op {date}",
+    "dueOn": "Te betalen vóór {date}",
+    "status": {
+      "pending": "Wacht op betaling",
+      "sent": "Verstuurd",
+      "paid": "Betaald",
+      "cancelled": "Geannuleerd"
+    },
+    "from": "Van",
+    "billTo": "Factuur aan",
+    "vat": "Btw {value}",
+    "registration": "Reg.nr. {value}",
+    "summary": {
+      "reference": "Boekingsreferentie",
+      "yacht": "Jacht",
+      "base": "Basis",
+      "dates": "Charterdata",
+      "guests": "Gasten"
+    },
+    "lines": {
+      "description": "Omschrijving",
+      "collected": "Geïnd",
+      "amount": "Bedrag"
+    },
+    "payWhen": {
+      "now": "Met deze factuur",
+      "at_check_in": "Bij het inchecken"
+    },
+    "totals": {
+      "charterTotal": "Totaal charter",
+      "paid": "Al betaald",
+      "dueNow": "Nu te betalen",
+      "balance": "Resterend bedrag",
+      "securityDeposit": "Een terugbetaalbare borg van {amount} wordt bij het inchecken geïnd en maakt geen deel uit van deze factuur."
+    },
+    "payment": {
+      "title": "Betalingsgegevens",
+      "beneficiary": "Begunstigde",
+      "bank": "Bank",
+      "iban": "IBAN",
+      "bic": "BIC / SWIFT",
+      "reference": "Betalingskenmerk",
+      "amount": "Over te maken bedrag",
+      "note": "Vermeld het betalingskenmerk bij de overschrijving, zodat we die aan je boeking kunnen koppelen. Je reservering is bevestigd zodra het geld binnen is."
+    },
+    "footnote": "Uitgegeven door {company}. Deze factuur is elektronisch gegenereerd en is geldig zonder handtekening.",
+    "error": {
+      "title": "De factuur kon niet worden geladen",
+      "description": "Probeer het zo meteen opnieuw."
+    },
+    "missing": {
+      "title": "Geen factuur voor deze boeking",
+      "description": "Deze boeking is niet per bankoverschrijving betaald, dus er is geen factuur uitgegeven."
+    }
+  },
+  "balance": {
+    "title": "Betaal de rest",
+    "titleUnpaid": "Rond je betaling af",
+    "reference": "Boeking {reference}",
+    "pay": "{amount} betalen",
+    "notFound": "We konden deze boeking niet vinden",
+    "browse": "Jachten bekijken",
+    "viewBookings": "Mijn boekingen",
+    "unavailable": "Online betalen is momenteel niet mogelijk. Neem contact met ons op om deze boeking te betalen.",
+    "summary": {
+      "total": "Totaalprijs",
+      "paid": "Al betaald",
+      "atCheckIn": "Te betalen in de jachthaven",
+      "due": "Nu te betalen"
+    },
+    "paid": {
+      "title": "Je boeking is volledig betaald",
+      "body": "Er valt niets meer te betalen voor boeking {reference}. Extra’s en de borg worden in de jachthaven afgerekend.",
+      "viewBooking": "Boeking bekijken"
+    },
+    "notPayable": {
+      "title": "Deze prijs is verlopen",
+      "body": "We kunnen voor deze boeking geen betaling meer aannemen: zowel onze prijsopgave als de reservering bij de operator zijn verlopen. Controleer de data opnieuw en we geven je een nieuwe prijs.",
+      "action": "Beschikbaarheid controleren"
+    },
+    "settling": {
+      "title": "Betaling ontvangen",
+      "body": "We werken je boeking bij. Dit duurt meestal een paar seconden."
+    },
+    "received": {
+      "title": "Betaling ontvangen",
+      "body": "Bedankt. Er staat nog {outstanding} open voor deze charter en we herinneren je eraan voordat het betaald moet worden.",
+      "viewBooking": "Boeking bekijken"
+    }
+  },
+  "detail": {
+    "notFound": "We konden deze boeking niet vinden",
+    "browse": "Jachten bekijken",
+    "reference": "Boeking {reference}",
+    "guests": "{count} gasten",
+    "payBalance": "{amount} betalen",
+    "completePayment": "Betaling afronden {amount}",
+    "viewInvoice": "Factuur bekijken",
+    "priceTitle": "Prijsopbouw",
+    "total": "Totaalprijs",
+    "paymentsTitle": "Betalingen",
+    "paid": "Tot nu toe betaald",
+    "outstanding": "Nog te betalen",
+    "dueAtCheckIn": "Te betalen in de jachthaven",
+    "atMarina": "betaald in de jachthaven",
+    "noPayments": "Er zijn nog geen betalingen gedaan voor deze boeking.",
+    "disputed": "betwist",
+    "kind": {
+      "deposit": "Eerste betaling",
+      "balance": "Tweede betaling",
+      "full": "Volledige betaling",
+      "checkin_extras": "Extra's bij het inchecken",
+      "security_deposit": "Borg"
+    },
+    "method": {
+      "card": "Kaart",
+      "transfer": "Bankoverschrijving"
+    },
+    "paymentStatus": {
+      "requires_payment": "Niet betaald",
+      "processing": "In behandeling",
+      "authorized": "Gereserveerd op kaart",
+      "succeeded": "Betaald",
+      "failed": "Mislukt",
+      "refunded": "Terugbetaald"
+    },
+    "status": {
+      "DRAFT": "Concept",
+      "QUOTED": "Offerte",
+      "OPTION_PENDING": "Wordt vastgehouden",
+      "OPTION_HELD": "Vastgehouden",
+      "PAYMENT_PENDING": "Wacht op betaling",
+      "CONFIRMING": "Wordt bevestigd",
+      "CONFIRMED": "Bevestigd",
+      "QUOTE_EXPIRED": "Verlopen",
+      "OPTION_EXPIRED": "Verlopen",
+      "PAYMENT_FAILED": "Betaling mislukt",
+      "PROVIDER_REJECTED": "Niet beschikbaar",
+      "CANCELLED": "Geannuleerd",
+      "REFUND_PENDING": "Wordt terugbetaald",
+      "REFUNDED": "Terugbetaald"
+    },
+    "backToBookings": "Terug naar mijn boekingen",
+    "panels": {
+      "main": "Boeking",
+      "aside": "Prijs"
+    },
+    "charterTitle": "Charter",
+    "dates": "Data",
+    "guestsLabel": "Gasten",
+    "crew": "Bemanning",
+    "marina": "Jachthaven",
+    "referenceLabel": "Referentie",
+    "settled": "Niets meer te betalen",
+    "viewYacht": "Jachtpagina bekijken",
+    "supportTitle": "Hulp nodig?",
+    "supportBody": "Vragen over je charter, wijzigingen in de data of iets anders - ons team antwoordt binnen één werkdag.",
+    "contactSupport": "Contact opnemen met support",
+    "supportSubject": "Boeking {reference}",
+    "marinaContact": "Contact jachthaven",
+    "signInTitle": "Log in om deze boeking te zien",
+    "signInBody": "Deze boeking is gekoppeld aan je account. Log in met het e-mailadres waarmee je hebt geboekt en we brengen je direct hier terug.",
+    "signIn": "Inloggen",
+    "cancelledOn": "Geannuleerd op",
+    "cancelReason": "Reden",
+    "requestCancel": "Annulering aanvragen",
+    "crewList": {
+      "title": "Bemanningslijst",
+      "notice": "Het charterbedrijf moet de autoriteiten een lijst geven van iedereen aan boord voordat je vertrekt. Vul die hier in en wij sturen hem door - wat ontbreekt, vraagt de basis bij aankomst aan de balie.",
+      "alsoAsked": "Er wordt ook gevraagd naar {fields}, wat de basis bij aankomst aan de balie verzamelt.",
+      "maxPassengers": "De lijst bevat maximaal {count} personen.",
+      "loading": "Je bemanningslijst wordt geladen…",
+      "empty": "Nog niemand toegevoegd. Je boeking is voor {guests} gasten - voeg iedereen toe die aan boord gaat, ook de schipper.",
+      "member": "Bemanningslid {number}",
+      "remove": "Bemanningslid {number} verwijderen",
+      "add": "Bemanningslid toevoegen",
+      "save": "Bemanningslijst opslaan",
+      "saved": "Bemanningslijst opgeslagen",
+      "saveFailed": "We konden je bemanningslijst niet opslaan",
+      "role": "Rol",
+      "rolePlaceholder": "Schipper, gast…",
+      "dateOfBirth": "Geboortedatum",
+      "documentNumber": "Paspoort- of ID-nummer",
+      "documentNumberPlaceholder": "X1234567",
+      "nationality": "Nationaliteit",
+      "nationalityPlaceholder": "Selecteer een land",
+      "errors": {
+        "dateOfBirth": "Voer een geldige datum in",
+        "firstName": "Voer de voornaam van deze persoon in",
+        "lastName": "Voer de achternaam van deze persoon in",
+        "skipperEmail": "Voer een geldig e-mailadres in",
+        "oneSkipper": "Er kan maar één persoon schipper zijn"
+      },
+      "requires": {
+        "shoeSize": "schoenmaten",
+        "disabledPerson": "of iemand aan boord een beperking heeft"
+      },
+      "legend": "Velden met * zijn verplicht voor dit charterbedrijf.",
+      "sent": "Op {when} naar het charterbedrijf verstuurd.",
+      "notSent": "Nog niet bij het charterbedrijf: {reason} Je gegevens zijn opgeslagen - de basis verzamelt de lijst bij je aankomst.",
+      "notSentUnknown": "we konden hen niet bereiken.",
+      "savedNotSent": "Opgeslagen, maar het charterbedrijf heeft hem nog niet ontvangen",
+      "firstName": "Voornaam",
+      "firstNamePlaceholder": "Zoals in het paspoort",
+      "lastName": "Achternaam",
+      "lastNamePlaceholder": "Zoals in het paspoort",
+      "gender": "Geslacht",
+      "genderPlaceholder": "Selecteer",
+      "birthPlace": "Geboorteplaats",
+      "birthCountry": "Geboorteland",
+      "livingPlace": "Woonplaats",
+      "livingCountry": "Land van verblijf",
+      "placePlaceholder": "Plaats of stad",
+      "documentType": "Type document",
+      "documentTypePlaceholder": "Selecteer",
+      "isSkipper": "Deze persoon is de schipper",
+      "skipperLicence": "Vaarbewijs van de schipper",
+      "skipperLicencePlaceholder": "Nummer vaarbewijs",
+      "vhfLicence": "Marifooncertificaat (VHF)",
+      "skipperEmail": "E-mailadres van de schipper",
+      "skipperMobile": "Telefoonnummer van de schipper",
+      "note": "Wat de basis moet weten",
+      "notePlaceholder": "Aankomsttijd, vluchtnummer, iemand die hulp nodig heeft…",
+      "documents": {
+        "passport": "Paspoort",
+        "idCard": "Identiteitskaart",
+        "other": "Overig"
+      },
+      "genders": {
+        "male": "Man",
+        "female": "Vrouw"
+      },
+      "placeSearch": "Plaatsen zoeken",
+      "placeEmpty": "Geen plaats met die naam"
+    },
+    "priceLineLabels": {
+      "charterPrice": "Charterprijs",
+      "charterExtra": "Charterextra",
+      "charterDiscount": "Charterkorting",
+      "referralWelcome": "Welkomstkorting via doorverwijzing",
+      "referralCredit": "Verwijstegoed"
+    }
+  },
+  "support": {
+    "title": "Waarmee kunnen we je helpen?",
+    "subtitle": "Stuur ons een bericht en we reageren binnen één werkdag.",
+    "messageLabel": "Je bericht",
+    "messagePlaceholder": "Vertel ons waarmee je hulp nodig hebt - data, de boot, betaling, wat dan ook.",
+    "required": "Schrijf eerst een bericht",
+    "send": "Bericht versturen",
+    "sent": "Bericht verstuurd",
+    "sentTitle": "Bericht verstuurd",
+    "sentBody": "We hebben het ontvangen, samen met je boekingsgegevens. Je hoort per e-mail van ons.",
+    "backToBooking": "Terug naar mijn boeking",
+    "failed": "We konden je bericht niet versturen. Probeer het opnieuw.",
+    "marinaContact": "Of neem direct contact op met de jachthaven",
+    "cancellation": {
+      "title": "Annulering aanvragen",
+      "subtitle": "Stuur ons je verzoek en we laten je weten wat je annuleringsbeleid toestaat.",
+      "messageLabel": "Waarom annuleer je?",
+      "messagePlaceholder": "Alles wat ons helpt - gewijzigde plannen, data, het weer, ziekte.",
+      "template": "Ik wil boeking {reference} ({dates}) annuleren.\n\nReden: ",
+      "send": "Annuleringsverzoek versturen",
+      "sentTitle": "Annulering aangevraagd",
+      "sentBody": "Je boeking blijft ongewijzigd totdat ons team het verzoek heeft beoordeeld. Je hoort per e-mail van ons wat je annuleringsbeleid toestaat."
+    }
+  },
+  "booked": "Geboekt",
+  "consentRequired": "Vink beide vakjes hierboven aan om deze boeking te bevestigen.",
+  "saveAndContinue": "Opslaan & doorgaan",
+  "extrasSkipped": "Bekijk eerst de optionele extra's - en bevestig dan."
+}

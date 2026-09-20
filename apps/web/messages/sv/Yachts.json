@@ -1,0 +1,29 @@
+{
+  "heading": "Sök båtcharter",
+  "searchByMap": "Sök på kartan",
+  "emptyTitle": "Inga båtar hittades för dina filter",
+  "emptyDescription": "Prova att justera datum, budget eller plats: vi hjälper dig att hitta rätt båt.",
+  "searchBar": {
+    "location": "Plats",
+    "startTyping": "Börja skriva",
+    "searchCountries": "Sök länder…",
+    "addDates": "Lägg till datum",
+    "clearDates": "Rensa datum",
+    "anyBoat": "Alla båtar",
+    "search": "Sök",
+    "noLocations": "Inga matchande destinationer",
+    "popularCountries": "Populära länder",
+    "popularBoatTypes": "Populära båttyper",
+    "allBoatTypes": "Alla båttyper",
+    "clearLocation": "Rensa plats",
+    "freeText": "Namn, modell eller bolag",
+    "kinds": {
+      "country": "Land",
+      "region": "Seglingsområde",
+      "city": "Stad",
+      "base": "Marina"
+    },
+    "clearBoatType": "Rensa båttyp"
+  },
+  "paginationSummary": "Visar {from}-{to} av {total}"
+}

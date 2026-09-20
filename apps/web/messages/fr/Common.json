@@ -1,0 +1,303 @@
+{
+  "crewTypes": {
+    "bareboat": "Sans skipper",
+    "skipper": "Skipper",
+    "full-crew": "Équipage complet"
+  },
+  "extras": {
+    "payAtCheckIn": "À régler à l'embarquement",
+    "dueWithPrepayment": "À régler avec l'acompte",
+    "payNow": "Inclus dans l'acompte",
+    "includedInPrice": "Inclus dans le prix",
+    "priceOnRequest": "Prix sur demande",
+    "confirmWithBase": "Prix non publié, à confirmer auprès de la base",
+    "percentageOfCharter": "{percent} % du prix de la location",
+    "oneWayOnly": "Locations aller simple uniquement",
+    "measure": {
+      "booking": "{price} par réservation",
+      "day": "{price} par jour",
+      "night": "{price} par nuit",
+      "week": "{price} par semaine",
+      "person": "{price} par personne",
+      "nightPerson": "{price} par personne / nuit",
+      "dayWithFood": "{price} par jour, repas compris",
+      "oneWayPerson": "{price} aller simple par personne",
+      "set": "{price} par lot",
+      "service": "{price} par prestation",
+      "piece": "{price} par pièce",
+      "weekStarted": "{price} par semaine entamée",
+      "oneWay": "{price} aller simple",
+      "weekPerson": "{price} par personne / semaine",
+      "weekFood": "{price} par semaine, repas compris",
+      "dayPerson": "{price} par personne / jour",
+      "bookingPerson": "{price} par personne et par réservation",
+      "pet": "{price} par animal",
+      "cabin": "{price} par cabine",
+      "twoWeeks": "{price} par 2 semaines",
+      "hour": "{price} par heure",
+      "engineHour": "{price} par heure moteur",
+      "halfHour": "{price} par demi-heure",
+      "crewChange": "{price} par changement d’équipage",
+      "personCourse": "{price} par personne et par cours",
+      "boat": "{price} par bateau",
+      "pack": "{price} par pack",
+      "bottle": "{price} par bouteille",
+      "licence": "{price} par permis",
+      "meal": "{price} par repas",
+      "nauticalMile": "{price} par mille nautique",
+      "roundTrip": "{price} aller-retour",
+      "litre": "{price} par litre",
+      "weekStartedPerson": "{price} par personne et par semaine entamée"
+    }
+  },
+  "resultsCount": "{count, plural, one {# yacht trouvé} other {# yachts trouvés}}",
+  "removeFilter": "Retirer le filtre {label}",
+  "passwordToggle": {
+    "show": "Afficher le mot de passe",
+    "hide": "Masquer le mot de passe"
+  },
+  "sorting": {
+    "label": "Trier par : {value}",
+    "recommended": "Recommandés",
+    "price-asc": "Prix : croissant",
+    "price-desc": "Prix : décroissant",
+    "rating": "Note des clients",
+    "newest": "Plus récents d’abord"
+  },
+  "priceBasis": {
+    "label": "Prix : {value}",
+    "aria": "Prix à afficher",
+    "boat": "Bateau seul",
+    "charter": "Location complète",
+    "hintLabel": "Ce que comprennent les prix",
+    "boatHint": "le prix de location du bateau seul, celui que comparent les autres sites de location. Les suppléments obligatoires, comme le charter pack ou le ménage final, s'ajoutent à la réservation.",
+    "charterHint": "le bateau plus tous les suppléments obligatoires (charter pack, ménage et autres frais obligatoires) : le coût réel de la location."
+  },
+  "boatCard": {
+    "save": "Ajouter à la liste d'envies",
+    "remove": "Retirer de la liste d'envies",
+    "viewDetails": "Voir les détails",
+    "imageAlt": "{name} amarré à {marina}",
+    "openGallery": "Ouvrir la galerie photos",
+    "priceHintLabel": "À propos de ce prix",
+    "priceFor": "Prix de la location · {days, plural, one {# jour} other {# jours}}",
+    "priceIndicative": "Prix de la location · tarif de base, des frais supplémentaires peuvent s'appliquer",
+    "boatPriceFor": "Prix du bateau · {days, plural, one {# jour} other {# jours}}",
+    "boatPriceIndicative": "Prix du bateau · tarif de base, des frais supplémentaires peuvent s'appliquer",
+    "priceListRate": "Prix de la location · tarif catalogue avant remises, des frais supplémentaires peuvent s'appliquer",
+    "boatPriceListRate": "Prix du bateau · tarif catalogue avant remises, des frais supplémentaires peuvent s'appliquer",
+    "priceForPeriod": "Prix de la location · du {from, date, dayCompact} au {to, date, dayCompact}",
+    "boatPriceForPeriod": "Prix du bateau · du {from, date, dayCompact} au {to, date, dayCompact}",
+    "priceListRateForPeriod": "Prix de la location · tarif catalogue du {from, date, dayCompact} au {to, date, dayCompact} avant remises, des frais supplémentaires peuvent s’appliquer",
+    "boatPriceListRateForPeriod": "Prix du bateau · tarif catalogue du {from, date, dayCompact} au {to, date, dayCompact} avant remises, des frais supplémentaires peuvent s’appliquer",
+    "priceListEstimate": "Prix de location estimé · selon la grille tarifaire du loueur pour {nights, plural, one {# nuit} other {# nuits}}, avant remises, le prix final peut différer",
+    "boatPriceListEstimate": "Prix du bateau estimé · selon la grille tarifaire du loueur pour {nights, plural, one {# nuit} other {# nuits}}, avant remises, le prix final peut différer",
+    "priceListEstimateForPeriod": "Prix de location estimé · selon la grille tarifaire du loueur du {from, date, dayCompact} au {to, date, dayCompact}, avant remises, le prix final peut différer",
+    "boatPriceListEstimateForPeriod": "Prix du bateau estimé · selon la grille tarifaire du loueur du {from, date, dayCompact} au {to, date, dayCompact}, avant remises, le prix final peut différer",
+    "priceListRateMayBeLower": "Prix de la location · tarif catalogue avant remises, le prix final peut être inférieur, des frais supplémentaires peuvent s'appliquer",
+    "boatPriceListRateMayBeLower": "Prix du bateau · tarif catalogue avant remises, le prix final peut être inférieur, des frais supplémentaires peuvent s'appliquer",
+    "priceListRateMayBeLowerForPeriod": "Prix de la location · tarif catalogue du {from, date, dayCompact} au {to, date, dayCompact} avant remises, le prix final peut être inférieur, des frais supplémentaires peuvent s’appliquer",
+    "boatPriceListRateMayBeLowerForPeriod": "Prix du bateau · tarif catalogue du {from, date, dayCompact} au {to, date, dayCompact} avant remises, le prix final peut être inférieur, des frais supplémentaires peuvent s’appliquer",
+    "priceListEstimateFrom": "Prix de location estimé à partir de · grille tarifaire du loueur pour {nights, plural, one {# nuit} other {# nuits}}, avant remises, le prix final peut différer",
+    "boatPriceListEstimateFrom": "Prix du bateau estimé à partir de · grille tarifaire du loueur pour {nights, plural, one {# nuit} other {# nuits}}, avant remises, le prix final peut différer",
+    "priceListEstimateFromForPeriod": "Prix de location estimé à partir de · grille tarifaire du loueur du {from, date, dayCompact} au {to, date, dayCompact}, avant remises, le prix final peut différer",
+    "boatPriceListEstimateFromForPeriod": "Prix du bateau estimé à partir de · grille tarifaire du loueur du {from, date, dayCompact} au {to, date, dayCompact}, avant remises, le prix final peut différer",
+    "priceListEstimateMayBeLower": "Prix de location estimé · selon la grille tarifaire du loueur pour {nights, plural, one {# nuit} other {# nuits}}, avant remises, le prix final peut être inférieur",
+    "boatPriceListEstimateMayBeLower": "Prix du bateau estimé · selon la grille tarifaire du loueur pour {nights, plural, one {# nuit} other {# nuits}}, avant remises, le prix final peut être inférieur",
+    "priceListEstimateMayBeLowerForPeriod": "Prix de location estimé · selon la grille tarifaire du loueur du {from, date, dayCompact} au {to, date, dayCompact}, avant remises, le prix final peut être inférieur",
+    "boatPriceListEstimateMayBeLowerForPeriod": "Prix du bateau estimé · selon la grille tarifaire du loueur du {from, date, dayCompact} au {to, date, dayCompact}, avant remises, le prix final peut être inférieur",
+    "priceFromLabel": "À partir de",
+    "plusObligatory": "plus {amount} de suppléments obligatoires",
+    "approximatePrice": "env.",
+    "chargedIn": "Débité en {currency} : {amount}",
+    "currencyLabel": "Devise",
+    "priceOnRequest": "Sur demande",
+    "getPrice": "Obtenir le prix",
+    "weeklyPriceFrom": "Une semaine à partir de {price}",
+    "priceForDatesOnPage": "Consultez le prix pour vos dates sur la page du yacht",
+    "priceUnavailable": "Indisponible",
+    "perPerson": "{price} par personne",
+    "perPersonApprox": "~ {price} par personne",
+    "perBerth": "{price} par personne pour {berths} couchettes",
+    "perNight": "{price} par nuit",
+    "perNightWithEquivalent": "{price} par nuit (≈ {equivalent})",
+    "datesAlternative": "Ce bateau n'est pas proposé à vos dates. Sa location la plus proche :",
+    "prepayment": "Acompte de réservation : {amount}",
+    "prepaymentInfo": "Il s'agit de la partie du prix de la location payée à l'avance pour garantir la réservation. Elle est déduite du total, et le solde est à régler avant l'embarquement.",
+    "securityDeposit": "Caution remboursable : {amount}",
+    "securityDepositInfo": "Une caution remboursable conservée par la base de location en cas de dommages pendant votre voyage. Elle est encaissée à l'embarquement, ne fait pas partie du prix et vous est restituée après le débarquement si tout est en bon état.",
+    "specs": {
+      "year": "Année",
+      "people": "Personnes",
+      "toilets": "Toilettes",
+      "showers": "Douches",
+      "mainsail": "Type de grand-voile",
+      "cabins": "Cabines",
+      "length": "Longueur",
+      "lengthValue": "{length, number} m"
+    },
+    "battenMainsail": "Grand-voile lattée",
+    "badges": {
+      "available": "Disponible",
+      "temporarilyHeld": "Temporairement réservé",
+      "onRequest": "Sur demande",
+      "unavailable": "Indisponible",
+      "bestForFamilies": "Idéal pour les familles",
+      "bestValue": "Meilleur rapport qualité-prix",
+      "new": "Nouveau",
+      "discount": "-{percent} %",
+      "petsAllowed": "Animaux acceptés",
+      "depositInsurance": "Assurance caution incluse",
+      "topRated": "Très bien noté"
+    },
+    "stats": {
+      "booked": "{count, plural, one {# réservation ce mois-ci} other {# réservations ce mois-ci}}",
+      "viewed": "{count, plural, one {# personne l’a consulté aujourd’hui} other {# personnes l’ont consulté aujourd’hui}}"
+    },
+    "amenities": {
+      "wifi": "Wi-Fi gratuit",
+      "solar": "3 panneaux solaires",
+      "paddle": "Stand-up paddle gratuit",
+      "air": "Climatisation",
+      "waterToys": "Jeux nautiques",
+      "galley": "Cuisine équipée",
+      "fridge": "Réfrigérateur et congélateur",
+      "tender": "Annexe avec moteur hors-bord"
+    },
+    "charterTypes": {
+      "bareboat": "Sans skipper",
+      "bareboatSailingYacht": "Voilier sans skipper",
+      "catamaran": "Catamaran"
+    },
+    "crews": {
+      "fullCrew": "Équipage complet",
+      "skipperOptional": "Skipper en option"
+    },
+    "moreAmenities": "{count, plural, one {Afficher # équipement de plus} other {Afficher # équipements de plus}}",
+    "moreAmenitiesShort": "+{count}",
+    "holdEndsIn": "Option expire dans {time}",
+    "holdEnding": "L'option arrive à échéance, revenez dans un instant",
+    "holdNoDeadline": "En option jusqu'à la confirmation de l'autre client"
+  },
+  "gallery": {
+    "close": "Fermer",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "zoomIn": "Zoom avant",
+    "zoomOut": "Zoom arrière",
+    "slideCounter": "{index} sur {total}",
+    "slide": "Diapositive",
+    "carousel": "Carrousel",
+    "photoGallery": "Galerie photos",
+    "lightbox": "Visionneuse de photos",
+    "thumbnails": "Miniatures"
+  },
+  "marina": {
+    "viewDetails": "Voir les détails"
+  },
+  "map": {
+    "open": "Ouvrir la carte de {place}",
+    "satellite": "Satellite",
+    "streets": "Carte",
+    "zoomIn": "Zoom avant",
+    "zoomOut": "Zoom arrière",
+    "locate": "Afficher ma position",
+    "locateUnavailable": "Position indisponible",
+    "frameAll": "Tout afficher"
+  },
+  "leadForm": {
+    "fields": {
+      "name": {
+        "label": "Nom complet",
+        "placeholder": "Marie Dupont"
+      },
+      "email": {
+        "label": "E-mail",
+        "placeholder": "jane@example.com"
+      },
+      "phone": {
+        "label": "Téléphone (facultatif)",
+        "placeholder": "+1 234 567 8900"
+      },
+      "country": {
+        "label": "Pays",
+        "placeholder": "Sélectionnez votre pays"
+      },
+      "message": {
+        "label": "Message (facultatif)",
+        "placeholder": "Autre chose à savoir sur votre voyage ?"
+      }
+    },
+    "errors": {
+      "nameRequired": "Veuillez saisir votre nom",
+      "emailInvalid": "Veuillez saisir une adresse e-mail valide",
+      "submitFailed": "Nous n'avons pas pu envoyer votre demande. Veuillez réessayer."
+    }
+  },
+  "charterPeriod": {
+    "day": {
+      "booked": "Réservé",
+      "held": "En option, peut se libérer"
+    },
+    "or": ", ou ",
+    "daysAndNights": "{days}, {nights}",
+    "weekdayRange": "{from} au {to}",
+    "wholeWeeksAnyDay": "Départ n’importe quel jour, par semaines complètes",
+    "wholeWeeksFromDays": "Départ le {days}, par semaines complètes",
+    "weekdaysToDay": "Départ le {days}, retour le {to}",
+    "weekdayStart": "Départ le {day}",
+    "weekdayEnd": "Retour le {day}",
+    "nightsExact": "{count, plural, one {# nuit} other {# nuits}}",
+    "nightsFrom": "à partir de {count, plural, one {# nuit} other {# nuits}}",
+    "nightsUpTo": "jusqu’à {count, plural, one {# nuit} other {# nuits}}",
+    "nightsRange": "{min} à {max} nuits",
+    "label": "Période de location",
+    "rulesMore": "Afficher toutes les règles de location",
+    "rulesLess": "Afficher moins"
+  },
+  "countryPicker": {
+    "search": "Rechercher un pays",
+    "loading": "Chargement des pays…",
+    "empty": "Aucun pays ne correspond"
+  },
+  "errors": {
+    "requestFailed": "Une erreur s'est produite",
+    "retry": "Réessayer"
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "description": "La page que vous recherchez n'existe pas ou a été déplacée.",
+    "home": "Retour à l'accueil",
+    "browse": "Parcourir les yachts"
+  },
+  "error": {
+    "title": "Une erreur s'est produite",
+    "description": "Nous n'avons pas pu charger cette page. Veuillez réessayer, ou revenez dans un instant.",
+    "retry": "Réessayer",
+    "home": "Retour à l'accueil"
+  },
+  "ui": {
+    "close": "Fermer",
+    "previousPage": "Aller à la page précédente",
+    "nextPage": "Aller à la page suivante",
+    "pagination": "Pagination",
+    "breadcrumb": "Fil d'Ariane",
+    "previousPhoto": "Photo précédente",
+    "nextPhoto": "Photo suivante",
+    "goToPhoto": "Aller à la photo {index} sur {total}",
+    "showPhoto": "Afficher la photo {index}",
+    "clear": "Effacer {label}",
+    "noOptions": "Aucune option",
+    "noMatches": "Aucun résultat",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "previousMonth": "Mois précédent",
+    "nextMonth": "Mois suivant",
+    "rating": "Note {rating} sur {max}"
+  },
+  "quoteLines": {
+    "referral-welcome": "Remise de bienvenue parrainage",
+    "referral-credit": "Crédit de parrainage",
+    "provider-discount": "Remise sur la location"
+  }
+}

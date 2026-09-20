@@ -34,6 +34,15 @@
     height: 2.75rem;
   }
 
+  /* A phone's map is mostly panel, and five 44px buttons ran under the card over it. 40px is still
+     a comfortable target and gives the column back a fifth of its height. */
+  @media (width < 48rem) {
+    .mapboxgl-ctrl-group button {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+  }
+
   .mapboxgl-ctrl-group button + button {
     border-top-color: var(--color-natural-200);
   }

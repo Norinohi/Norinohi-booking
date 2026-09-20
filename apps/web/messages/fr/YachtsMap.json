@@ -1,0 +1,14 @@
+{
+  "loading": "Chargement des yachts…",
+  "noResults": "Aucun yacht ne correspond à ces filtres. Essayez de les modifier.",
+  "title": "Yachts sur la carte",
+  "backToSearch": "Retour à la recherche",
+  "viewInCatalogue": "Voir dans le catalogue",
+  "showAllList": "Afficher toute la liste",
+  "closeList": "Fermer la liste",
+  "marker": "Marina {name}",
+  "clusterCount": "{count, plural, one {# yacht} other {# yachts}}",
+  "previousBoat": "Yacht précédent",
+  "nextBoat": "Yacht suivant",
+  "allInCatalogue": "{count, plural, one {# yacht dans le catalogue} other {Les # yachts du catalogue}}"
+}

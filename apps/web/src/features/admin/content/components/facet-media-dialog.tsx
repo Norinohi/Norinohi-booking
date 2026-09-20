@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@yacht-charter/ui/components/overlay/dialog";
+import { perSiteLocaleValue, SITE_LOCALES } from "@yacht-charter/api/lib/locales";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -25,16 +26,11 @@ import {
 import type { PopularFacetKind } from "../types";
 import PhotoField from "./photo-field";
 
-const LOCALES = ["en", "uk", "de", "es"] as const;
+const LOCALES = SITE_LOCALES;
 type Locale = (typeof LOCALES)[number];
 type Pane = { label: string; description: string };
 
-const emptyPanes = () => ({
-  en: { label: "", description: "" },
-  uk: { label: "", description: "" },
-  de: { label: "", description: "" },
-  es: { label: "", description: "" },
-});
+const emptyPanes = () => perSiteLocaleValue<Pane>(() => ({ label: "", description: "" }));
 
 interface FacetMediaDialogProps {
   /** The value being edited, or null while the dialog is closed. */

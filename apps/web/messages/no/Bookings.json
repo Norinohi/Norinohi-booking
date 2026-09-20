@@ -1,0 +1,22 @@
+{
+  "title": "Mine bookinger",
+  "history": "Historikk",
+  "anyDates": "Alle datoer",
+  "clearDates": "Fjern datoer",
+  "emptyTitle": "Ingen yachter ennå",
+  "emptyDescription": "Begynn å utforske yachter og planlegg din første tur - bookingene dine dukker opp her.",
+  "cancel": {
+    "action": "Avbestill booking",
+    "title": "Vil du avbestille denne bookingen?",
+    "description": "Dette kan ikke angres, og charterselskapet blir varslet.",
+    "reasonLabel": "Årsak (valgfritt)",
+    "reasonPlaceholder": "Fortell oss hvorfor du avbestiller",
+    "confirm": "Avbestill booking",
+    "keep": "Behold bookingen",
+    "success": "Bookingen din er avbestilt.",
+    "error": "Vi klarte ikke å avbestille bookingen din. Prøv igjen."
+  },
+  "statusCancelled": "Avbestilt",
+  "payBalance": "Betal {amount}",
+  "completePayment": "Fullfør betaling {amount}"
+}

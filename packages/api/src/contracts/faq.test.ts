@@ -50,7 +50,7 @@ describe("faqCreateInputSchema scope", () => {
     const result = faqCreateInputSchema.safeParse({
       listingId: null,
       category: "booking",
-      translations: [{ locale: "fr", question: "Comment réserver ?" }],
+      translations: [{ locale: "hr", question: "Kako rezervirati?" }],
     });
 
     expect(result.success).toBe(false);

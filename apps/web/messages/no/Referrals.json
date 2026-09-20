@@ -1,0 +1,62 @@
+{
+  "title": "Vervingene dine",
+  "invite": {
+    "heading": "Inviter venner. Tjen seilbonus.",
+    "description": "Gi 100 € til vennene dine på deres første booking, og få 100 € i bonus selv når de seiler.",
+    "copy": "Kopier vervelenke",
+    "copied": "Lenken er kopiert",
+    "generate": "Lag ny kode",
+    "generated": "Ny vervekode er laget",
+    "generateFailed": "Kunne ikke lage en ny kode. Prøv igjen.",
+    "information": "Informasjon",
+    "rules": {
+      "minBooking": "Bonusen kan brukes på alle yachtbookinger over 1000 €.",
+      "expiry": "Vervebonus utløper 12 måneder etter at den er opptjent.",
+      "cash": "Bonusen kan ikke tas ut som kontanter.",
+      "firstTime": "Gjelder bare for inviterte venners aller første booking."
+    },
+    "stats": {
+      "invited": "Inviterte brukere",
+      "completed": "Fullførte bookinger",
+      "earned": "Totalt opptjent",
+      "balance": "Tilgjengelig saldo"
+    }
+  },
+  "how": {
+    "title": "Slik fungerer det",
+    "steps": {
+      "share": {
+        "title": "Del lenken",
+        "description": "Send din egen vervelenke til venner som elsker å reise"
+      },
+      "book": {
+        "title": "Vennen booker",
+        "description": "De får 100 € avslag på sin første yachtbooking over 1000 €"
+      },
+      "credit": {
+        "title": "Du får bonus",
+        "description": "Når de har fullført turen sin, får du 100 € i bonus"
+      }
+    },
+    "level": {
+      "title": "Nivået ditt",
+      "current": "Nå:",
+      "next": "Neste: {level}",
+      "left": "{count, plural, one {# booking} other {# bookinger}} igjen til neste nivå",
+      "perks": {
+        "extra": "5 % ekstra bonus på alle vervinger",
+        "early": "Tidlig tilgang til luksustilbud",
+        "concierge": "Personlig conciergetjeneste"
+      }
+    }
+  },
+  "history": {
+    "title": "Vervehistorikk",
+    "today": "I dag",
+    "daysAgo": "{count, plural, one {# dag siden} other {# dager siden}}",
+    "credited": "Fullført",
+    "pending": "Venter",
+    "void": "Avbrutt",
+    "empty": "Ingen vervinger ennå. Del lenken din for å komme i gang."
+  }
+}

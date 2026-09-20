@@ -1,0 +1,224 @@
+{
+  "title": "Help me mijn trip te plannen",
+  "close": "Planner sluiten",
+  "progress": "Stap {current} van {total}",
+  "stepHeading": "Stap {current}",
+  "placeholder": "De vraag en de opties verschijnen hier in de volgende fase.",
+  "back": "Terug",
+  "next": "Volgende",
+  "steps": {
+    "destination": {
+      "question": "Waar wil je zeilen?",
+      "subtitle": "Kies een bestemming of laat ons de beste optie voor je voorstellen",
+      "options": {
+        "croatia": {
+          "label": "Kroatië",
+          "description": "Ideaal voor eilandhoppen en je eerste zeiltrip. Rustig water, korte afstanden tussen de eilanden en enorm veel routes - perfect voor beginners en ontspannen trips."
+        },
+        "greece": {
+          "label": "Griekenland",
+          "description": "Ideaal voor schilderachtige routes en cultuur. Zeil langs iconische eilanden met kristalhelder water en historische stadjes, met een mooie balans tussen avontuur en comfort."
+        },
+        "italy": {
+          "label": "Italië",
+          "description": "Ideaal voor premiumbelevingen en kustpanorama's. Prachtige kustroutes, luxe jachthavens en onvergetelijke bestemmingen zoals Amalfi - perfect voor een luxere trip."
+        },
+        "spain": {
+          "label": "Spanje",
+          "description": "Ideaal voor lifestyle en gezelligheid. Heerlijk weer, een bruisende sfeer en bestemmingen als Ibiza of Mallorca - perfect voor plezier, groepen en actieve trips."
+        },
+        "notSure": {
+          "label": "Weet ik nog niet"
+        }
+      }
+    },
+    "groupSize": {
+      "question": "Met hoeveel personen ga je?",
+      "subtitle": "De groepsgrootte bepaalt het type jacht, de ruimte en de totaalprijs per persoon",
+      "options": {
+        "twoToFour": {
+          "label": "2-4 personen",
+          "description": "Meer privacy, hogere kosten per persoon"
+        },
+        "fiveToEight": {
+          "label": "5-8 personen",
+          "description": "Beste balans tussen comfort en prijs"
+        },
+        "ninePlus": {
+          "label": "9+ personen",
+          "description": "Vraagt om grotere jachten of meerdere boten"
+        },
+        "notSure": {
+          "label": "Weet ik nog niet"
+        }
+      }
+    },
+    "experience": {
+      "question": "Heb je zeilervaring?",
+      "subtitle": "Een schipper kun je bij elk niveau toevoegen - dit bepaalt alleen wie er stuurt.",
+      "options": {
+        "none": {
+          "label": "Geen ervaring",
+          "description": "Ik heb een schipper nodig om de boot te varen"
+        },
+        "some": {
+          "label": "Enige ervaring",
+          "description": "Ik heb al eens gezeild, maar heb een schipper nodig"
+        },
+        "licensed": {
+          "label": "Met vaarbewijs",
+          "description": "Ik heb een geldig vaarbewijs en vaar zelf"
+        }
+      }
+    },
+    "tripVibe": {
+      "question": "Wat voor trip zoek je?",
+      "subtitle": "Wat je uit de week wilt halen, bepaalt de boot, de route en het tempo.",
+      "options": {
+        "adventure": {
+          "label": "Avontuur",
+          "description": "Actief zeilen en ontdekken. Meer beweging, langere routes en zelf de handen uit de mouwen"
+        },
+        "relax": {
+          "label": "Ontspanning",
+          "description": "Rustig tempo, natuur en stille baaien. Perfect voor kalm zeilen, zwemmen en tot rust komen."
+        },
+        "family": {
+          "label": "Familie",
+          "description": "Veilig, comfortabel en ruim. Ideaal met kinderen, stabiel en met makkelijke routes."
+        },
+        "luxury": {
+          "label": "Luxe",
+          "description": "Premiumjachten en een volledige service. Bemanning, comfort en exclusieve bestemmingen."
+        },
+        "party": {
+          "label": "Feest",
+          "description": "Muziek, nachtleven en een sociale sfeer. Ideaal voor routes in Ibiza-stijl en groepsenergie."
+        }
+      }
+    },
+    "duration": {
+      "question": "Hoe lang wil je dat je trip duurt?",
+      "subtitle": "Kies de duur die het best bij je plannen past. Zo kunnen we de juiste jachten, routes en totale ervaring voorstellen.",
+      "options": {
+        "week": {
+          "label": "7 dagen"
+        },
+        "twoWeeks": {
+          "label": "14 dagen"
+        },
+        "threeWeeks": {
+          "label": "21 dagen"
+        },
+        "more": {
+          "label": "21+ dagen"
+        }
+      }
+    },
+    "budget": {
+      "question": "Welk budget voelt goed?",
+      "subtitle": "Per persoon voor een week aan boord, zodat je het kunt vergelijken met een vakantie die je kent.",
+      "perPersonWeek": "per persoon/week",
+      "options": {
+        "low": {
+          "label": "€300-600"
+        },
+        "mid": {
+          "label": "€600-1000"
+        },
+        "high": {
+          "label": "€1000-1200"
+        },
+        "upper": {
+          "label": "€1200-2000"
+        },
+        "premium": {
+          "label": "€2000+"
+        }
+      }
+    }
+  },
+  "result": {
+    "title": "Jouw perfecte jachttrip",
+    "subtitle": "Op basis van je voorkeuren raden we dit aan.",
+    "labels": {
+      "yachtType": "Type jacht",
+      "skipper": "Schipper",
+      "style": "Stijl",
+      "duration": "Duur"
+    },
+    "yachtType": {
+      "sailing": "Zeiljacht",
+      "catamaran": "Catamaran",
+      "gulet": "Gulet",
+      "motor": "Motorjacht",
+      "luxury": "Luxe jacht"
+    },
+    "skipper": {
+      "yes": "Ja",
+      "no": "Nee"
+    },
+    "difficulty": {
+      "easy": "Makkelijk",
+      "moderate": "Gemiddeld",
+      "advanced": "Gevorderd"
+    },
+    "getConsultation": "Advies aanvragen",
+    "viewDetails": "Details bekijken",
+    "seeAllMatches": "Alle resultaten bekijken",
+    "durationDays": "{days, plural, one {# dag} other {# dagen}}",
+    "price": {
+      "perPerson": "≈ {price} per persoon",
+      "similar": "Vergelijkbare jachten",
+      "perPersonWeek": "≈ {range} per persoon per week",
+      "estimate": "Geschatte prijs",
+      "perPersonDays": "≈ {price} per persoon voor {days, plural, one {# dag} other {# dagen}}"
+    },
+    "noMatch": {
+      "title": "Nog geen exacte match",
+      "description": "We vonden geen jacht dat bij al je antwoorden past, maar hier is waar we naar zouden zoeken.",
+      "seeAllMatches": "Alle jachten bekijken"
+    },
+    "error": {
+      "title": "Er is iets misgegaan",
+      "description": "We konden je advies niet laden. Probeer het opnieuw.",
+      "retry": "Opnieuw proberen"
+    },
+    "consultationDialog": {
+      "title": "Vraag gratis advies aan",
+      "description": "Laat ons weten hoe we je kunnen bereiken en een van onze charterexperts neemt contact met je op met opties op maat.",
+      "submit": "Aanvraag versturen",
+      "cancel": "Annuleren",
+      "success": "Bedankt! We nemen snel contact met je op."
+    }
+  },
+  "consultation": {
+    "close": "Sluiten",
+    "title": "Neem contact op",
+    "subtitle": "Plan een gesprek of stuur ons een bericht, wat jou het beste uitkomt.",
+    "options": {
+      "call": {
+        "title": "Plan een kort gesprek",
+        "description": "Kies een moment dat jou uitkomt - een kort gesprek met een charterexpert."
+      },
+      "message": {
+        "title": "Stuur een bericht",
+        "description": "Vertel ons over je trip en we reageren per e-mail."
+      }
+    },
+    "placeholder": {
+      "title": "Online afspraken plannen komt binnenkort",
+      "description": "Online plannen is nog niet beschikbaar. Stuur ons een bericht en we spreken een moment af dat jou uitkomt.",
+      "cta": "Stuur liever een bericht"
+    },
+    "submitted": {
+      "title": "Bedankt - we nemen contact met je op",
+      "description": "Een van onze charterexperts neemt binnenkort contact met je op."
+    },
+    "error": {
+      "title": "Er is iets misgegaan",
+      "description": "We konden de details van je trip niet laden. Probeer het opnieuw.",
+      "retry": "Opnieuw proberen"
+    }
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "Footer": {
+    "tagline": "Explorez le monde en yacht.",
+    "description": "Plus de 30 000 bateaux dans le monde entier, prêts pour votre prochain voyage.",
+    "columns": {
+      "destinations": "Destinations",
+      "charterTypes": "Types de location",
+      "explore": "Explorer"
+    },
+    "links": {
+      "croatia": "Croatie",
+      "greece": "Grèce",
+      "italy": "Italie",
+      "turkey": "Turquie",
+      "caribbean": "Caraïbes",
+      "thailand": "Thaïlande",
+      "catamaran": "Catamaran",
+      "sailingYacht": "Voilier",
+      "motorYacht": "Yacht à moteur",
+      "bareboat": "Sans équipage",
+      "skippered": "Avec skipper",
+      "planTrip": "Aidez-moi à planifier mon voyage",
+      "popularYachts": "Yachts populaires",
+      "customerReviews": "Ce que disent nos clients",
+      "howItWorks": "Comment ça marche",
+      "contact": "Nous contacter"
+    },
+    "privacy": "Politique de confidentialité",
+    "terms": "Conditions d'utilisation",
+    "copyright": "© {year} YachtSkanner Platform. Tous droits réservés."
+  },
+  "Nav": {
+    "boatTypes": "Types de bateaux",
+    "closeMenu": "Fermer le menu",
+    "destinations": "Destinations",
+    "findByBudget": "Rechercher par budget",
+    "findYacht": "Trouver un yacht",
+    "helpPlan": "Aidez-moi à planifier mon voyage",
+    "language": "Langue",
+    "openMenu": "Ouvrir le menu",
+    "popularRoutes": "Itinéraires populaires",
+    "saved": "Favoris",
+    "tryIt": "Essayer"
+  },
+  "Sidebar": {
+    "menu": "Menu du compte",
+    "trigger": "Menu",
+    "greeting": "Bonjour, {name} !",
+    "profile": "Mon profil",
+    "bookings": "Mes réservations",
+    "referrals": "Parrainages",
+    "credits": "Crédits et solde",
+    "discount": "Gestion des remises",
+    "logout": "Se déconnecter",
+    "commission": "Taux de commission",
+    "duplicates": "Vérification des doublons",
+    "sync": "Historique de synchronisation",
+    "audit": "Journal d'audit",
+    "inbox": "Boîte de réception",
+    "staffBookings": "Réservations",
+    "users": "Utilisateurs",
+    "payments": "Paiements",
+    "listings": "Annonces",
+    "routes": "Itinéraires suggérés",
+    "sections": {
+      "account": "Compte",
+      "admin": "Administration"
+    },
+    "faq": "FAQ",
+    "groups": {
+      "fleet": "Yachts",
+      "content": "Contenu du site"
+    },
+    "settings": "Paramètres de la plateforme",
+    "popular": "Sélections populaires",
+    "popularYachts": "Yachts populaires"
+  },
+  "UserMenu": {
+    "account": "Compte",
+    "signIn": "Se connecter",
+    "signOut": "Se déconnecter",
+    "profile": "Mon profil",
+    "bookings": "Mes réservations",
+    "referrals": "Parrainages",
+    "credits": "Crédits et solde"
+  },
+  "description": "Location de yachts et de catamarans dans le monde entier. Comparez les bateaux, les dates et les prix, et réservez votre prochaine croisière en quelques minutes.",
+  "title": "YachtSkanner - Location de yachts et de catamarans dans le monde entier",
+  "CookieConsent": {
+    "title": "Cookies",
+    "description": "Nous utilisons des cookies d'analyse pour comprendre comment le site est utilisé et l'améliorer. Rien n'est mesuré tant que vous n'avez pas donné votre accord.",
+    "manage": "Gérer les préférences",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "footerLink": "Cookies",
+    "dialog": {
+      "title": "Votre vie privée",
+      "description": "Choisissez les cookies que ce site peut utiliser. Votre choix est enregistré sur cet appareil et vous pouvez le modifier à tout moment depuis le pied de page.",
+      "close": "Fermer",
+      "alwaysActive": "Toujours actifs",
+      "necessary": {
+        "title": "Nécessaires",
+        "description": "Ils vous maintiennent connecté, protègent les paiements contre la fraude et mémorisent ce choix de cookies. Le site ne fonctionne pas sans eux."
+      },
+      "functional": {
+        "title": "Fonctionnels",
+        "description": "Ils mémorisent les bateaux que vous avez enregistrés et ne comptent qu'une seule fois une visite répétée d'une annonce. Stockés dans votre navigateur, jamais partagés."
+      },
+      "analytics": {
+        "title": "Analyse",
+        "description": "Google Analytics, pour voir quelles pages sont consultées et où les visiteurs rencontrent des difficultés. Aucune publicité, aucun profilage."
+      },
+      "save": "Enregistrer mon choix",
+      "acceptAll": "Tout accepter"
+    }
+  },
+  "Legal": {
+    "terms": "Conditions générales",
+    "privacy": "Politique de confidentialité",
+    "cancellation": "Conditions d'annulation",
+    "pending": "Ce document est en cours de préparation et sera bientôt publié ici. Si vous avez une question à son sujet d'ici là, notre équipe d'assistance se fera un plaisir de vous aider.",
+    "contact": "Contacter l'assistance"
+  }
+}

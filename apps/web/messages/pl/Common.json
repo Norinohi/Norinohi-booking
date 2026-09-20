@@ -1,0 +1,303 @@
+{
+  "crewTypes": {
+    "bareboat": "Bez załogi",
+    "skipper": "Ze skipperem",
+    "full-crew": "Pełna załoga"
+  },
+  "extras": {
+    "payAtCheckIn": "Płatne przy zaokrętowaniu",
+    "dueWithPrepayment": "Płatne razem z przedpłatą",
+    "payNow": "Wliczone w przedpłatę",
+    "includedInPrice": "Wliczone w cenę",
+    "priceOnRequest": "Cena na zapytanie",
+    "confirmWithBase": "Cena nieopublikowana, potwierdź ją w bazie czarterowej",
+    "percentageOfCharter": "{percent}% ceny czarteru",
+    "oneWayOnly": "Tylko czartery w jedną stronę",
+    "measure": {
+      "booking": "{price} za rezerwację",
+      "day": "{price} za dzień",
+      "night": "{price} za noc",
+      "week": "{price} za tydzień",
+      "person": "{price} za osobę",
+      "nightPerson": "{price} za osobę / noc",
+      "dayWithFood": "{price} za dzień z wyżywieniem",
+      "oneWayPerson": "{price} w jedną stronę za osobę",
+      "set": "{price} za zestaw",
+      "service": "{price} za usługę",
+      "piece": "{price} za sztukę",
+      "weekStarted": "{price} za każdy rozpoczęty tydzień",
+      "oneWay": "{price} w jedną stronę",
+      "weekPerson": "{price} za osobę / tydzień",
+      "weekFood": "{price} za tydzień z wyżywieniem",
+      "dayPerson": "{price} za osobę / dzień",
+      "bookingPerson": "{price} za osobę za rezerwację",
+      "pet": "{price} za zwierzę",
+      "cabin": "{price} za kabinę",
+      "twoWeeks": "{price} za 2 tygodnie",
+      "hour": "{price} za godzinę",
+      "engineHour": "{price} za motogodzinę",
+      "halfHour": "{price} za pół godziny",
+      "crewChange": "{price} za zmianę załogi",
+      "personCourse": "{price} za osobę za kurs",
+      "boat": "{price} za łódź",
+      "pack": "{price} za pakiet",
+      "bottle": "{price} za butelkę",
+      "licence": "{price} za licencję",
+      "meal": "{price} za posiłek",
+      "nauticalMile": "{price} za milę morską",
+      "roundTrip": "{price} w obie strony",
+      "litre": "{price} za litr",
+      "weekStartedPerson": "{price} za osobę za każdy rozpoczęty tydzień"
+    }
+  },
+  "resultsCount": "{count, plural, one {Znaleziono # jacht} few {Znaleziono # jachty} many {Znaleziono # jachtów} other {Znaleziono # jachtu}}",
+  "removeFilter": "Usuń filtr {label}",
+  "passwordToggle": {
+    "show": "Pokaż hasło",
+    "hide": "Ukryj hasło"
+  },
+  "sorting": {
+    "label": "Sortuj: {value}",
+    "recommended": "Polecane",
+    "price-asc": "Cena: od najniższej",
+    "price-desc": "Cena: od najwyższej",
+    "rating": "Ocena gości",
+    "newest": "Najnowsze"
+  },
+  "priceBasis": {
+    "label": "Cena: {value}",
+    "aria": "Jaką cenę pokazać",
+    "boat": "Tylko łódź",
+    "charter": "Cały czarter",
+    "hintLabel": "Co obejmują ceny",
+    "boatHint": "cena wynajmu samej łodzi, czyli kwota porównywana przez inne serwisy czarterowe. Obowiązkowe dodatki, takie jak pakiet czarterowy czy sprzątanie końcowe, są doliczane przy rezerwacji.",
+    "charterHint": "łódź wraz ze wszystkimi obowiązkowymi dodatkami (pakiet czarterowy, sprzątanie i inne obowiązkowe opłaty): rzeczywisty koszt czarteru."
+  },
+  "boatCard": {
+    "save": "Dodaj do ulubionych",
+    "remove": "Usuń z ulubionych",
+    "viewDetails": "Zobacz szczegóły",
+    "imageAlt": "{name} zacumowany w {marina}",
+    "openGallery": "Otwórz galerię zdjęć",
+    "priceHintLabel": "Informacje o cenie",
+    "priceFor": "Cena czarteru · {days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}",
+    "priceIndicative": "Cena czarteru · stawka podstawowa, mogą obowiązywać dodatkowe opłaty",
+    "boatPriceFor": "Cena łodzi · {days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}",
+    "boatPriceIndicative": "Cena łodzi · stawka podstawowa, mogą obowiązywać dodatkowe opłaty",
+    "priceListRate": "Cena czarteru · stawka cennikowa przed rabatami, mogą obowiązywać dodatkowe opłaty",
+    "boatPriceListRate": "Cena łodzi · stawka cennikowa przed rabatami, mogą obowiązywać dodatkowe opłaty",
+    "priceForPeriod": "Cena czarteru · za {from, date, dayCompact} - {to, date, dayCompact}",
+    "boatPriceForPeriod": "Cena łodzi · za {from, date, dayCompact} - {to, date, dayCompact}",
+    "priceListRateForPeriod": "Cena czarteru · stawka cennikowa za {from, date, dayCompact} - {to, date, dayCompact} przed rabatami, mogą obowiązywać dodatkowe opłaty",
+    "boatPriceListRateForPeriod": "Cena łodzi · stawka cennikowa za {from, date, dayCompact} - {to, date, dayCompact} przed rabatami, mogą obowiązywać dodatkowe opłaty",
+    "priceListEstimate": "Szacunkowa cena czarteru · według cennika armatora za {nights, plural, one {# noc} few {# noce} many {# nocy} other {# nocy}}, przed rabatami, cena końcowa może się różnić",
+    "boatPriceListEstimate": "Szacunkowa cena łodzi · według cennika armatora za {nights, plural, one {# noc} few {# noce} many {# nocy} other {# nocy}}, przed rabatami, cena końcowa może się różnić",
+    "priceListEstimateForPeriod": "Szacunkowa cena czarteru · według cennika armatora za {from, date, dayCompact} - {to, date, dayCompact}, przed rabatami, cena końcowa może się różnić",
+    "boatPriceListEstimateForPeriod": "Szacunkowa cena łodzi · według cennika armatora za {from, date, dayCompact} - {to, date, dayCompact}, przed rabatami, cena końcowa może się różnić",
+    "priceListRateMayBeLower": "Cena czarteru · stawka cennikowa przed rabatami, cena końcowa może być niższa, mogą obowiązywać dodatkowe opłaty",
+    "boatPriceListRateMayBeLower": "Cena łodzi · stawka cennikowa przed rabatami, cena końcowa może być niższa, mogą obowiązywać dodatkowe opłaty",
+    "priceListRateMayBeLowerForPeriod": "Cena czarteru · stawka cennikowa za {from, date, dayCompact} - {to, date, dayCompact} przed rabatami, cena końcowa może być niższa, mogą obowiązywać dodatkowe opłaty",
+    "boatPriceListRateMayBeLowerForPeriod": "Cena łodzi · stawka cennikowa za {from, date, dayCompact} - {to, date, dayCompact} przed rabatami, cena końcowa może być niższa, mogą obowiązywać dodatkowe opłaty",
+    "priceListEstimateFrom": "Szacunkowa cena czarteru od · cennik armatora za {nights, plural, one {# noc} few {# noce} many {# nocy} other {# nocy}}, przed rabatami, cena końcowa może się różnić",
+    "boatPriceListEstimateFrom": "Szacunkowa cena łodzi od · cennik armatora za {nights, plural, one {# noc} few {# noce} many {# nocy} other {# nocy}}, przed rabatami, cena końcowa może się różnić",
+    "priceListEstimateFromForPeriod": "Szacunkowa cena czarteru od · cennik armatora za {from, date, dayCompact} - {to, date, dayCompact}, przed rabatami, cena końcowa może się różnić",
+    "boatPriceListEstimateFromForPeriod": "Szacunkowa cena łodzi od · cennik armatora za {from, date, dayCompact} - {to, date, dayCompact}, przed rabatami, cena końcowa może się różnić",
+    "priceListEstimateMayBeLower": "Szacunkowa cena czarteru · według cennika armatora za {nights, plural, one {# noc} few {# noce} many {# nocy} other {# nocy}}, przed rabatami, cena końcowa może być niższa",
+    "boatPriceListEstimateMayBeLower": "Szacunkowa cena łodzi · według cennika armatora za {nights, plural, one {# noc} few {# noce} many {# nocy} other {# nocy}}, przed rabatami, cena końcowa może być niższa",
+    "priceListEstimateMayBeLowerForPeriod": "Szacunkowa cena czarteru · według cennika armatora za {from, date, dayCompact} - {to, date, dayCompact}, przed rabatami, cena końcowa może być niższa",
+    "boatPriceListEstimateMayBeLowerForPeriod": "Szacunkowa cena łodzi · według cennika armatora za {from, date, dayCompact} - {to, date, dayCompact}, przed rabatami, cena końcowa może być niższa",
+    "priceFromLabel": "Od",
+    "plusObligatory": "plus {amount} obowiązkowych dodatków",
+    "approximatePrice": "ok.",
+    "chargedIn": "Płatność w {currency}: {amount}",
+    "currencyLabel": "Waluta",
+    "priceOnRequest": "Na zapytanie",
+    "getPrice": "Sprawdź cenę",
+    "weeklyPriceFrom": "Tydzień od {price}",
+    "priceForDatesOnPage": "Sprawdź cenę dla swoich terminów na stronie jachtu",
+    "priceUnavailable": "Niedostępny",
+    "perPerson": "{price} za osobę",
+    "perPersonApprox": "~ {price} za osobę",
+    "perBerth": "{price} za osobę przy {berths} miejscach do spania",
+    "perNight": "{price} za noc",
+    "perNightWithEquivalent": "{price} za noc (≈ {equivalent})",
+    "datesAlternative": "Ta łódź nie jest dostępna w wybranych terminach. Najbliższy czarter:",
+    "prepayment": "Przedpłata za rezerwację: {amount}",
+    "prepaymentInfo": "To część ceny czarteru płatna z góry w celu potwierdzenia rezerwacji. Jest wliczana do całkowitej kwoty, a pozostałą część należy zapłacić przed zaokrętowaniem.",
+    "securityDeposit": "Kaucja zwrotna: {amount}",
+    "securityDepositInfo": "Zwrotna kaucja pobierana przez bazę czarterową na wypadek szkód podczas rejsu. Jest pobierana przy zaokrętowaniu, nie jest częścią ceny i zostaje zwrócona po wyokrętowaniu, jeśli wszystko jest w dobrym stanie.",
+    "specs": {
+      "year": "Rok",
+      "people": "Osoby",
+      "toilets": "Toalety",
+      "showers": "Prysznice",
+      "mainsail": "Typ grota",
+      "cabins": "Kabiny",
+      "length": "Długość",
+      "lengthValue": "{length, number} m"
+    },
+    "battenMainsail": "Grot z listwami",
+    "badges": {
+      "available": "Dostępny",
+      "temporarilyHeld": "Tymczasowo zarezerwowany",
+      "onRequest": "Na zapytanie",
+      "unavailable": "Niedostępny",
+      "bestForFamilies": "Najlepszy dla rodzin",
+      "bestValue": "Najlepsza cena",
+      "new": "Nowość",
+      "discount": "-{percent}%",
+      "petsAllowed": "Zwierzęta dozwolone",
+      "depositInsurance": "Ubezpieczenie kaucji w cenie",
+      "topRated": "Najwyżej oceniany"
+    },
+    "stats": {
+      "booked": "{count, plural, one {# rezerwacja w tym miesiącu} few {# rezerwacje w tym miesiącu} many {# rezerwacji w tym miesiącu} other {# rezerwacji w tym miesiącu}}",
+      "viewed": "{count, plural, one {# osoba oglądała dzisiaj} few {# osoby oglądały dzisiaj} many {# osób oglądało dzisiaj} other {# osoby oglądało dzisiaj}}"
+    },
+    "amenities": {
+      "wifi": "Darmowe Wi-Fi",
+      "solar": "3 panele słoneczne",
+      "paddle": "Darmowa deska SUP",
+      "air": "Klimatyzacja",
+      "waterToys": "Zabawki wodne",
+      "galley": "W pełni wyposażony kambuz",
+      "fridge": "Lodówka i zamrażarka",
+      "tender": "Ponton z silnikiem"
+    },
+    "charterTypes": {
+      "bareboat": "Bez załogi",
+      "bareboatSailingYacht": "Jacht żaglowy bez załogi",
+      "catamaran": "Katamaran"
+    },
+    "crews": {
+      "fullCrew": "Pełna załoga",
+      "skipperOptional": "Skipper opcjonalnie"
+    },
+    "moreAmenities": "{count, plural, one {Pokaż # udogodnienie więcej} few {Pokaż # udogodnienia więcej} many {Pokaż # udogodnień więcej} other {Pokaż # udogodnienia więcej}}",
+    "moreAmenitiesShort": "+{count}",
+    "holdEndsIn": "Blokada kończy się za {time}",
+    "holdEnding": "Blokada dobiega końca, sprawdź ponownie za chwilę",
+    "holdNoDeadline": "Zablokowany do czasu potwierdzenia przez innego klienta"
+  },
+  "gallery": {
+    "close": "Zamknij",
+    "previous": "Poprzednie",
+    "next": "Następne",
+    "zoomIn": "Powiększ",
+    "zoomOut": "Pomniejsz",
+    "slideCounter": "{index} z {total}",
+    "slide": "Slajd",
+    "carousel": "Karuzela",
+    "photoGallery": "Galeria zdjęć",
+    "lightbox": "Przeglądarka zdjęć",
+    "thumbnails": "Miniatury"
+  },
+  "marina": {
+    "viewDetails": "Zobacz szczegóły"
+  },
+  "map": {
+    "open": "Otwórz mapę: {place}",
+    "satellite": "Satelita",
+    "streets": "Mapa",
+    "zoomIn": "Powiększ",
+    "zoomOut": "Pomniejsz",
+    "locate": "Pokaż moją lokalizację",
+    "locateUnavailable": "Lokalizacja niedostępna",
+    "frameAll": "Pokaż wszystko"
+  },
+  "leadForm": {
+    "fields": {
+      "name": {
+        "label": "Imię i nazwisko",
+        "placeholder": "Jan Kowalski"
+      },
+      "email": {
+        "label": "E-mail",
+        "placeholder": "jan@example.com"
+      },
+      "phone": {
+        "label": "Telefon (opcjonalnie)",
+        "placeholder": "+48 123 456 789"
+      },
+      "country": {
+        "label": "Kraj",
+        "placeholder": "Wybierz kraj"
+      },
+      "message": {
+        "label": "Wiadomość (opcjonalnie)",
+        "placeholder": "Czy jest coś jeszcze, co powinniśmy wiedzieć o Twoim rejsie?"
+      }
+    },
+    "errors": {
+      "nameRequired": "Podaj imię i nazwisko",
+      "emailInvalid": "Podaj prawidłowy adres e-mail",
+      "submitFailed": "Nie udało się wysłać zapytania. Spróbuj ponownie."
+    }
+  },
+  "charterPeriod": {
+    "day": {
+      "booked": "Zarezerwowany",
+      "held": "Zablokowany, może się zwolnić"
+    },
+    "or": " lub ",
+    "daysAndNights": "{days}, {nights}",
+    "weekdayRange": "{from} - {to}",
+    "wholeWeeksAnyDay": "Dowolny dzień rozpoczęcia, pełne tygodnie",
+    "wholeWeeksFromDays": "Rozpoczęcie: {days}, pełne tygodnie",
+    "weekdaysToDay": "Rozpoczęcie: {days}, zakończenie: {to}",
+    "weekdayStart": "Rozpoczęcie: {day}",
+    "weekdayEnd": "Zakończenie: {day}",
+    "nightsExact": "{count, plural, one {# noc} few {# noce} many {# nocy} other {# nocy}}",
+    "nightsFrom": "od {count, plural, one {# nocy} few {# nocy} many {# nocy} other {# nocy}}",
+    "nightsUpTo": "do {count, plural, one {# nocy} few {# nocy} many {# nocy} other {# nocy}}",
+    "nightsRange": "od {min} do {max} nocy",
+    "label": "Okres czarteru",
+    "rulesMore": "Pokaż wszystkie zasady czarteru",
+    "rulesLess": "Pokaż mniej"
+  },
+  "countryPicker": {
+    "search": "Szukaj krajów",
+    "loading": "Ładowanie krajów…",
+    "empty": "Brak pasujących krajów"
+  },
+  "errors": {
+    "requestFailed": "Coś poszło nie tak",
+    "retry": "Ponów"
+  },
+  "notFound": {
+    "title": "Nie znaleziono strony",
+    "description": "Strona, której szukasz, nie istnieje lub została przeniesiona.",
+    "home": "Wróć na stronę główną",
+    "browse": "Przeglądaj jachty"
+  },
+  "error": {
+    "title": "Coś poszło nie tak",
+    "description": "Nie udało się załadować tej strony. Spróbuj ponownie lub wróć za chwilę.",
+    "retry": "Spróbuj ponownie",
+    "home": "Wróć na stronę główną"
+  },
+  "ui": {
+    "close": "Zamknij",
+    "previousPage": "Przejdź do poprzedniej strony",
+    "nextPage": "Przejdź do następnej strony",
+    "pagination": "Paginacja",
+    "breadcrumb": "Ścieżka nawigacji",
+    "previousPhoto": "Poprzednie zdjęcie",
+    "nextPhoto": "Następne zdjęcie",
+    "goToPhoto": "Przejdź do zdjęcia {index} z {total}",
+    "showPhoto": "Pokaż zdjęcie {index}",
+    "clear": "Wyczyść {label}",
+    "noOptions": "Brak opcji",
+    "noMatches": "Brak wyników",
+    "showPassword": "Pokaż hasło",
+    "hidePassword": "Ukryj hasło",
+    "previousMonth": "Poprzedni miesiąc",
+    "nextMonth": "Następny miesiąc",
+    "rating": "Ocena {rating} na {max}"
+  },
+  "quoteLines": {
+    "referral-welcome": "Powitalny rabat z polecenia",
+    "referral-credit": "Środki z polecenia",
+    "provider-discount": "Rabat na czarter"
+  }
+}

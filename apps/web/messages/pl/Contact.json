@@ -1,0 +1,25 @@
+{
+  "title": "Skontaktuj się z nami",
+  "subtitle": "Umów rozmowę lub wyślij nam wiadomość, jak Ci wygodniej.",
+  "options": {
+    "call": {
+      "title": "Umów krótką rozmowę",
+      "description": "Wybierz dogodny termin krótkiej rozmowy z ekspertem od czarterów."
+    },
+    "message": {
+      "title": "Wyślij wiadomość",
+      "description": "Napisz, czego szukasz, a odpowiemy Ci e-mailem."
+    }
+  },
+  "placeholder": {
+    "title": "Rezerwacja terminów już wkrótce",
+    "description": "Umawianie rozmów online nie jest jeszcze dostępne. Wyślij nam wiadomość, a ustalimy dogodny dla Ciebie termin.",
+    "cta": "Wyślij wiadomość"
+  },
+  "send": "Wyślij wiadomość",
+  "sent": "Dziękujemy! Ekspert od czarterów wkrótce się z Tobą skontaktuje.",
+  "submitted": {
+    "title": "Dziękujemy, odezwiemy się",
+    "description": "Jeden z naszych ekspertów od czarterów wkrótce się z Tobą skontaktuje."
+  }
+}

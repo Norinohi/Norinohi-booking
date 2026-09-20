@@ -14,7 +14,7 @@
   "noResults": "No routes match these filters.",
   "resetFilters": "Reset filters",
   "allRoutes": "All routes",
-  "showRouteYachts": "Show yachts for this route",
+  "showRouteYachts": "Show yachts",
   "itinerary": "Itinerary",
   "nearbyMarinas": "Marinas with yachts along the route",
   "loadingMarinas": "Looking for marinas…",
@@ -33,5 +33,9 @@
   "filtersButton": "Filters{count, plural, =0 {} other { (#)}}",
   "back": "Back",
   "closeFilters": "Close filters",
-  "showRoutes": "{count, plural, =0 {No routes} one {Show # route} other {Show # routes}}"
+  "showRoutes": "{count, plural, =0 {No routes} one {Show # route} other {Show # routes}}",
+  "hidePanel": "Hide panel",
+  "showDetails": "Route details",
+  "closeDetails": "Close route details",
+  "showOnMap": "Show on map"
 }

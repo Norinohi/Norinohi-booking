@@ -1,0 +1,22 @@
+{
+  "title": "Mine bookinger",
+  "history": "Historik",
+  "anyDates": "Alle datoer",
+  "clearDates": "Ryd datoer",
+  "emptyTitle": "Ingen både endnu",
+  "emptyDescription": "Gå på opdagelse blandt bådene og planlæg din første tur - dine bookinger dukker op her.",
+  "cancel": {
+    "action": "Afbestil booking",
+    "title": "Vil du afbestille denne booking?",
+    "description": "Det kan ikke fortrydes, og charterfirmaet får besked.",
+    "reasonLabel": "Årsag (valgfrit)",
+    "reasonPlaceholder": "Fortæl os, hvorfor du afbestiller",
+    "confirm": "Afbestil booking",
+    "keep": "Behold booking",
+    "success": "Din booking er afbestilt.",
+    "error": "Vi kunne ikke afbestille din booking. Prøv igen."
+  },
+  "statusCancelled": "Afbestilt",
+  "payBalance": "Betal {amount}",
+  "completePayment": "Gennemfør betaling {amount}"
+}

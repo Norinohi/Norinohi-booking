@@ -5,6 +5,7 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowLeft, List, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ComponentProps, Ref } from "react";
+import { useState } from "react";
 
 import { FiltersPanel, FiltersPopover, type FiltersState } from "@/components/shared/form/filters";
 import { Link } from "@/i18n/navigation";
@@ -72,6 +73,7 @@ export default function MapChrome({
   controlsRef,
 }: MapChromeProps) {
   const t = useTranslations("YachtsMap");
+  const [panelOpen, setPanelOpen] = useState(true);
 
   return (
     <div className="pointer-events-none absolute inset-0 flex flex-col gap-3 px-3 pt-3 pb-8 md:gap-5 md:pt-6 md:px-13.5 2xl:flex-row 2xl:items-start 2xl:px-17.5 2xl:pb-17.5">
@@ -95,18 +97,23 @@ export default function MapChrome({
         >
           <ArrowLeft />
         </Link>
-        <FiltersPanel
-          ref={filtersRef}
-          scrollable
-          value={filters}
-          onApply={onFiltersChange}
-          className="pointer-events-auto hidden max-h-full w-83.5 shrink-0 2xl:flex"
-        />
+        {/* From 2xl the panel stands open beside the map and can be put away from its own header;
+            the popover is what is left then, as it is at every narrower width. */}
+        {panelOpen ? (
+          <FiltersPanel
+            ref={filtersRef}
+            scrollable
+            value={filters}
+            onApply={onFiltersChange}
+            onClose={() => setPanelOpen(false)}
+            className="pointer-events-auto hidden max-h-full w-83.5 shrink-0 2xl:flex"
+          />
+        ) : null}
         <FiltersPopover
-          variant="primary"
+          variant="brand"
           value={filters}
           onApply={onFiltersChange}
-          className="pointer-events-auto w-auto 2xl:hidden"
+          className={cn("pointer-events-auto w-auto", panelOpen && "2xl:hidden")}
         />
 
         <div

@@ -1,0 +1,29 @@
+{
+  "heading": "Wyszukiwarka czarterów jachtów",
+  "searchByMap": "Szukaj na mapie",
+  "emptyTitle": "Nie znaleziono jachtów dla wybranych filtrów",
+  "emptyDescription": "Spróbuj zmienić daty, budżet lub lokalizację - pomożemy Ci znaleźć idealny jacht.",
+  "searchBar": {
+    "location": "Lokalizacja",
+    "startTyping": "Zacznij pisać",
+    "searchCountries": "Szukaj krajów...",
+    "addDates": "Dodaj daty",
+    "clearDates": "Wyczyść daty",
+    "anyBoat": "Dowolna łódź",
+    "search": "Szukaj",
+    "noLocations": "Brak pasujących miejsc",
+    "popularCountries": "Popularne kraje",
+    "popularBoatTypes": "Popularne typy łodzi",
+    "allBoatTypes": "Wszystkie typy łodzi",
+    "clearLocation": "Wyczyść lokalizację",
+    "freeText": "Nazwa, model lub firma",
+    "kinds": {
+      "country": "Kraj",
+      "region": "Akwen",
+      "city": "Miasto",
+      "base": "Marina"
+    },
+    "clearBoatType": "Wyczyść typ łodzi"
+  },
+  "paginationSummary": "Wyświetlono {from}-{to} z {total}"
+}

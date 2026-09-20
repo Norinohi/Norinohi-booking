@@ -1,0 +1,29 @@
+{
+  "heading": "Søk etter yachtcharter",
+  "searchByMap": "Søk på kartet",
+  "emptyTitle": "Ingen yachter funnet med filtrene dine",
+  "emptyDescription": "Prøv å justere datoer, budsjett eller sted - vi hjelper deg med å finne den perfekte båten.",
+  "searchBar": {
+    "location": "Sted",
+    "startTyping": "Begynn å skrive",
+    "searchCountries": "Søk etter land...",
+    "addDates": "Legg til datoer",
+    "clearDates": "Fjern datoer",
+    "anyBoat": "Alle båter",
+    "search": "Søk",
+    "noLocations": "Ingen destinasjoner passer",
+    "popularCountries": "Populære land",
+    "popularBoatTypes": "Populære båttyper",
+    "allBoatTypes": "Alle båttyper",
+    "clearLocation": "Fjern sted",
+    "freeText": "Navn, modell eller selskap",
+    "kinds": {
+      "country": "Land",
+      "region": "Seilområde",
+      "city": "By",
+      "base": "Marina"
+    },
+    "clearBoatType": "Fjern båttype"
+  },
+  "paginationSummary": "Viser {from}-{to} av {total}"
+}

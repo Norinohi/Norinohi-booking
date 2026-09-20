@@ -1,0 +1,1445 @@
+{
+  "Commissions": {
+    "title": "Provisjonssatser",
+    "subtitle": "Hva {brand} tjener gjennom hver leverandør, og fra når.",
+    "add": "Legg til sats",
+    "edit": "Rediger",
+    "switchOff": "Slå av",
+    "switchOn": "Slå på",
+    "switchedOff": "Satsen er slått av",
+    "switchedOn": "Satsen er slått på",
+    "created": "Satsen er lagt til",
+    "updated": "Satsen er lagret",
+    "error": "Kunne ikke laste provisjonssatsene",
+    "empty": "Ingen satser ennå. Før en er lagt inn, spiller provisjon ingen rolle når det velges hvilket tilbud en besøkende ser.",
+    "emptyFiltered": "Ingen satser passer med disse filtrene.",
+    "allOperators": "Alle operatører",
+    "openEnded": "Ingen sluttdato",
+    "fromDate": "Fra {date}",
+    "untilDate": "Til {date}",
+    "note": "En sats avgjør bare mellom to tilbud som allerede er like på pris og obligatorisk ekstrautstyr. Den kan aldri være grunnen til at en besøkende får vist en dyrere båt. Ingenting i salgsflyten leser disse satsene ennå.",
+    "filters": {
+      "provider": "Leverandør",
+      "anyProvider": "Alle leverandører",
+      "status": "Status",
+      "anyStatus": "Alle statuser"
+    },
+    "status": {
+      "active": "Aktiv",
+      "scheduled": "Planlagt",
+      "expired": "Utløpt",
+      "inactive": "Slått av"
+    },
+    "table": {
+      "provider": "Leverandør",
+      "operator": "Operatør",
+      "rate": "Sats",
+      "window": "Gyldig",
+      "status": "Status",
+      "added": "Lagt til",
+      "actions": "Handlinger"
+    },
+    "dialog": {
+      "createTitle": "Legg til en provisjonssats",
+      "editTitle": "Rediger provisjonssats",
+      "description": "Hva vi tjener på et salg gjennom denne leverandøren. La operatørfeltet stå tomt for å dekke alle charterselskaper hos denne leverandøren.",
+      "provider": "Leverandør",
+      "operator": "Operatør",
+      "operatorSearch": "Søk etter operatører",
+      "allOperators": "Alle operatører hos denne leverandøren",
+      "ratePct": "Sats (%)",
+      "startsAt": "Starter",
+      "endsAt": "Slutter",
+      "windowHint": "Begge datoene er valgfrie og inkluderes. La dem stå tomme for en avtale som løper til den reforhandles.",
+      "cancel": "Avbryt",
+      "save": "Lagre",
+      "saving": "Lagrer…",
+      "errors": {
+        "rateRequired": "Skriv inn en sats",
+        "rateRange": "Bruk et tall mellom 0 og 100",
+        "endsBeforeStarts": "Sluttdatoen kan ikke være før startdatoen"
+      }
+    }
+  },
+  "Bookings": {
+    "title": "Bookinger",
+    "subtitle": "Alle bookinger på plattformen, nyeste først. Åpne en for å gjøre den opp.",
+    "createdAt": "Opprettet {at}",
+    "excluded": "Ikke reell omsetning",
+    "empty": "Ingen booking passer med disse filtrene.",
+    "error": "Bookingene kunne ikke lastes.",
+    "filters": {
+      "search": "Søk på referanse, navn eller e-post",
+      "status": "Status",
+      "allStatuses": "Alle statuser",
+      "includeExcluded": "Ta med bookinger merket som test"
+    },
+    "table": {
+      "reference": "Referanse",
+      "customer": "Kunde",
+      "charter": "Yacht",
+      "dates": "Datoer",
+      "total": "Totalt",
+      "collected": "Innkrevd",
+      "status": "Status"
+    },
+    "status": {
+      "DRAFT": "Utkast",
+      "QUOTED": "Tilbud gitt",
+      "OPTION_PENDING": "Reserverer",
+      "OPTION_HELD": "Reservert",
+      "OPTION_EXPIRED": "Reservasjon utløpt",
+      "QUOTE_EXPIRED": "Tilbud utløpt",
+      "PAYMENT_PENDING": "Venter på betaling",
+      "PAYMENT_FAILED": "Betaling mislyktes",
+      "CONFIRMING": "Bekrefter",
+      "CONFIRMED": "Bekreftet",
+      "PROVIDER_REJECTED": "Leverandøren avslo",
+      "CANCELLED": "Avbestilt",
+      "REFUND_PENDING": "Refusjon forfalt",
+      "REFUNDED": "Refundert"
+    }
+  },
+  "Users": {
+    "title": "Brukere",
+    "subtitle": "Alle kontoer med kontaktopplysninger og hvor mye de har booket.",
+    "createdAt": "Ble med {at}",
+    "unverified": "E-post ikke bekreftet",
+    "confirmed": "{count, plural, =0 {ingen bekreftet} one {# bekreftet} other {# bekreftet}}",
+    "total": "{count, plural, one {# bruker} other {# brukere}}",
+    "empty": "Ingen bruker passer med disse filtrene.",
+    "error": "Brukerne kunne ikke lastes.",
+    "filters": {
+      "search": "Søk på navn, e-post eller telefon",
+      "role": "Rolle",
+      "allRoles": "Alle roller",
+      "status": "Status",
+      "allStatuses": "Alle statuser",
+      "bookings": "Bookinger",
+      "anyBookings": "Med eller uten bookinger",
+      "withBookings": "Har bookinger",
+      "withoutBookings": "Ingen bookinger",
+      "sort": "Sorter"
+    },
+    "sort": {
+      "newest": "Nyeste først",
+      "mostBookings": "Flest bookinger",
+      "name": "Navn A-Å"
+    },
+    "table": {
+      "user": "Bruker",
+      "email": "E-post",
+      "phone": "Telefon",
+      "bookings": "Bookinger",
+      "lastBooking": "Siste booking",
+      "status": "Status"
+    },
+    "role": {
+      "customer": "Kunde",
+      "staff": "Ansatt",
+      "admin": "Administrator"
+    },
+    "status": {
+      "active": "Aktiv",
+      "guest": "Gjest, ikke overtatt",
+      "deactivated": "Deaktivert"
+    }
+  },
+  "Duplicates": {
+    "title": "Duplikatkontroll",
+    "subtitle": "Slå sammen de like annonsene to leverandører har sendt for den samme yachten.",
+    "metrics": {
+      "title": "Treffsikkerhet for matching",
+      "subtitle": "Hvor ofte hver regel har hatt rett så langt.",
+      "decided": "{count, plural, =0 {Ingen gjennomgåtte par ennå} one {# gjennomgått par bak disse tallene} other {# gjennomgåtte par bak disse tallene}}",
+      "error": "Kunne ikke laste treffsikkerhetstallene",
+      "empty": "Ingenting er foreslått ennå.",
+      "noSample": "Ikke nok avgjørelser",
+      "note": "Presisjon er bekreftede par delt på bekreftede og avviste til sammen. Sammenslåinger som senere ble delt opp igjen, teller mot regelen. Par som er satt til side, holdes utenfor: ingen kunne avgjøre dem, og å telle dem som feil ville gi et for dårlig bilde av en regel som gjør det bra på dem den faktisk avgjør.",
+      "table": {
+        "rule": "Regel",
+        "band": "Konfidens",
+        "proposed": "Foreslått",
+        "confirmed": "Slått sammen",
+        "rejected": "Ikke duplikater",
+        "undone": "Angret",
+        "precision": "Presisjon"
+      }
+    },
+    "filter": {
+      "label": "Avgjørelse",
+      "pending": "Venter",
+      "confirmed": "Sammenslåtte duplikater",
+      "rejected": "Ikke duplikater",
+      "deferred": "Ikke avgjort"
+    },
+    "empty": {
+      "pending": "Ingenting å gå gjennom. Alle duplikatkandidater er avgjort.",
+      "confirmed": "Ingen par er slått sammen ennå.",
+      "rejected": "Ingen par er merket som ulike yachter ennå.",
+      "deferred": "Ingenting er satt til side ennå.",
+      "filtered": "Ingen par passer med disse filtrene. Utvid konfidens- eller regelfilteret for å se resten."
+    },
+    "error": "Kunne ikke laste duplikatkøen",
+    "confidence": "{value} % treff",
+    "confidenceUnknown": "Ukjent konfidens",
+    "proposed": "Foreslått {date}",
+    "reviewed": "Gjennomgått {date}",
+    "undone": "Angret",
+    "signals": "Matchet på {signals}",
+    "sideA": "Side A",
+    "sideB": "Side B",
+    "keep": "Behold denne annonsen",
+    "keeping": "Slår sammen…",
+    "reject": "Ikke et duplikat",
+    "reopen": "Legg tilbake i køen",
+    "differs": "avviker",
+    "differsLegend": "Uthevede verdier er forskjellige på de to sidene.",
+    "noImage": "Ingen bilde",
+    "unavailable": {
+      "title": "Annonsen er utilgjengelig",
+      "description": "Denne annonsen ble slettet etter at paret ble foreslått."
+    },
+    "fields": {
+      "provider": "Leverandør",
+      "externalId": "Leverandør-ID",
+      "status": "Annonsestatus",
+      "matchStatus": "Matchstatus",
+      "operator": "Operatør",
+      "model": "Modell",
+      "year": "Byggeår",
+      "length": "Lengde",
+      "cabins": "Lugarer",
+      "berths": "Køyeplasser",
+      "base": "Hjemmebase",
+      "location": "Sted"
+    },
+    "lengthValue": "{value} m",
+    "listingStatus": {
+      "draft": "Utkast",
+      "published": "Publisert",
+      "hidden": "Skjult"
+    },
+    "matchStatus": {
+      "unmatched": "Ikke matchet",
+      "auto": "Automatisk matchet",
+      "confirmed": "Bekreftet",
+      "rejected": "Avvist"
+    },
+    "showDetail": "Gå gjennom alle detaljer",
+    "showSources": "Kilder",
+    "detailTitle": "Full sammenligning",
+    "detailSubtitle": "Alle bilder og spesifikasjoner begge leverandørene har sendt for dette paret.",
+    "detailError": "Kunne ikke laste den fulle sammenligningen",
+    "photoPosition": "{index} / {total}",
+    "openPhoto": "Åpne bilde {index}",
+    "amenitiesTitle": "Utstyr ({count})",
+    "noAmenities": "Ingen utstyr registrert",
+    "descriptionTitle": "Beskrivelse fra leverandøren",
+    "noDescription": "Ingen beskrivelse fra leverandøren",
+    "yes": "Ja",
+    "no": "Nei",
+    "litresValue": "{value} l",
+    "detailFields": {
+      "category": "Kategori",
+      "builder": "Verft",
+      "crewType": "Mannskap",
+      "beam": "Bredde",
+      "draft": "Dypgang",
+      "heads": "Toaletter",
+      "showers": "Dusjer",
+      "engines": "Motorer",
+      "enginePower": "Motoreffekt",
+      "fuelType": "Drivstofftype",
+      "fuelCapacity": "Drivstoffkapasitet",
+      "waterCapacity": "Vannkapasitet",
+      "propulsion": "Fremdrift",
+      "steering": "Styring",
+      "sail": "Rigg",
+      "deposit": "Depositum",
+      "depositInsurance": "Depositumsforsikring",
+      "pets": "Kjæledyr tillatt",
+      "currency": "Valuta",
+      "rating": "Leverandørvurdering",
+      "reviews": "Anmeldelser hos leverandøren",
+      "freshness": "Sist synkronisert",
+      "updated": "Sist oppdatert"
+    },
+    "summary": "{pairs, plural, =0 {Ingen par} one {# par} other {# par}} · {yachts, plural, =0 {ingen yachter} one {# yacht} other {# yachter}}",
+    "sortNote": "høyeste konfidens først",
+    "sortNoteReviewed": "sist avgjorte først",
+    "optionCount": "{label} ({count})",
+    "filters": {
+      "confidence": "Matchkonfidens",
+      "anyConfidence": "Alle konfidensnivåer",
+      "matchType": "Matchet på",
+      "anyMatchType": "Alle regler",
+      "any": "Alle",
+      "confidenceValue": "Konfidens: {value}",
+      "matchTypeValue": "Regel: {value}"
+    },
+    "confidenceBand": {
+      "high": "Høy (90 % +)",
+      "medium": "Middels (70-89 %)",
+      "low": "Lav (under 70 %)",
+      "unknown": "Uten poengsum"
+    },
+    "matchType": {
+      "name+model+year": "Navn + modell + år",
+      "base+model+year": "Base + modell + år",
+      "model+year": "Bare modell + år",
+      "model+yearBuilt": "Modell + byggeår",
+      "name+base": "Navn + køyeplass"
+    },
+    "signalFields": {
+      "name": "Navn",
+      "base": "Base",
+      "area": "Område",
+      "length": "Lengde",
+      "cabins": "Lugarer",
+      "berths": "Køyeplasser",
+      "heads": "Toaletter",
+      "builder": "Verft",
+      "operator": "Operatør",
+      "model": "Modell",
+      "year": "Byggeår"
+    },
+    "toast": {
+      "confirmed": "Slått sammen. {count} leverandørkilder peker nå på annonsen som ble beholdt.",
+      "confirmedWithClosed": "Slått sammen. {count} leverandørkilder peker nå på annonsen som ble beholdt, og {closed} andre par ble lukket sammen med den.",
+      "rejected": "Registrert som to ulike yachter.",
+      "conflict": "Noen andre har allerede gått gjennom dette paret. Laster køen på nytt.",
+      "error": "Noe gikk galt. Prøv igjen.",
+      "deferred": "Satt til side til senere. Det telles verken for eller mot matchingen.",
+      "reopened": "Tilbake i køen, venter på å bli avgjort på nytt."
+    },
+    "defer": "Sett til side",
+    "notePlaceholder": "Hvorfor? (valgfritt)",
+    "noteLabel": "Notat fra den som gikk gjennom",
+    "noteWas": "Notat: {note}"
+  },
+  "Sync": {
+    "reliability": {
+      "title": "Leverandørenes pålitelighet",
+      "subtitle": "Hvor ofte hver leverandør svarte mens en besøkende sto i kassen.",
+      "window": "Måleperiode",
+      "windowValue": "Siste {days} dager",
+      "error": "Kunne ikke laste pålitelighetstallene",
+      "empty": "Ingen leverandør er spurt om pris i denne perioden.",
+      "noSample": "Ingen data",
+      "milliseconds": "{value} ms",
+      "note": "Et avslag teller som et svar: leverandøren ble nådd og sa at perioden er borte, noe som er et faktum om båten og ikke en ødelagt kobling. Bare en feil eller et tidsavbrudd teller mot en leverandør. Forespørsler som vår egen bufrede kalender avviste før noen leverandør ble kontaktet, holdes helt utenfor tallet. Ingenting i salgsflyten leser disse tallene ennå.",
+      "table": {
+        "provider": "Leverandør",
+        "asked": "Spurt",
+        "answered": "Besvart",
+        "failed": "Uten svar",
+        "successRatio": "Besvart",
+        "latency": "Median svartid"
+      }
+    },
+    "title": "Synkroniseringshistorikk",
+    "subtitle": "Alle katalog- og ledighetskjøringer, nyeste først.",
+    "controls": {
+      "provider": "Leverandør som skal synkroniseres",
+      "allProviders": "Alle leverandører",
+      "startCatalogue": "Synkroniser katalog",
+      "startAvailability": "Synkroniser ledighet",
+      "started": "{count, plural, one {# kjøring startet} other {# kjøringer startet}}",
+      "skipped": "{count, plural, one {# leverandør importerer allerede} other {# leverandører importerer allerede}}",
+      "noProviders": "Ingen kobling er aktivert.",
+      "capabilities": "Aktiv kobling: {provider}",
+      "capability": {
+        "supportsLiveQuote": "Sanntidspris",
+        "supportsOptions": "Reservasjoner",
+        "supportsExtrasMutation": "Redigerbart ekstrautstyr",
+        "supportsWebhooks": "Webhooks"
+      },
+      "hint": "En kjøring åpnes med én gang og fortsetter etter at denne siden er lukket. Resultatet vises i tabellen under."
+    },
+    "maintenance": {
+      "sweep": "La utdaterte reservasjoner utløpe",
+      "remind": "Send påminnelser om restbeløp",
+      "swept": "{count, plural, one {# booking utløpt} other {# bookinger utløpt}}, {reaped, plural, one {# synkroniseringskjøring ryddet} other {# synkroniseringskjøringer ryddet}}.",
+      "staleConfirmations": "{count, plural, one {# booking har hengt seg opp i bekreftelse} other {# bookinger har hengt seg opp i bekreftelse}}. Spør leverandøren om reservasjonen finnes.",
+      "releaseFailures": "{count, plural, one {# leverandørplass kunne ikke frigis} other {# leverandørplasser kunne ikke frigis}}.",
+      "reminded": "{count, plural, one {# påminnelse sendt} other {# påminnelser sendt}}.",
+      "remindSkipped": "{count, plural, one {# booking har ingen e-postadresse å sende til} other {# bookinger har ingen e-postadresse å sende til}}.",
+      "hint": "Begge kjører allerede på et fast tidsskjema. Det er trygt å kjøre en manuelt: utløp skjer med compare-and-set, og hver delbetaling får bare én påminnelse."
+    },
+    "filters": {
+      "provider": "Leverandør",
+      "kind": "Type",
+      "status": "Status",
+      "allProviders": "Alle leverandører",
+      "allKinds": "Alle typer",
+      "allStatuses": "Alle statuser"
+    },
+    "table": {
+      "provider": "Leverandør",
+      "kind": "Type",
+      "status": "Status",
+      "results": "Resultater",
+      "errors": "Feil",
+      "started": "Startet",
+      "finished": "Fullført",
+      "details": "Detaljer"
+    },
+    "kind": {
+      "catalogue": "Katalog",
+      "availability": "Ledighet",
+      "pricing": "Priser",
+      "media": "Medier"
+    },
+    "status": {
+      "pending": "Venter",
+      "running": "Kjører",
+      "success": "Vellykket",
+      "failed": "Mislyktes",
+      "partial": "Delvis"
+    },
+    "counts": {
+      "created": "{count, plural, one {# opprettet} other {# opprettet}}",
+      "updated": "{count, plural, one {# oppdatert} other {# oppdatert}}",
+      "skipped": "{count, plural, one {# hoppet over} other {# hoppet over}}",
+      "failed": "{count, plural, one {# mislyktes} other {# mislyktes}}"
+    },
+    "empty": "Ingen synkroniseringskjøringer ennå",
+    "error": "Kunne ikke laste synkroniseringskjøringene",
+    "pending": "Ikke startet",
+    "details": {
+      "show": "Vis feil",
+      "hide": "Skjul feil",
+      "title": "Feil fra denne kjøringen",
+      "empty": "Denne kjøringen registrerte ingen feil.",
+      "error": "Kunne ikke laste denne kjøringen",
+      "unavailable": "Feildetaljer er ikke tilgjengelige for denne leverandøren."
+    },
+    "errorType": {
+      "rate_limited": "Ratebegrenset",
+      "transient": "Forbigående",
+      "auth": "Autentisering",
+      "not_found": "Ikke funnet",
+      "contract": "Kontrakt"
+    },
+    "unreleasedOptions": {
+      "title": "Plasser som fortsatt holdes av en leverandør",
+      "subtitle": "Avbestilt her, men operatøren nektet å ta uken tilbake. Den selges til ingen før den frigis eller leverandørens egen reservasjon går ut.",
+      "empty": "Ingenting holdes mot oss.",
+      "reference": "Booking",
+      "yacht": "Yacht",
+      "dates": "Datoer",
+      "period": "{from} til {to}",
+      "provider": "Leverandør",
+      "optionId": "Opsjons-ID",
+      "hold": "Reservasjon",
+      "refusedAt": "Avslått",
+      "reason": "Det leverandøren sa",
+      "retry": "Spør på nytt",
+      "holdUnknown": "Ikke publisert",
+      "lapsed": "Utløpt",
+      "holdsUntil": "Reservert til {when}",
+      "released": "{reference}: leverandøren ga fra seg plassen.",
+      "refusedAgain": "{reference}: leverandøren avslo igjen.",
+      "retryFailed": "{reference}: fikk ikke kontakt med leverandøren."
+    }
+  },
+  "Audit": {
+    "title": "Revisjonslogg",
+    "subtitle": "Alle handlinger fra ansatte og alle registrerte feil, nyeste først. Oppføringer skrives én gang og redigeres aldri.",
+    "filters": {
+      "entityType": "Entitetstype",
+      "allEntities": "Alle entiteter",
+      "action": "Handling",
+      "allActions": "Alle handlinger",
+      "entityId": "Entitets-ID",
+      "entityIdPlaceholder": "Lim inn en fullstendig ID",
+      "source": "Kilde",
+      "allSources": "Alle kilder"
+    },
+    "table": {
+      "when": "Når",
+      "actor": "Hvem",
+      "action": "Handling",
+      "entity": "Entitet",
+      "entityId": "ID",
+      "details": "Detaljer"
+    },
+    "action": {
+      "create": "Opprettet",
+      "update": "Oppdatert",
+      "delete": "Slettet",
+      "sync": "Synkronisert",
+      "merge": "Slått sammen",
+      "price_adjustment": "Prisendring",
+      "error": "Feil"
+    },
+    "entity": {
+      "booking": "Booking",
+      "booking_enquiry": "Bookingspørsmål",
+      "discount": "Kampanjekode",
+      "invoice_request": "Faktura",
+      "lead": "Henvendelse",
+      "listing": "Annonse",
+      "listing_duplicate_candidate": "Duplikat",
+      "maintenance": "Vedlikeholdsjobb",
+      "facet_media": "Fasettbilde",
+      "facet_media_rank": "Rekkefølge på fasettbilder",
+      "faq": "Ofte stilte spørsmål",
+      "marketplace_settings": "Innstillinger for markedsplassen",
+      "popular_yachts_config": "Populære yachter",
+      "provider_commission": "Leverandørprovisjon",
+      "suggested_route": "Foreslått rute",
+      "suggested_route_featured": "Fremhevet rute",
+      "suggested_route_stop": "Rutestopp",
+      "procedure": "API-operasjon",
+      "job": "Planlagt jobb",
+      "stripe_event": "Stripe-hendelse",
+      "outbox_message": "Utboksmelding",
+      "provider": "Leverandør"
+    },
+    "details": {
+      "show": "Vis",
+      "hide": "Skjul",
+      "before": "Før",
+      "after": "Etter",
+      "metadata": "Kontekst"
+    },
+    "source": {
+      "admin_action": "Handling fra ansatt",
+      "server": "Server",
+      "provider": "Leverandør",
+      "stripe_webhook": "Stripe-webhook",
+      "job": "Planlagt jobb"
+    },
+    "errorDetails": {
+      "title": "Hva som feilet",
+      "operation": "Operasjon",
+      "source": "Kilde",
+      "code": "Kode",
+      "status": "Status",
+      "message": "Melding",
+      "causes": "Forårsaket av",
+      "vendor": "Leverandør",
+      "context": "Kontekst"
+    },
+    "actorGone": "Slettet konto",
+    "actorSystem": "System",
+    "empty": "Ingenting er registrert ennå.",
+    "error": "Revisjonsloggen kunne ikke lastes."
+  },
+  "Inbox": {
+    "title": "Innboks",
+    "subtitle": "Spørsmål om eksisterende bookinger og henvendelser fra folk som fortsatt velger.",
+    "tabs": {
+      "enquiries": "Bookingspørsmål",
+      "leads": "Henvendelser"
+    },
+    "enquiries": {
+      "filters": {
+        "status": "Status",
+        "allStatuses": "Alle statuser",
+        "search": "Søk på e-post eller bookingreferanse"
+      },
+      "status": {
+        "open": "Åpen",
+        "answered": "Besvart",
+        "closed": "Lukket"
+      },
+      "table": {
+        "received": "Mottatt",
+        "customer": "Kunde",
+        "question": "Spørsmål",
+        "status": "Status",
+        "booking": "Booking",
+        "actions": "Handlinger"
+      },
+      "actions": {
+        "reply": "Svar",
+        "replyAgain": "Svar på nytt",
+        "close": "Lukk",
+        "reopen": "Gjenåpne"
+      },
+      "answered": "Besvart: {answer}",
+      "empty": "Ingenting her - ingen spørsmål passer med disse filtrene.",
+      "error": "Vi klarte ikke å laste spørsmålene."
+    },
+    "leads": {
+      "filters": {
+        "status": "Status",
+        "allStatuses": "Alle statuser",
+        "kind": "Type",
+        "allKinds": "Alle typer",
+        "search": "Søk på navn eller e-post"
+      },
+      "status": {
+        "new": "Ny",
+        "contacted": "Kontaktet",
+        "closed": "Lukket"
+      },
+      "kind": {
+        "quote_request": "Tilbudsforespørsel",
+        "booking_request": "Bookingforespørsel",
+        "charter_expert": "Charterekspert",
+        "consultation": "Rådgivning"
+      },
+      "table": {
+        "received": "Mottatt",
+        "from": "Fra",
+        "kind": "Type",
+        "message": "Melding",
+        "status": "Status",
+        "actions": "Handlinger"
+      },
+      "actions": {
+        "reply": "Svar",
+        "replyAgain": "Svar på nytt",
+        "contacted": "Merk som kontaktet",
+        "close": "Lukk",
+        "reopen": "Gjenåpne"
+      },
+      "empty": "Ingenting her - ingen henvendelser passer med disse filtrene.",
+      "error": "Vi klarte ikke å laste henvendelsene.",
+      "answered": "Besvart: {answer}"
+    },
+    "answer": {
+      "title": "Svar på dette spørsmålet",
+      "description": "Booking {reference}. Svaret ditt sendes til kunden på e-post.",
+      "label": "Svaret ditt",
+      "placeholder": "Svar fullstendig på spørsmålet - dette er det kunden får.",
+      "close": "Lukk dette spørsmålet etter sending",
+      "cancel": "Avbryt",
+      "send": "Send svar",
+      "sent": "Svaret er sendt",
+      "failed": "Vi klarte ikke å sende svaret. Prøv igjen."
+    },
+    "leadAnswer": {
+      "title": "Svar på denne henvendelsen",
+      "description": "Svaret ditt sendes til {name} på e-post.",
+      "noMessage": "De la ikke igjen noen melding.",
+      "label": "Svaret ditt",
+      "placeholder": "Svar fullstendig på henvendelsen - dette er det de får.",
+      "close": "Lukk denne henvendelsen etter sending",
+      "cancel": "Avbryt",
+      "send": "Send svar",
+      "sent": "Svaret er sendt",
+      "failed": "Vi klarte ikke å sende svaret. Prøv igjen."
+    }
+  },
+  "Listings": {
+    "title": "Annonser",
+    "subtitle": "Alle annonser ansatte kan gjøre noe med, også utkast. Importert beholdning forblir et utkast til den publiseres herfra.",
+    "filters": {
+      "provider": "Leverandør",
+      "status": "Status",
+      "allProviders": "Alle leverandører",
+      "operator": "Operatør",
+      "allOperators": "Alle operatører",
+      "allStatuses": "Alle statuser",
+      "search": "Søk på tittel eller slug"
+    },
+    "table": {
+      "listing": "Annonse",
+      "provider": "Leverandør",
+      "operator": "Operatør",
+      "model": "Modell og år",
+      "place": "Base og sted",
+      "price": "Fra",
+      "status": "Status",
+      "actions": "Handlinger"
+    },
+    "status": {
+      "draft": "Utkast",
+      "published": "Publisert",
+      "hidden": "Skjult",
+      "merged": "Slått sammen"
+    },
+    "actions": {
+      "publish": "Publiser",
+      "unpublish": "Avpubliser",
+      "draft": "Tilbake til utkast",
+      "sources": "Kilder"
+    },
+    "moved": "{title} er nå {status}.",
+    "noProvider": "Ingen leverandør",
+    "noPrice": "Ingen pris ennå",
+    "notSet": "Ikke angitt",
+    "noImage": "Ingen bilde",
+    "empty": "Ingen annonser passer med disse filtrene",
+    "error": "Kunne ikke laste annonsene",
+    "publishDrafts": {
+      "providerLabel": "Leverandør som skal publiseres",
+      "choose": "Velg en leverandør",
+      "action": "Publiser alle utkast",
+      "hint": "Publiserer alle utkast som hører til den valgte leverandøren. En leverandør må oppgis: dette skjermbildet publiserer aldri hele katalogen på én gang.",
+      "confirmTitle": "Vil du publisere alle utkast?",
+      "confirmBody": "Alle utkast importert fra {provider} blir synlige for kundene med én gang. Utkast fra andre leverandører røres ikke.",
+      "cancel": "Avbryt",
+      "confirm": "Publiser utkast",
+      "publishing": "Publiserer...",
+      "published": "{count, plural, =0 {Ingen utkast igjen å publisere for {provider}.} one {# utkast publisert for {provider}.} other {# utkast publisert for {provider}.}}",
+      "failed": "Kunne ikke publisere utkastene"
+    },
+    "unpriced": "{count, plural, one {# annonse har datoer, men ingen publisert pris} other {# annonser har datoer, men ingen publisert pris}} - de vises som «På forespørsel» med tom kalender.",
+    "sources": {
+      "subtitle": "Hvilken leverandør hver del av denne annonsen er hentet fra. En låst gruppe røres ikke av den nattlige synkroniseringen.",
+      "error": "Kunne ikke laste leverandørene for denne annonsen",
+      "field": "Del av annonsen",
+      "takenFrom": "Hentet fra",
+      "locked": "Låst",
+      "automatic": "Automatisk",
+      "release": "Lås opp",
+      "pinned": "Låst til den leverandøren. Synkroniseringen lar den være.",
+      "released": "Tilbake til automatisk. Synkroniseringen avgjør den på nytt.",
+      "model": "Modell",
+      "year": "År",
+      "base": "Base",
+      "operator": "Operatør",
+      "photos": "Bilder",
+      "descriptions": "Beskrivelser",
+      "fields": {
+        "media": "Bilder",
+        "title": "Navn",
+        "spec": "Spesifikasjon",
+        "description": "Beskrivelse",
+        "taxonomy": "Verft, modell, type",
+        "operator": "Operatør",
+        "home_base": "Hjemmebase",
+        "pets": "Kjæledyr tillatt"
+      },
+      "takeOut": "Ta ut av denne annonsen",
+      "splitRestored": "Tatt ut og lagt tilbake i annonsen den kom fra.",
+      "splitNew": "Tatt ut til en egen annonse.",
+      "confirmSplitBody": "Tilbudet fra {provider} går tilbake til sin egen annonse, og denne annonsen bærer ikke lenger begge leverandørene. Du kan slå paret sammen igjen fra fanen Sammenslåtte duplikater i Duplikatkontroll.",
+      "confirmSplitAction": "Ta det ut",
+      "confirmSplitBusy": "Tar ut…",
+      "confirmSplitCancel": "Avbryt"
+    }
+  },
+  "Routes": {
+    "title": "Foreslåtte ruter",
+    "subtitle": "Håndskrevne reiseruter. En rute hører til én charterbase eller én seilregion, og en annonseside viser den bare der noen har skrevet en - ingenting her er generert.",
+    "filters": {
+      "country": "Land",
+      "allCountries": "Alle land",
+      "kind": "Type",
+      "allKinds": "Alle typer",
+      "status": "Status",
+      "allStatuses": "Alle statuser",
+      "search": "Søk på tittel"
+    },
+    "table": {
+      "title": "Rute",
+      "target": "Base eller region",
+      "kind": "Type",
+      "nights": "Netter",
+      "stops": "Stopp",
+      "status": "Status",
+      "actions": "Handlinger"
+    },
+    "kinds": {
+      "seven_days": "7 dager",
+      "fourteen_days": "14 dager",
+      "family": "Familie",
+      "first_time_sailors": "Førstegangsseilere",
+      "active_sailing": "Aktiv seiling"
+    },
+    "status": {
+      "live": "Publisert",
+      "draft": "Utkast"
+    },
+    "actions": {
+      "create": "Ny rute",
+      "stops": "Stopp",
+      "preview": "Forhåndsvis",
+      "edit": "Rediger",
+      "publish": "Publiser",
+      "unpublish": "Avpubliser",
+      "delete": "Slett",
+      "featured": "Forsiden"
+    },
+    "stopCount": "{count, plural, =0 {Ingen stopp} one {# stopp} other {# stopp}}",
+    "published": "{title} er publisert.",
+    "unpublished": "{title} er tilbake som utkast.",
+    "deleted": "{title} ble slettet.",
+    "empty": "Ingen ruter passer med disse filtrene",
+    "error": "Kunne ikke laste rutene",
+    "target": {
+      "country": "Land",
+      "allCountries": "Alle land",
+      "level": "Knytt til",
+      "levelBase": "En charterbase",
+      "levelRegion": "En seilregion",
+      "base": "Base",
+      "region": "Region",
+      "searchBase": "Søk etter en marina eller et sted",
+      "searchRegion": "Søk etter en region",
+      "chooseBase": "Velg en base",
+      "chooseRegion": "Velg en region",
+      "baseOption": "{base} · {place} ({count, plural, =0 {ingen yachter} one {# yacht} other {# yachter}})",
+      "regionOption": "{region} · {country} ({count, plural, =0 {ingen yachter} one {# yacht} other {# yachter}})",
+      "noMatches": "Ingenting passer med det søket",
+      "hint": "En rute knyttes til en base eller til en region, aldri til begge. En baserute går foran en regionrute for alle yachter som ligger der. Begge listene er sortert etter hvor mange publiserte yachter som står bak hver oppføring."
+    },
+    "dialog": {
+      "createTitle": "Ny rute",
+      "editTitle": "Rediger rute",
+      "description": "Rutens egne detaljer. Stoppene tegnes inn på et kart i neste skjermbilde.",
+      "fields": {
+        "title": "Tittel",
+        "titlePlaceholder": "Split til Vis og tilbake",
+        "kind": "Type",
+        "nights": "Netter",
+        "sortOrder": "Rekkefølge",
+        "sortOrderHint": "Laveste først når en base har flere ruter",
+        "description": "Beskrivelse",
+        "descriptionPlaceholder": "Hvordan denne reiseruten er å seile, i en setning eller to.",
+        "defaultHint": "Vises på alle språk som ikke har en oversettelse under.",
+        "difficulty": "Vanskelighetsgrad",
+        "imageUrl": "Bilde-URL",
+        "imageUrlHint": "Vises på rutens kort, på rutekartet og i lenkeforhåndsvisninger.",
+        "translations": "Oversettelser",
+        "translationsHint": "Tittel og beskrivelse per språk. Et tomt språk faller tilbake på standardteksten over.",
+        "slug": "Sideadresse",
+        "slugPlaceholder": "lages av tittelen",
+        "slugHint": "Rutens offentlige side. Små bokstaver, tall og bindestreker.",
+        "slugCreateHint": "La feltet stå tomt for å lage den av tittelen. Små bokstaver, tall og bindestreker.",
+        "slugMoved": "Endrer du den, flyttes siden: lenker til {previous} slutter å virke.",
+        "imageHint": "Vises på rutens kort, på rutekartet og i lenkeforhåndsvisninger. Last opp et bilde eller lim inn URL-en.",
+        "upload": "Last opp bilde",
+        "uploading": "Laster opp..."
+      },
+      "errors": {
+        "target": "Velg en base eller en region for denne ruten",
+        "nights": "Mellom 1 og 28 netter",
+        "failed": "Kunne ikke lagre ruten",
+        "slug": "Bruk små bokstaver, tall og enkle bindestreker, for eksempel split-til-vis.",
+        "upload": "Kunne ikke laste opp bildet."
+      },
+      "cancel": "Avbryt",
+      "create": "Opprett rute",
+      "save": "Lagre endringer",
+      "created": "{title} ble opprettet. Legg til stoppene nå.",
+      "updated": "{title} ble lagret.",
+      "difficulty": {
+        "none": "Ikke angitt",
+        "easy": "Enkel",
+        "moderate": "Middels",
+        "advanced": "Avansert"
+      },
+      "locales": {
+        "en": "Engelsk",
+        "uk": "Ukrainsk",
+        "de": "Tysk",
+        "es": "Spansk",
+        "fr": "Fransk",
+        "pl": "Polsk",
+        "it": "Italiensk",
+        "nl": "Nederlandsk",
+        "sv": "Svensk",
+        "no": "Norsk",
+        "da": "Dansk"
+      }
+    },
+    "stops": {
+      "subtitle": "{target} · {nights} netter",
+      "listTitle": "Reiserute ({count})",
+      "add": "Legg til stopp",
+      "day": "Dag {day}",
+      "moveUp": "Flytt tidligere",
+      "moveDown": "Flytt senere",
+      "edit": "Rediger",
+      "remove": "Fjern stopp",
+      "empty": {
+        "title": "Ingen stopp ennå",
+        "body": "Ruten finnes, men har ingenting å tegne, så den kan ikke publiseres og ingen annonseside vil vise den. Søk etter en havn til høyre, eller trykk på kartet, gi stoppet et navn og legg det til."
+      },
+      "form": {
+        "addTitle": "Legg til et stopp",
+        "editTitle": "Rediger dette stoppet",
+        "name": "Navn på stoppet",
+        "namePlaceholder": "Vis by",
+        "note": "Notat",
+        "noteHint": "Engelsk er det et språk uten eget notat faller tilbake på.",
+        "noteFor": "Notat ({locale})",
+        "notePlaceholder": "Hva som skjer her - ankringsplassen, turen, restauranten.",
+        "placed": "Nål på {lat}, {lng}. Dra den for å flytte stoppet.",
+        "unplaced": "Ingen posisjon ennå. Søk etter et sted eller trykk på kartet for å sette nålen.",
+        "save": "Lagre stopp",
+        "append": "Legg til i reiseruten",
+        "cancelEdit": "Avbryt"
+      },
+      "search": {
+        "label": "Finn et sted",
+        "placeholder": "Vis, Hvar, Bol…",
+        "hint": "Plukker opp nålen og setter den på treffet. Dra den etterpå hvis ankringsplassen ikke er selve byen.",
+        "searching": "Søker…"
+      },
+      "preview": "Forhåndsvis",
+      "close": "Lukk",
+      "saved": "{name} ble lagret.",
+      "added": "{name} ble lagt til.",
+      "removed": "{name} ble fjernet.",
+      "failed": "Kunne ikke lagre stoppet",
+      "missingNotes": "Ingen notat på: {locales}",
+      "deleteDialog": {
+        "title": "Vil du fjerne dette stoppet?",
+        "description": "«{name}» (dag {day}) fjernes fra «{title}», og alle senere stopp flyttes én dag tidligere. Dette kan ikke angres.",
+        "cancel": "Avbryt",
+        "confirm": "Fjern stopp",
+        "deleting": "Fjerner..."
+      }
+    },
+    "previewDialog": {
+      "title": "Forhåndsvisning av ruten",
+      "subtitle": "Akkurat slik den vises på en yacht ved {target}.",
+      "empty": "Legg til et stopp før du forhåndsviser - det er ingenting å tegne ennå."
+    },
+    "featured": {
+      "title": "Ruter på forsiden",
+      "description": "Listen over populære ruter, i den rekkefølgen nettstedet viser den. De seks første fyller karusellen, resten åpnes under «Se alle populære».",
+      "chosen": "Valgt ({count})",
+      "add": "Legg til en rute",
+      "addAction": "Legg til",
+      "remove": "Fjern",
+      "search": "Søk i publiserte ruter",
+      "noCandidates": "Ingenting igjen å legge til fra dette søket",
+      "moveUp": "Flytt opp",
+      "moveDown": "Flytt ned",
+      "cancel": "Avbryt",
+      "save": "Lagre rekkefølgen",
+      "saved": "Forsiden viser nå {count, plural, =0 {ingen ruter} one {# rute} other {# ruter}}.",
+      "failed": "Kunne ikke lagre rekkefølgen",
+      "placement": {
+        "slider": "I karusellen",
+        "grid": "Under Se alle",
+        "hidden": "Vises ikke"
+      },
+      "empty": {
+        "title": "Ingen ruter er valgt",
+        "body": "Seksjonen på forsiden står tom til en rute legges til her. Velg blant de publiserte rutene til høyre."
+      }
+    },
+    "deleteDialog": {
+      "title": "Vil du slette denne ruten?",
+      "description": "«{title}» slettes sammen med sine {stops, plural, one {# stopp} other {# stopp}}. Dette kan ikke angres. Vil du ta den av nettstedet og beholde den, bruk Avpubliser i stedet.",
+      "cancel": "Avbryt",
+      "confirm": "Slett rute",
+      "deleting": "Sletter..."
+    }
+  },
+  "Payments": {
+    "title": "Betalinger",
+    "subtitle": "Bankoverføringer som venter på å bli gjort opp, og penger som skal tilbake til kunder.",
+    "tabs": {
+      "invoices": "Fakturaforespørsler",
+      "refunds": "Refusjoner som forfaller"
+    },
+    "invoices": {
+      "filters": {
+        "status": "Filtrer på status",
+        "allStatuses": "Alle statuser"
+      },
+      "table": {
+        "issued": "Utstedt",
+        "invoice": "Faktura",
+        "customer": "Kunde",
+        "booking": "Booking",
+        "amount": "Beløp",
+        "status": "Status",
+        "actions": "Handlinger"
+      },
+      "status": {
+        "pending": "Venter",
+        "sent": "Sendt",
+        "paid": "Betalt",
+        "cancelled": "Trukket tilbake"
+      },
+      "due": "Forfaller {date}",
+      "settledAt": "Gjort opp {date}",
+      "actions": {
+        "settle": "Overføring mottatt",
+        "withdraw": "Trekk tilbake"
+      },
+      "empty": "Ingen fakturaforespørsler her.",
+      "error": "Kunne ikke laste fakturaforespørslene."
+    },
+    "refunds": {
+      "filters": {
+        "search": "Søk på referanse, navn eller e-post"
+      },
+      "table": {
+        "cancelled": "Avbestilt",
+        "customer": "Kunde",
+        "booking": "Booking",
+        "charter": "Charter",
+        "collected": "Innkrevd",
+        "actions": "Handlinger"
+      },
+      "ofTotal": "av {total}",
+      "actions": {
+        "refund": "Betal pengene tilbake"
+      },
+      "empty": "Ingenting skal tilbakebetales akkurat nå.",
+      "error": "Kunne ikke laste refusjonskøen."
+    },
+    "settle": {
+      "title": "Registrer en mottatt overføring",
+      "description": "Booking {reference} bindes hos operatøren så snart dette er registrert.",
+      "invoiced": "Faktura {number} · {amount} fakturert",
+      "amountLabel": "Mottatt beløp ({currency})",
+      "amountHint": "Endre dette hvis bankgebyrer gjorde at et annet beløp kom inn.",
+      "noteLabel": "Notat",
+      "notePlaceholder": "Referanse på overføringen, hvem som bekreftet den…",
+      "cancel": "Avbryt",
+      "confirm": "Registrer overføring",
+      "settling": "Registrerer…",
+      "settled": "Overføringen er registrert - booking {reference} er bekreftet.",
+      "rejected": "Overføringen er registrert, men operatøren avslo: {reason}. Bookingen skal nå refunderes.",
+      "failed": "Kunne ikke registrere overføringen."
+    },
+    "withdraw": {
+      "title": "Trekk tilbake denne fakturaforespørselen",
+      "description": "Booking {reference} blir avbestilt og operatørens opsjon frigitt.",
+      "reasonLabel": "Årsak",
+      "reasonPlaceholder": "Ikke svar etter tre påminnelser…",
+      "cancel": "Behold den",
+      "confirm": "Trekk tilbake og avbestill",
+      "withdrawing": "Trekker tilbake…",
+      "withdrawn": "Fakturaen er trukket tilbake og booking {reference} er avbestilt.",
+      "failed": "Kunne ikke trekke tilbake fakturaen."
+    },
+    "refund": {
+      "title": "Betal pengene tilbake",
+      "description": "Betaler tilbake penger innkrevd på booking {reference}.",
+      "collected": "{amount} innkrevd",
+      "cancelReason": "Avbestilt: {reason}",
+      "amountLabel": "Beløp som skal tilbakebetales",
+      "amountPlaceholder": "Alt ({amount})",
+      "amountHint": "La feltet stå tomt for å betale tilbake alt. Skriv inn mindre for å holde tilbake det avbestillingsvilkårene tillater.",
+      "amountInvalid": "Skriv inn et beløp mellom 0 og det som ble innkrevd.",
+      "reasonLabel": "Årsak",
+      "reasonPlaceholder": "Operatøren trakk yachten…",
+      "manualLabel": "Jeg har sendt bankoverføringen tilbake",
+      "manualHint": "Kryss av bare når pengene faktisk er sendt. Kortbetalinger går tilbake gjennom Stripe av seg selv.",
+      "cancel": "Avbryt",
+      "confirm": "Refunder",
+      "refunding": "Refunderer…",
+      "refunded": "{amount} er betalt tilbake.",
+      "partial": "{amount} er betalt tilbake. {outstanding} gjenstår fortsatt.",
+      "manualPending": "Kortbetalinger er betalt tilbake. {count, plural, one {# bankoverføring må fortsatt} other {# bankoverføringer må fortsatt}} sendes manuelt.",
+      "failed": "Kunne ikke behandle refusjonen."
+    }
+  },
+  "StaffBooking": {
+    "back": "Bookinger",
+    "staffOnly": "Ansattvisning - dette er en kundes booking. Ikke del denne siden.",
+    "error": "Kunne ikke laste denne bookingen.",
+    "guestAccount": "Gjestekonto",
+    "guests": "{count, plural, one {# gjest} other {# gjester}}",
+    "noReservationId": "Ingen reservasjons-ID ennå",
+    "outstanding": "{amount} utestående",
+    "dueAtCheckIn": "{amount} betales i marinaen",
+    "createdAt": "Opprettet {at}",
+    "holdExpiresAt": "Reservasjonen utløper {at}",
+    "confirmedAt": "Bekreftet {at}",
+    "cancelledAt": "Avbestilt {at}",
+    "cancelReason": "Årsak til avbestilling: {reason}",
+    "fields": {
+      "customer": "Kunde",
+      "charter": "Charter",
+      "provider": "Leverandør",
+      "total": "Totalt",
+      "collected": "Innkrevd",
+      "timeline": "Tidslinje"
+    },
+    "invoice": {
+      "title": "Fakturaforespørsel",
+      "number": "Nummer",
+      "amount": "Beløp",
+      "status": "Status",
+      "billedTo": "Fakturert til",
+      "issued": "Utstedt",
+      "due": "Forfaller"
+    },
+    "payments": {
+      "title": "Betalinger",
+      "kind": "Delbetaling",
+      "amount": "Beløp",
+      "method": "Metode",
+      "status": "Status",
+      "paidAt": "Betalt",
+      "empty": "Ingenting er innkrevd ennå.",
+      "disputed": "Omtvistet: {state}",
+      "methods": {
+        "card": "Kort",
+        "transfer": "Bankoverføring"
+      },
+      "disputeStatus": {
+        "open": "åpen"
+      }
+    },
+    "schedule": {
+      "title": "Betalingsplan",
+      "kind": "Delbetaling",
+      "amount": "Beløp",
+      "dueAt": "Forfaller",
+      "status": "Status",
+      "empty": "Ingen betalingsplan på denne bookingen.",
+      "statuses": {
+        "pending": "Venter",
+        "paid": "Betalt",
+        "cancelled": "Avbrutt",
+        "refunded": "Refundert"
+      }
+    },
+    "priceLines": {
+      "title": "Prisoversikt",
+      "labels": {
+        "charterPrice": "Charterpris",
+        "charterExtra": "Chartertillegg",
+        "charterDiscount": "Charterrabatt",
+        "referralWelcome": "Velkomstrabatt for verving",
+        "referralCredit": "Vervebonus"
+      }
+    },
+    "excluded": {
+      "chip": "Ikke reell omsetning",
+      "exclude": "Merk som testbooking",
+      "restore": "Legg tilbake i køene",
+      "excludedAt": "Holdt utenfor køene og totalene {at}",
+      "help": "En ekskludert booking beholder statusen, betalingene og reservasjonen hos leverandøren. Den slutter bare å telle i de ansattes køer og i pengesummene."
+    },
+    "cancel": {
+      "action": "Avbestill booking",
+      "title": "Vil du avbestille denne bookingen?",
+      "description": "{reference} for {customer}",
+      "confirmedWarning": "Denne bookingen er bekreftet. Avbestilling flytter den til refusjonskøen. Pengene betales ikke tilbake før noen refunderer dem der.",
+      "reasonLabel": "Årsak (valgfritt)",
+      "reasonPlaceholder": "Operatøren trakk yachten",
+      "keep": "Behold den",
+      "confirm": "Avbestill booking",
+      "success": "Bookingen er avbestilt.",
+      "successRefund": "Bookingen er avbestilt og flyttet til refusjonskøen.",
+      "providerHeld": "Avbestilt her, men {provider} beholdt reservasjonen: {error}",
+      "providerHeldUnknown": "leverandøren oppga ingen grunn",
+      "error": "Kunne ikke avbestille denne bookingen."
+    },
+    "providerHold": {
+      "title": "{provider} holder fortsatt denne reservasjonen",
+      "body": "Vi avbestilte på vår side, og leverandøren slapp den ikke. Charteret står fortsatt hos operatøren, så gjør det opp med dem før det utbetales noen refusjon, ellers går pengene tilbake på en uke vi fortsatt faktureres for."
+    }
+  },
+  "providers": {
+    "mock": "Mock",
+    "booking_manager": "Booking Manager",
+    "nausys": "NauSYS"
+  },
+  "Faq": {
+    "title": "Ofte stilte spørsmål",
+    "subtitle": "Alle spørsmål på nettstedet, med alle språkene på én rad. Et spørsmål når bare ut på en side på de språkene som har et svar.",
+    "scope": {
+      "site": "Hele nettstedet",
+      "listing": "Én yacht"
+    },
+    "categories": {
+      "booking": "Booking",
+      "payment": "Betaling",
+      "prices": "Priser",
+      "licences": "Sertifikater",
+      "travel": "Reise",
+      "cancellation": "Avbestilling"
+    },
+    "locales": {
+      "en": "Engelsk",
+      "de": "Tysk",
+      "es": "Spansk",
+      "uk": "Ukrainsk",
+      "fr": "Fransk",
+      "pl": "Polsk",
+      "it": "Italiensk",
+      "nl": "Nederlandsk",
+      "sv": "Svensk",
+      "no": "Norsk",
+      "da": "Dansk"
+    },
+    "localeCodes": {
+      "en": "EN",
+      "de": "DE",
+      "es": "ES",
+      "uk": "UK",
+      "fr": "FR",
+      "pl": "PL",
+      "it": "IT",
+      "nl": "NL",
+      "sv": "SV",
+      "no": "NO",
+      "da": "DA"
+    },
+    "state": {
+      "answered": "Besvart - vises på den offentlige siden",
+      "unanswered": "Ikke besvart ennå - skjult fra siden",
+      "missing": "Ingen oversettelse"
+    },
+    "gaps": {
+      "missing_answer": "Mangler et svar",
+      "missing_locale": "Mangler en oversettelse"
+    },
+    "filters": {
+      "scope": "Omfang",
+      "category": "Kategori",
+      "locale": "Språk som skal sjekkes",
+      "gap": "Hva som skal vises",
+      "allCategories": "Alle kategorier",
+      "anyLocale": "Alle språk",
+      "allEntries": "Alle oppføringer",
+      "search": "Søk i spørsmål og svar",
+      "listing": "Yacht",
+      "listingSearch": "Søk etter yachter på navn"
+    },
+    "legend": {
+      "title": "Språkstatus:"
+    },
+    "table": {
+      "order": "Rekkefølge",
+      "question": "Spørsmål",
+      "locales": "Språk",
+      "category": "Kategori",
+      "actions": "Handlinger"
+    },
+    "actions": {
+      "create": "Ny oppføring",
+      "edit": "Rediger",
+      "delete": "Slett",
+      "moveUp": "Flytt opp",
+      "moveDown": "Flytt ned"
+    },
+    "reorderDisabled": "Velg én kategori og ett språk, og fjern søket og filtrene, for å endre rekkefølgen.",
+    "reordered": "Rekkefølgen er lagret, på alle språk.",
+    "deleted": "{count, plural, one {# oversettelse slettet.} other {# oversettelser slettet.}}",
+    "deleteDialog": {
+      "title": "Vil du slette dette spørsmålet?",
+      "description": "«{question}» slettes på alle språk det finnes på ({locales}). Dette kan ikke angres. Vil du fjerne bare ett språk, åpne Rediger og bruk Fjern denne oversettelsen.",
+      "cancel": "Avbryt",
+      "confirm": "Slett på alle språk",
+      "deleting": "Sletter..."
+    },
+    "unpublished": "Ikke på noen side ennå",
+    "noCategory": "Ingen kategori",
+    "noQuestion": "Uten tittel",
+    "chooseListing": "Velg en yacht for å se dens egne oppføringer",
+    "empty": "Ingen oppføringer passer med disse filtrene",
+    "error": "Kunne ikke laste spørsmålene",
+    "summary": {
+      "missingAnswer": "{count} av {total} oppføringer har ikke noe svar ennå, så den offentlige siden utelater dem. Sjekker: {locale}.",
+      "missingLocale": "{count} av {total} oppføringer mangler en oversettelse. Sjekker: {locale}."
+    },
+    "dialog": {
+      "createTitle": "Ny oppføring",
+      "editTitle": "Rediger oppføring",
+      "description": "Ett spørsmål, alle språk. Et språk du lar stå tomt, beholder det det allerede hadde - bruk Fjern denne oversettelsen for å ta ett av nettstedet.",
+      "scope": {
+        "label": "Hvor den vises"
+      },
+      "category": {
+        "label": "Kategori",
+        "placeholder": "Velg en kategori"
+      },
+      "listing": {
+        "label": "Yacht",
+        "search": "Søk etter yachter på navn",
+        "clear": "Fjern den valgte yachten",
+        "noResults": "Ingen yachter passer med det navnet"
+      },
+      "question": {
+        "label": "Spørsmål",
+        "placeholder": "Skriv spørsmålet på dette språket"
+      },
+      "answer": {
+        "label": "Svar",
+        "placeholder": "La feltet stå tomt til svaret er skrevet",
+        "hint": "Uten et svar blir spørsmålet stående her og når aldri ut på den offentlige siden."
+      },
+      "removeTranslation": "Fjern denne oversettelsen",
+      "translationRemoved": "Oversettelsen til {locale} ble fjernet.",
+      "cancel": "Avbryt",
+      "save": "Lagre",
+      "create": "Opprett",
+      "created": "Oppføringen er opprettet.",
+      "saved": "Oppføringen er lagret.",
+      "failed": "Kunne ikke lagre oppføringen",
+      "cacheRefreshing": "Den offentlige siden er bufret, så gi den et øyeblikk til å henge med.",
+      "cacheStale": "Lagret, men bufferen til den offentlige siden kunne ikke tømmes - den kan vise den gamle teksten en stund.",
+      "errors": {
+        "listingRequired": "Velg en yacht for denne oppføringen",
+        "categoryRequired": "En oppføring for hele nettstedet trenger en kategori - den har ingen yachtside å stå på",
+        "questionRequired": "Skriv spørsmålet på minst ett språk",
+        "answerWithoutQuestion": "Dette språket har et svar, men ikke noe spørsmål",
+        "questionTooLong": "Hold spørsmålet under 500 tegn",
+        "answerTooLong": "Hold svaret under 8000 tegn"
+      }
+    }
+  },
+  "Popular": {
+    "title": "Populære valg",
+    "subtitle": "Hvilke verdier som står øverst i en filterliste, og hvilke som leder an på forsiden.",
+    "kinds": {
+      "country": "Land",
+      "category": "Båttyper",
+      "equipment": "Utstyr",
+      "region": "Seilområder",
+      "marina": "Marinaer",
+      "model": "Modeller",
+      "location": "Steder",
+      "crew": "Mannskapstyper",
+      "sail_type": "Typer storseil"
+    },
+    "surfaces": {
+      "popular": "Festet i filteret",
+      "featured": "Forsiden",
+      "filter": "Filterliste"
+    },
+    "surfaceHint": {
+      "popular": "Vises som en «Populære»-gruppe øverst i søkefiltrene.",
+      "featured": "Rekkefølgen forsidens karuseller og rutenett bruker.",
+      "filter": "De eneste verdiene søkefilteret tilbyr. Er den tom, tilbys alle verdier katalogen inneholder."
+    },
+    "filters": {
+      "kind": "Fasett",
+      "surface": "Hvor den vises",
+      "search": "Søk i verdier"
+    },
+    "table": {
+      "order": "Rekkefølge",
+      "value": "Verdi",
+      "count": "Yachter",
+      "actions": "Handlinger"
+    },
+    "actions": {
+      "moveUp": "Flytt opp",
+      "moveDown": "Flytt ned",
+      "remove": "Fjern",
+      "edit": "Rediger bilde og tekst"
+    },
+    "empty": "Ingenting er kuratert ennå. Velg verdier over for å feste dem.",
+    "emptyFilter": "Ingenting er valgt, så filteret tilbyr alle verdier. Velg verdier over for å korte ned listen.",
+    "error": "Kunne ikke lagre rekkefølgen.",
+    "saved": "Rekkefølgen er lagret.",
+    "cacheWarning": "Lagret, men nettstedets bufrede sider kunne ikke oppdateres ennå.",
+    "noListings": "Ingen yachter",
+    "media": {
+      "title": "Rediger {name}",
+      "description": "Bildet og teksten som vises på denne verdiens kort på forsiden. Lagret tekst blir aldri overskrevet av en leverandørsynkronisering.",
+      "imageUrl": "Bilde-URL",
+      "imageHint": "Last opp en fil eller lim inn en URL. JPEG, PNG, WebP eller AVIF, opptil 10 MB.",
+      "imageHintNoUpload": "Lim inn en URL. Filopplasting er ikke satt opp i dette miljøet.",
+      "hoverImageUrl": "Bilde ved peking",
+      "hoverImageHint": "Vises på forsidens fremhevede fliser når markøren er over kortet, f.eks. stedet ovenfra. La feltet stå tomt for å beholde ett bilde.",
+      "gridUsesHoverImage": "Bruk bildet ved peking i rutenettet \"Se alle populære\"",
+      "gridUsesHoverImageHint": "Rutenettet har ingen peking, så det viser ett bilde. Er det krysset av, blir det bildet ved peking, ellers hovedbildet.",
+      "upload": "Last opp bilde",
+      "uploading": "Laster opp...",
+      "uploadFailed": "Kunne ikke laste opp bildet.",
+      "label": "Navn",
+      "labelHint": "La feltet stå tomt for å bruke katalognavnet, {name}, eller leverandørens oversettelse.",
+      "descriptionField": "Beskrivelse",
+      "descriptionHintEn": "Vises også på alle språk som ikke har en egen beskrivelse.",
+      "descriptionHint": "La feltet stå tomt for å vise den engelske beskrivelsen.",
+      "cancel": "Avbryt",
+      "save": "Lagre",
+      "saving": "Lagrer...",
+      "saved": "Lagret.",
+      "saveFailed": "Kunne ikke lagre.",
+      "cacheWarning": "Lagret, men nettstedets bufrede sider kunne ikke oppdateres ennå.",
+      "locales": {
+        "en": "Engelsk",
+        "uk": "Ukrainsk",
+        "de": "Tysk",
+        "es": "Spansk",
+        "fr": "Fransk",
+        "pl": "Polsk",
+        "it": "Italiensk",
+        "nl": "Nederlandsk",
+        "sv": "Svensk",
+        "no": "Norsk",
+        "da": "Dansk"
+      }
+    }
+  },
+  "PopularYachts": {
+    "title": "Karusell med populære yachter",
+    "subtitle": "Hvordan forsidens karusell med populære yachter settes sammen. Typefordelingen er et mål: når begrensningene gjør at en type kommer til kort, går de resterende plassene til de nest beste båtene.",
+    "limit": "Antall båter som vises",
+    "maxAgeYears": "Maks alder (år)",
+    "maxPerCountry": "Maks per land",
+    "maxPerBase": "Maks per base",
+    "mix": "Båter per type",
+    "mixHint": "Det hentes bare fra destinasjonene under. En type satt til null utelates.",
+    "destinations": "Destinasjoner",
+    "destinationsHint": "Ett land per linje, i prioritert rekkefølge: \"Kroatia: Split / Trogir; Zadar / Sukošan\". Steder skilles med \";\", og \"/\" skiller ulike skrivemåter av samme sted, som matches mot båtens marina, sted og region. Hvert sted teller som én base. Et land uten steder henter fra hele landet, og en tom liste faller tilbake på de kuraterte populære landene.",
+    "save": "Lagre endringer",
+    "saving": "Lagrer...",
+    "saved": "Karusellen er lagret.",
+    "saveFailed": "Kunne ikke lagre karusellen.",
+    "cacheWarning": "Lagret, men nettstedets bufrede sider kunne ikke oppdateres ennå."
+  },
+  "Settings": {
+    "title": "Innstillinger for markedsplassen",
+    "subtitle": "Hvor mye av et charter som kreves inn på forhånd, og hvilken leverandør vi selger gjennom når tilbudene er like.",
+    "source": {
+      "legend": "Hvilken betalingsplan vi bruker",
+      "vendor": {
+        "title": "Leverandørens egen plan",
+        "hint": "Hvert tilbud følger delbetalingene leverandøren returnerte for den yachten og de datoene, inkludert leverandørens egen forfallsdato for restbeløpet. Leverandørene er ulike, så prosentandelen varierer fra booking til booking."
+      },
+      "marketplace": {
+        "title": "Vår egen policy",
+        "hint": "Alle tilbud bruker prosentandelen under, og leverandørens plan ignoreres helt, også forfallsdatoen."
+      }
+    },
+    "ourPolicy": {
+      "deposit": "Kreve inn et forskudd",
+      "full": "Kreve inn full betaling",
+      "percentLabel": "Forskuddsprosent",
+      "percentError": "Skriv inn en prosentandel mellom 1 og 100."
+    },
+    "leadTime": {
+      "legend": "Full betaling tett på avreise",
+      "toggle": "Krev full betaling for charter som starter snart",
+      "hint": "En nedre grense for planen som er valgt over, aldri en tredje plan i seg selv. Slått av står en leverandørs 30 % selv på et charter som drar i morgen.",
+      "daysLabel": "Dager før innsjekk",
+      "daysError": "Skriv inn et helt antall dager mellom 0 og 365."
+    },
+    "preference": {
+      "legend": "Foretrukket leverandør",
+      "hint": "Hvilken leverandør som vinner når ledighet, pris og obligatoriske gebyrer er like. Den går aldri foran et billigere tilbud: den avgjør bare uavgjort.",
+      "rebuildNote": "Gjelder nye tilbud og ledighetskalenderen med én gang. Katalogkortene bygges opp på nytt i bakgrunnen rett etter lagringen, og det tar godt under ett minutt."
+    },
+    "currency": {
+      "legend": "Visningsvaluta",
+      "toggle": "Vis priser i den besøkendes egen valuta",
+      "hint": "Kun for visning. En booking gjøres opp i valutaen den ble priset i, og betalingssiden oppgir beløpet som faktisk blir belastet når de to er forskjellige. Omregnede tall er merket som omtrentlige: referansekurser er ikke det et kortnettverk bruker. Prisene blir stående i leverandørens valuta når kursene er utdaterte.",
+      "fallback": "Der landet er ukjent"
+    },
+    "ranking": {
+      "reliabilityToggle": "Avgjør uavgjort etter hvor ofte en leverandør svarer",
+      "reliabilityHint": "Bare der pris, obligatorisk ekstrautstyr og provisjon er helt like. Hoppes over for ethvert par der en av leverandørene har for få forespørsler i perioden til å måle, slik at en nylig tilkoblet leverandør aldri rangeres ned for tausheten sin. Tallene finnes på siden Synkroniseringshistorikk.",
+      "windowDays": "Målt over de siste (dager)",
+      "catalogueToggle": "Vis charterprisen på kortene",
+      "catalogueHint": "Er den av, viser kortet totalprisen med alt inkludert. Er den på, viser det charterprisen med det obligatoriske ekstrautstyret listet under, og sorteringen, prisfilteret og glidebryteren følger alle samme tall. Uavhengig av bryteren over: hva et kort viser fram og hvilken leverandør vi selger gjennom, er to forskjellige avgjørelser.",
+      "legend": "Rangering av tilbud",
+      "toggle": "Rangér på charterprisen",
+      "hint": "Er den av, vinner leverandøren med lavest totalpris, som er det gjesten faktisk betaler. Er den på, avgjør charterprisen, og det obligatoriske ekstrautstyret avgjør bare uavgjort. Å rangere på prisen kan velge charteret som koster gjesten mest totalt."
+    },
+    "nameSearch": {
+      "legend": "Fritekstsøk",
+      "toggle": "Vis fritekstfeltet i søkefeltet",
+      "hint": "Mer et testverktøy enn en del av designet. Slått på får yachtsøket et felt som matcher båtens navn, modell, verft, charterselskap eller base, ord for ord og i vilkårlig rekkefølge."
+    },
+    "save": "Lagre endringer",
+    "saving": "Lagrer...",
+    "saved": "Innstillingene er lagret.",
+    "saveFailed": "Kunne ikke lagre innstillingene.",
+    "appliesNext": "Gjelder nye tilbud. Et tilbud en kunde allerede holder på, beholder policyen det ble priset under."
+  }
+}

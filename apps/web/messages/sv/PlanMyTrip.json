@@ -1,0 +1,224 @@
+{
+  "title": "Hjälp mig planera min resa",
+  "close": "Stäng planeraren",
+  "progress": "Steg {current} av {total}",
+  "stepHeading": "Steg {current}",
+  "placeholder": "Frågan och dess alternativ dyker upp här i nästa steg.",
+  "back": "Tillbaka",
+  "next": "Nästa",
+  "steps": {
+    "destination": {
+      "question": "Var vill du segla?",
+      "subtitle": "Välj en destination eller låt oss föreslå det bästa alternativet för dig",
+      "options": {
+        "croatia": {
+          "label": "Kroatien",
+          "description": "Bäst för öluffning och förstagångsseglare. Lugna vatten, korta avstånd mellan öarna och ett enormt utbud av rutter: perfekt för nybörjare och avslappnade resor."
+        },
+        "greece": {
+          "label": "Grekland",
+          "description": "Bäst för natursköna rutter och kulturmix. Segla mellan ikoniska öar med kristallklart vatten, historiska städer och en balans mellan äventyr och komfort."
+        },
+        "italy": {
+          "label": "Italien",
+          "description": "Bäst för premiumupplevelser och kustvyer. Vackra kustrutter, exklusiva marinor och oförglömliga destinationer som Amalfi: idealiskt för en mer lyxig resa."
+        },
+        "spain": {
+          "label": "Spanien",
+          "description": "Bäst för livsstil och social stämning. Fantastiskt väder, livlig atmosfär och destinationer som Ibiza eller Mallorca: perfekt för fest, sällskap och aktiva resor."
+        },
+        "notSure": {
+          "label": "Vet inte"
+        }
+      }
+    },
+    "groupSize": {
+      "question": "Hur många följer med?",
+      "subtitle": "Gruppens storlek påverkar båttyp, utrymme och totalpris per person",
+      "options": {
+        "twoToFour": {
+          "label": "2-4 personer",
+          "description": "Mer avskildhet, högre kostnad per person"
+        },
+        "fiveToEight": {
+          "label": "5-8 personer",
+          "description": "Bästa balansen mellan komfort och pris"
+        },
+        "ninePlus": {
+          "label": "9+ personer",
+          "description": "Kräver större båtar eller flera båtar"
+        },
+        "notSure": {
+          "label": "Vet inte"
+        }
+      }
+    },
+    "experience": {
+      "question": "Har du seglingserfarenhet?",
+      "subtitle": "En skeppare kan läggas till oavsett nivå: det här avgör bara vem som styr.",
+      "options": {
+        "none": {
+          "label": "Ingen erfarenhet",
+          "description": "Jag behöver en skeppare som seglar båten"
+        },
+        "some": {
+          "label": "Viss erfarenhet",
+          "description": "Jag har seglat förut, men behöver en skeppare"
+        },
+        "licensed": {
+          "label": "Har förarintyg",
+          "description": "Jag har ett giltigt intyg och seglar själv"
+        }
+      }
+    },
+    "tripVibe": {
+      "question": "Vilken sorts resa är du ute efter?",
+      "subtitle": "Vad du vill få ut av veckan formar båten, rutten och tempot.",
+      "options": {
+        "adventure": {
+          "label": "Äventyr",
+          "description": "Aktiv segling och utforskande. Mer rörelse, längre rutter och praktisk segling"
+        },
+        "relax": {
+          "label": "Avkoppling",
+          "description": "Lugnt tempo, natur och tysta vikar. Perfekt för stillsam segling, bad och att koppla bort."
+        },
+        "family": {
+          "label": "Familj",
+          "description": "Tryggt, bekvämt och rymligt. Idealiskt för barn, stabilitet och enkla rutter."
+        },
+        "luxury": {
+          "label": "Lyx",
+          "description": "Premiumbåtar och full service. Besättning, komfort och exklusiva destinationer."
+        },
+        "party": {
+          "label": "Fest",
+          "description": "Musik, nattliv och social stämning. Bäst för Ibiza-liknande rutter och grupper med energi."
+        }
+      }
+    },
+    "duration": {
+      "question": "Hur lång vill du att din resa ska vara?",
+      "subtitle": "Välj den längd som passar dina planer bäst. Det hjälper oss att föreslå rätt båtar, rutter och upplevelse.",
+      "options": {
+        "week": {
+          "label": "7 dagar"
+        },
+        "twoWeeks": {
+          "label": "14 dagar"
+        },
+        "threeWeeks": {
+          "label": "21 dagar"
+        },
+        "more": {
+          "label": "21+ dagar"
+        }
+      }
+    },
+    "budget": {
+      "question": "Vilken budget känns bekväm?",
+      "subtitle": "Per person för en vecka ombord, så att du kan jämföra med en semester du känner till.",
+      "perPersonWeek": "per person/vecka",
+      "options": {
+        "low": {
+          "label": "300-600 €"
+        },
+        "mid": {
+          "label": "600-1000 €"
+        },
+        "high": {
+          "label": "1000-1200 €"
+        },
+        "upper": {
+          "label": "1200-2000 €"
+        },
+        "premium": {
+          "label": "2000 €+"
+        }
+      }
+    }
+  },
+  "result": {
+    "title": "Din perfekta båtresa",
+    "subtitle": "Utifrån dina önskemål är det här vad vi rekommenderar.",
+    "labels": {
+      "yachtType": "Båttyp",
+      "skipper": "Skeppare",
+      "style": "Stil",
+      "duration": "Längd"
+    },
+    "yachtType": {
+      "sailing": "Segelyacht",
+      "catamaran": "Katamaran",
+      "gulet": "Gulet",
+      "motor": "Motoryacht",
+      "luxury": "Lyxyacht"
+    },
+    "skipper": {
+      "yes": "Ja",
+      "no": "Nej"
+    },
+    "difficulty": {
+      "easy": "Lätt",
+      "moderate": "Medel",
+      "advanced": "Avancerad"
+    },
+    "getConsultation": "Få rådgivning",
+    "viewDetails": "Visa detaljer",
+    "seeAllMatches": "Se alla träffar",
+    "durationDays": "{days, plural, one {# dag} other {# dagar}}",
+    "price": {
+      "perPerson": "≈ {price} per person",
+      "similar": "Liknande båtar",
+      "perPersonWeek": "≈ {range} per person och vecka",
+      "estimate": "Uppskattat pris",
+      "perPersonDays": "≈ {price} per person för {days, plural, one {# dag} other {# dagar}}"
+    },
+    "noMatch": {
+      "title": "Ingen exakt träff än",
+      "description": "Vi hittade ingen båt som matchar alla dina svar, men så här skulle vi söka.",
+      "seeAllMatches": "Se alla båtar"
+    },
+    "error": {
+      "title": "Något gick fel",
+      "description": "Vi kunde inte ladda din rekommendation. Försök igen.",
+      "retry": "Försök igen"
+    },
+    "consultationDialog": {
+      "title": "Få kostnadsfri rådgivning",
+      "description": "Berätta hur vi når dig så återkommer en av våra charterexperter med skräddarsydda alternativ.",
+      "submit": "Skicka förfrågan",
+      "cancel": "Avbryt",
+      "success": "Tack! Vi hör av oss inom kort."
+    }
+  },
+  "consultation": {
+    "close": "Stäng",
+    "title": "Kontakta oss",
+    "subtitle": "Boka ett samtal eller skicka ett meddelande, vad som passar dig bäst.",
+    "options": {
+      "call": {
+        "title": "Boka ett kort samtal",
+        "description": "Välj en tid som passar dig: ett kort samtal med en charterexpert."
+      },
+      "message": {
+        "title": "Skicka ett meddelande",
+        "description": "Berätta om din resa så återkommer vi via e-post."
+      }
+    },
+    "placeholder": {
+      "title": "Bokning kommer snart",
+      "description": "Onlinebokning av tider är inte klar än. Skicka ett meddelande så hittar vi en tid som passar dig.",
+      "cta": "Skicka ett meddelande i stället"
+    },
+    "submitted": {
+      "title": "Tack, vi hör av oss",
+      "description": "En av våra charterexperter återkommer inom kort."
+    },
+    "error": {
+      "title": "Något gick fel",
+      "description": "Vi kunde inte ladda dina resedetaljer. Försök igen.",
+      "retry": "Försök igen"
+    }
+  }
+}

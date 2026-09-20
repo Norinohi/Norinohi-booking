@@ -205,13 +205,13 @@
       "externalId": "Anbieter-ID",
       "status": "Inseratsstatus",
       "matchStatus": "Abgleichstatus",
-      "operator": "Betreiber",
+      "operator": "Vercharterer",
       "model": "Modell",
       "year": "Baujahr",
       "length": "Länge",
       "cabins": "Kabinen",
       "berths": "Kojen",
-      "base": "Heimathafen",
+      "base": "Heimatbasis",
       "location": "Standort"
     },
     "lengthValue": "{value} m",
@@ -300,7 +300,7 @@
       "berths": "Kojen",
       "heads": "Nasszellen",
       "builder": "Werft",
-      "operator": "Betreiber",
+      "operator": "Vercharterer",
       "model": "Modell",
       "year": "Baujahr"
     },
@@ -633,7 +633,7 @@
       "provider": "Anbieter",
       "status": "Status",
       "allProviders": "Alle Anbieter",
-      "operator": "Anbieter",
+      "operator": "Vercharterer",
       "allOperators": "Alle Anbieter",
       "allStatuses": "Alle Status",
       "search": "Suche nach Titel oder Slug"
@@ -641,7 +641,7 @@
     "table": {
       "listing": "Inserat",
       "provider": "Anbieter",
-      "operator": "Betreiber",
+      "operator": "Vercharterer",
       "model": "Modell & Baujahr",
       "place": "Heimathafen & Standort",
       "price": "Ab",
@@ -694,7 +694,7 @@
       "model": "Modell",
       "year": "Baujahr",
       "base": "Basis",
-      "operator": "Betreiber",
+      "operator": "Vercharterer",
       "photos": "Fotos",
       "descriptions": "Beschreibungen",
       "fields": {
@@ -703,7 +703,7 @@
         "spec": "Technische Daten",
         "description": "Beschreibung",
         "taxonomy": "Werft, Modell, Typ",
-        "operator": "Betreiber",
+        "operator": "Vercharterer",
         "home_base": "Heimatbasis",
         "pets": "Haustiere erlaubt"
       },
@@ -831,7 +831,14 @@
         "en": "Englisch",
         "uk": "Ukrainisch",
         "de": "Deutsch",
-        "es": "Spanisch"
+        "es": "Spanisch",
+        "fr": "Französisch",
+        "pl": "Polnisch",
+        "it": "Italienisch",
+        "nl": "Niederländisch",
+        "sv": "Schwedisch",
+        "no": "Norwegisch",
+        "da": "Dänisch"
       }
     },
     "stops": {
@@ -1147,13 +1154,27 @@
       "en": "Englisch",
       "de": "Deutsch",
       "es": "Spanisch",
-      "uk": "Ukrainisch"
+      "uk": "Ukrainisch",
+      "fr": "Französisch",
+      "pl": "Polnisch",
+      "it": "Italienisch",
+      "nl": "Niederländisch",
+      "sv": "Schwedisch",
+      "no": "Norwegisch",
+      "da": "Dänisch"
     },
     "localeCodes": {
       "en": "EN",
       "de": "DE",
       "es": "ES",
-      "uk": "UK"
+      "uk": "UK",
+      "fr": "FR",
+      "pl": "PL",
+      "it": "IT",
+      "nl": "NL",
+      "sv": "SV",
+      "no": "NO",
+      "da": "DA"
     },
     "state": {
       "answered": "Beantwortet - auf der öffentlichen Seite",
@@ -1334,7 +1355,14 @@
         "en": "Englisch",
         "uk": "Ukrainisch",
         "de": "Deutsch",
-        "es": "Spanisch"
+        "es": "Spanisch",
+        "fr": "Französisch",
+        "pl": "Polnisch",
+        "it": "Italienisch",
+        "nl": "Niederländisch",
+        "sv": "Schwedisch",
+        "no": "Norwegisch",
+        "da": "Dänisch"
       }
     }
   },

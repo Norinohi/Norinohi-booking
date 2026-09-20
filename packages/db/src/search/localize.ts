@@ -1,24 +1,23 @@
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
+import { DEFAULT_LOCALE, TRANSLATED_LOCALES } from "../locales";
+
 import type * as schema from "../schema";
 import { normalizedKey, normalizedKeySql } from "./normalize";
 import type { FacetMediaKind, ListingSearchDoc } from "./types";
 
-export const DEFAULT_LOCALE = "en";
+export { DEFAULT_LOCALE };
 
 /**
- * Locales a provider-sourced label is worth storing for.
- *
- * Mirrors `locales` in apps/web/src/i18n/config.ts minus the default, which lives on
- * `facet_media.value` itself. Kept here rather than imported because the sync writer runs
- * in packages/providers, which has no route into the web app; adding a language means
- * editing both and re-running the facet backfill.
+ * Locales a provider-sourced label is worth storing for: every site locale but the default,
+ * which lives on `facet_media.value` itself. Adding a language means re-running the facet
+ * backfill so the labels providers already sent are stored for it.
  *
  * NauSYS ships eighteen languages per reference list. Storing only what the site serves
  * keeps the table proportional to the pages that exist.
  */
-export const CONTENT_LOCALES = ["es", "uk", "de"] as const;
+export const CONTENT_LOCALES = TRANSLATED_LOCALES;
 
 /*
  * Which facet_media kind carries the translation for each card label.

@@ -2,16 +2,19 @@ import { and, eq, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { z } from "zod";
 
+import { perSiteLocale, SITE_LOCALES, type SiteLocale } from "./locales";
+
 import popularRoutesJson from "./popular-routes.json" with { type: "json" };
 
 import type * as schema from "./schema/index";
 import { base, country, location, region } from "./schema/geography";
 import { suggestedRoute, suggestedRouteStop, suggestedRouteTranslation } from "./schema/route";
 import { freeRouteSlug } from "./routes/library";
+import { fillMissingRouteTranslations, type FilledTranslations } from "./routes/fill-translations";
 
 type Database = NodePgDatabase<typeof schema>;
-type Locale = "en" | "uk" | "de" | "es";
-const LOCALES: Locale[] = ["en", "uk", "de", "es"];
+type Locale = SiteLocale;
+const LOCALES = SITE_LOCALES;
 type Copy = { title: string; description: string };
 
 const copySchema = z.object({ title: z.string(), description: z.string() });
@@ -55,7 +58,7 @@ export const POPULAR_ROUTES: SeedRoute[] = z
       nights: z.number().int().positive(),
       difficulty: z.enum(["easy", "moderate", "advanced"]),
       imageUrl: z.string().nullable(),
-      copy: z.object({ en: copySchema, uk: copySchema, de: copySchema, es: copySchema }),
+      copy: perSiteLocale(copySchema),
       stops: z.array(z.object({ name: z.string(), lat: z.number(), lng: z.number() })),
     }),
   )
@@ -69,6 +72,8 @@ export type PopularRoutesPlan = {
   unresolved: { id: string; title: string; target: string }[];
   /** Routes featured today that the new order leaves out, so a hand-curated one is not lost silently. */
   unfeatured: { id: string; title: string }[];
+  /** Rows written for locales an existing route had none in. */
+  translationsFilled: FilledTranslations;
 };
 
 async function resolveTarget(db: Database, target: Target) {
@@ -120,6 +125,7 @@ export async function seedPopularRoutes(
     refreshed: [],
     unresolved: [],
     unfeatured: [],
+    translationsFilled: { routes: 0, stops: 0 },
   };
 
   const ids = POPULAR_ROUTES.map((route) => route.id);
@@ -159,6 +165,12 @@ export async function seedPopularRoutes(
         ordered.length > 0 ? notInArray(suggestedRoute.id, ordered) : sql`true`,
       ),
     );
+
+  plan.translationsFilled = await fillMissingRouteTranslations(
+    db,
+    POPULAR_ROUTES.filter((route) => existing.has(route.id)).map(({ id, copy }) => ({ id, copy })),
+    { apply },
+  );
 
   if (!apply) return plan;
 

@@ -1,5 +1,8 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
+  /* Vendored skills are hash-locked by skills-lock.json, so their scripts cannot be edited to
+     satisfy a rule. They are not this repo's code and are linted by whoever ships them. */
+  "ignorePatterns": [".agents/skills/**", ".claude/skills/**"],
   "plugins": ["typescript", "unicorn", "oxc"],
   "jsPlugins": [
     {

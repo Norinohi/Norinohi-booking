@@ -1,0 +1,120 @@
+{
+  "title": "Rabatt- og prisadministrasjon",
+  "subtitle": "Administrer kampanjekoder og yachtpriser.",
+  "create": "Opprett rabatt",
+  "tabs": {
+    "discounts": "Rabatter",
+    "managePrices": "Administrer priser"
+  },
+  "table": {
+    "name": "Rabattnavn",
+    "code": "Kode",
+    "typeValue": "Type og verdi",
+    "appliesTo": "Gjelder for",
+    "status": "Status",
+    "usage": "Bruk",
+    "empty": "Ingen rabatter funnet",
+    "error": "Kunne ikke laste rabattene"
+  },
+  "status": {
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "scheduled": "Planlagt",
+    "expired": "Utløpt"
+  },
+  "type": {
+    "percentage": "Prosent",
+    "fixed_amount": "Fast"
+  },
+  "applies": {
+    "allYachts": "Alle yachter",
+    "allCatamarans": "Alle katamaraner",
+    "allGullets": "Alle guletter",
+    "allMotorboats": "Alle motorbåter",
+    "allMotorYachts": "Alle motoryachter",
+    "allSailboats": "Alle seilbåter",
+    "specific": "Bestemte yachter",
+    "allSailingYachts": "Alle seilyachter",
+    "nothing": "Ingenting",
+    "missing": "{type, select, listing {Slettet yacht} category {Slettet kategori} operator {Slettet operatør} region {Slettet region} other {Slettet mål}} ({id})",
+    "more": "{first} +{count} til"
+  },
+  "dialog": {
+    "createTitle": "Opprett ny rabatt",
+    "editTitle": "Rediger rabatt",
+    "name": {
+      "label": "Rabattnavn",
+      "placeholder": "f.eks. Sommertilbud 2026"
+    },
+    "code": {
+      "label": "Rabattkode",
+      "placeholder": "f.eks. SUMMER2026"
+    },
+    "type": {
+      "label": "Rabattype"
+    },
+    "price": {
+      "label": "Rabattverdi",
+      "placeholder": "10"
+    },
+    "expiration": {
+      "label": "Utløpsdato",
+      "placeholder": "Alle datoer"
+    },
+    "appliesTo": {
+      "label": "Gjelder for"
+    },
+    "search": {
+      "placeholder": "Søk etter yacht"
+    },
+    "submitCreate": "Opprett rabatt",
+    "submitSave": "Lagre endringer",
+    "created": "Rabatten er opprettet",
+    "saved": "Rabatten er oppdatert",
+    "errors": {
+      "nameRequired": "Skriv inn et rabattnavn",
+      "codeRequired": "Skriv inn en rabattkode",
+      "priceRequired": "Skriv inn en rabattverdi",
+      "appliesRequired": "Velg hva rabatten skal gjelde for",
+      "usageLimitInvalid": "Skriv inn et helt antall bruk, eller la feltet stå tomt"
+    },
+    "error": "Noe gikk galt. Prøv igjen.",
+    "usageLimit": {
+      "label": "Bruksgrense",
+      "placeholder": "Ubegrenset",
+      "hint": "La feltet stå tomt for ubegrenset bruk"
+    },
+    "active": {
+      "label": "Aktiv",
+      "on": "Rabatten er aktivert",
+      "off": "Rabatten er deaktivert"
+    }
+  },
+  "prices": {
+    "search": "Søk på navn",
+    "allTypes": "Alle typer",
+    "allLocations": "Alle steder",
+    "table": {
+      "yacht": "Yacht",
+      "location": "Sted",
+      "basePrice": "Grunnpris",
+      "currentPrice": "Gjeldende pris",
+      "edit": "Rediger pris"
+    },
+    "dialog": {
+      "title": "Rediger pris",
+      "basePrice": "Grunnpris",
+      "newPrice": "Ny pris",
+      "newPricePlaceholder": "f.eks. 14 539 €",
+      "submit": "Oppdater pris",
+      "updated": "Prisen er oppdatert",
+      "errors": {
+        "priceRequired": "Skriv inn en ny pris"
+      },
+      "reset": "Tilbakestill til leverandørprisen",
+      "cleared": "Prisen er tilbakestilt til leverandørprisen"
+    },
+    "empty": "Ingen yachter funnet",
+    "error": "Kunne ikke laste prisene"
+  }
+}

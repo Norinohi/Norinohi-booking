@@ -1,0 +1,25 @@
+{
+  "title": "Neem contact op",
+  "subtitle": "Plan een gesprek of stuur ons een bericht, wat jou het beste uitkomt.",
+  "options": {
+    "call": {
+      "title": "Plan een kort gesprek",
+      "description": "Kies een moment dat jou uitkomt voor een kort gesprek met een charterexpert."
+    },
+    "message": {
+      "title": "Stuur een bericht",
+      "description": "Vertel ons waar je naar zoekt en we reageren per e-mail."
+    }
+  },
+  "placeholder": {
+    "title": "Online afspraken plannen komt binnenkort",
+    "description": "Online plannen is nog niet beschikbaar. Stuur ons een bericht en we spreken een moment af dat jou uitkomt.",
+    "cta": "Stuur liever een bericht"
+  },
+  "send": "Bericht versturen",
+  "sent": "Bedankt! Een charterexpert neemt snel contact met je op.",
+  "submitted": {
+    "title": "Bedankt, we nemen contact met je op",
+    "description": "Een van onze charterexperts neemt binnenkort contact met je op."
+  }
+}

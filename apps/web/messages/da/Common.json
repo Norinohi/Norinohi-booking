@@ -1,0 +1,303 @@
+{
+  "crewTypes": {
+    "bareboat": "Uden besætning",
+    "skipper": "Skipper",
+    "full-crew": "Fuld besætning"
+  },
+  "extras": {
+    "payAtCheckIn": "Betales ved check-in",
+    "dueWithPrepayment": "Betales sammen med forudbetalingen",
+    "payNow": "Indeholdt i forudbetalingen",
+    "includedInPrice": "Inkluderet i prisen",
+    "priceOnRequest": "Pris på forespørgsel",
+    "confirmWithBase": "Prisen er ikke offentliggjort, bekræft med basen",
+    "percentageOfCharter": "{percent} % af charterprisen",
+    "oneWayOnly": "Kun ved enkeltvejscharter",
+    "measure": {
+      "booking": "{price} pr. booking",
+      "day": "{price} pr. dag",
+      "night": "{price} pr. nat",
+      "week": "{price} pr. uge",
+      "person": "{price} pr. person",
+      "nightPerson": "{price} pr. person / nat",
+      "dayWithFood": "{price} pr. dag inkl. mad",
+      "oneWayPerson": "{price} enkeltvej pr. person",
+      "set": "{price} pr. sæt",
+      "service": "{price} pr. ydelse",
+      "piece": "{price} pr. stk.",
+      "weekStarted": "{price} pr. påbegyndt uge",
+      "oneWay": "{price} enkeltvej",
+      "weekPerson": "{price} pr. person / uge",
+      "weekFood": "{price} pr. uge inkl. mad",
+      "dayPerson": "{price} pr. person / dag",
+      "bookingPerson": "{price} pr. person pr. booking",
+      "pet": "{price} pr. kæledyr",
+      "cabin": "{price} pr. kahyt",
+      "twoWeeks": "{price} pr. 2 uger",
+      "hour": "{price} pr. time",
+      "engineHour": "{price} pr. motortime",
+      "halfHour": "{price} pr. halve time",
+      "crewChange": "{price} pr. besætningsskifte",
+      "personCourse": "{price} pr. person pr. kursus",
+      "boat": "{price} pr. båd",
+      "pack": "{price} pr. pakke",
+      "bottle": "{price} pr. flaske",
+      "licence": "{price} pr. licens",
+      "meal": "{price} pr. måltid",
+      "nauticalMile": "{price} pr. sømil",
+      "roundTrip": "{price} tur-retur",
+      "litre": "{price} pr. liter",
+      "weekStartedPerson": "{price} pr. person pr. påbegyndt uge"
+    }
+  },
+  "resultsCount": "{count, plural, one {# båd fundet} other {# både fundet}}",
+  "removeFilter": "Fjern filteret {label}",
+  "passwordToggle": {
+    "show": "Vis adgangskode",
+    "hide": "Skjul adgangskode"
+  },
+  "sorting": {
+    "label": "Sorter efter: {value}",
+    "recommended": "Anbefalet",
+    "price-asc": "Pris: lav til høj",
+    "price-desc": "Pris: høj til lav",
+    "rating": "Gæstebedømmelse",
+    "newest": "Nyeste først"
+  },
+  "priceBasis": {
+    "label": "Pris: {value}",
+    "aria": "Hvilken pris skal vises",
+    "boat": "Kun båden",
+    "charter": "Hele charteret",
+    "hintLabel": "Hvad priserne dækker",
+    "boatHint": "bådens egen lejepris, det tal andre chartersider sammenligner. Obligatoriske tillæg som charterpakken eller slutrengøring lægges til ved booking.",
+    "charterHint": "båden plus alle obligatoriske tillæg (charterpakke, rengøring og andre obligatoriske gebyrer): det charteret faktisk koster."
+  },
+  "boatCard": {
+    "save": "Gem på ønskelisten",
+    "remove": "Fjern fra ønskelisten",
+    "viewDetails": "Se detaljer",
+    "imageAlt": "{name} fortøjet i {marina}",
+    "openGallery": "Åbn billedgalleriet",
+    "priceHintLabel": "Om denne pris",
+    "priceFor": "Charterpris · {days, plural, one {# dag} other {# dage}}",
+    "priceIndicative": "Charterpris · grundtakst, der kan komme ekstra gebyrer til",
+    "boatPriceFor": "Bådpris · {days, plural, one {# dag} other {# dage}}",
+    "boatPriceIndicative": "Bådpris · grundtakst, der kan komme ekstra gebyrer til",
+    "priceListRate": "Charterpris · listepris før rabatter, der kan komme ekstra gebyrer til",
+    "boatPriceListRate": "Bådpris · listepris før rabatter, der kan komme ekstra gebyrer til",
+    "priceForPeriod": "Charterpris · for {from, date, dayCompact} - {to, date, dayCompact}",
+    "boatPriceForPeriod": "Bådpris · for {from, date, dayCompact} - {to, date, dayCompact}",
+    "priceListRateForPeriod": "Charterpris · listepris for {from, date, dayCompact} - {to, date, dayCompact} før rabatter, der kan komme ekstra gebyrer til",
+    "boatPriceListRateForPeriod": "Bådpris · listepris for {from, date, dayCompact} - {to, date, dayCompact} før rabatter, der kan komme ekstra gebyrer til",
+    "priceListEstimate": "Anslået charterpris · fra udbyderens prisliste for {nights, plural, one {# nat} other {# nætter}}, før rabatter, den endelige pris kan afvige",
+    "boatPriceListEstimate": "Anslået bådpris · fra udbyderens prisliste for {nights, plural, one {# nat} other {# nætter}}, før rabatter, den endelige pris kan afvige",
+    "priceListEstimateForPeriod": "Anslået charterpris · fra udbyderens prisliste for {from, date, dayCompact} - {to, date, dayCompact}, før rabatter, den endelige pris kan afvige",
+    "boatPriceListEstimateForPeriod": "Anslået bådpris · fra udbyderens prisliste for {from, date, dayCompact} - {to, date, dayCompact}, før rabatter, den endelige pris kan afvige",
+    "priceListRateMayBeLower": "Charterpris · listepris før rabatter, den endelige pris kan være lavere, der kan komme ekstra gebyrer til",
+    "boatPriceListRateMayBeLower": "Bådpris · listepris før rabatter, den endelige pris kan være lavere, der kan komme ekstra gebyrer til",
+    "priceListRateMayBeLowerForPeriod": "Charterpris · listepris for {from, date, dayCompact} - {to, date, dayCompact} før rabatter, den endelige pris kan være lavere, der kan komme ekstra gebyrer til",
+    "boatPriceListRateMayBeLowerForPeriod": "Bådpris · listepris for {from, date, dayCompact} - {to, date, dayCompact} før rabatter, den endelige pris kan være lavere, der kan komme ekstra gebyrer til",
+    "priceListEstimateFrom": "Anslået charterpris fra · udbyderens prisliste for {nights, plural, one {# nat} other {# nætter}}, før rabatter, den endelige pris kan afvige",
+    "boatPriceListEstimateFrom": "Anslået bådpris fra · udbyderens prisliste for {nights, plural, one {# nat} other {# nætter}}, før rabatter, den endelige pris kan afvige",
+    "priceListEstimateFromForPeriod": "Anslået charterpris fra · udbyderens prisliste for {from, date, dayCompact} - {to, date, dayCompact}, før rabatter, den endelige pris kan afvige",
+    "boatPriceListEstimateFromForPeriod": "Anslået bådpris fra · udbyderens prisliste for {from, date, dayCompact} - {to, date, dayCompact}, før rabatter, den endelige pris kan afvige",
+    "priceListEstimateMayBeLower": "Anslået charterpris · fra udbyderens prisliste for {nights, plural, one {# nat} other {# nætter}}, før rabatter, den endelige pris kan være lavere",
+    "boatPriceListEstimateMayBeLower": "Anslået bådpris · fra udbyderens prisliste for {nights, plural, one {# nat} other {# nætter}}, før rabatter, den endelige pris kan være lavere",
+    "priceListEstimateMayBeLowerForPeriod": "Anslået charterpris · fra udbyderens prisliste for {from, date, dayCompact} - {to, date, dayCompact}, før rabatter, den endelige pris kan være lavere",
+    "boatPriceListEstimateMayBeLowerForPeriod": "Anslået bådpris · fra udbyderens prisliste for {from, date, dayCompact} - {to, date, dayCompact}, før rabatter, den endelige pris kan være lavere",
+    "priceFromLabel": "Fra",
+    "plusObligatory": "plus {amount} i obligatoriske tillæg",
+    "approximatePrice": "ca.",
+    "chargedIn": "Opkræves i {currency}: {amount}",
+    "currencyLabel": "Valuta",
+    "priceOnRequest": "På forespørgsel",
+    "getPrice": "Få prisen",
+    "weeklyPriceFrom": "En uge fra {price}",
+    "priceForDatesOnPage": "Se prisen for dine datoer på bådens side",
+    "priceUnavailable": "Ikke ledig",
+    "perPerson": "{price} pr. person",
+    "perPersonApprox": "~ {price} pr. person",
+    "perBerth": "{price} pr. person ved {berths} køjepladser",
+    "perNight": "{price} pr. nat",
+    "perNightWithEquivalent": "{price} pr. nat (≈ {equivalent})",
+    "datesAlternative": "Denne båd sælges ikke på dine datoer. Nærmeste charter:",
+    "prepayment": "Forudbetaling ved booking: {amount}",
+    "prepaymentInfo": "Det er den del af charterprisen, der betales på forhånd for at sikre bookingen. Den tæller med i totalen, og resten forfalder inden check-in.",
+    "securityDeposit": "Depositum, der refunderes: {amount}",
+    "securityDepositInfo": "Et depositum, som charterbasen holder som sikkerhed mod skader under din tur. Det opkræves ved check-in, indgår ikke i prisen, og betales tilbage efter check-ud, hvis alt er i god stand.",
+    "specs": {
+      "year": "Årgang",
+      "people": "Personer",
+      "toilets": "Toiletter",
+      "showers": "Brusere",
+      "mainsail": "Storsejlstype",
+      "cabins": "Kahytter",
+      "length": "Længde",
+      "lengthValue": "{length, number} m"
+    },
+    "battenMainsail": "Storsejl med sejlpinde",
+    "badges": {
+      "available": "Ledig",
+      "temporarilyHeld": "Midlertidigt reserveret",
+      "onRequest": "På forespørgsel",
+      "unavailable": "Ikke ledig",
+      "bestForFamilies": "Bedst til familier",
+      "bestValue": "Bedst til prisen",
+      "new": "Ny",
+      "discount": "{percent} % RABAT",
+      "petsAllowed": "Kæledyr tilladt",
+      "depositInsurance": "Depositumforsikring inkluderet",
+      "topRated": "Topbedømt"
+    },
+    "stats": {
+      "booked": "{count, plural, one {# booket denne måned} other {# booket denne måned}}",
+      "viewed": "{count, plural, one {# person har set den i dag} other {# personer har set den i dag}}"
+    },
+    "amenities": {
+      "wifi": "Gratis wi-fi",
+      "solar": "3 solpaneler",
+      "paddle": "Gratis paddleboard",
+      "air": "Aircondition",
+      "waterToys": "Vandlegetøj",
+      "galley": "Fuldt udstyret kabys",
+      "fridge": "Køleskab og fryser",
+      "tender": "Jolle med påhængsmotor"
+    },
+    "charterTypes": {
+      "bareboat": "Uden besætning",
+      "bareboatSailingYacht": "Sejlyacht uden besætning",
+      "catamaran": "Katamaran"
+    },
+    "crews": {
+      "fullCrew": "Fuld besætning",
+      "skipperOptional": "Skipper kan tilvælges"
+    },
+    "moreAmenities": "{count, plural, one {Vis # facilitet mere} other {Vis # faciliteter mere}}",
+    "moreAmenitiesShort": "+{count}",
+    "holdEndsIn": "Reservationen udløber om {time}",
+    "holdEnding": "Reservationen er ved at udløbe, kig forbi igen om lidt",
+    "holdNoDeadline": "Reserveret, indtil den anden kunde bekræfter"
+  },
+  "gallery": {
+    "close": "Luk",
+    "previous": "Forrige",
+    "next": "Næste",
+    "zoomIn": "Zoom ind",
+    "zoomOut": "Zoom ud",
+    "slideCounter": "{index} af {total}",
+    "slide": "Slide",
+    "carousel": "Karrusel",
+    "photoGallery": "Billedgalleri",
+    "lightbox": "Billedvisning",
+    "thumbnails": "Miniaturer"
+  },
+  "marina": {
+    "viewDetails": "Se detaljer"
+  },
+  "map": {
+    "open": "Åbn kortet over {place}",
+    "satellite": "Satellit",
+    "streets": "Kort",
+    "zoomIn": "Zoom ind",
+    "zoomOut": "Zoom ud",
+    "locate": "Vis min placering",
+    "locateUnavailable": "Placering er ikke tilgængelig",
+    "frameAll": "Vis alt"
+  },
+  "leadForm": {
+    "fields": {
+      "name": {
+        "label": "Fulde navn",
+        "placeholder": "Anne Jensen"
+      },
+      "email": {
+        "label": "E-mail",
+        "placeholder": "anne@eksempel.dk"
+      },
+      "phone": {
+        "label": "Telefon (valgfrit)",
+        "placeholder": "+45 12 34 56 78"
+      },
+      "country": {
+        "label": "Land",
+        "placeholder": "Vælg dit land"
+      },
+      "message": {
+        "label": "Besked (valgfrit)",
+        "placeholder": "Er der andet, vi bør vide om din tur?"
+      }
+    },
+    "errors": {
+      "nameRequired": "Indtast dit navn",
+      "emailInvalid": "Indtast en gyldig e-mailadresse",
+      "submitFailed": "Vi kunne ikke sende din forespørgsel. Prøv igen."
+    }
+  },
+  "charterPeriod": {
+    "day": {
+      "booked": "Booket",
+      "held": "Reserveret, kan blive ledig"
+    },
+    "or": ", eller ",
+    "daysAndNights": "{days}, {nights}",
+    "weekdayRange": "{from} til {to}",
+    "wholeWeeksAnyDay": "Vilkårlig startdag, i hele uger",
+    "wholeWeeksFromDays": "Starter {days}, i hele uger",
+    "weekdaysToDay": "Starter {days}, slutter {to}",
+    "weekdayStart": "Starter {day}",
+    "weekdayEnd": "Slutter {day}",
+    "nightsExact": "{count, plural, one {# nat} other {# nætter}}",
+    "nightsFrom": "fra {count, plural, one {# nat} other {# nætter}}",
+    "nightsUpTo": "op til {count, plural, one {# nat} other {# nætter}}",
+    "nightsRange": "{min} til {max} nætter",
+    "label": "Charterperiode",
+    "rulesMore": "Vis alle charterregler",
+    "rulesLess": "Vis mindre"
+  },
+  "countryPicker": {
+    "search": "Søg lande",
+    "loading": "Indlæser lande…",
+    "empty": "Ingen lande matcher det"
+  },
+  "errors": {
+    "requestFailed": "Noget gik galt",
+    "retry": "Prøv igen"
+  },
+  "notFound": {
+    "title": "Siden blev ikke fundet",
+    "description": "Den side, du leder efter, findes ikke eller er blevet flyttet.",
+    "home": "Tilbage til forsiden",
+    "browse": "Se bådene"
+  },
+  "error": {
+    "title": "Noget gik galt",
+    "description": "Vi kunne ikke indlæse denne side. Prøv igen, eller kig forbi om lidt.",
+    "retry": "Prøv igen",
+    "home": "Tilbage til forsiden"
+  },
+  "ui": {
+    "close": "Luk",
+    "previousPage": "Gå til forrige side",
+    "nextPage": "Gå til næste side",
+    "pagination": "Sidenavigation",
+    "breadcrumb": "Brødkrummesti",
+    "previousPhoto": "Forrige billede",
+    "nextPhoto": "Næste billede",
+    "goToPhoto": "Gå til billede {index} af {total}",
+    "showPhoto": "Vis billede {index}",
+    "clear": "Ryd {label}",
+    "noOptions": "Ingen muligheder",
+    "noMatches": "Ingen match",
+    "showPassword": "Vis adgangskode",
+    "hidePassword": "Skjul adgangskode",
+    "previousMonth": "Forrige måned",
+    "nextMonth": "Næste måned",
+    "rating": "Bedømmelse {rating} ud af {max}"
+  },
+  "quoteLines": {
+    "referral-welcome": "Velkomstrabat ved henvisning",
+    "referral-credit": "Tilgodehavende fra henvisning",
+    "provider-discount": "Charterrabat"
+  }
+}

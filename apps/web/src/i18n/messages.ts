@@ -6,7 +6,7 @@ type Namespace = keyof Messages;
 
 /*
  * One loader per locale rather than a template import, so `satisfies` checks every locale's
- * namespace set against the `en` shape `Messages` is declared from. Key-level parity for all four
+ * namespace set against the `en` shape `Messages` is declared from. Key-level parity for every
  * locales is `pnpm --filter web check-messages`.
  */
 const loaders = {
@@ -14,6 +14,13 @@ const loaders = {
   de: () => import("../../messages/de"),
   es: () => import("../../messages/es"),
   uk: () => import("../../messages/uk"),
+  fr: () => import("../../messages/fr"),
+  pl: () => import("../../messages/pl"),
+  it: () => import("../../messages/it"),
+  nl: () => import("../../messages/nl"),
+  sv: () => import("../../messages/sv"),
+  no: () => import("../../messages/no"),
+  da: () => import("../../messages/da"),
 } satisfies Record<Locale, () => Promise<{ default: Messages }>>;
 
 export async function loadMessages(locale: Locale): Promise<Messages> {

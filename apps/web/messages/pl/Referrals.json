@@ -1,0 +1,62 @@
+{
+  "title": "Twoje polecenia",
+  "invite": {
+    "heading": "Zapraszaj znajomych. Zdobywaj środki na rejsy.",
+    "description": "Podaruj znajomym 100 € na pierwszą rezerwację i otrzymaj 100 € środków dla siebie, gdy wyruszą w rejs.",
+    "copy": "Kopiuj link polecający",
+    "copied": "Link skopiowany",
+    "generate": "Wygeneruj nowy kod",
+    "generated": "Wygenerowano nowy kod polecający",
+    "generateFailed": "Nie udało się wygenerować nowego kodu. Spróbuj ponownie.",
+    "information": "Informacje",
+    "rules": {
+      "minBooking": "Środki można wykorzystać przy każdej rezerwacji jachtu powyżej 1000 €.",
+      "expiry": "Środki z poleceń wygasają po 12 miesiącach od ich zdobycia.",
+      "cash": "Środków nie można wypłacić w gotówce.",
+      "firstTime": "Dotyczy wyłącznie pierwszej rezerwacji zaproszonych znajomych."
+    },
+    "stats": {
+      "invited": "Zaproszeni użytkownicy",
+      "completed": "Zrealizowane rezerwacje",
+      "earned": "Łącznie zdobyte",
+      "balance": "Dostępne saldo"
+    }
+  },
+  "how": {
+    "title": "Jak to działa",
+    "steps": {
+      "share": {
+        "title": "Udostępnij link",
+        "description": "Wyślij swój unikalny link polecający znajomym, którzy kochają podróże"
+      },
+      "book": {
+        "title": "Znajomy rezerwuje",
+        "description": "Otrzymuje 100 € zniżki na pierwszą rezerwację jachtu powyżej 1000 €"
+      },
+      "credit": {
+        "title": "Otrzymujesz środki",
+        "description": "Gdy znajomy zakończy rejs, otrzymujesz 100 € środków"
+      }
+    },
+    "level": {
+      "title": "Twój poziom",
+      "current": "Obecny:",
+      "next": "Następny: {level}",
+      "left": "Do następnego poziomu {count, plural, one {pozostała # rezerwacja} few {pozostały # rezerwacje} many {pozostało # rezerwacji} other {pozostało # rezerwacji}}",
+      "perks": {
+        "extra": "5% dodatkowych środków za wszystkie polecenia",
+        "early": "Wcześniejszy dostęp do luksusowych ofert",
+        "concierge": "Osobisty konsjerż"
+      }
+    }
+  },
+  "history": {
+    "title": "Historia poleceń",
+    "today": "Dzisiaj",
+    "daysAgo": "{count, plural, one {# dzień temu} few {# dni temu} many {# dni temu} other {# dnia temu}}",
+    "credited": "Zrealizowane",
+    "pending": "Oczekujące",
+    "void": "Anulowane",
+    "empty": "Nie masz jeszcze poleceń. Udostępnij swój link, aby zacząć."
+  }
+}

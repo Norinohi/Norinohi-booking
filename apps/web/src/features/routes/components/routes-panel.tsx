@@ -11,10 +11,10 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import {
   Activity,
   ArrowLeft,
-  ChevronDown,
   ChevronRight,
   ChevronUp,
   Clock,
+  Map as MapIcon,
   MapPin,
   Search,
   Ship,
@@ -224,6 +224,7 @@ function Itinerary({ route, onFocus }: { route: MapRoute; onFocus: (point: Coord
       <DayTimeline
         key={route.id}
         compact
+        numbered
         columns={[days]}
         onSelect={(index) => {
           const stop = route.stops[index];
@@ -303,8 +304,6 @@ export interface RoutesPanelProps {
   routes: MapRoute[];
   visible: MapRoute[];
   selected: MapRoute | null;
-  filters: RouteFilters;
-  onFiltersChange: (next: Partial<RouteFilters>) => void;
   onResetFilters: () => void;
   onSelect: (slug: string | null) => void;
   /** Moves the map to a day of the itinerary or a marina picked from the panel. */
@@ -315,6 +314,10 @@ export interface RoutesPanelProps {
   /** Phones only: folded down to its bar. Held by the screen, whose list button opens it too. */
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
+  /** Puts the whole list away, from md up where it has no fold bar. */
+  onClose?: () => void;
+  /** Frames the open route on the map, and on a phone puts the card away to show it. */
+  onShowOnMap?: () => void;
   ref?: Ref<HTMLElement>;
   className?: string;
 }
@@ -327,8 +330,6 @@ export default function RoutesPanel({
   routes,
   visible,
   selected,
-  filters,
-  onFiltersChange,
   onResetFilters,
   onSelect,
   onFocus,
@@ -337,6 +338,8 @@ export default function RoutesPanel({
   marinasFailed,
   collapsed,
   onCollapsedChange,
+  onClose,
+  onShowOnMap,
   ref,
   className,
 }: RoutesPanelProps) {
@@ -355,30 +358,37 @@ export default function RoutesPanel({
         className,
       )}
     >
-      {/* Phones only, for an open route: it covers half the map there, so it folds down to this
-          bar. The list has no bar: it opens and closes from the button over the map. */}
+      {/* Phones only, for an open route. Open, the card fills the screen and its header carries a
+          close; closed, it is one button that says what pressing it brings back, so the way to the
+          map and the way back are both plain. */}
       {selected ? (
-        <button
-          type="button"
-          aria-expanded={!collapsed}
-          onClick={() => onCollapsedChange(!collapsed)}
-          className={cn(
-            "flex shrink-0 items-center gap-3 px-4 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40 md:hidden",
-            !collapsed && "border-b border-border",
-          )}
-        >
-          <span className="min-w-0 flex-1 truncate text-base font-bold text-natural-700">
-            {selected ? selected.title : t("title")}
-          </span>
-          <span className="shrink-0 text-sm text-natural-500">
-            {collapsed ? t("showList") : t("hideList")}
-          </span>
-          {collapsed ? (
-            <ChevronUp className="size-5 shrink-0 text-natural-500" />
-          ) : (
-            <ChevronDown className="size-5 shrink-0 text-natural-500" />
-          )}
-        </button>
+        collapsed ? (
+          <button
+            type="button"
+            aria-expanded={false}
+            onClick={() => onCollapsedChange(false)}
+            className="flex shrink-0 items-center gap-2 px-4 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40 md:hidden"
+          >
+            <ChevronUp className="size-5 shrink-0 text-brand" />
+            <span className="min-w-0 flex-1 truncate text-base font-bold text-natural-700">
+              {t("showDetails")}
+            </span>
+          </button>
+        ) : (
+          <div className="flex shrink-0 items-center gap-3 border-b border-border py-2 pr-2 pl-4 md:hidden">
+            <span className="min-w-0 flex-1 truncate text-base font-bold text-natural-700">
+              {selected.title}
+            </span>
+            <IconButton
+              variant="subtle"
+              size="sm"
+              aria-label={t("closeDetails")}
+              onClick={() => onCollapsedChange(true)}
+            >
+              <X />
+            </IconButton>
+          </div>
+        )
       ) : null}
 
       <div className={cn("flex min-h-0 flex-1 flex-col", selected && collapsed && "max-md:hidden")}>
@@ -395,6 +405,18 @@ export default function RoutesPanel({
                 <ArrowLeft className="size-4" />
                 {t("allRoutes")}
               </button>
+              {/* Puts the card away without closing the route, which stays drawn on the map. */}
+              {onClose ? (
+                <IconButton
+                  variant="neutral"
+                  size="sm"
+                  aria-label={t("hidePanel")}
+                  onClick={onClose}
+                  className="absolute top-3 right-3 max-md:hidden"
+                >
+                  <X />
+                </IconButton>
+              ) : null}
               <div className="absolute inset-x-4 bottom-3 flex flex-col gap-0.5 text-white">
                 <h2 className="text-xl leading-6 font-bold">{selected.title}</h2>
                 <p className="truncate text-xs text-white/80">{selected.placeLabel}</p>
@@ -418,15 +440,35 @@ export default function RoutesPanel({
               </div>
             </ScrollArea>
 
-            <div className="shrink-0 border-t border-border p-4">
+            <div className="flex shrink-0 gap-2 border-t border-border p-4">
               <Link
                 href={routeCatalogueHref(selected)}
                 target="_blank"
                 rel="noopener"
-                className={buttonVariants({ variant: "brand", size: "md", className: "w-full" })}
+                className={buttonVariants({
+                  variant: "brand",
+                  size: "md",
+                  /* Truncating rather than wrapping: the row is one line, and a name long in one
+                     language must not push the map button off the card. */
+                  className: "min-w-0 flex-1 truncate",
+                })}
               >
                 {t("showRouteYachts")}
               </Link>
+              {/* The other half of the page: the card covers the map on a phone, so this puts it
+                  away and frames the route. */}
+              {onShowOnMap ? (
+                <Button
+                  type="button"
+                  variant="neutral"
+                  size="md"
+                  onClick={onShowOnMap}
+                  className="w-auto shrink-0"
+                >
+                  <MapIcon />
+                  <span className="sr-only md:not-sr-only">{t("showOnMap")}</span>
+                </Button>
+              ) : null}
             </div>
           </>
         ) : (
@@ -440,11 +482,19 @@ export default function RoutesPanel({
                 <span className="text-sm text-natural-500">
                   {t("count", { count: visible.length, total: routes.length })}
                 </span>
-              </div>
-              {/* From xl the filters have their own card beside this one, as on the yachts map, and
-                  on a phone they open from the button over the map. */}
-              <div className="max-md:hidden xl:hidden">
-                <RouteFiltersForm routes={routes} filters={filters} onChange={onFiltersChange} />
+                {/* From md the panel is put away from here; on a phone the button over the map
+                    does it. */}
+                {onClose ? (
+                  <IconButton
+                    variant="subtle"
+                    size="sm"
+                    aria-label={t("hidePanel")}
+                    onClick={onClose}
+                    className="max-md:hidden"
+                  >
+                    <X />
+                  </IconButton>
+                ) : null}
               </div>
             </div>
             <ScrollArea className="min-h-0 flex-1">
@@ -480,8 +530,10 @@ export interface RouteFiltersCardProps {
   filters: RouteFilters;
   onChange: (next: Partial<RouteFilters>) => void;
   onReset: () => void;
-  /** Where the card opens over the map, a close button and one to see what the filters left. */
+  /** Puts the card away: the X in its header. */
   onClose?: () => void;
+  /** Where the card fills a phone's screen, the button at the foot that goes back to the map. */
+  onDone?: () => void;
   resultCount?: number;
   className?: string;
 }
@@ -493,6 +545,7 @@ export function RouteFiltersCard({
   onChange,
   onReset,
   onClose,
+  onDone,
   resultCount,
   className,
 }: RouteFiltersCardProps) {
@@ -528,9 +581,9 @@ export function RouteFiltersCard({
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <RouteFiltersForm routes={routes} filters={filters} onChange={onChange} labelled />
       </div>
-      {onClose ? (
+      {onDone ? (
         <div className="shrink-0 border-t border-border p-4">
-          <Button variant="brand" className="w-full" onClick={onClose}>
+          <Button variant="brand" className="w-full" onClick={onDone}>
             {t("showRoutes", { count: resultCount ?? routes.length })}
           </Button>
         </div>

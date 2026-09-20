@@ -1,0 +1,25 @@
+{
+  "title": "Ta kontakt",
+  "subtitle": "Book en samtale eller send oss en melding, det som passer deg best.",
+  "options": {
+    "call": {
+      "title": "Book en kort samtale",
+      "description": "Velg et tidspunkt som passer deg, en kort prat med en charterekspert."
+    },
+    "message": {
+      "title": "Send en melding",
+      "description": "Fortell oss hva du ser etter, så svarer vi deg på e-post."
+    }
+  },
+  "placeholder": {
+    "title": "Booking kommer snart",
+    "description": "Booking på nett er ikke klar ennå. Send oss en melding, så finner vi et tidspunkt som passer deg.",
+    "cta": "Send en melding i stedet"
+  },
+  "send": "Send melding",
+  "sent": "Takk! En charterekspert tar kontakt med deg snart.",
+  "submitted": {
+    "title": "Takk, vi tar kontakt",
+    "description": "En av våre chartereksperter tar kontakt med deg snart."
+  }
+}

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { siteLocaleSchema, translatedLocaleSchema } from "../lib/locales";
+
 import {
   idSchema,
   paginatedSchema,
@@ -22,11 +24,10 @@ export const routeDifficultySchema = z.enum(["easy", "moderate", "advanced"]);
 /**
  * The languages a route is authored in.
  *
- * The same four `apps/web/src/i18n/config.ts` declares, restated the way `contracts/faq.ts`
- * restates them. The duplication is deliberate and shallow: adding a language is then two edits
- * that fail loudly rather than one that quietly leaves a screen with three panes.
+ * Every site locale, from `@yacht-charter/db/locales`, so a new language reaches this editor
+ * without a second list to keep in step.
  */
-export const routeLocaleSchema = z.enum(["en", "de", "es", "uk"]);
+export const routeLocaleSchema = siteLocaleSchema;
 export const ROUTE_LOCALES = routeLocaleSchema.options;
 
 /**
@@ -48,7 +49,7 @@ export const routeTranslationSchema = z.object({
  * English is missing on purpose: it lives on the stop itself, in `note`, and is what every other
  * language falls back to. Holding it in both places would leave the read no rule for which wins.
  */
-export const routeStopNoteLocaleSchema = z.enum(["de", "es", "uk"]);
+export const routeStopNoteLocaleSchema = translatedLocaleSchema;
 export const ROUTE_STOP_NOTE_LOCALES = routeStopNoteLocaleSchema.options;
 
 export const routeStopNoteTranslationSchema = z.object({

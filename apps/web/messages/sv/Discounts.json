@@ -1,0 +1,120 @@
+{
+  "title": "Rabatt- och prishanterare",
+  "subtitle": "Hantera kampanjkoder och båtpriser.",
+  "create": "Skapa rabatt",
+  "tabs": {
+    "discounts": "Rabatter",
+    "managePrices": "Hantera priser"
+  },
+  "table": {
+    "name": "Rabattnamn",
+    "code": "Kod",
+    "typeValue": "Typ och värde",
+    "appliesTo": "Gäller för",
+    "status": "Status",
+    "usage": "Användning",
+    "empty": "Inga rabatter hittades",
+    "error": "Det gick inte att ladda rabatterna"
+  },
+  "status": {
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "scheduled": "Schemalagd",
+    "expired": "Utgången"
+  },
+  "type": {
+    "percentage": "Procent",
+    "fixed_amount": "Fast"
+  },
+  "applies": {
+    "allYachts": "Alla båtar",
+    "allCatamarans": "Alla katamaraner",
+    "allGullets": "Alla guletter",
+    "allMotorboats": "Alla motorbåtar",
+    "allMotorYachts": "Alla motoryachter",
+    "allSailboats": "Alla segelbåtar",
+    "specific": "Specifika båtar",
+    "allSailingYachts": "Alla segelyachter",
+    "nothing": "Inget",
+    "missing": "{type, select, listing {Raderad båt} category {Raderad kategori} operator {Raderad operatör} region {Raderad region} other {Raderat mål}} ({id})",
+    "more": "{first} +{count} till"
+  },
+  "dialog": {
+    "createTitle": "Skapa ny rabatt",
+    "editTitle": "Redigera rabatt",
+    "name": {
+      "label": "Rabattnamn",
+      "placeholder": "t.ex. Summer View 2026"
+    },
+    "code": {
+      "label": "Rabattkod",
+      "placeholder": "t.ex. SUMMER2026"
+    },
+    "type": {
+      "label": "Rabattyp"
+    },
+    "price": {
+      "label": "Rabattvärde",
+      "placeholder": "10"
+    },
+    "expiration": {
+      "label": "Utgångsdatum",
+      "placeholder": "Alla datum"
+    },
+    "appliesTo": {
+      "label": "Gäller för"
+    },
+    "search": {
+      "placeholder": "Sök båt"
+    },
+    "submitCreate": "Skapa rabatt",
+    "submitSave": "Spara ändringar",
+    "created": "Rabatten har skapats",
+    "saved": "Rabatten har uppdaterats",
+    "errors": {
+      "nameRequired": "Ange ett rabattnamn",
+      "codeRequired": "Ange en rabattkod",
+      "priceRequired": "Ange ett rabattvärde",
+      "appliesRequired": "Välj vad rabatten gäller för",
+      "usageLimitInvalid": "Ange ett heltal antal användningar, eller lämna tomt"
+    },
+    "error": "Något gick fel. Försök igen.",
+    "usageLimit": {
+      "label": "Användningsgräns",
+      "placeholder": "Obegränsat",
+      "hint": "Lämna tomt för obegränsad användning"
+    },
+    "active": {
+      "label": "Aktiv",
+      "on": "Rabatten har aktiverats",
+      "off": "Rabatten har inaktiverats"
+    }
+  },
+  "prices": {
+    "search": "Sök på namn",
+    "allTypes": "Alla typer",
+    "allLocations": "Alla platser",
+    "table": {
+      "yacht": "Båt",
+      "location": "Plats",
+      "basePrice": "Grundpris",
+      "currentPrice": "Aktuellt pris",
+      "edit": "Redigera pris"
+    },
+    "dialog": {
+      "title": "Redigera pris",
+      "basePrice": "Grundpris",
+      "newPrice": "Nytt pris",
+      "newPricePlaceholder": "t.ex. 14 539 €",
+      "submit": "Uppdatera pris",
+      "updated": "Priset har uppdaterats",
+      "errors": {
+        "priceRequired": "Ange ett nytt pris"
+      },
+      "reset": "Återställ till leverantörens pris",
+      "cleared": "Priset återställt till leverantörens pris"
+    },
+    "empty": "Inga båtar hittades",
+    "error": "Det gick inte att ladda priserna"
+  }
+}

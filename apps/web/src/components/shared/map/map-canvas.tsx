@@ -3,9 +3,16 @@
 import { env } from "@yacht-charter/env/web";
 import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
+import { Map as MapIcon, Maximize, Satellite } from "lucide-react";
 import { Component, createContext, type ReactNode, useContext, useRef, useState } from "react";
 import type { ComponentProps } from "react";
-import Map, { GeolocateControl, type MapEvent, NavigationControl } from "react-map-gl/mapbox";
+import { createPortal } from "react-dom";
+import Map, {
+  GeolocateControl,
+  type MapEvent,
+  NavigationControl,
+  useControl,
+} from "react-map-gl/mapbox";
 
 import { MAP_MAX_ZOOM, MAP_MIN_ZOOM, MAP_STYLE_STREETS_URL, MAP_STYLE_URL } from "@/lib/mapbox";
 
@@ -65,6 +72,10 @@ type MapCanvasProps = {
   controls?: boolean;
   /** A "find my location" button above them. Only where the visitor's own position means something. */
   locateControl?: boolean;
+  /** A satellite/map switch, for a map read for places rather than looked at. */
+  styleControl?: boolean;
+  /** A button that frames the map's subject again, given by whoever knows what that is. */
+  onRecentre?: () => void;
   minZoom?: number;
   maxZoom?: number;
   /**
@@ -75,6 +86,25 @@ type MapCanvasProps = {
   pathDepth?: number;
 };
 
+/*
+ * A button group mapbox stacks with its own, rather than one floated over the map: a control added
+ * this way shares the corner's spacing and the styling `index.css` gives `.mapboxgl-ctrl-group`,
+ * so the app's buttons and mapbox's read as one column.
+ */
+function ControlGroup({ children }: { children: ReactNode }) {
+  const [container] = useState(() => {
+    const element = document.createElement("div");
+    element.className = "mapboxgl-ctrl mapboxgl-ctrl-group";
+    return element;
+  });
+
+  useControl(() => ({ onAdd: () => container, onRemove: () => container.remove() }), {
+    position: "bottom-right",
+  });
+
+  return createPortal(children, container);
+}
+
 function MapSurface({
   children,
   onReady,
@@ -83,12 +113,16 @@ function MapSurface({
   dimOpacity = DIM_OPACITY,
   controls = true,
   locateControl = false,
+  styleControl = false,
+  onRecentre,
   minZoom = MAP_MIN_ZOOM,
   maxZoom = MAP_MAX_ZOOM,
 }: MapCanvasProps) {
   const [ready, setReady] = useState(false);
-  const styleKey = useContext(MapStyleContext);
+  /* The surface holds the choice while it is up; the context is where it starts. */
+  const [styleKey, setStyleKey] = useState(useContext(MapStyleContext));
   const t = useTranslations("Common.map");
+  const nextStyle = styleKey === "satellite" ? "streets" : "satellite";
 
   function dismissPopup(target: EventTarget | null) {
     if (target instanceof Element && target.closest(".mapboxgl-marker")) return;
@@ -135,6 +169,29 @@ function MapSurface({
        * here is the reverse of the order on screen, and locate ends up above zoom, above the credit.
        */}
       {controls ? <NavigationControl position="bottom-right" showCompass={false} /> : null}
+      {onRecentre ? (
+        <ControlGroup>
+          <button type="button" aria-label={t("frameAll")} onClick={onRecentre}>
+            <Maximize className="mx-auto size-5 text-natural-900" />
+          </button>
+        </ControlGroup>
+      ) : null}
+      {styleControl ? (
+        <ControlGroup>
+          <button
+            type="button"
+            aria-label={t(nextStyle)}
+            title={t(nextStyle)}
+            onClick={() => setStyleKey(nextStyle)}
+          >
+            {nextStyle === "satellite" ? (
+              <Satellite className="mx-auto size-5 text-natural-900" />
+            ) : (
+              <MapIcon className="mx-auto size-5 text-natural-900" />
+            )}
+          </button>
+        </ControlGroup>
+      ) : null}
       {locateControl ? (
         <GeolocateControl position="bottom-right" positionOptions={{ enableHighAccuracy: true }} />
       ) : null}

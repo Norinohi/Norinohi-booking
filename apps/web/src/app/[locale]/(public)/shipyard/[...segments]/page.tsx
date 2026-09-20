@@ -31,10 +31,12 @@ export const instant = false;
 
 const ROOT = "shipyard";
 
-export async function generateStaticParams() {
+export async function generateStaticParams({ params }: { params: { locale: string } }) {
   /* Segments do not vary by locale, so one read enumerates the routes for every locale. */
   const pages = await prefetchCatalogPages(defaultLocale);
-  return prerenderedCatalogPages(pages, ROOT).map((page) => ({ segments: page.segments }));
+  return prerenderedCatalogPages(pages, ROOT, params.locale).map((page) => ({
+    segments: page.segments,
+  }));
 }
 
 /** The path's own facet, as the filter surfaces express it. Search normalizes the values. */

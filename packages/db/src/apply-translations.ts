@@ -1,7 +1,7 @@
 /**
- * Writes the generated Ukrainian label set into the two translation tables.
+ * Writes the generated label sets into the two translation tables.
  *
- * Ukrainian is the locale no provider supplies. NauSYS names its reference lists in
+ * Ukrainian and Danish are the locales no provider supplies. NauSYS names its reference lists in
  * eighteen languages and none of them is it, so where German and Spanish are sourced and
  * refreshed on every sync, these labels are produced once and reviewed. `translations/uk.json`
  * is that review surface: it is checked in, diffs a word at a time, and this only ever writes
@@ -22,7 +22,7 @@ import { db } from "./index";
 import { normalizedKey } from "./search/normalize";
 import { extraLabels } from "./translations/extra-labels";
 import { facetLabels } from "./translations/facet-labels";
-import { ukTranslations } from "./translations/uk";
+import { generatedTranslations } from "./translations/generated";
 import { facetMedia, facetMediaKind, facetMediaTranslation } from "./schema/facet-media";
 import {
   extraLabelTranslation,
@@ -32,10 +32,6 @@ import {
 
 /** Rows per insert, well inside the 65,535 parameters Postgres will bind at five per row. */
 const CURATED_BATCH = 5_000;
-
-/** The locale `translations/uk.json` is written in; the other two files name their own. */
-const LOCALE = "uk";
-const apply = process.argv.slice(2).includes("--apply");
 
 /**
  * The checked-in file is edited by hand, so its kinds are parsed rather than trusted.
@@ -62,7 +58,7 @@ const extraKeySchema = z
   .transform((key) => key.split(":"))
   .pipe(z.tuple([z.enum(providerExtraKind.enumValues), z.string().min(1)]));
 
-const translations = translationsSchema.parse(ukTranslations);
+const generated = z.record(z.string().min(2), translationsSchema).parse(generatedTranslations);
 
 type FacetKindValue = (typeof facetMediaKind.enumValues)[number];
 
@@ -78,9 +74,9 @@ const curatedFacets = facetLabelsSchema.parse(facetLabels);
  * created where none was expected, which is the failure this would otherwise hide.
  */
 /**
- * Both facet files as one `value -> locale -> label` map for a kind.
+ * Both facet sources as one `value -> locale -> label` map for a kind.
  *
- * `translations/uk.json` is a single-locale set produced for the vocabulary providers do name in
+ * `translations/<locale>.json` is a per-locale set produced for the vocabulary providers do name in
  * their own languages; `translations/facet-labels.json` names the handful they never do, in all
  * three. Nothing appears in both, and if something ever does, the multi-locale file wins,
  * because it is the one that can answer for every locale.
@@ -88,8 +84,10 @@ const curatedFacets = facetLabelsSchema.parse(facetLabels);
 function mergedFacetLabels(kind: FacetKindValue) {
   const merged = new Map<string, Record<string, string>>();
 
-  for (const [value, label] of Object.entries(translations.facets[kind] ?? {})) {
-    merged.set(value, { [LOCALE]: label });
+  for (const [locale, translations] of Object.entries(generated)) {
+    for (const [value, label] of Object.entries(translations.facets[kind] ?? {})) {
+      merged.set(value, { ...merged.get(value), [locale]: label });
+    }
   }
   for (const [value, byLocale] of Object.entries(curatedFacets[kind] ?? {})) {
     merged.set(value, { ...merged.get(value), ...byLocale });
@@ -98,7 +96,7 @@ function mergedFacetLabels(kind: FacetKindValue) {
   return merged;
 }
 
-async function facetRows(): Promise<{
+async function facetRows(apply: boolean): Promise<{
   rows: (typeof facetMediaTranslation.$inferInsert)[];
   created: number;
 }> {
@@ -140,10 +138,12 @@ async function facetRows(): Promise<{
 async function extraRows(): Promise<(typeof providerExtraTranslation.$inferInsert)[]> {
   const rows: (typeof providerExtraTranslation.$inferInsert)[] = [];
 
-  for (const [source, labels] of Object.entries(translations.extras)) {
-    for (const [key, label] of Object.entries(labels)) {
-      const [kind, externalId] = extraKeySchema.parse(key);
-      rows.push({ source, kind, externalId, locale: LOCALE, label });
+  for (const [locale, translations] of Object.entries(generated)) {
+    for (const [source, labels] of Object.entries(translations.extras)) {
+      for (const [key, label] of Object.entries(labels)) {
+        const [kind, externalId] = extraKeySchema.parse(key);
+        rows.push({ source, kind, externalId, locale, label });
+      }
     }
   }
 
@@ -179,8 +179,14 @@ function curatedRows(): (typeof extraLabelTranslation.$inferInsert)[] {
   return [...byKey.values()];
 }
 
-async function main(): Promise<void> {
-  const { rows: facets, created } = await facetRows();
+/**
+ * Writes what the checked-in files say, or prints what it would write.
+ *
+ * Exported rather than run on import so `apps/server` can call it from a compiled ops script:
+ * a production container has no `tsx`. `apply-translations-cli.ts` is the CLI half.
+ */
+export async function applyTranslations({ apply }: { apply: boolean }): Promise<void> {
+  const { rows: facets, created } = await facetRows(apply);
   const extras = await extraRows();
   const curated = curatedRows();
 
@@ -258,13 +264,3 @@ async function main(): Promise<void> {
     `\nWrote ${facets.length} facet labels, ${extras.length} id-keyed and ${curated.length} name-keyed extra labels.`,
   );
 }
-
-try {
-  await main();
-} catch (error) {
-  console.error(error);
-  await db.$client.end();
-  process.exit(1);
-}
-
-await db.$client.end();

@@ -1,0 +1,184 @@
+{
+  "BoatTypes": {
+    "heading": "Wybierz typ łodzi",
+    "previous": "Poprzednie typy łodzi",
+    "next": "Następne typy łodzi"
+  },
+  "BudgetFinder": {
+    "heading": "Znajdź jacht w swoim budżecie",
+    "viewResults": "Zobacz wyniki",
+    "labels": {
+      "budget": "Budżet na osobę",
+      "people": "Liczba osób",
+      "skipper": "Skipper",
+      "destinations": "Kierunki (opcjonalnie)"
+    },
+    "options": {
+      "any": "Dowolny",
+      "budgetFrom": "{from}+",
+      "peopleNotSure": "Nie wiem",
+      "skipperYes": "Tak",
+      "skipperNo": "Nie",
+      "destinationsAll": "Wszystkie kierunki"
+    }
+  },
+  "EarnCta": {
+    "heading": "Zarabiaj na swoim jachcie",
+    "description": "Dodaj swój jacht do naszej platformy i zacznij otrzymywać rezerwacje od podróżnych z całego świata. My zapewniamy widoczność, popyt i narzędzia, a Ty zachowujesz kontrolę nad terminami i cenami.",
+    "cta": "Dodaj swój jacht",
+    "dialog": {
+      "title": "Wyślij zapytanie",
+      "description": "Zostaw swoje dane, a nasz zespół skontaktuje się z Tobą w sprawie dodania jachtu.",
+      "submit": "Wyślij zapytanie",
+      "success": "Dziękujemy! Wkrótce się z Tobą skontaktujemy."
+    }
+  },
+  "Hero": {
+    "tagline": "Ponad 30 000 jachtów w 1200 destynacjach. Czartery od 120 €/dzień",
+    "heading": "Odkryj świat z pokładu jachtu",
+    "wherePlaceholder": "Dokąd?",
+    "datesPlaceholder": "Dowolny termin",
+    "clearDates": "Wyczyść daty",
+    "boatPlaceholder": "Dowolna łódź",
+    "captainPlaceholder": "Ze skipperem",
+    "search": "Szukaj",
+    "dontKnow": "Nie wiesz, co wybrać?",
+    "helpPlan": "Pomóż mi zaplanować rejs",
+    "options": {
+      "croatia": "Chorwacja",
+      "greece": "Grecja",
+      "italy": "Włochy",
+      "turkey": "Turcja",
+      "caribbean": "Karaiby",
+      "thailand": "Tajlandia",
+      "catamaran": "Katamaran",
+      "sailingYacht": "Jacht żaglowy",
+      "motorYacht": "Jacht motorowy",
+      "gulet": "Gulet",
+      "luxuryYacht": "Luksusowy jacht",
+      "withCaptain": "Ze skipperem",
+      "bareboat": "Bez załogi",
+      "skippered": "Ze skipperem"
+    },
+    "stats": {
+      "yachts": {
+        "label": "jachtów"
+      },
+      "destinations": {
+        "label": "destynacji"
+      },
+      "travelers": {
+        "label": "zadowolonych podróżnych"
+      },
+      "rating": {
+        "label": "średnia ocena"
+      }
+    }
+  },
+  "HowItWorks": {
+    "heading": "Jak to działa",
+    "intro": "Rezerwacja jachtu jest prostsza, niż myślisz.",
+    "introSecondLine": "Prowadzimy Cię od wyboru kierunku aż po wejście na pokład, bez wymaganego doświadczenia.",
+    "cta": "Znajdź jacht",
+    "steps": {
+      "destination": {
+        "title": "Wybierz kierunek",
+        "description": "Odkryj ponad 1200 destynacji żeglarskich na całym świecie. Od Chorwacji po Karaiby: wybierz miejsce idealne na swój rejs."
+      },
+      "yacht": {
+        "title": "Wybierz jacht",
+        "description": "Przeglądaj jachty według wielkości grupy, budżetu i preferencji. Porównuj oferty i znajdź najlepszą dla siebie."
+      },
+      "book": {
+        "title": "Zarezerwuj rejs",
+        "description": "Potwierdź terminy, w razie potrzeby dodaj dodatki i zarezerwuj online. Możesz wypływać."
+      }
+    }
+  },
+  "PlanTrip": {
+    "heading": "Nie wiesz, co wybrać? Zaplanuj idealny rejs jachtem w 30 sekund",
+    "cta": "Pomóż mi zaplanować rejs",
+    "checklist": {
+      "questions": "Odpowiedz na kilka prostych pytań",
+      "recommendation": "Otrzymaj spersonalizowaną rekomendację",
+      "explore": "Odkryj najlepsze jachty na swój rejs"
+    },
+    "steps": {
+      "preferences": {
+        "title": "Wybierz preferencje",
+        "description": "Wskaż wymarzone kierunki, od turkusowych wybrzeży Palawanu po historyczne porty Valletty."
+      },
+      "recommendation": {
+        "title": "Otrzymaj rekomendację",
+        "description": "Zaproponujemy jachty dopasowane do potrzeb Twojej grupy. Przejrzyj nasze propozycje i wybierz idealny jacht."
+      },
+      "yachts": {
+        "title": "Zobacz jachty",
+        "description": "Dopracuj szczegóły, dodaj dodatki i zarezerwuj. Teraz możesz już wyczekiwać niezapomnianej przygody pod żaglami."
+      }
+    }
+  },
+  "PopularDestinations": {
+    "heading": "Popularne kierunki",
+    "previous": "Poprzednie kierunki",
+    "next": "Następne kierunki",
+    "seeAll": "Zobacz wszystkie popularne",
+    "showLess": "Pokaż mniej",
+    "perPersonWeek": "Od {price} za osobę/tydzień",
+    "yachtCount": "{count, plural, one {# jacht} few {# jachty} many {# jachtów} other {# jachtu}}"
+  },
+  "PopularYachts": {
+    "heading": "Popularne jachty",
+    "previous": "Poprzednie jachty",
+    "next": "Następne jachty",
+    "seeAll": "Zobacz wszystkie jachty",
+    "from": "Od",
+    "viewDetails": "Zobacz szczegóły",
+    "perDay": "/ za dzień"
+  },
+  "SailingRoutes": {
+    "heading": "Popularne trasy żeglarskie",
+    "previous": "Poprzednie trasy",
+    "next": "Następne trasy",
+    "seeAll": "Zobacz wszystkie popularne",
+    "showLess": "Pokaż mniej",
+    "exploreRoute": "Poznaj trasę",
+    "days": "{count, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}",
+    "levels": {
+      "easy": "Łatwa",
+      "moderate": "Średnia",
+      "advanced": "Zaawansowana"
+    }
+  },
+  "Testimonials": {
+    "heading": "Co mówią nasi klienci",
+    "allReviews": "Wszystkie opinie",
+    "comingSoon": "Wkrótce",
+    "items": {
+      "weber": {
+        "quote": "Po raz pierwszy zarezerwowaliśmy jacht w Chorwacji i wszystko po prostu zadziałało. Proces był prosty, a łódź dokładnie taka, jakiej się spodziewaliśmy.",
+        "location": "Niemcy"
+      },
+      "martin": {
+        "quote": "Nie miałam doświadczenia żeglarskiego, ale platforma ułatwiła znalezienie skippera i zaplanowanie całego rejsu. To było jak zwykłe wakacje, tylko lepsze.",
+        "location": "Francja"
+      },
+      "carter": {
+        "quote": "Największym zaskoczeniem była przejrzystość cen. Od razu widzieliśmy pełny koszt i mogliśmy podzielić go między znajomych, bardzo wygodne.",
+        "location": "Wielka Brytania"
+      },
+      "rossi": {
+        "quote": "Porównaliśmy kilka jachtów i znaleźliśmy idealny dla naszej grupy. Propozycje tras bardzo się przydały, nie musieliśmy niczego planować.",
+        "location": "Włochy"
+      },
+      "kowalska": {
+        "quote": "Świetny wybór łodzi i bardzo przejrzyste filtry. W kilka minut znaleźliśmy dokładnie to, czego potrzebowaliśmy.",
+        "location": "Polska"
+      },
+      "jensen": {
+        "quote": "Wszystko, od rezerwacji po zaokrętowanie, przebiegło bez wysiłku. Jasna komunikacja, brak ukrytych opłat i łódź, która na żywo wyglądała jeszcze lepiej.",
+        "location": "Dania"
+      }
+    }
+  }
+}

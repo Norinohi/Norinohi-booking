@@ -14,7 +14,7 @@
   "noResults": "Ninguna ruta coincide con estos filtros.",
   "resetFilters": "Restablecer filtros",
   "allRoutes": "Todas las rutas",
-  "showRouteYachts": "Ver yates para esta ruta",
+  "showRouteYachts": "Ver yates",
   "itinerary": "Itinerario",
   "nearbyMarinas": "Puertos con yates a lo largo de la ruta",
   "loadingMarinas": "Buscando puertos…",
@@ -33,5 +33,9 @@
   "filtersButton": "Filtros{count, plural, =0 {} other { (#)}}",
   "back": "Volver",
   "closeFilters": "Cerrar filtros",
-  "showRoutes": "{count, plural, =0 {Ninguna ruta} one {Ver # ruta} other {Ver # rutas}}"
+  "showRoutes": "{count, plural, =0 {Ninguna ruta} one {Ver # ruta} other {Ver # rutas}}",
+  "hidePanel": "Ocultar panel",
+  "showDetails": "Detalles de la ruta",
+  "closeDetails": "Cerrar los detalles de la ruta",
+  "showOnMap": "En el mapa"
 }

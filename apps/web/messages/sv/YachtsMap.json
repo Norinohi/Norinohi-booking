@@ -1,0 +1,14 @@
+{
+  "loading": "Laddar båtar…",
+  "noResults": "Inga båtar matchar dessa filter. Prova att ändra dem.",
+  "title": "Båtar på kartan",
+  "backToSearch": "Tillbaka till sökningen",
+  "viewInCatalogue": "Visa i katalogen",
+  "showAllList": "Visa hela listan",
+  "closeList": "Stäng listan",
+  "marker": "Marina {name}",
+  "clusterCount": "{count, plural, one {# båt} other {# båtar}}",
+  "previousBoat": "Föregående båt",
+  "nextBoat": "Nästa båt",
+  "allInCatalogue": "{count, plural, one {# båt i katalogen} other {Alla # båtar i katalogen}}"
+}

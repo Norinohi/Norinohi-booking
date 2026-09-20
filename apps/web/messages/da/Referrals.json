@@ -1,0 +1,62 @@
+{
+  "title": "Dine henvisninger",
+  "invite": {
+    "heading": "Inviter venner. Optjen sejlkredit.",
+    "description": "Giv dine venner 100 € til deres første booking, og få selv 100 € i tilgodehavende, når de sejler.",
+    "copy": "Kopier henvisningslink",
+    "copied": "Link kopieret",
+    "generate": "Generer ny kode",
+    "generated": "Ny henvisningskode genereret",
+    "generateFailed": "Der kunne ikke genereres en ny kode. Prøv igen.",
+    "information": "Information",
+    "rules": {
+      "minBooking": "Tilgodehavendet kan bruges til enhver bådbooking over 1.000 €.",
+      "expiry": "Tilgodehavende fra henvisninger udløber 12 måneder efter, det er optjent.",
+      "cash": "Tilgodehavendet kan ikke udbetales kontant.",
+      "firstTime": "Gælder kun for inviterede venners første booking."
+    },
+    "stats": {
+      "invited": "Inviterede brugere",
+      "completed": "Gennemførte bookinger",
+      "earned": "Optjent i alt",
+      "balance": "Disponibel saldo"
+    }
+  },
+  "how": {
+    "title": "Sådan virker det",
+    "steps": {
+      "share": {
+        "title": "Del linket",
+        "description": "Send dit personlige henvisningslink til venner, der elsker at rejse"
+      },
+      "book": {
+        "title": "Vennen booker",
+        "description": "De får 100 € i rabat på deres første bådbooking over 1.000 €"
+      },
+      "credit": {
+        "title": "Du får tilgodehavende",
+        "description": "Når de har været på deres tur, får du 100 € i tilgodehavende"
+      }
+    },
+    "level": {
+      "title": "Dit niveau",
+      "current": "Nuværende:",
+      "next": "Næste: {level}",
+      "left": "{count, plural, one {# booking} other {# bookinger}} tilbage til næste niveau",
+      "perks": {
+        "extra": "5 % ekstra tilgodehavende på alle henvisninger",
+        "early": "Tidlig adgang til luksustilbud",
+        "concierge": "Personlig conciergeservice"
+      }
+    }
+  },
+  "history": {
+    "title": "Henvisningshistorik",
+    "today": "I dag",
+    "daysAgo": "{count, plural, one {# dag siden} other {# dage siden}}",
+    "credited": "Gennemført",
+    "pending": "Afventer",
+    "void": "Annulleret",
+    "empty": "Ingen henvisninger endnu. Del dit link for at komme i gang."
+  }
+}

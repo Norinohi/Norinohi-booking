@@ -1,0 +1,29 @@
+{
+  "heading": "Jachtcharter zoeken",
+  "searchByMap": "Zoeken op kaart",
+  "emptyTitle": "Geen jachten gevonden met je filters",
+  "emptyDescription": "Pas je data, budget of locatie aan - we helpen je de perfecte match te vinden.",
+  "searchBar": {
+    "location": "Locatie",
+    "startTyping": "Begin met typen",
+    "searchCountries": "Zoek landen...",
+    "addDates": "Data toevoegen",
+    "clearDates": "Data wissen",
+    "anyBoat": "Elke boot",
+    "search": "Zoeken",
+    "noLocations": "Geen bestemmingen gevonden",
+    "popularCountries": "Populaire landen",
+    "popularBoatTypes": "Populaire boottypes",
+    "allBoatTypes": "Alle boottypes",
+    "clearLocation": "Locatie wissen",
+    "freeText": "Naam, model of bedrijf",
+    "kinds": {
+      "country": "Land",
+      "region": "Vaargebied",
+      "city": "Stad",
+      "base": "Jachthaven"
+    },
+    "clearBoatType": "Boottype wissen"
+  },
+  "paginationSummary": "{from}-{to} van {total}"
+}

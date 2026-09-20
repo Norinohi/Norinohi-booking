@@ -35,6 +35,17 @@ export interface ExtraLabel {
   de: string;
   es: string;
   uk: string;
+  /*
+   * Optional because only the busiest names carry them: the locales added later were curated
+   * down the usage ranking `translations:missing-extras` prints, not across the whole set.
+   */
+  fr?: string;
+  pl?: string;
+  it?: string;
+  nl?: string;
+  sv?: string;
+  no?: string;
+  da?: string;
 }
 
 /** The curated set itself, keyed by the English name the vendor publishes. */
@@ -43,5 +54,19 @@ export interface ExtraLabelSet {
 }
 
 export const extraLabels: ExtraLabelSet = z
-  .record(z.string().min(1), z.object({ de: z.string(), es: z.string(), uk: z.string() }))
+  .record(
+    z.string().min(1),
+    z.object({
+      de: z.string(),
+      es: z.string(),
+      uk: z.string(),
+      fr: z.string().optional(),
+      pl: z.string().optional(),
+      it: z.string().optional(),
+      nl: z.string().optional(),
+      sv: z.string().optional(),
+      no: z.string().optional(),
+      da: z.string().optional(),
+    }),
+  )
   .parse(extraLabelsJson);

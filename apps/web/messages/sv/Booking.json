@@ -1,0 +1,459 @@
+{
+  "confirmBooking": "Bekräfta bokningen",
+  "review": {
+    "title": "Bokningssammanfattning",
+    "yacht": "Båt",
+    "dates": "Datum",
+    "crew": "Besättning",
+    "people": "Personer",
+    "extras": "Tillval",
+    "noExtras": "Inga valda",
+    "boatPrice": "Båtpris (fullt hyrespris)",
+    "deposit": "Återbetalningsbar deposition",
+    "depositRefundable": "Återbetalningsbar, hålls av charterbasen",
+    "schedule": {
+      "payNow": "Betala nu",
+      "payAt": "Betalas: {date}",
+      "payAtCheckIn": "Betalas vid incheckning: {date}",
+      "firstPayment": "1:a betalningen ({when})",
+      "fullPayment": "Hela betalningen ({when})",
+      "secondPayment": "2:a betalningen ({when})",
+      "extrasPayment": "Tillval ({when})",
+      "depositNote": "Återbetalningsbar deposition ({when})"
+    },
+    "totalPrice": "Totalpris",
+    "dueNow": "Att betala nu",
+    "terms": "Jag godkänner <link>de allmänna villkoren och hyresavtalet</link>.",
+    "cancellation": "Jag accepterar <link>avbokningsvillkoren</link>.",
+    "operatorTerms": "Operatörens villkor, inklusive avbokningsvillkoren"
+  },
+  "extras": {
+    "mandatory": "Obligatoriskt",
+    "optional": "Valfria tillval",
+    "included": "Ingår",
+    "notOnTheseDates": "Inte tillgängligt på de här datumen",
+    "notOnTheseDatesAsk": "Inte tillgängligt på de här datumen: du kan fråga basen",
+    "requestedAtBase": "Beställs hos basen och betalas där"
+  },
+  "guestDetails": {
+    "notice": "Vi använder de här uppgifterna för att bekräfta din bokning och samordna med basansvarig.",
+    "guestNotice": "Du behöver inget konto för att boka. Vi skapar ett för den här reservationen och mejlar dig en länk för att välja ett lösenord när du vill.",
+    "fullName": "Fullständigt namn",
+    "fullNamePlaceholder": "Anna Andersson",
+    "email": "E-postadress",
+    "emailPlaceholder": "namn@exempel.se",
+    "phone": "Telefonnummer",
+    "phonePlaceholder": "+46 70 123 45 67",
+    "country": "Land",
+    "countryPlaceholder": "Välj ditt land",
+    "specialRequests": "Särskilda önskemål (valfritt)",
+    "specialRequestsPlaceholder": "Tidig incheckning, tack"
+  },
+  "errors": {
+    "fullName": "Ange ditt fullständiga namn",
+    "email": "Ange en giltig e-postadress",
+    "phone": "Ange ett giltigt telefonnummer",
+    "country": "Välj ditt land",
+    "terms": "Acceptera villkoren för att fortsätta",
+    "cancellation": "Acceptera avbokningsvillkoren för att fortsätta",
+    "paymentMessage": "Skriv din fråga eller förfrågan",
+    "hold": {
+      "SLOT_GONE": "Den båten är inte längre tillgänglig för de här datumen. Välj nya datum och försök igen.",
+      "PROVIDER_TIMEOUT": "Operatörens system svarade inte i tid. Försök igen om en stund.",
+      "PROVIDER_REFUSED": "Vi kunde inte slutföra den här bokningen hos operatören. Vårt team har meddelats, så försök igen snart eller kontakta oss.",
+      "SLOT_TAKEN": "Den här båten blev bokad medan du var i kassan. Välj nya datum och försök igen.",
+      "HOLD_NEVER_HELD": "Den här bokningen kunde inte reserveras. Välj dina datum igen för att få ett nytt pris."
+    },
+    "confirmFailed": "Det gick inte att bekräfta din bokning. Försök igen.",
+    "holdInProgress": "Vi slutför fortfarande ditt förra försök. Vänta en stund och bekräfta sedan igen.",
+    "billingName": "Ange namnet som ska faktureras",
+    "billingAddress": "Ange faktureringsadressen",
+    "city": "Ange orten"
+  },
+  "backToYacht": "Tillbaka till {name}",
+  "panels": {
+    "main": "Bokningsdetaljer",
+    "aside": "Bokningssammanfattning"
+  },
+  "continue": "Fortsätt",
+  "steps": {
+    "guestDetails": "Gästuppgifter",
+    "extras": "Tillval",
+    "reviewAndBook": "Granska och boka",
+    "payment": "Betalning"
+  },
+  "payment": {
+    "chargedIn": "Du debiteras {amount} i {currency}. Priser som visas i en annan valuta är omräknade till referenskurser och är ungefärliga.",
+    "heading": "Välj hur du vill gå vidare",
+    "submitFailed": "Något gick fel. Försök igen.",
+    "tabs": {
+      "card": "Betala med kort",
+      "invoice": "Begär faktura",
+      "question": "Ställ en fråga"
+    },
+    "card": {
+      "notice": "Ditt kort reserveras nu och debiteras först när operatören bekräftar bokningen. Om de inte kan ta den släpps reservationen och du betalar ingenting.",
+      "unavailable": "Kortbetalning online är inte tillgänglig just nu. Använd Begär faktura eller Ställ en fråga.",
+      "quoteExpired": "Ditt pris har gått ut. Gå tillbaka och uppdatera offerten innan du betalar.",
+      "notPayable": "Den här bokningen går inte längre att betala. Starta en ny.",
+      "failed": "Betalningen kunde inte genomföras. Försök igen.",
+      "cta": "Betala {amount}",
+      "orCard": "eller betala med kort",
+      "preparing": "Förbereder betalningsalternativ"
+    },
+    "invoice": {
+      "email": "E-post för fakturering",
+      "emailPlaceholder": "faktura@gmail.com",
+      "company": "Företagsnamn (valfritt)",
+      "companyPlaceholder": "Yachts Adventures",
+      "vat": "Momsregistreringsnummer (valfritt)",
+      "vatPlaceholder": "GB12312321321312123",
+      "notice": "Vill du hellre betala offline? Vi skickar en faktura så att du kan betala med banköverföring.",
+      "cta": "Begär faktura (på {amount})",
+      "name": "Faktureringsnamn",
+      "namePlaceholder": "Anna Andersson",
+      "addressLine1": "Adress",
+      "addressLine1Placeholder": "Hamngatan 12",
+      "addressLine2": "Adressrad 2 (valfritt)",
+      "addressLine2Placeholder": "Lägenhet, våning",
+      "city": "Ort",
+      "cityPlaceholder": "Split",
+      "postalCode": "Postnummer (valfritt)",
+      "postalCodePlaceholder": "21000",
+      "country": "Land",
+      "countryPlaceholder": "Välj land",
+      "registration": "Organisationsnummer (valfritt)",
+      "registrationPlaceholder": "12345678"
+    },
+    "question": {
+      "label": "Din fråga eller förfrågan",
+      "placeholder": "Skicka en förfrågan innan du bokar (t.ex. kontroll av intyg, särskilda behov)",
+      "cta": "Skicka förfrågan"
+    },
+    "hold": {
+      "until": "Reserverad åt dig till {until} ({left} kvar). Betala innan dess, annars släpper operatören båten.",
+      "expiredTitle": "Reservationen på den här båten har gått ut",
+      "expiredBody": "Operatören reserverade de här datumen till {until}. Den här bokningen går inte längre att betala: gå tillbaka till båten och boka datumen igen.",
+      "backToYacht": "Tillbaka till båten"
+    }
+  },
+  "confirmation": {
+    "reserved": "Din båt är reserverad!",
+    "notFound": "Bokningen hittades inte",
+    "browse": "Bläddra bland båtar",
+    "remaining": "De återstående {amount} betalas vid incheckning.",
+    "invoiceSent": "Fakturan är skickad",
+    "invoiceHold": "Vi håller din båt tills din överföring på {amount} kommer in, senast {date}.",
+    "invoiceEmailed": "Vi har mejlat faktura {number} med bankuppgifterna och bekräftar när överföringen kommer in",
+    "remainingBy": "De återstående {amount} ska betalas senast {date}.",
+    "emailed": "Vi har mejlat dig detaljerna och gör det igen när operatören bekräftar",
+    "guestEmailed": "Vi har mejlat dig detaljerna, med en länk för att välja lösenord och behålla den här bokningen på ditt konto",
+    "viewBooking": "Visa bokningen",
+    "summaryTitle": "Bokningssammanfattning",
+    "quote": "\"Den här båten är perfekt för öluffning i Kroatien: stabil, rymlig och idealisk för gruppresor. Din rutt går via Hvar och Vis, två av Adriatiska havets mest natursköna öar.\"",
+    "shareTrip": "Dela resan",
+    "downloadReceipt": "Ladda ner kvitto",
+    "summary": {
+      "yacht": "Båt",
+      "dates": "Datum",
+      "crew": "Besättning",
+      "mandatory": "Obligatoriskt",
+      "selectedExtras": "Valda tillval",
+      "boatPrice": "Båtpris (fullt hyrespris)",
+      "deposit": "Återbetalningsbar deposition",
+      "secondPayment": "2:a betalningen (betalas: {date})",
+      "secondPaymentAtCheckIn": "2:a betalningen (betalas vid incheckning)",
+      "totalPrice": "Totalpris",
+      "perPerson": "~ {price} per person",
+      "dueNow": "Att betala nu"
+    },
+    "viewInvoice": "Visa fakturan",
+    "settling": {
+      "title": "Betalningen är mottagen",
+      "body": "Vi bekräftar din bokning med charterbasen. Det brukar ta några sekunder."
+    },
+    "failed": {
+      "title": "Vi kunde inte bekräfta den här bokningen",
+      "body": "Charterbasen kunde inte ta emot den här reservationen. Eventuell betalning du gjort är på väg tillbaka."
+    },
+    "shareText": "Vi chartrar {name}, {dates}!",
+    "shareCopied": "Länken har kopierats",
+    "shareFailed": "Vi kunde inte kopiera länken"
+  },
+  "invoice": {
+    "title": "Faktura",
+    "print": "Skriv ut / spara som PDF",
+    "backToBookings": "Tillbaka till bokningar",
+    "browse": "Bläddra bland båtar",
+    "issuedOn": "Utfärdad {date}",
+    "dueOn": "Förfaller {date}",
+    "status": {
+      "pending": "Väntar på betalning",
+      "sent": "Skickad",
+      "paid": "Betald",
+      "cancelled": "Annullerad"
+    },
+    "from": "Från",
+    "billTo": "Faktureras till",
+    "vat": "Momsnr {value}",
+    "registration": "Org.nr {value}",
+    "summary": {
+      "reference": "Bokningsreferens",
+      "yacht": "Båt",
+      "base": "Bas",
+      "dates": "Charterdatum",
+      "guests": "Gäster"
+    },
+    "lines": {
+      "description": "Beskrivning",
+      "collected": "Uppbärs",
+      "amount": "Belopp"
+    },
+    "payWhen": {
+      "now": "Med den här fakturan",
+      "at_check_in": "Vid incheckning"
+    },
+    "totals": {
+      "charterTotal": "Chartertotal",
+      "paid": "Redan betalt",
+      "dueNow": "Att betala nu",
+      "balance": "Återstående belopp",
+      "securityDeposit": "En återbetalningsbar deposition på {amount} tas vid incheckning och ingår inte i den här fakturan."
+    },
+    "payment": {
+      "title": "Betalningsuppgifter",
+      "beneficiary": "Betalningsmottagare",
+      "bank": "Bank",
+      "iban": "IBAN",
+      "bic": "BIC / SWIFT",
+      "reference": "Betalningsreferens",
+      "amount": "Belopp att överföra",
+      "note": "Ange betalningsreferensen vid överföringen så att vi kan koppla den till din bokning. Din reservation bekräftas när pengarna har kommit in."
+    },
+    "footnote": "Utfärdad av {company}. Den här fakturan är skapad elektroniskt och är giltig utan underskrift.",
+    "error": {
+      "title": "Det gick inte att ladda fakturan",
+      "description": "Försök igen om en stund."
+    },
+    "missing": {
+      "title": "Ingen faktura för den här bokningen",
+      "description": "Den här bokningen betalades inte med banköverföring, så ingen faktura utfärdades."
+    }
+  },
+  "balance": {
+    "title": "Betala resten",
+    "titleUnpaid": "Slutför din betalning",
+    "reference": "Bokning {reference}",
+    "pay": "Betala {amount}",
+    "notFound": "Vi kunde inte hitta den här bokningen",
+    "browse": "Bläddra bland båtar",
+    "viewBookings": "Mina bokningar",
+    "unavailable": "Onlinebetalning är inte tillgänglig just nu. Kontakta oss för att reglera den här bokningen.",
+    "summary": {
+      "total": "Totalpris",
+      "paid": "Redan betalt",
+      "atCheckIn": "Betalas i marinan",
+      "due": "Att betala nu"
+    },
+    "paid": {
+      "title": "Din bokning är helt betald",
+      "body": "Inget kvar att betala på bokning {reference}. Tillval och depositionen regleras i marinan.",
+      "viewBooking": "Visa bokningen"
+    },
+    "notPayable": {
+      "title": "Det här priset har gått ut",
+      "body": "Vi kan inte ta emot betalning för den här bokningen längre: både priset vi offererade och operatörens reservation har löpt ut. Kolla datumen igen så ger vi dig ett nytt pris.",
+      "action": "Kontrollera tillgängligheten"
+    },
+    "settling": {
+      "title": "Betalningen är mottagen",
+      "body": "Vi uppdaterar din bokning. Det brukar ta några sekunder."
+    },
+    "received": {
+      "title": "Betalningen är mottagen",
+      "body": "Tack. {outstanding} återstår på den här chartern, och vi påminner dig innan det förfaller.",
+      "viewBooking": "Visa bokningen"
+    }
+  },
+  "detail": {
+    "notFound": "Vi kunde inte hitta den här bokningen",
+    "browse": "Bläddra bland båtar",
+    "reference": "Bokning {reference}",
+    "guests": "{count} gäster",
+    "payBalance": "Betala {amount}",
+    "completePayment": "Slutför betalning {amount}",
+    "viewInvoice": "Visa fakturan",
+    "priceTitle": "Prisuppdelning",
+    "total": "Totalpris",
+    "paymentsTitle": "Betalningar",
+    "paid": "Betalt hittills",
+    "outstanding": "Kvar att betala",
+    "dueAtCheckIn": "Betalas i marinan",
+    "atMarina": "betalas i marinan",
+    "noPayments": "Inga betalningar har gjorts på den här bokningen än.",
+    "disputed": "bestridd",
+    "kind": {
+      "deposit": "Första betalningen",
+      "balance": "Andra betalningen",
+      "full": "Hela betalningen",
+      "checkin_extras": "Tillval vid incheckning",
+      "security_deposit": "Deposition"
+    },
+    "method": {
+      "card": "Kort",
+      "transfer": "Banköverföring"
+    },
+    "paymentStatus": {
+      "requires_payment": "Ej betald",
+      "processing": "Behandlas",
+      "authorized": "Reserverad på kortet",
+      "succeeded": "Betald",
+      "failed": "Misslyckades",
+      "refunded": "Återbetald"
+    },
+    "status": {
+      "DRAFT": "Utkast",
+      "QUOTED": "Offererad",
+      "OPTION_PENDING": "Reserverar",
+      "OPTION_HELD": "Reserverad",
+      "PAYMENT_PENDING": "Väntar på betalning",
+      "CONFIRMING": "Bekräftar",
+      "CONFIRMED": "Bekräftad",
+      "QUOTE_EXPIRED": "Utgången",
+      "OPTION_EXPIRED": "Utgången",
+      "PAYMENT_FAILED": "Betalningen misslyckades",
+      "PROVIDER_REJECTED": "Ej tillgänglig",
+      "CANCELLED": "Avbokad",
+      "REFUND_PENDING": "Återbetalas",
+      "REFUNDED": "Återbetald"
+    },
+    "backToBookings": "Tillbaka till mina bokningar",
+    "panels": {
+      "main": "Bokning",
+      "aside": "Pris"
+    },
+    "charterTitle": "Charter",
+    "dates": "Datum",
+    "guestsLabel": "Gäster",
+    "crew": "Besättning",
+    "marina": "Marina",
+    "referenceLabel": "Referens",
+    "settled": "Inget kvar att betala",
+    "viewYacht": "Visa båtsidan",
+    "supportTitle": "Behöver du hjälp?",
+    "supportBody": "Frågor om din charter, ändrade datum eller något annat: vårt team svarar inom en arbetsdag.",
+    "contactSupport": "Kontakta supporten",
+    "supportSubject": "Bokning {reference}",
+    "marinaContact": "Kontakt till marinan",
+    "signInTitle": "Logga in för att se den här bokningen",
+    "signInBody": "Den här bokningen är kopplad till ditt konto. Logga in med e-postadressen du bokade med så tar vi dig direkt tillbaka hit.",
+    "signIn": "Logga in",
+    "cancelledOn": "Avbokad den",
+    "cancelReason": "Anledning",
+    "requestCancel": "Begär avbokning",
+    "crewList": {
+      "title": "Besättningslista",
+      "notice": "Charterbolaget måste lämna myndigheterna en lista över alla ombord innan ni seglar. Fyll i den här så skickar vi den till dem: det som saknas frågar basen efter i disken när ni kommer.",
+      "alsoAsked": "De frågar också efter {fields}, som basen samlar in i disken när ni kommer.",
+      "maxPassengers": "Deras lista rymmer högst {count} personer.",
+      "loading": "Laddar din besättningslista…",
+      "empty": "Ingen tillagd än. Din bokning gäller {guests} gäster: lägg till alla som ska vara ombord, inklusive skepparen.",
+      "member": "Besättningsmedlem {number}",
+      "remove": "Ta bort besättningsmedlem {number}",
+      "add": "Lägg till besättningsmedlem",
+      "save": "Spara besättningslistan",
+      "saved": "Besättningslistan har sparats",
+      "saveFailed": "Vi kunde inte spara din besättningslista",
+      "role": "Roll",
+      "rolePlaceholder": "Skeppare, gäst…",
+      "dateOfBirth": "Födelsedatum",
+      "documentNumber": "Pass- eller ID-nummer",
+      "documentNumberPlaceholder": "X1234567",
+      "nationality": "Nationalitet",
+      "nationalityPlaceholder": "Välj ett land",
+      "errors": {
+        "dateOfBirth": "Ange ett giltigt datum",
+        "firstName": "Ange personens förnamn",
+        "lastName": "Ange personens efternamn",
+        "skipperEmail": "Ange en giltig e-postadress",
+        "oneSkipper": "Bara en person kan vara skeppare"
+      },
+      "requires": {
+        "shoeSize": "skostorlekar",
+        "disabledPerson": "om någon ombord har en funktionsnedsättning"
+      },
+      "legend": "Fält märkta med * är de som det här charterbolaget kräver.",
+      "sent": "Skickad till charterbolaget {when}.",
+      "notSent": "Ännu inte hos charterbolaget: {reason} Dina uppgifter är sparade: basen samlar in listan när ni kommer.",
+      "notSentUnknown": "vi kunde inte nå dem.",
+      "savedNotSent": "Sparad, men charterbolaget har inte fått den än",
+      "firstName": "Förnamn",
+      "firstNamePlaceholder": "Som det står i passet",
+      "lastName": "Efternamn",
+      "lastNamePlaceholder": "Som det står i passet",
+      "gender": "Kön",
+      "genderPlaceholder": "Välj",
+      "birthPlace": "Födelseort",
+      "birthCountry": "Födelseland",
+      "livingPlace": "Bostadsort",
+      "livingCountry": "Bosättningsland",
+      "placePlaceholder": "Ort eller stad",
+      "documentType": "Dokumenttyp",
+      "documentTypePlaceholder": "Välj",
+      "isSkipper": "Den här personen är skeppare",
+      "skipperLicence": "Skepparens förarintyg",
+      "skipperLicencePlaceholder": "Intygsnummer",
+      "vhfLicence": "VHF-certifikat",
+      "skipperEmail": "Skepparens e-post",
+      "skipperMobile": "Skepparens telefon",
+      "note": "Något basen bör veta",
+      "notePlaceholder": "Ankomsttid, flightnummer, någon som behöver assistans…",
+      "documents": {
+        "passport": "Pass",
+        "idCard": "ID-kort",
+        "other": "Annat"
+      },
+      "genders": {
+        "male": "Man",
+        "female": "Kvinna"
+      },
+      "placeSearch": "Sök platser",
+      "placeEmpty": "Ingen plats med det namnet"
+    },
+    "priceLineLabels": {
+      "charterPrice": "Charterpris",
+      "charterExtra": "Chartertillval",
+      "charterDiscount": "Charterrabatt",
+      "referralWelcome": "Välkomstrabatt för värvning",
+      "referralCredit": "Värvningstillgodohavande"
+    }
+  },
+  "support": {
+    "title": "Hur kan vi hjälpa till?",
+    "subtitle": "Skicka ett meddelande så återkommer vi inom en arbetsdag.",
+    "messageLabel": "Ditt meddelande",
+    "messagePlaceholder": "Berätta vad du behöver hjälp med: datum, båten, betalning, vad som helst.",
+    "required": "Skriv ett meddelande först",
+    "send": "Skicka meddelande",
+    "sent": "Meddelandet är skickat",
+    "sentTitle": "Meddelandet är skickat",
+    "sentBody": "Vi har fått det, tillsammans med dina bokningsuppgifter. Du hör från oss via e-post.",
+    "backToBooking": "Tillbaka till min bokning",
+    "failed": "Vi kunde inte skicka ditt meddelande. Försök igen.",
+    "marinaContact": "Eller kontakta marinan direkt",
+    "cancellation": {
+      "title": "Begär en avbokning",
+      "subtitle": "Skicka förfrågan så återkommer vi med vad dina avbokningsvillkor tillåter.",
+      "messageLabel": "Varför avbokar du?",
+      "messagePlaceholder": "Allt som hjälper oss: ändrade planer, datum, väder, sjukdom.",
+      "template": "Jag vill avboka bokning {reference} ({dates}).\n\nAnledning: ",
+      "send": "Skicka avbokningsförfrågan",
+      "sentTitle": "Avbokning begärd",
+      "sentBody": "Din bokning står kvar som den är tills vårt team har gått igenom förfrågan. Du hör från oss via e-post om vad dina avbokningsvillkor tillåter."
+    }
+  },
+  "booked": "Bokad",
+  "consentRequired": "Kryssa i båda rutorna ovan för att bekräfta den här bokningen.",
+  "saveAndContinue": "Spara och fortsätt",
+  "extrasSkipped": "Ta en titt på de valfria tillvalen först, bekräfta sedan."
+}

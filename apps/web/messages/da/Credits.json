@@ -1,0 +1,20 @@
+{
+  "title": "Tilgodehavende og saldo",
+  "balance": {
+    "label": "Disponibel saldo",
+    "expiringSoon": "{amount} udløber inden for 30 dage",
+    "hint": "Tilgodehavendet kan bruges til enhver bådbooking over 1.000 €, og trækkes fra det, du betaler i dag."
+  },
+  "ledger": {
+    "title": "Historik",
+    "expires": "Udløber {date}",
+    "emptyTitle": "Intet tilgodehavende endnu",
+    "emptyDescription": "Inviter en ven - du optjener tilgodehavende, når de har været på deres tur.",
+    "kind": {
+      "referral_reward": "Bonus for henvisning",
+      "booking_redemption": "Brugt på booking",
+      "expiry": "Udløbet",
+      "adjustment": "Regulering"
+    }
+  }
+}

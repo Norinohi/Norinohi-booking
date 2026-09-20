@@ -1,0 +1,459 @@
+{
+  "confirmBooking": "Bekræft booking",
+  "review": {
+    "title": "Bookingoversigt",
+    "yacht": "Båd",
+    "dates": "Datoer",
+    "crew": "Besætning",
+    "people": "Personer",
+    "extras": "Tillæg",
+    "noExtras": "Ingen valgt",
+    "boatPrice": "Bådpris (fuld lejepris)",
+    "deposit": "Depositum, der refunderes",
+    "depositRefundable": "Refunderes, opkræves af charterbasen",
+    "schedule": {
+      "payNow": "Betal nu",
+      "payAt": "Betales: {date}",
+      "payAtCheckIn": "Betales ved check-in: {date}",
+      "firstPayment": "1. betaling ({when})",
+      "fullPayment": "Fuld betaling ({when})",
+      "secondPayment": "2. betaling ({when})",
+      "extrasPayment": "Tillæg ({when})",
+      "depositNote": "Depositum, der refunderes ({when})"
+    },
+    "totalPrice": "Samlet pris",
+    "dueNow": "Forfalder nu",
+    "terms": "Jeg accepterer <link>vilkår og betingelser samt lejeaftalen</link>.",
+    "cancellation": "Jeg accepterer <link>afbestillingsbetingelserne</link>.",
+    "operatorTerms": "Udbyderens vilkår, herunder afbestillingsbetingelserne"
+  },
+  "extras": {
+    "mandatory": "Obligatorisk",
+    "optional": "Valgfrie tillæg",
+    "included": "Inkluderet",
+    "notOnTheseDates": "Ikke tilgængelig på disse datoer",
+    "notOnTheseDatesAsk": "Ikke tilgængelig på disse datoer - du kan spørge basen",
+    "requestedAtBase": "Bestilles hos basen og betales der"
+  },
+  "guestDetails": {
+    "notice": "Vi bruger disse oplysninger til at bekræfte din booking og koordinere med basens ansvarlige.",
+    "guestNotice": "Du behøver ingen konto for at booke. Vi opretter en til denne reservation og sender dig et link, så du kan vælge en adgangskode, når det passer dig.",
+    "fullName": "Fulde navn",
+    "fullNamePlaceholder": "Anne Jensen",
+    "email": "E-mailadresse",
+    "emailPlaceholder": "navn@eksempel.dk",
+    "phone": "Telefonnummer",
+    "phonePlaceholder": "+45 12 34 56 78",
+    "country": "Land",
+    "countryPlaceholder": "Vælg dit land",
+    "specialRequests": "Særlige ønsker (valgfrit)",
+    "specialRequestsPlaceholder": "Gerne tidligt check-in"
+  },
+  "errors": {
+    "fullName": "Indtast dit fulde navn",
+    "email": "Indtast en gyldig e-mailadresse",
+    "phone": "Indtast et gyldigt telefonnummer",
+    "country": "Vælg dit land",
+    "terms": "Accepter vilkårene for at fortsætte",
+    "cancellation": "Accepter afbestillingsbetingelserne for at fortsætte",
+    "paymentMessage": "Indtast dit spørgsmål eller din forespørgsel",
+    "hold": {
+      "SLOT_GONE": "Den båd er ikke længere ledig på disse datoer. Vælg nye datoer og prøv igen.",
+      "PROVIDER_TIMEOUT": "Udbyderens system svarede ikke i tide. Prøv igen om et øjeblik.",
+      "PROVIDER_REFUSED": "Vi kunne ikke gennemføre denne booking hos udbyderen. Vores team har fået besked, så prøv igen om lidt eller kontakt os.",
+      "SLOT_TAKEN": "Denne båd blev taget, mens du var ved at gennemføre bookingen. Vælg nye datoer og prøv igen.",
+      "HOLD_NEVER_HELD": "Denne booking kunne ikke reserveres. Vælg dine datoer igen for at få en ny pris."
+    },
+    "confirmFailed": "Din booking kunne ikke bekræftes. Prøv igen.",
+    "holdInProgress": "Dit sidste forsøg er ved at blive afsluttet. Vent et øjeblik, og bekræft så igen.",
+    "billingName": "Indtast navnet, der skal faktureres",
+    "billingAddress": "Indtast faktureringsadressen",
+    "city": "Indtast byen"
+  },
+  "backToYacht": "Tilbage til {name}",
+  "panels": {
+    "main": "Bookingoplysninger",
+    "aside": "Bookingoversigt"
+  },
+  "continue": "Fortsæt",
+  "steps": {
+    "guestDetails": "Gæsteoplysninger",
+    "extras": "Tillæg",
+    "reviewAndBook": "Gennemse og book",
+    "payment": "Betaling"
+  },
+  "payment": {
+    "chargedIn": "Du bliver opkrævet {amount} i {currency}. Priser vist i en anden valuta er omregnet til referencekurser og er vejledende.",
+    "heading": "Vælg, hvordan du vil fortsætte",
+    "submitFailed": "Noget gik galt. Prøv igen.",
+    "tabs": {
+      "card": "Betal med kort",
+      "invoice": "Bed om faktura",
+      "question": "Stil et spørgsmål"
+    },
+    "card": {
+      "notice": "Dit kort reserveres nu og trækkes først, når udbyderen bekræfter bookingen. Kan de ikke tage den, frigives reservationen, og du betaler ingenting.",
+      "unavailable": "Onlinebetaling med kort er ikke mulig lige nu. Brug Bed om faktura eller Stil et spørgsmål.",
+      "quoteExpired": "Din pris er udløbet. Gå tilbage og opdater tilbuddet, før du betaler.",
+      "notPayable": "Denne booking kan ikke længere betales. Start en ny.",
+      "failed": "Betalingen kunne ikke gennemføres. Prøv igen.",
+      "cta": "Betal {amount}",
+      "orCard": "eller betal med kort",
+      "preparing": "Forbereder betalingsmuligheder"
+    },
+    "invoice": {
+      "email": "E-mail til fakturering",
+      "emailPlaceholder": "faktura@gmail.com",
+      "company": "Firmanavn (valgfrit)",
+      "companyPlaceholder": "Yachts Adventures",
+      "vat": "Momsnummer (valgfrit)",
+      "vatPlaceholder": "GB12312321321312123",
+      "notice": "Vil du hellere betale offline? Så sender vi dig en faktura, så du kan betale med bankoverførsel.",
+      "cta": "Bed om faktura (på {amount})",
+      "name": "Faktureringsnavn",
+      "namePlaceholder": "Anne Jensen",
+      "addressLine1": "Adresse",
+      "addressLine1Placeholder": "Havnegade 12",
+      "addressLine2": "Adresselinje 2 (valgfrit)",
+      "addressLine2Placeholder": "Lejlighed, etage, dør",
+      "city": "By",
+      "cityPlaceholder": "Split",
+      "postalCode": "Postnummer (valgfrit)",
+      "postalCodePlaceholder": "21000",
+      "country": "Land",
+      "countryPlaceholder": "Vælg land",
+      "registration": "CVR-nummer (valgfrit)",
+      "registrationPlaceholder": "12345678"
+    },
+    "question": {
+      "label": "Dit spørgsmål eller din forespørgsel",
+      "placeholder": "Send en forespørgsel, før du booker (f.eks. tjek af duelighedsbevis, særlige behov)",
+      "cta": "Send forespørgsel"
+    },
+    "hold": {
+      "until": "Reserveret til dig indtil {until} ({left} tilbage). Betal inden da, ellers frigiver udbyderen båden.",
+      "expiredTitle": "Reservationen af denne båd er udløbet",
+      "expiredBody": "Udbyderen reserverede disse datoer indtil {until}. Denne booking kan ikke længere betales: gå tilbage til båden og book datoerne igen.",
+      "backToYacht": "Tilbage til båden"
+    }
+  },
+  "confirmation": {
+    "reserved": "Din båd er reserveret!",
+    "notFound": "Bookingen blev ikke fundet",
+    "browse": "Se bådene",
+    "remaining": "De resterende {amount} betales ved check-in.",
+    "invoiceSent": "Fakturaen er sendt",
+    "invoiceHold": "Vi holder din båd, indtil din overførsel på {amount} er modtaget, med frist den {date}.",
+    "invoiceEmailed": "Vi har sendt faktura {number} med bankoplysningerne på mail og bekræfter, så snart overførslen er gået igennem",
+    "remainingBy": "De resterende {amount} skal betales senest den {date}.",
+    "emailed": "Vi har sendt dig detaljerne på mail, og gør det igen, når udbyderen bekræfter",
+    "guestEmailed": "Vi har sendt dig detaljerne på mail sammen med et link, så du kan vælge en adgangskode og få bookingen ind på din konto",
+    "viewBooking": "Se bookingen",
+    "summaryTitle": "Bookingoversigt",
+    "quote": "\"Denne båd er ideel til ø-hop i Kroatien - stabil, rummelig og perfekt til gruppeture. Din rute omfatter Hvar og Vis, to af de smukkeste øer i Adriaterhavet.\"",
+    "shareTrip": "Del turen",
+    "downloadReceipt": "Hent kvittering",
+    "summary": {
+      "yacht": "Båd",
+      "dates": "Datoer",
+      "crew": "Besætning",
+      "mandatory": "Obligatorisk",
+      "selectedExtras": "Valgte tillæg",
+      "boatPrice": "Bådpris (fuld lejepris)",
+      "deposit": "Depositum, der refunderes",
+      "secondPayment": "2. betaling (betales: {date})",
+      "secondPaymentAtCheckIn": "2. betaling (betales ved check-in)",
+      "totalPrice": "Samlet pris",
+      "perPerson": "~ {price} pr. person",
+      "dueNow": "Forfalder nu"
+    },
+    "viewInvoice": "Se fakturaen",
+    "settling": {
+      "title": "Betalingen er modtaget",
+      "body": "Vi bekræfter din booking hos charterbasen. Det tager normalt et par sekunder."
+    },
+    "failed": {
+      "title": "Vi kunne ikke bekræfte denne booking",
+      "body": "Charterbasen kunne ikke tage denne reservation. Eventuelle betalinger bliver ført tilbage."
+    },
+    "shareText": "Vi charter {name}, {dates}!",
+    "shareCopied": "Link kopieret",
+    "shareFailed": "Vi kunne ikke kopiere linket"
+  },
+  "invoice": {
+    "title": "Faktura",
+    "print": "Udskriv / gem som PDF",
+    "backToBookings": "Tilbage til bookinger",
+    "browse": "Se bådene",
+    "issuedOn": "Udstedt {date}",
+    "dueOn": "Forfalder {date}",
+    "status": {
+      "pending": "Afventer betaling",
+      "sent": "Sendt",
+      "paid": "Betalt",
+      "cancelled": "Annulleret"
+    },
+    "from": "Fra",
+    "billTo": "Faktureres til",
+    "vat": "Momsnr. {value}",
+    "registration": "CVR-nr. {value}",
+    "summary": {
+      "reference": "Bookingreference",
+      "yacht": "Båd",
+      "base": "Base",
+      "dates": "Charterdatoer",
+      "guests": "Gæster"
+    },
+    "lines": {
+      "description": "Beskrivelse",
+      "collected": "Opkrævet",
+      "amount": "Beløb"
+    },
+    "payWhen": {
+      "now": "Med denne faktura",
+      "at_check_in": "Ved check-in"
+    },
+    "totals": {
+      "charterTotal": "Charter i alt",
+      "paid": "Allerede betalt",
+      "dueNow": "Forfalder nu",
+      "balance": "Resterende beløb",
+      "securityDeposit": "Et depositum på {amount}, der refunderes, opkræves ved check-in og er ikke en del af denne faktura."
+    },
+    "payment": {
+      "title": "Betalingsoplysninger",
+      "beneficiary": "Modtager",
+      "bank": "Bank",
+      "iban": "IBAN",
+      "bic": "BIC / SWIFT",
+      "reference": "Betalingsreference",
+      "amount": "Beløb, der skal overføres",
+      "note": "Angiv betalingsreferencen på overførslen, så vi kan matche den med din booking. Din reservation er bekræftet, når beløbet er gået ind."
+    },
+    "footnote": "Udstedt af {company}. Denne faktura er genereret elektronisk og er gyldig uden underskrift.",
+    "error": {
+      "title": "Fakturaen kunne ikke indlæses",
+      "description": "Prøv igen om et øjeblik."
+    },
+    "missing": {
+      "title": "Ingen faktura til denne booking",
+      "description": "Denne booking blev ikke betalt med bankoverførsel, så der blev ikke udstedt en faktura."
+    }
+  },
+  "balance": {
+    "title": "Betal resten",
+    "titleUnpaid": "Gennemfør din betaling",
+    "reference": "Booking {reference}",
+    "pay": "Betal {amount}",
+    "notFound": "Vi kunne ikke finde denne booking",
+    "browse": "Se bådene",
+    "viewBookings": "Mine bookinger",
+    "unavailable": "Onlinebetaling er ikke mulig lige nu. Kontakt os for at afregne denne booking.",
+    "summary": {
+      "total": "Samlet pris",
+      "paid": "Allerede betalt",
+      "atCheckIn": "Betales i marinaen",
+      "due": "Forfalder nu"
+    },
+    "paid": {
+      "title": "Din booking er fuldt betalt",
+      "body": "Der er ikke mere at betale på booking {reference}. Tillæg og depositum afregnes i marinaen.",
+      "viewBooking": "Se bookingen"
+    },
+    "notPayable": {
+      "title": "Denne pris er udløbet",
+      "body": "Vi kan ikke længere modtage betaling for denne booking: både den pris, vi gav, og udbyderens reservation er udløbet. Tjek datoerne igen, så giver vi dig en ny pris.",
+      "action": "Tjek ledighed"
+    },
+    "settling": {
+      "title": "Betalingen er modtaget",
+      "body": "Vi opdaterer din booking. Det tager normalt et par sekunder."
+    },
+    "received": {
+      "title": "Betalingen er modtaget",
+      "body": "Tak. Der mangler {outstanding} på dette charter, og vi minder dig om det, inden det forfalder.",
+      "viewBooking": "Se bookingen"
+    }
+  },
+  "detail": {
+    "notFound": "Vi kunne ikke finde denne booking",
+    "browse": "Se bådene",
+    "reference": "Booking {reference}",
+    "guests": "{count} gæster",
+    "payBalance": "Betal {amount}",
+    "completePayment": "Gennemfør betaling {amount}",
+    "viewInvoice": "Se fakturaen",
+    "priceTitle": "Prisspecifikation",
+    "total": "Samlet pris",
+    "paymentsTitle": "Betalinger",
+    "paid": "Betalt indtil nu",
+    "outstanding": "Mangler at blive betalt",
+    "dueAtCheckIn": "Betales i marinaen",
+    "atMarina": "betales i marinaen",
+    "noPayments": "Der er endnu ikke foretaget nogen betalinger på denne booking.",
+    "disputed": "indsigelse",
+    "kind": {
+      "deposit": "Første betaling",
+      "balance": "Anden betaling",
+      "full": "Fuld betaling",
+      "checkin_extras": "Tillæg ved check-in",
+      "security_deposit": "Depositum"
+    },
+    "method": {
+      "card": "Kort",
+      "transfer": "Bankoverførsel"
+    },
+    "paymentStatus": {
+      "requires_payment": "Ikke betalt",
+      "processing": "Behandles",
+      "authorized": "Reserveret på kortet",
+      "succeeded": "Betalt",
+      "failed": "Mislykkedes",
+      "refunded": "Refunderet"
+    },
+    "status": {
+      "DRAFT": "Kladde",
+      "QUOTED": "Tilbud givet",
+      "OPTION_PENDING": "Reserverer",
+      "OPTION_HELD": "Reserveret",
+      "PAYMENT_PENDING": "Afventer betaling",
+      "CONFIRMING": "Bekræfter",
+      "CONFIRMED": "Bekræftet",
+      "QUOTE_EXPIRED": "Udløbet",
+      "OPTION_EXPIRED": "Udløbet",
+      "PAYMENT_FAILED": "Betaling mislykkedes",
+      "PROVIDER_REJECTED": "Ikke ledig",
+      "CANCELLED": "Afbestilt",
+      "REFUND_PENDING": "Refunderer",
+      "REFUNDED": "Refunderet"
+    },
+    "backToBookings": "Tilbage til mine bookinger",
+    "panels": {
+      "main": "Booking",
+      "aside": "Pris"
+    },
+    "charterTitle": "Charter",
+    "dates": "Datoer",
+    "guestsLabel": "Gæster",
+    "crew": "Besætning",
+    "marina": "Marina",
+    "referenceLabel": "Reference",
+    "settled": "Der er ikke mere at betale",
+    "viewYacht": "Se bådens side",
+    "supportTitle": "Brug for hjælp?",
+    "supportBody": "Spørgsmål om dit charter, ændring af datoer eller noget helt andet - vores team svarer inden for én hverdag.",
+    "contactSupport": "Kontakt support",
+    "supportSubject": "Booking {reference}",
+    "marinaContact": "Kontakt til marinaen",
+    "signInTitle": "Log ind for at se denne booking",
+    "signInBody": "Denne booking er knyttet til din konto. Log ind med den e-mail, du bookede med, så fører vi dig direkte tilbage hertil.",
+    "signIn": "Log ind",
+    "cancelledOn": "Afbestilt den",
+    "cancelReason": "Årsag",
+    "requestCancel": "Anmod om afbestilling",
+    "crewList": {
+      "title": "Besætningsliste",
+      "notice": "Charterfirmaet skal give myndighederne en liste over alle om bord, før I sejler. Udfyld den her, så sender vi den videre - mangler der noget, spørger basen om det i skranken, når I ankommer.",
+      "alsoAsked": "Der spørges også om {fields}, som basen indhenter i skranken, når I ankommer.",
+      "maxPassengers": "Listen kan rumme højst {count} personer.",
+      "loading": "Indlæser din besætningsliste…",
+      "empty": "Der er ikke tilføjet nogen endnu. Din booking er til {guests} gæster - tilføj hver person, der kommer om bord, inklusive skipperen.",
+      "member": "Besætningsmedlem {number}",
+      "remove": "Fjern besætningsmedlem {number}",
+      "add": "Tilføj besætningsmedlem",
+      "save": "Gem besætningsliste",
+      "saved": "Besætningslisten er gemt",
+      "saveFailed": "Vi kunne ikke gemme din besætningsliste",
+      "role": "Rolle",
+      "rolePlaceholder": "Skipper, gæst…",
+      "dateOfBirth": "Fødselsdato",
+      "documentNumber": "Pas- eller id-nummer",
+      "documentNumberPlaceholder": "X1234567",
+      "nationality": "Nationalitet",
+      "nationalityPlaceholder": "Vælg et land",
+      "errors": {
+        "dateOfBirth": "Indtast en gyldig dato",
+        "firstName": "Indtast personens fornavn",
+        "lastName": "Indtast personens efternavn",
+        "skipperEmail": "Indtast en gyldig e-mailadresse",
+        "oneSkipper": "Kun én person kan være skipper"
+      },
+      "requires": {
+        "shoeSize": "skostørrelser",
+        "disabledPerson": "om nogen om bord har et handicap"
+      },
+      "legend": "Felter markeret med * er dem, dette charterfirma kræver.",
+      "sent": "Sendt til charterfirmaet den {when}.",
+      "notSent": "Ikke hos charterfirmaet endnu: {reason} Dine oplysninger er gemt - basen indhenter listen, når I ankommer.",
+      "notSentUnknown": "vi kunne ikke få fat i dem.",
+      "savedNotSent": "Gemt, men charterfirmaet har ikke fået den endnu",
+      "firstName": "Fornavn",
+      "firstNamePlaceholder": "Som det står i passet",
+      "lastName": "Efternavn",
+      "lastNamePlaceholder": "Som det står i passet",
+      "gender": "Køn",
+      "genderPlaceholder": "Vælg",
+      "birthPlace": "Fødested",
+      "birthCountry": "Fødeland",
+      "livingPlace": "Bopælsby",
+      "livingCountry": "Bopælsland",
+      "placePlaceholder": "By",
+      "documentType": "Dokumenttype",
+      "documentTypePlaceholder": "Vælg",
+      "isSkipper": "Denne person er skipper",
+      "skipperLicence": "Skipperens duelighedsbevis",
+      "skipperLicencePlaceholder": "Bevisnummer",
+      "vhfLicence": "VHF-certifikat",
+      "skipperEmail": "Skipperens e-mail",
+      "skipperMobile": "Skipperens telefon",
+      "note": "Noget, basen bør vide",
+      "notePlaceholder": "Ankomsttidspunkt, flynummer, hvis nogen har brug for hjælp…",
+      "documents": {
+        "passport": "Pas",
+        "idCard": "Id-kort",
+        "other": "Andet"
+      },
+      "genders": {
+        "male": "Mand",
+        "female": "Kvinde"
+      },
+      "placeSearch": "Søg steder",
+      "placeEmpty": "Intet sted med det navn"
+    },
+    "priceLineLabels": {
+      "charterPrice": "Charterpris",
+      "charterExtra": "Chartertillæg",
+      "charterDiscount": "Charterrabat",
+      "referralWelcome": "Velkomstrabat ved henvisning",
+      "referralCredit": "Tilgodehavende fra henvisning"
+    }
+  },
+  "support": {
+    "title": "Hvordan kan vi hjælpe?",
+    "subtitle": "Send os en besked, så vender vi tilbage inden for én hverdag.",
+    "messageLabel": "Din besked",
+    "messagePlaceholder": "Fortæl os, hvad du har brug for hjælp til - datoer, båden, betaling, hvad som helst.",
+    "required": "Skriv en besked først",
+    "send": "Send besked",
+    "sent": "Beskeden er sendt",
+    "sentTitle": "Beskeden er sendt",
+    "sentBody": "Vi har modtaget den sammen med dine bookingoplysninger. Du hører fra os på mail.",
+    "backToBooking": "Tilbage til min booking",
+    "failed": "Vi kunne ikke sende din besked. Prøv igen.",
+    "marinaContact": "Eller kontakt marinaen direkte",
+    "cancellation": {
+      "title": "Anmod om afbestilling",
+      "subtitle": "Send os anmodningen, så vender vi tilbage med, hvad dine afbestillingsbetingelser giver mulighed for.",
+      "messageLabel": "Hvorfor afbestiller du?",
+      "messagePlaceholder": "Alt, der kan hjælpe os - ændrede planer, datoer, vejret, sygdom.",
+      "template": "Jeg vil gerne afbestille booking {reference} ({dates}).\n\nÅrsag: ",
+      "send": "Send anmodning om afbestilling",
+      "sentTitle": "Afbestilling anmodet",
+      "sentBody": "Din booking bliver som den er, indtil vores team har gennemgået anmodningen. Du hører fra os på mail om, hvad dine afbestillingsbetingelser giver mulighed for."
+    }
+  },
+  "booked": "Booket",
+  "consentRequired": "Sæt kryds i begge felter ovenfor for at bekræfte denne booking.",
+  "saveAndContinue": "Gem og fortsæt",
+  "extrasSkipped": "Kig lige på de valgfrie tillæg først - og bekræft så."
+}
