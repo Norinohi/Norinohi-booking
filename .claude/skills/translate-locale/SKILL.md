@@ -114,7 +114,23 @@ pnpm --filter @yacht-charter/db translations:apply -- --apply
 pnpm --filter @yacht-charter/providers facets:backfill -- --apply
 ```
 
-In production the same steps run through the built entry points (`seed:routes`, `seed:catalogue-routes`, `seed:boat-types`, `seed:facets`), and they are a deliberate manual step after the deploy.
+In production the same steps run through the built entry points, in this order, as a deliberate
+manual step after the deploy:
+
+```bash
+pnpm --filter server seed:routes -- --apply
+pnpm --filter server seed:catalogue-routes -- --apply
+pnpm --filter server seed:boat-types -- --apply
+pnpm --filter server seed:site-faq
+pnpm --filter server translations:apply -- --apply
+pnpm --filter server facets:backfill -- --apply
+```
+
+`facets:backfill` goes last so a real vendor label takes over from a generated one where the
+vendor has it. Every one of these is a `dist/*.mjs` entry, because a production container has no
+`tsx`: a script that exists only under `packages/*` cannot be run there at all. Adding one means
+adding the file to `apps/server/src`, the entry to `tsdown.config.ts` and the script to
+`apps/server/package.json`, and keeping the logic itself in a module that runs nothing on import.
 
 Two things about the route seeds are worth knowing before you trust them:
 

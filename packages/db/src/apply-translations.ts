@@ -33,8 +33,6 @@ import {
 /** Rows per insert, well inside the 65,535 parameters Postgres will bind at five per row. */
 const CURATED_BATCH = 5_000;
 
-const apply = process.argv.slice(2).includes("--apply");
-
 /**
  * The checked-in file is edited by hand, so its kinds are parsed rather than trusted.
  *
@@ -98,7 +96,7 @@ function mergedFacetLabels(kind: FacetKindValue) {
   return merged;
 }
 
-async function facetRows(): Promise<{
+async function facetRows(apply: boolean): Promise<{
   rows: (typeof facetMediaTranslation.$inferInsert)[];
   created: number;
 }> {
@@ -181,8 +179,14 @@ function curatedRows(): (typeof extraLabelTranslation.$inferInsert)[] {
   return [...byKey.values()];
 }
 
-async function main(): Promise<void> {
-  const { rows: facets, created } = await facetRows();
+/**
+ * Writes what the checked-in files say, or prints what it would write.
+ *
+ * Exported rather than run on import so `apps/server` can call it from a compiled ops script:
+ * a production container has no `tsx`. `apply-translations-cli.ts` is the CLI half.
+ */
+export async function applyTranslations({ apply }: { apply: boolean }): Promise<void> {
+  const { rows: facets, created } = await facetRows(apply);
   const extras = await extraRows();
   const curated = curatedRows();
 
@@ -260,13 +264,3 @@ async function main(): Promise<void> {
     `\nWrote ${facets.length} facet labels, ${extras.length} id-keyed and ${curated.length} name-keyed extra labels.`,
   );
 }
-
-try {
-  await main();
-} catch (error) {
-  console.error(error);
-  await db.$client.end();
-  process.exit(1);
-}
-
-await db.$client.end();

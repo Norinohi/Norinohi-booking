@@ -27,7 +27,10 @@
     "refresh:fx": "node dist/refresh-fx.mjs",
     "seed:routes": "node dist/seed-popular-routes.mjs",
     "seed:boat-types": "node dist/seed-boat-types.mjs",
-    "seed:catalogue-routes": "node dist/seed-catalogue-routes.mjs"
+    "seed:catalogue-routes": "node dist/seed-catalogue-routes.mjs",
+    "seed:site-faq": "node dist/seed-site-faq.mjs",
+    "translations:apply": "node dist/apply-translations.mjs",
+    "facets:backfill": "node dist/backfill-facet-translations.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.11",
