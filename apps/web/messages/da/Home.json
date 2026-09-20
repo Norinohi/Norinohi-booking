@@ -1,0 +1,184 @@
+{
+  "BoatTypes": {
+    "heading": "Vælg din bådtype",
+    "previous": "Forrige bådtyper",
+    "next": "Næste bådtyper"
+  },
+  "BudgetFinder": {
+    "heading": "Find både efter dit budget",
+    "viewResults": "Se resultater",
+    "labels": {
+      "budget": "Budget pr. person",
+      "people": "Personer",
+      "skipper": "Skipper",
+      "destinations": "Destinationer (valgfrit)"
+    },
+    "options": {
+      "any": "Alle",
+      "budgetFrom": "{from}+",
+      "peopleNotSure": "Ved ikke",
+      "skipperYes": "Ja",
+      "skipperNo": "Nej",
+      "destinationsAll": "Alle destinationer"
+    }
+  },
+  "EarnCta": {
+    "heading": "Tjen penge på din båd",
+    "description": "Læg din båd op på vores platform og begynd at få bookinger fra rejsende over hele verden. Vi står for synlighed, efterspørgsel og værktøjer - du bestemmer selv kalender og priser.",
+    "cta": "Læg din båd op",
+    "dialog": {
+      "title": "Send en forespørgsel",
+      "description": "Læg dine oplysninger, så kontakter vores team dig om at få din båd på platformen.",
+      "submit": "Send forespørgsel",
+      "success": "Tak! Vi vender tilbage inden længe."
+    }
+  },
+  "Hero": {
+    "tagline": "Over 30.000 både på 1.200 destinationer. Charter fra 120 €/dag",
+    "heading": "Oplev verden fra en båd",
+    "wherePlaceholder": "Hvorhen?",
+    "datesPlaceholder": "Alle datoer",
+    "clearDates": "Ryd datoer",
+    "boatPlaceholder": "Alle både",
+    "captainPlaceholder": "Med skipper",
+    "search": "Søg",
+    "dontKnow": "Ved du ikke, hvad du skal vælge?",
+    "helpPlan": "Hjælp mig med at planlægge turen",
+    "options": {
+      "croatia": "Kroatien",
+      "greece": "Grækenland",
+      "italy": "Italien",
+      "turkey": "Tyrkiet",
+      "caribbean": "Caribien",
+      "thailand": "Thailand",
+      "catamaran": "Katamaran",
+      "sailingYacht": "Sejlyacht",
+      "motorYacht": "Motoryacht",
+      "gulet": "Gulet",
+      "luxuryYacht": "Luksusyacht",
+      "withCaptain": "Med skipper",
+      "bareboat": "Uden besætning",
+      "skippered": "Med skipper"
+    },
+    "stats": {
+      "yachts": {
+        "label": "både"
+      },
+      "destinations": {
+        "label": "destinationer"
+      },
+      "travelers": {
+        "label": "glade rejsende"
+      },
+      "rating": {
+        "label": "gennemsnitlig bedømmelse"
+      }
+    }
+  },
+  "HowItWorks": {
+    "heading": "Sådan virker det",
+    "intro": "Det er lettere at booke en båd, end du tror.",
+    "introSecondLine": "Vi følger dig fra valget af destination til du står om bord - ingen erfaring nødvendig.",
+    "cta": "Find både",
+    "steps": {
+      "destination": {
+        "title": "Vælg destination",
+        "description": "Udforsk over 1.200 sejldestinationer verden over. Fra Kroatien til Caribien - vælg det sted, der passer til din tur."
+      },
+      "yacht": {
+        "title": "Vælg din båd",
+        "description": "Se både ud fra jeres gruppestørrelse, budget og ønsker. Sammenlign mulighederne og find den, der passer bedst til turen."
+      },
+      "book": {
+        "title": "Book din tur",
+        "description": "Bekræft dine datoer, tilføj tillæg efter behov, og lås bookingen online. Så er du klar til at sejle."
+      }
+    }
+  },
+  "PlanTrip": {
+    "heading": "Er du i tvivl om valget? Planlæg din perfekte bådtur på 30 sekunder",
+    "cta": "Hjælp mig med at planlægge turen",
+    "checklist": {
+      "questions": "Svar på et par enkle spørgsmål",
+      "recommendation": "Få en personlig anbefaling",
+      "explore": "Udforsk de bedste både til din tur"
+    },
+    "steps": {
+      "preferences": {
+        "title": "Vælg dine ønsker",
+        "description": "Angiv dine ideelle destinationer, fra Palawans turkise kyster til Vallettas historiske havne."
+      },
+      "recommendation": {
+        "title": "Få en anbefaling",
+        "description": "Vi foreslår både ud fra gruppens behov. Se vores anbefalinger og vælg den perfekte båd."
+      },
+      "yachts": {
+        "title": "Se bådene",
+        "description": "Få styr på detaljerne, tilføj eventuelle tillæg og book. Nu kan du glæde dig til et uforglemmeligt sejleventyr."
+      }
+    }
+  },
+  "PopularDestinations": {
+    "heading": "Populære destinationer",
+    "previous": "Forrige destinationer",
+    "next": "Næste destinationer",
+    "seeAll": "Se alle populære",
+    "showLess": "Vis færre",
+    "perPersonWeek": "Fra {price} pr. person/uge",
+    "yachtCount": "{count, plural, one {# båd} other {# både}}"
+  },
+  "PopularYachts": {
+    "heading": "Populære både",
+    "previous": "Forrige både",
+    "next": "Næste både",
+    "seeAll": "Se alle både",
+    "from": "Fra",
+    "viewDetails": "Se detaljer",
+    "perDay": "/ pr. dag"
+  },
+  "SailingRoutes": {
+    "heading": "Populære sejlruter",
+    "previous": "Forrige ruter",
+    "next": "Næste ruter",
+    "seeAll": "Se alle populære",
+    "showLess": "Vis færre",
+    "exploreRoute": "Udforsk ruten",
+    "days": "{count, plural, one {# dag} other {# dage}}",
+    "levels": {
+      "easy": "Let",
+      "moderate": "Middel",
+      "advanced": "Øvet"
+    }
+  },
+  "Testimonials": {
+    "heading": "Det siger vores kunder",
+    "allReviews": "Alle anmeldelser",
+    "comingSoon": "På vej",
+    "items": {
+      "weber": {
+        "quote": "Vi bookede en båd i Kroatien for første gang, og alt spillede bare. Processen var enkel, og båden var præcis, som vi havde regnet med.",
+        "location": "Tyskland"
+      },
+      "martin": {
+        "quote": "Jeg havde ingen sejlerfaring, men platformen gjorde det let at finde en skipper og planlægge hele turen. Det føltes som en helt almindelig ferie, bare bedre.",
+        "location": "Frankrig"
+      },
+      "carter": {
+        "quote": "Den gennemskuelige pris var den største overraskelse. Vi kunne se hele beløbet på forhånd og dele det mellem vennerne - super praktisk.",
+        "location": "Storbritannien"
+      },
+      "rossi": {
+        "quote": "Vi sammenlignede et par både og fandt den helt rigtige til vores gruppe. Ruteforslagene var virkelig nyttige - vi skulle ikke planlægge noget selv.",
+        "location": "Italien"
+      },
+      "kowalska": {
+        "quote": "Flot udvalg af både og meget tydelige filtre. Vi fandt præcis det, vi havde brug for, på få minutter.",
+        "location": "Polen"
+      },
+      "jensen": {
+        "quote": "Alt fra booking til ombordstigning gik som en leg. Tydelig kommunikation, ingen skjulte gebyrer, og en båd der så endnu bedre ud i virkeligheden.",
+        "location": "Danmark"
+      }
+    }
+  }
+}

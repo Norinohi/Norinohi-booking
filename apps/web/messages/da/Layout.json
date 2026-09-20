@@ -1,0 +1,124 @@
+{
+  "Footer": {
+    "tagline": "Oplev verden fra en båd.",
+    "description": "Over 30.000 både verden over er klar til din næste tur.",
+    "columns": {
+      "destinations": "Destinationer",
+      "charterTypes": "Chartertyper",
+      "explore": "Udforsk"
+    },
+    "links": {
+      "croatia": "Kroatien",
+      "greece": "Grækenland",
+      "italy": "Italien",
+      "turkey": "Tyrkiet",
+      "caribbean": "Caribien",
+      "thailand": "Thailand",
+      "catamaran": "Katamaran",
+      "sailingYacht": "Sejlyacht",
+      "motorYacht": "Motoryacht",
+      "bareboat": "Uden besætning",
+      "skippered": "Med skipper",
+      "planTrip": "Hjælp mig med at planlægge turen",
+      "popularYachts": "Populære både",
+      "customerReviews": "Det siger vores kunder",
+      "howItWorks": "Sådan virker det",
+      "contact": "Kontakt os"
+    },
+    "privacy": "Privatlivspolitik",
+    "terms": "Handelsbetingelser",
+    "copyright": "© {year} YachtSkanner Platform. Alle rettigheder forbeholdes."
+  },
+  "Nav": {
+    "boatTypes": "Bådtyper",
+    "closeMenu": "Luk menuen",
+    "destinations": "Destinationer",
+    "findByBudget": "Find efter budget",
+    "findYacht": "Find båd",
+    "helpPlan": "Hjælp mig med at planlægge turen",
+    "language": "Sprog",
+    "openMenu": "Åbn menuen",
+    "popularRoutes": "Populære ruter",
+    "saved": "Gemte",
+    "tryIt": "Prøv det"
+  },
+  "Sidebar": {
+    "menu": "Kontomenu",
+    "trigger": "Menu",
+    "greeting": "Hej {name}!",
+    "profile": "Min profil",
+    "bookings": "Mine bookinger",
+    "referrals": "Henvisninger",
+    "credits": "Tilgodehavende og saldo",
+    "discount": "Rabatstyring",
+    "logout": "Log ud",
+    "commission": "Kommissionssatser",
+    "duplicates": "Gennemgang af dubletter",
+    "sync": "Synkroniseringshistorik",
+    "audit": "Revisionslog",
+    "inbox": "Indbakke",
+    "staffBookings": "Bookinger",
+    "users": "Brugere",
+    "payments": "Betalinger",
+    "listings": "Annoncer",
+    "routes": "Foreslåede ruter",
+    "sections": {
+      "account": "Konto",
+      "admin": "Administration"
+    },
+    "faq": "FAQ",
+    "groups": {
+      "fleet": "Både",
+      "content": "Indhold på hjemmesiden"
+    },
+    "settings": "Indstillinger for markedspladsen",
+    "popular": "Populære valg",
+    "popularYachts": "Populære både"
+  },
+  "UserMenu": {
+    "account": "Konto",
+    "signIn": "Log ind",
+    "signOut": "Log ud",
+    "profile": "Min profil",
+    "bookings": "Mine bookinger",
+    "referrals": "Henvisninger",
+    "credits": "Tilgodehavende og saldo"
+  },
+  "description": "Lej både og katamaraner over hele verden. Sammenlign både, datoer og priser, og book din næste sejltur på få minutter.",
+  "title": "YachtSkanner - Leje af både og katamaraner over hele verden",
+  "CookieConsent": {
+    "title": "Cookies",
+    "description": "Vi bruger analysecookies til at se, hvordan siden bliver brugt, så vi kan gøre den bedre. Intet bliver målt, før du siger ja.",
+    "manage": "Administrer indstillinger",
+    "accept": "Accepter",
+    "decline": "Afvis",
+    "footerLink": "Cookies",
+    "dialog": {
+      "title": "Dit privatliv",
+      "description": "Vælg, hvilke cookies siden må bruge. Dit valg gemmes på denne enhed, og du kan ændre det når som helst nederst på siden.",
+      "close": "Luk",
+      "alwaysActive": "Altid aktiv",
+      "necessary": {
+        "title": "Nødvendige",
+        "description": "Holder dig logget ind, beskytter betalinger mod svindel og husker dit cookievalg. Siden virker ikke uden dem."
+      },
+      "functional": {
+        "title": "Funktionelle",
+        "description": "Husker de både, du har gemt, og tæller kun et gentaget besøg på en annonce én gang. Gemmes i din browser og deles aldrig."
+      },
+      "analytics": {
+        "title": "Analyse",
+        "description": "Google Analytics, så vi kan se, hvilke sider folk bruger, og hvor de går i stå. Ingen reklamer og ingen profilering."
+      },
+      "save": "Gem mit valg",
+      "acceptAll": "Accepter alle"
+    }
+  },
+  "Legal": {
+    "terms": "Vilkår og betingelser",
+    "privacy": "Privatlivspolitik",
+    "cancellation": "Afbestillingsbetingelser",
+    "pending": "Dette dokument er ved at blive udarbejdet og bliver offentliggjort her snart. Har du spørgsmål til det i mellemtiden, hjælper vores support gerne.",
+    "contact": "Kontakt support"
+  }
+}

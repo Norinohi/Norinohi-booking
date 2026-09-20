@@ -1,0 +1,14 @@
+{
+  "loading": "Indlæser både…",
+  "noResults": "Ingen både matcher disse filtre. Prøv at ændre dem.",
+  "title": "Både på kortet",
+  "backToSearch": "Tilbage til søgningen",
+  "viewInCatalogue": "Se i kataloget",
+  "showAllList": "Vis hele listen",
+  "closeList": "Luk listen",
+  "marker": "Marina {name}",
+  "clusterCount": "{count, plural, one {# båd} other {# både}}",
+  "previousBoat": "Forrige båd",
+  "nextBoat": "Næste båd",
+  "allInCatalogue": "{count, plural, one {# båd i kataloget} other {Alle # både i kataloget}}"
+}
