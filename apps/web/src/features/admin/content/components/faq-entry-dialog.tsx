@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@yacht-charter/ui/components/overlay/dialog";
 import { Search } from "lucide-react";
+import { perSiteLocale, perSiteLocaleValue } from "@yacht-charter/api/lib/locales";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -74,16 +75,7 @@ type Values = {
 const EMPTY_PANE: PaneValues = { question: "", answer: "" };
 
 function toValues(group: FaqGroupRow | null): Values {
-  const translations = {
-    en: { ...EMPTY_PANE },
-    de: { ...EMPTY_PANE },
-    es: { ...EMPTY_PANE },
-    uk: { ...EMPTY_PANE },
-    fr: { ...EMPTY_PANE },
-    pl: { ...EMPTY_PANE },
-    it: { ...EMPTY_PANE },
-    nl: { ...EMPTY_PANE },
-  };
+  const translations = perSiteLocaleValue<PaneValues>(() => ({ ...EMPTY_PANE }));
 
   for (const entry of group?.translations ?? []) {
     translations[entry.locale] = { question: entry.question, answer: entry.answer ?? "" };
@@ -111,16 +103,7 @@ function useFaqEntrySchema() {
         scope: z.enum(SCOPES),
         listingId: z.string(),
         category: z.string(),
-        translations: z.object({
-          en: pane,
-          de: pane,
-          es: pane,
-          uk: pane,
-          fr: pane,
-          pl: pane,
-          it: pane,
-          nl: pane,
-        }),
+        translations: perSiteLocale(pane),
       })
       .superRefine((values, ctx) => {
         if (values.scope === "listing" && !values.listingId) {

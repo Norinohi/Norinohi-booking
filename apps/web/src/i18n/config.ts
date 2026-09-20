@@ -24,4 +24,7 @@ export const localeNames = {
   pl: "Polish",
   it: "Italian",
   nl: "Dutch",
+  sv: "Swedish",
+  no: "Norwegian",
+  da: "Danish",
 } satisfies Record<Locale, string>;

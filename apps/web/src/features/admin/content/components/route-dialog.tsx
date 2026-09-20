@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@yacht-charter/ui/components/overlay/dialog";
-import { SITE_LOCALES } from "@yacht-charter/api/lib/locales";
+import { perSiteLocaleValue, SITE_LOCALES } from "@yacht-charter/api/lib/locales";
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
@@ -55,16 +55,7 @@ type Draft = {
   translations: Record<RouteLocale, Pane>;
 };
 
-const emptyPanes = () => ({
-  en: { title: "", description: "" },
-  uk: { title: "", description: "" },
-  de: { title: "", description: "" },
-  es: { title: "", description: "" },
-  fr: { title: "", description: "" },
-  pl: { title: "", description: "" },
-  it: { title: "", description: "" },
-  nl: { title: "", description: "" },
-});
+const emptyPanes = () => perSiteLocaleValue<Pane>(() => ({ title: "", description: "" }));
 
 const EMPTY: Draft = {
   target: { baseId: null, regionId: null },

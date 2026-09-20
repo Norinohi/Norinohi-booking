@@ -18,6 +18,9 @@ const loaders = {
   pl: () => import("../../messages/pl"),
   it: () => import("../../messages/it"),
   nl: () => import("../../messages/nl"),
+  sv: () => import("../../messages/sv"),
+  no: () => import("../../messages/no"),
+  da: () => import("../../messages/da"),
 } satisfies Record<Locale, () => Promise<{ default: Messages }>>;
 
 export async function loadMessages(locale: Locale): Promise<Messages> {

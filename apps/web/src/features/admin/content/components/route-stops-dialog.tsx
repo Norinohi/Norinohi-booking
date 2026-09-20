@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@yacht-charter/ui/components/overlay/dialog";
-import { TRANSLATED_LOCALES } from "@yacht-charter/api/lib/locales";
+import { perTranslatedLocaleValue, TRANSLATED_LOCALES } from "@yacht-charter/api/lib/locales";
 import { ArrowDown, ArrowUp, MapPinned, Pencil, Plus, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
@@ -59,8 +59,7 @@ type Working = {
   point: { lat: number; lng: number } | null;
 };
 
-const emptyNotes = () =>
-  ({ uk: "", de: "", es: "", fr: "", pl: "", it: "", nl: "" }) satisfies Record<NoteLocale, string>;
+const emptyNotes = () => perTranslatedLocaleValue<string>(() => "");
 
 const BLANK: Working = { id: null, name: "", note: "", notes: emptyNotes(), point: null };
 

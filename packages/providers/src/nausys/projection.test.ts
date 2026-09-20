@@ -174,6 +174,8 @@ describe("projectNausysCatalogue", () => {
       it: "3 pale pieghevoli",
       nl: '"3-blads klapschroef"',
       pl: "3-łopatowa składana śruba",
+      sv: "3 blad vikbar propell",
+      no: "3-bladet foldepropell",
     });
   });
 
@@ -713,6 +715,8 @@ describe("projectNausysCatalogue", () => {
         it: "Pulizia finale",
         nl: "Eindschoonmaak",
         pl: "Sprzątanie końcowe",
+        sv: "Slutstädning",
+        no: "Sluttrengjøring",
       });
     });
 

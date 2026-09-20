@@ -835,7 +835,10 @@
         "fr": "French",
         "pl": "Polish",
         "it": "Italian",
-        "nl": "Dutch"
+        "nl": "Dutch",
+        "sv": "Swedish",
+        "no": "Norwegian",
+        "da": "Danish"
       }
     },
     "stops": {
@@ -1155,7 +1158,10 @@
       "fr": "French",
       "pl": "Polish",
       "it": "Italian",
-      "nl": "Dutch"
+      "nl": "Dutch",
+      "sv": "Swedish",
+      "no": "Norwegian",
+      "da": "Danish"
     },
     "localeCodes": {
       "en": "EN",
@@ -1165,7 +1171,10 @@
       "fr": "FR",
       "pl": "PL",
       "it": "IT",
-      "nl": "NL"
+      "nl": "NL",
+      "sv": "SV",
+      "no": "NO",
+      "da": "DA"
     },
     "state": {
       "answered": "Answered - on the public page",
@@ -1350,7 +1359,10 @@
         "fr": "French",
         "pl": "Polish",
         "it": "Italian",
-        "nl": "Dutch"
+        "nl": "Dutch",
+        "sv": "Swedish",
+        "no": "Norwegian",
+        "da": "Danish"
       }
     }
   },

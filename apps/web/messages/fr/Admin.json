@@ -835,7 +835,10 @@
         "fr": "Français",
         "pl": "Polonais",
         "it": "Italien",
-        "nl": "Néerlandais"
+        "nl": "Néerlandais",
+        "sv": "Suédois",
+        "no": "Norvégien",
+        "da": "Danois"
       }
     },
     "stops": {
@@ -1155,7 +1158,10 @@
       "fr": "Français",
       "pl": "Polonais",
       "it": "Italien",
-      "nl": "Néerlandais"
+      "nl": "Néerlandais",
+      "sv": "Suédois",
+      "no": "Norvégien",
+      "da": "Danois"
     },
     "localeCodes": {
       "en": "EN",
@@ -1165,7 +1171,10 @@
       "fr": "FR",
       "pl": "PL",
       "it": "IT",
-      "nl": "NL"
+      "nl": "NL",
+      "sv": "SV",
+      "no": "NO",
+      "da": "DA"
     },
     "state": {
       "answered": "Répondue - sur la page publique",
@@ -1350,7 +1359,10 @@
         "fr": "Français",
         "pl": "Polonais",
         "it": "Italien",
-        "nl": "Néerlandais"
+        "nl": "Néerlandais",
+        "sv": "Suédois",
+        "no": "Norvégien",
+        "da": "Danois"
       }
     }
   },

@@ -2,6 +2,7 @@
 
 import {
   type DisplayCurrency,
+  DISPLAY_CURRENCIES,
   convertForDisplay,
   type FxSnapshot,
   resolveDisplayCurrency,
@@ -41,8 +42,6 @@ const CurrencyContext = createContext<CurrencyState>({
   choose: () => {},
 });
 
-const OFFERED: readonly DisplayCurrency[] = ["EUR", "USD", "GBP", "PLN", "UAH"];
-
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const settings = useCurrencySettings();
   const enabled = settings.data?.displayCurrencyEnabled ?? false;
@@ -74,7 +73,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     () => ({
       display,
       snapshot: rates.data ?? null,
-      choices: enabled ? OFFERED : null,
+      choices: enabled ? DISPLAY_CURRENCIES : null,
       choose: (currency) => {
         writeStoredCurrency(currency);
         setChosen(currency);

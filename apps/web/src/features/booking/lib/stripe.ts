@@ -42,6 +42,13 @@ export function elementsLocale(locale: Locale): StripeElementLocale {
       return "it";
     case "nl":
       return "nl";
+    case "sv":
+      return "sv";
+    /* Stripe spells Norwegian as the Bokmal tag; the site routes on the macrolanguage code. */
+    case "no":
+      return "nb";
+    case "da":
+      return "da";
     default:
       return "auto";
   }

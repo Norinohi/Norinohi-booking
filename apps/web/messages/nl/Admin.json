@@ -835,7 +835,10 @@
         "fr": "Frans",
         "pl": "Pools",
         "it": "Italiaans",
-        "nl": "Nederlands"
+        "nl": "Nederlands",
+        "sv": "Zweeds",
+        "no": "Noors",
+        "da": "Deens"
       }
     },
     "stops": {
@@ -1155,7 +1158,10 @@
       "fr": "Frans",
       "pl": "Pools",
       "it": "Italiaans",
-      "nl": "Nederlands"
+      "nl": "Nederlands",
+      "sv": "Zweeds",
+      "no": "Noors",
+      "da": "Deens"
     },
     "localeCodes": {
       "en": "EN",
@@ -1165,7 +1171,10 @@
       "fr": "FR",
       "pl": "PL",
       "it": "IT",
-      "nl": "NL"
+      "nl": "NL",
+      "sv": "SV",
+      "no": "NO",
+      "da": "DA"
     },
     "state": {
       "answered": "Beantwoord - op de openbare pagina",
@@ -1350,7 +1359,10 @@
         "fr": "Frans",
         "pl": "Pools",
         "it": "Italiaans",
-        "nl": "Nederlands"
+        "nl": "Nederlands",
+        "sv": "Zweeds",
+        "no": "Noors",
+        "da": "Deens"
       }
     }
   },
