@@ -11,13 +11,40 @@
     "created": "Tasa añadida",
     "updated": "Tasa guardada",
     "error": "No se pudieron cargar las tasas de comisión",
-    "empty": "Aún no hay tasas. Mientras no se introduzca ninguna, la comisión no interviene en la elección de la oferta.",
+    "empty": "Aún no hay tarifas, y no hacen falta mientras los proveedores indiquen las suyas. Una tarifa aquí solo cubriría una oferta que llegue sin comisión.",
     "emptyFiltered": "Ninguna tasa coincide con estos filtros.",
     "allOperators": "Todos los operadores",
     "openEnded": "Sin fecha de fin",
     "fromDate": "Desde {date}",
     "untilDate": "Hasta {date}",
-    "note": "Una tasa solo desempata entre dos ofertas ya iguales en precio y en suplementos obligatorios. Nunca puede ser el motivo por el que un cliente vea un barco más caro. Por ahora ningún paso de la venta lee estas tasas.",
+    "tabs": {
+      "reported": "Comunicadas por proveedores",
+      "agreements": "Nuestros acuerdos"
+    },
+    "reported": {
+      "filters": {
+        "search": "Buscar por operador",
+        "provider": "Filtrar por proveedor",
+        "anyProvider": "Todos los proveedores"
+      },
+      "table": {
+        "operator": "Operador",
+        "provider": "Proveedor",
+        "offers": "Ofertas",
+        "rate": "Tarifa comunicada",
+        "agreement": "Nuestro acuerdo",
+        "lastSeen": "Última vez"
+      },
+      "coverage": "{rated} de {total} ofertas activas traen una tarifa del proveedor. La tarifa solo llega en una oferta para un periodo con precio, así que al resto aún no se le ha preguntado.",
+      "mostly": "en general {rate}",
+      "differs": "Difiere",
+      "noAgreement": "Ninguno",
+      "noOperator": "Sin operador",
+      "empty": "Ningún proveedor ha comunicado comisión todavía. Las cifras aparecerán a medida que el barrido de disponibilidad ponga precio a las semanas.",
+      "emptyFiltered": "Ningún operador coincide con estos filtros.",
+      "error": "No se han podido cargar las comisiones comunicadas"
+    },
+    "note": "Una tarifa aquí es el valor de reserva para una oferta cuyo proveedor no envió su propia comisión. Cuando el proveedor sí la indica, esa es la cifra que usa la venta, y la pestaña Comunicadas la muestra. Una comisión solo puede desempatar entre ofertas ya iguales en precio y en extras obligatorios; nunca puede ser el motivo por el que se enseña un barco más caro.",
     "filters": {
       "provider": "Proveedor",
       "anyProvider": "Todos los proveedores",
@@ -81,7 +108,8 @@
       "dates": "Fechas",
       "total": "Total",
       "collected": "Cobrado",
-      "status": "Estado"
+      "status": "Estado",
+      "commission": "Comisión"
     },
     "status": {
       "DRAFT": "Borrador",
@@ -98,7 +126,8 @@
       "CANCELLED": "Cancelada",
       "REFUND_PENDING": "Reembolso pendiente",
       "REFUNDED": "Reembolsada"
-    }
+    },
+    "noCommission": "Sin registrar"
   },
   "Users": {
     "title": "Usuarios",
@@ -646,7 +675,8 @@
       "place": "Base y ubicación",
       "price": "Desde",
       "status": "Estado",
-      "actions": "Acciones"
+      "actions": "Acciones",
+      "commission": "Comisión"
     },
     "status": {
       "draft": "Borrador",
@@ -714,7 +744,8 @@
       "confirmSplitAction": "Quitar",
       "confirmSplitBusy": "Quitando…",
       "confirmSplitCancel": "Cancelar"
-    }
+    },
+    "noCommission": "Sin datos"
   },
   "Routes": {
     "title": "Rutas sugeridas",
@@ -1100,7 +1131,8 @@
       "provider": "Proveedor",
       "total": "Total",
       "collected": "Cobrado",
-      "timeline": "Cronología"
+      "timeline": "Cronología",
+      "commission": "Comisión"
     },
     "invoice": {
       "title": "Solicitud de factura",
@@ -1177,6 +1209,10 @@
     "providerHold": {
       "title": "{provider} sigue reteniendo esta reserva",
       "body": "Cancelamos por nuestra parte y el proveedor no la liberó. El chárter sigue en pie con el operador, así que resuélvelo con él antes de pagar cualquier reembolso, o el dinero se devolverá por una semana que se nos sigue facturando."
+    },
+    "commissionSource": {
+      "provider": "Comunicada por el proveedor",
+      "agreement": "De nuestro acuerdo"
     }
   },
   "providers": {

@@ -11,13 +11,40 @@
     "created": "Satsen har lagts till",
     "updated": "Satsen har sparats",
     "error": "Det gick inte att ladda provisionssatserna",
-    "empty": "Inga satser än. Tills en är angiven spelar provisionen ingen roll för vilket erbjudande en besökare ser.",
+    "empty": "Inga satser än, och det behövs inte så länge leverantörerna anger sina egna. En sats här skulle bara täcka ett erbjudande som kommer utan provision.",
     "emptyFiltered": "Inga satser matchar dessa filter.",
     "allOperators": "Alla operatörer",
     "openEnded": "Inget slutdatum",
     "fromDate": "Från {date}",
     "untilDate": "Till {date}",
-    "note": "En sats avgör bara mellan två erbjudanden som redan är lika på pris och obligatoriska tillval. Den kan aldrig vara skälet till att en besökare visas en dyrare båt. Inget i försäljningen läser de här satserna än.",
+    "tabs": {
+      "reported": "Angivna av leverantörer",
+      "agreements": "Våra avtal"
+    },
+    "reported": {
+      "filters": {
+        "search": "Sök på uthyrare",
+        "provider": "Filtrera på leverantör",
+        "anyProvider": "Alla leverantörer"
+      },
+      "table": {
+        "operator": "Uthyrare",
+        "provider": "Leverantör",
+        "offers": "Erbjudanden",
+        "rate": "Angiven sats",
+        "agreement": "Vårt avtal",
+        "lastSeen": "Senast"
+      },
+      "coverage": "{rated} av {total} aktiva erbjudanden bär en sats från leverantören. En sats kommer bara med ett erbjudande för en prissatt period, så resten har inte tillfrågats än.",
+      "mostly": "oftast {rate}",
+      "differs": "Avviker",
+      "noAgreement": "Inget",
+      "noOperator": "Ingen uthyrare",
+      "empty": "Ingen leverantör har angett någon provision än. Siffrorna dyker upp allteftersom tillgänglighetskörningen prissätter veckor.",
+      "emptyFiltered": "Inga uthyrare matchar dessa filter.",
+      "error": "Det gick inte att ladda de angivna provisionerna"
+    },
+    "note": "En sats här är reservvärdet för ett erbjudande där leverantören inte skickade med någon egen provision. Anger leverantören en, är det den siffran försäljningen använder, och fliken Angivna av leverantörer visar den. En provision får bara skilja två erbjudanden som redan är lika i pris och obligatoriska tillägg; den får aldrig vara skälet till att någon visas en dyrare båt.",
     "filters": {
       "provider": "Leverantör",
       "anyProvider": "Alla leverantörer",
@@ -81,7 +108,8 @@
       "dates": "Datum",
       "total": "Totalt",
       "collected": "Inbetalt",
-      "status": "Status"
+      "status": "Status",
+      "commission": "Provision"
     },
     "status": {
       "DRAFT": "Utkast",
@@ -98,7 +126,8 @@
       "CANCELLED": "Avbokad",
       "REFUND_PENDING": "Återbetalning väntar",
       "REFUNDED": "Återbetald"
-    }
+    },
+    "noCommission": "Ej registrerad"
   },
   "Users": {
     "title": "Användare",
@@ -646,7 +675,8 @@
       "place": "Bas och plats",
       "price": "Från",
       "status": "Status",
-      "actions": "Åtgärder"
+      "actions": "Åtgärder",
+      "commission": "Provision"
     },
     "status": {
       "draft": "Utkast",
@@ -714,7 +744,8 @@
       "confirmSplitAction": "Ta ut den",
       "confirmSplitBusy": "Tar ut…",
       "confirmSplitCancel": "Avbryt"
-    }
+    },
+    "noCommission": "Ej angiven"
   },
   "Routes": {
     "title": "Föreslagna rutter",
@@ -1100,7 +1131,8 @@
       "provider": "Leverantör",
       "total": "Totalt",
       "collected": "Inbetalt",
-      "timeline": "Tidslinje"
+      "timeline": "Tidslinje",
+      "commission": "Provision"
     },
     "invoice": {
       "title": "Fakturaförfrågan",
@@ -1177,6 +1209,10 @@
     "providerHold": {
       "title": "{provider} håller fortfarande den här reservationen",
       "body": "Vi avbokade på vår sida och leverantören släppte inte. Chartern står kvar hos operatören, så reglera den med dem innan någon återbetalning görs, annars går pengarna tillbaka på en vecka som vi fortfarande faktureras för."
+    },
+    "commissionSource": {
+      "provider": "Angiven av leverantören",
+      "agreement": "Från vårt avtal"
     }
   },
   "providers": {

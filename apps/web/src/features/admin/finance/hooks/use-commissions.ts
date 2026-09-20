@@ -6,6 +6,7 @@ import {
   commissionKey,
   commissionListQueryOptions,
   createCommissionMutationOptions,
+  reportedCommissionListQueryOptions,
   setCommissionActiveMutationOptions,
   updateCommissionMutationOptions,
 } from "../api/queries";
@@ -26,6 +27,18 @@ export function useCommissions(input: {
   /* Same reason the duplicate queue keeps its previous page: a filter change that emptied the
      table would unmount the Select's own option and make the selection appear not to take. */
   return useQuery({ ...commissionListQueryOptions(input), placeholderData: keepPreviousData });
+}
+
+/** What the vendors report. Read-only, so nothing invalidates it but a new sweep. */
+export function useReportedCommissions(input: {
+  provider?: ProviderKey;
+  query?: string;
+  page: number;
+}) {
+  return useQuery({
+    ...reportedCommissionListQueryOptions(input),
+    placeholderData: keepPreviousData,
+  });
 }
 
 export function useCreateCommission() {

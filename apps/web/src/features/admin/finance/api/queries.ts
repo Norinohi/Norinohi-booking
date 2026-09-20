@@ -29,6 +29,22 @@ export const commissionListQueryOptions = (input: {
   });
 
 /*
+ * What the providers report. Longer staleTime than the agreements beside it: nothing here is
+ * edited, the figures move only when a sweep runs, and the tab is paged through rather than
+ * acted on.
+ */
+export const reportedCommissionListQueryOptions = (input: {
+  provider?: ProviderKey;
+  query?: string;
+  page: number;
+  pageSize?: number;
+}) =>
+  orpc.admin.commission.reported.queryOptions({
+    input: { ...input, pageSize: input.pageSize ?? COMMISSIONS_PAGE_SIZE },
+    staleTime: 60_000,
+  });
+
+/*
  * Mutation option factories and the router-segment keys the hooks invalidate after them. Which
  * segments a write invalidates, and whether on success or on settle, is decided in the hooks.
  */

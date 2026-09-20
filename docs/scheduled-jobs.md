@@ -506,9 +506,18 @@ REPLY_TO_EMAIL           ${{api.REPLY_TO_EMAIL}}
 BOOKING_REPLY_TO_EMAIL   ${{api.BOOKING_REPLY_TO_EMAIL}}
 ```
 
-The reminder service sends booking mail only, so `BOOKING_REPLY_TO_EMAIL` is the one
-that matters to it; `REPLY_TO_EMAIL` is referenced because the booking address falls
-back to it when it is unset.
+Both reply-to addresses, because between them these two services send both kinds of
+mail. `cron-reminders` sends booking mail only, so only `BOOKING_REPLY_TO_EMAIL` is
+load-bearing there and `REPLY_TO_EMAIL` is referenced because the booking address
+falls back to it when it is unset. `cron-outbox` genuinely sends both: the queued
+booking confirmation is booking mail, and the set-password invitation beside it is
+not.
+
+Neither needs `STAFF_EMAIL` or `BOOKING_STAFF_EMAIL`. Every internal alert -- a new
+lead, a question about a booking, a confirmed booking -- is raised on the request
+path, by the `server` service. Nothing on a schedule announces anything to the team,
+which is worth knowing the other way round too: a scheduled job that starts doing so
+needs those two added here.
 
 `RESEND_API_KEY` and `EMAIL_FROM` are optional in the schema, and a send without
 them is skipped rather than failed. That is right for a checkout that must not be

@@ -11,13 +11,40 @@
     "created": "Satz hinzugefügt",
     "updated": "Satz gespeichert",
     "error": "Provisionssätze konnten nicht geladen werden",
-    "empty": "Noch keine Sätze. Solange keiner erfasst ist, spielt die Provision bei der Auswahl des Angebots keine Rolle.",
+    "empty": "Noch keine Sätze, und solange die Anbieter ihre eigenen nennen, braucht es auch keine. Ein Satz hier deckt nur ein Angebot ab, das ohne Provision ankommt.",
     "emptyFiltered": "Keine Sätze passen zu diesen Filtern.",
     "allOperators": "Alle Vercharterer",
     "openEnded": "Kein Enddatum",
     "fromDate": "Ab {date}",
     "untilDate": "Bis {date}",
-    "note": "Ein Satz entscheidet nur zwischen zwei Angeboten, die bei Preis und Pflichtzuschlägen bereits gleich sind. Er darf nie der Grund sein, warum ein Gast ein teureres Boot sieht. Bisher liest kein Schritt des Verkaufs diese Sätze.",
+    "tabs": {
+      "reported": "Vom Anbieter gemeldet",
+      "agreements": "Unsere Vereinbarungen"
+    },
+    "reported": {
+      "filters": {
+        "search": "Nach Vercharterer suchen",
+        "provider": "Nach Anbieter filtern",
+        "anyProvider": "Alle Anbieter"
+      },
+      "table": {
+        "operator": "Vercharterer",
+        "provider": "Anbieter",
+        "offers": "Angebote",
+        "rate": "Gemeldeter Satz",
+        "agreement": "Unsere Vereinbarung",
+        "lastSeen": "Zuletzt gesehen"
+      },
+      "coverage": "{rated} von {total} aktiven Angeboten tragen einen Satz des Anbieters. Ein Satz kommt nur mit einem Angebot für einen bepreisten Zeitraum, der Rest wurde also noch nicht gefragt.",
+      "mostly": "meist {rate}",
+      "differs": "Weicht ab",
+      "noAgreement": "Keine",
+      "noOperator": "Kein Vercharterer",
+      "empty": "Noch hat kein Anbieter eine Provision gemeldet. Die Zahlen erscheinen, sobald der Verfügbarkeitslauf Wochen bepreist.",
+      "emptyFiltered": "Keine Vercharterer zu diesen Filtern.",
+      "error": "Die gemeldeten Provisionen konnten nicht geladen werden"
+    },
+    "note": "Ein Satz hier ist der Ersatzwert für ein Angebot, zu dem der Anbieter keine eigene Provision geschickt hat. Nennt der Anbieter eine, wird beim Verkauf dessen Zahl verwendet, und der Reiter „Vom Anbieter gemeldet“ zeigt sie. Eine Provision darf nur zwischen zwei Angeboten entscheiden, die bei Preis und Pflichtzuschlägen bereits gleich sind; sie darf nie der Grund sein, warum jemandem ein teureres Boot gezeigt wird.",
     "filters": {
       "provider": "Anbieter",
       "anyProvider": "Alle Anbieter",
@@ -81,7 +108,8 @@
       "dates": "Daten",
       "total": "Gesamt",
       "collected": "Eingegangen",
-      "status": "Status"
+      "status": "Status",
+      "commission": "Provision"
     },
     "status": {
       "DRAFT": "Entwurf",
@@ -98,7 +126,8 @@
       "CANCELLED": "Storniert",
       "REFUND_PENDING": "Erstattung fällig",
       "REFUNDED": "Erstattet"
-    }
+    },
+    "noCommission": "Nicht erfasst"
   },
   "Users": {
     "title": "Benutzer",
@@ -646,7 +675,8 @@
       "place": "Heimathafen & Standort",
       "price": "Ab",
       "status": "Status",
-      "actions": "Aktionen"
+      "actions": "Aktionen",
+      "commission": "Provision"
     },
     "status": {
       "draft": "Entwurf",
@@ -714,7 +744,8 @@
       "confirmSplitAction": "Herausnehmen",
       "confirmSplitBusy": "Wird herausgenommen…",
       "confirmSplitCancel": "Abbrechen"
-    }
+    },
+    "noCommission": "Nicht gemeldet"
   },
   "Routes": {
     "title": "Routenvorschläge",
@@ -1100,7 +1131,8 @@
       "provider": "Anbieter",
       "total": "Gesamt",
       "collected": "Eingegangen",
-      "timeline": "Verlauf"
+      "timeline": "Verlauf",
+      "commission": "Provision"
     },
     "invoice": {
       "title": "Rechnungsanforderung",
@@ -1177,6 +1209,10 @@
     "providerHold": {
       "title": "{provider} hält diese Reservierung weiterhin",
       "body": "Wir haben auf unserer Seite storniert, der Anbieter hat die Reservierung aber nicht freigegeben. Der Charter besteht beim Vercharterer weiter. Klären Sie das mit ihm, bevor eine Erstattung ausgezahlt wird, sonst geht das Geld für eine Woche zurück, die uns weiterhin berechnet wird."
+    },
+    "commissionSource": {
+      "provider": "Vom Anbieter gemeldet",
+      "agreement": "Aus unserer Vereinbarung"
     }
   },
   "providers": {

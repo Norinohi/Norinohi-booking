@@ -473,6 +473,22 @@ export const bookingAdminRowSchema = z.object({
   total: moneySchema,
   /** What was actually collected — on a refund queue this is the sum at stake. */
   paid: moneySchema,
+  /**
+   * What we earn on this charter, as recorded when the offer won the quote.
+   *
+   * Frozen rather than looked up, for the reason the detail screen gives: the vendor's rate on
+   * the boat moves between seasons and a typed agreement can lapse, and neither changes what
+   * this booking was sold at. Null on a booking taken before the commission was captured.
+   *
+   * Staff-facing only. No customer surface carries it.
+   */
+  commission: z
+    .object({
+      pct: z.number(),
+      amount: moneySchema.nullable(),
+      source: z.enum(["provider", "agreement"]),
+    })
+    .nullable(),
   cancelledAt: z.string().nullable(),
   cancelReason: z.string().nullable(),
   /** When someone marked this as not real business. Null on an ordinary booking. */

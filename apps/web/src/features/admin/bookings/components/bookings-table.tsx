@@ -77,9 +77,9 @@ const STATUS_VARIANTS = {
   REFUNDED: "success",
 } as const satisfies Record<BookingStatus, string>;
 
-const COLUMN_COUNT = 7;
+const COLUMN_COUNT = 8;
 const SKELETON_ROWS = 8;
-const SKELETON_WIDTHS = ["w-24", "w-32", "w-40", "w-28", "w-20", "w-20", "w-20"];
+const SKELETON_WIDTHS = ["w-24", "w-32", "w-40", "w-28", "w-20", "w-20", "w-16", "w-20"];
 
 export default function BookingsTable() {
   const t = useTranslations("Admin.Bookings");
@@ -170,6 +170,7 @@ export default function BookingsTable() {
             <TableHead>{t("table.dates")}</TableHead>
             <TableHead>{t("table.total")}</TableHead>
             <TableHead>{t("table.collected")}</TableHead>
+            <TableHead className="w-24">{t("table.commission")}</TableHead>
             <TableHead>{t("table.status")}</TableHead>
           </TableRow>
         </TableHeader>
@@ -242,6 +243,28 @@ export default function BookingsTable() {
                       </TableCell>
                       <TableCell className="whitespace-nowrap">{amount(booking.total)}</TableCell>
                       <TableCell className="whitespace-nowrap">{amount(booking.paid)}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {/* What the sale earned, frozen when the offer won the quote. Null on
+                            a booking taken before the vendors' own rates were captured, which
+                            is not the same as a sale that earned nothing. */}
+                        {booking.commission === null ? (
+                          <span className="text-natural-500">{t("noCommission")}</span>
+                        ) : (
+                          <>
+                            <span className="block font-medium text-foreground">
+                              {format.number(booking.commission.pct / 100, {
+                                style: "percent",
+                                maximumFractionDigits: 2,
+                              })}
+                            </span>
+                            {booking.commission.amount ? (
+                              <span className="block text-sm text-natural-500">
+                                {amount(booking.commission.amount)}
+                              </span>
+                            ) : null}
+                          </>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap items-center gap-2">
                           <Chip variant={STATUS_VARIANTS[booking.status]}>

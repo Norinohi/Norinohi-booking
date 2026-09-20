@@ -11,13 +11,40 @@
     "created": "Satsen er lagt til",
     "updated": "Satsen er lagret",
     "error": "Kunne ikke laste provisjonssatsene",
-    "empty": "Ingen satser ennå. Før en er lagt inn, spiller provisjon ingen rolle når det velges hvilket tilbud en besøkende ser.",
+    "empty": "Ingen satser ennå, og det trengs ikke så lenge leverandørene oppgir sine egne. En sats her ville bare dekke et tilbud som kommer uten provisjon.",
     "emptyFiltered": "Ingen satser passer med disse filtrene.",
     "allOperators": "Alle operatører",
     "openEnded": "Ingen sluttdato",
     "fromDate": "Fra {date}",
     "untilDate": "Til {date}",
-    "note": "En sats avgjør bare mellom to tilbud som allerede er like på pris og obligatorisk ekstrautstyr. Den kan aldri være grunnen til at en besøkende får vist en dyrere båt. Ingenting i salgsflyten leser disse satsene ennå.",
+    "tabs": {
+      "reported": "Oppgitt av leverandører",
+      "agreements": "Våre avtaler"
+    },
+    "reported": {
+      "filters": {
+        "search": "Søk etter utleier",
+        "provider": "Filtrer etter leverandør",
+        "anyProvider": "Alle leverandører"
+      },
+      "table": {
+        "operator": "Utleier",
+        "provider": "Leverandør",
+        "offers": "Tilbud",
+        "rate": "Oppgitt sats",
+        "agreement": "Vår avtale",
+        "lastSeen": "Sist sett"
+      },
+      "coverage": "{rated} av {total} aktive tilbud bærer en sats fra leverandøren. En sats følger bare med et tilbud for en priset periode, så resten er ikke spurt ennå.",
+      "mostly": "som regel {rate}",
+      "differs": "Avviker",
+      "noAgreement": "Ingen",
+      "noOperator": "Ingen utleier",
+      "empty": "Ingen leverandør har oppgitt provisjon ennå. Tallene dukker opp etter hvert som tilgjengelighetsjobben priser uker.",
+      "emptyFiltered": "Ingen utleiere passer disse filtrene.",
+      "error": "Kunne ikke laste de oppgitte provisjonene"
+    },
+    "note": "En sats her er reserveverdien for et tilbud der leverandøren ikke sendte med sin egen provisjon. Oppgir leverandøren en, er det det tallet salget bruker, og fanen Oppgitt av leverandører viser det. En provisjon kan bare avgjøre mellom to tilbud som allerede er like på pris og obligatoriske tillegg; den kan aldri være grunnen til at noen får vist en dyrere båt.",
     "filters": {
       "provider": "Leverandør",
       "anyProvider": "Alle leverandører",
@@ -81,7 +108,8 @@
       "dates": "Datoer",
       "total": "Totalt",
       "collected": "Innkrevd",
-      "status": "Status"
+      "status": "Status",
+      "commission": "Provisjon"
     },
     "status": {
       "DRAFT": "Utkast",
@@ -98,7 +126,8 @@
       "CANCELLED": "Avbestilt",
       "REFUND_PENDING": "Refusjon forfalt",
       "REFUNDED": "Refundert"
-    }
+    },
+    "noCommission": "Ikke registrert"
   },
   "Users": {
     "title": "Brukere",
@@ -646,7 +675,8 @@
       "place": "Base og sted",
       "price": "Fra",
       "status": "Status",
-      "actions": "Handlinger"
+      "actions": "Handlinger",
+      "commission": "Provisjon"
     },
     "status": {
       "draft": "Utkast",
@@ -714,7 +744,8 @@
       "confirmSplitAction": "Ta det ut",
       "confirmSplitBusy": "Tar ut…",
       "confirmSplitCancel": "Avbryt"
-    }
+    },
+    "noCommission": "Ikke oppgitt"
   },
   "Routes": {
     "title": "Foreslåtte ruter",
@@ -1100,7 +1131,8 @@
       "provider": "Leverandør",
       "total": "Totalt",
       "collected": "Innkrevd",
-      "timeline": "Tidslinje"
+      "timeline": "Tidslinje",
+      "commission": "Provisjon"
     },
     "invoice": {
       "title": "Fakturaforespørsel",
@@ -1177,6 +1209,10 @@
     "providerHold": {
       "title": "{provider} holder fortsatt denne reservasjonen",
       "body": "Vi avbestilte på vår side, og leverandøren slapp den ikke. Charteret står fortsatt hos operatøren, så gjør det opp med dem før det utbetales noen refusjon, ellers går pengene tilbake på en uke vi fortsatt faktureres for."
+    },
+    "commissionSource": {
+      "provider": "Oppgitt av leverandøren",
+      "agreement": "Fra vår avtale"
     }
   },
   "providers": {

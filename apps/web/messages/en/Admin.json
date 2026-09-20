@@ -11,13 +11,40 @@
     "created": "Rate added",
     "updated": "Rate saved",
     "error": "Couldn't load the commission rates",
-    "empty": "No rates yet. Until one is entered, commission plays no part in choosing which offer a visitor sees.",
+    "empty": "No rates yet, and none are needed while the providers state their own. A rate here would only cover an offer that arrives without one.",
     "emptyFiltered": "No rates match these filters.",
     "allOperators": "All operators",
     "openEnded": "No end date",
     "fromDate": "From {date}",
     "untilDate": "Until {date}",
-    "note": "A rate only breaks a tie between two offers already equal on price and on obligatory extras. It can never be the reason a visitor is shown a dearer boat. Nothing in the sale reads these rates yet.",
+    "tabs": {
+      "reported": "Reported by providers",
+      "agreements": "Our agreements"
+    },
+    "reported": {
+      "filters": {
+        "search": "Search by operator",
+        "provider": "Filter by provider",
+        "anyProvider": "All providers"
+      },
+      "table": {
+        "operator": "Operator",
+        "provider": "Provider",
+        "offers": "Offers",
+        "rate": "Reported rate",
+        "agreement": "Our agreement",
+        "lastSeen": "Last seen"
+      },
+      "coverage": "{rated} of {total} active offers carry a rate from the provider. A rate arrives only on an offer for a priced period, so the rest have not been asked yet.",
+      "mostly": "mostly {rate}",
+      "differs": "Differs",
+      "noAgreement": "None",
+      "noOperator": "No operator",
+      "empty": "No provider has reported a commission yet. The figures appear as the availability sweep prices weeks.",
+      "emptyFiltered": "No operators match these filters.",
+      "error": "Couldn't load the reported commissions"
+    },
+    "note": "A rate here is the fallback for an offer whose vendor sent no commission of its own. Where the vendor does state one, that figure is what the sale uses, and the Reported tab shows it. A commission may only break a tie between offers already equal on price and on obligatory extras; it can never be the reason a visitor is shown a dearer boat.",
     "filters": {
       "provider": "Provider",
       "anyProvider": "All providers",
@@ -81,7 +108,8 @@
       "dates": "Dates",
       "total": "Total",
       "collected": "Collected",
-      "status": "Status"
+      "status": "Status",
+      "commission": "Commission"
     },
     "status": {
       "DRAFT": "Draft",
@@ -98,7 +126,8 @@
       "CANCELLED": "Cancelled",
       "REFUND_PENDING": "Refund due",
       "REFUNDED": "Refunded"
-    }
+    },
+    "noCommission": "Not recorded"
   },
   "Users": {
     "title": "Users",
@@ -646,7 +675,8 @@
       "place": "Base & location",
       "price": "From",
       "status": "Status",
-      "actions": "Actions"
+      "actions": "Actions",
+      "commission": "Commission"
     },
     "status": {
       "draft": "Draft",
@@ -714,7 +744,8 @@
       "confirmSplitAction": "Take it out",
       "confirmSplitBusy": "Taking out…",
       "confirmSplitCancel": "Cancel"
-    }
+    },
+    "noCommission": "Not reported"
   },
   "Routes": {
     "title": "Suggested routes",
@@ -1100,7 +1131,8 @@
       "provider": "Provider",
       "total": "Total",
       "collected": "Collected",
-      "timeline": "Timeline"
+      "timeline": "Timeline",
+      "commission": "Commission"
     },
     "invoice": {
       "title": "Invoice request",
@@ -1177,6 +1209,10 @@
     "providerHold": {
       "title": "{provider} still holds this reservation",
       "body": "We cancelled our side and the provider did not let go. The charter still stands with the operator, so settle it with them before any refund is paid, or the money goes back on a week we are still billed for."
+    },
+    "commissionSource": {
+      "provider": "Reported by the provider",
+      "agreement": "From our agreement"
     }
   },
   "providers": {

@@ -11,13 +11,40 @@
     "created": "Commissione aggiunta",
     "updated": "Commissione salvata",
     "error": "Impossibile caricare le commissioni",
-    "empty": "Ancora nessuna commissione. Finché non ne viene inserita una, la commissione non influisce sulla scelta dell’offerta mostrata al visitatore.",
+    "empty": "Nessuna percentuale per ora, e non serve finché i fornitori indicano la propria. Una percentuale qui coprirebbe solo un'offerta che arriva senza commissione.",
     "emptyFiltered": "Nessuna commissione corrisponde a questi filtri.",
     "allOperators": "Tutti gli operatori",
     "openEnded": "Nessuna data di fine",
     "fromDate": "Dal {date}",
     "untilDate": "Fino al {date}",
-    "note": "Una commissione decide solo in caso di parità tra due offerte già uguali per prezzo ed extra obbligatori. Non può mai essere il motivo per cui a un visitatore viene mostrata una barca più cara. Per ora nessuna parte della vendita legge queste commissioni.",
+    "tabs": {
+      "reported": "Comunicate dai fornitori",
+      "agreements": "I nostri accordi"
+    },
+    "reported": {
+      "filters": {
+        "search": "Cerca per operatore",
+        "provider": "Filtra per fornitore",
+        "anyProvider": "Tutti i fornitori"
+      },
+      "table": {
+        "operator": "Operatore",
+        "provider": "Fornitore",
+        "offers": "Offerte",
+        "rate": "Percentuale comunicata",
+        "agreement": "Il nostro accordo",
+        "lastSeen": "Ultima volta"
+      },
+      "coverage": "{rated} offerte attive su {total} portano una percentuale del fornitore. Arriva solo con un'offerta per un periodo quotato, quindi alle altre non è ancora stato chiesto.",
+      "mostly": "per lo più {rate}",
+      "differs": "Diversa",
+      "noAgreement": "Nessuno",
+      "noOperator": "Senza operatore",
+      "empty": "Nessun fornitore ha ancora comunicato una commissione. Le cifre compariranno man mano che la scansione delle disponibilità quota le settimane.",
+      "emptyFiltered": "Nessun operatore corrisponde a questi filtri.",
+      "error": "Impossibile caricare le commissioni comunicate"
+    },
+    "note": "Una percentuale inserita qui è il valore di riserva per un'offerta il cui fornitore non ha inviato una propria commissione. Quando il fornitore la indica, è quella la cifra usata dalla vendita, e la scheda Comunicate la mostra. Una commissione può solo dirimere una parità fra offerte già uguali per prezzo ed extra obbligatori; non può mai essere il motivo per cui si mostra una barca più cara.",
     "filters": {
       "provider": "Fornitore",
       "anyProvider": "Tutti i fornitori",
@@ -81,7 +108,8 @@
       "dates": "Date",
       "total": "Totale",
       "collected": "Incassato",
-      "status": "Stato"
+      "status": "Stato",
+      "commission": "Commissione"
     },
     "status": {
       "DRAFT": "Bozza",
@@ -98,7 +126,8 @@
       "CANCELLED": "Annullata",
       "REFUND_PENDING": "Rimborso dovuto",
       "REFUNDED": "Rimborsata"
-    }
+    },
+    "noCommission": "Non registrata"
   },
   "Users": {
     "title": "Utenti",
@@ -646,7 +675,8 @@
       "place": "Base e località",
       "price": "Da",
       "status": "Stato",
-      "actions": "Azioni"
+      "actions": "Azioni",
+      "commission": "Commissione"
     },
     "status": {
       "draft": "Bozza",
@@ -714,7 +744,8 @@
       "confirmSplitAction": "Rimuovi",
       "confirmSplitBusy": "Rimozione…",
       "confirmSplitCancel": "Annulla"
-    }
+    },
+    "noCommission": "Non comunicata"
   },
   "Routes": {
     "title": "Itinerari suggeriti",
@@ -1100,7 +1131,8 @@
       "provider": "Fornitore",
       "total": "Totale",
       "collected": "Incassato",
-      "timeline": "Cronologia"
+      "timeline": "Cronologia",
+      "commission": "Commissione"
     },
     "invoice": {
       "title": "Richiesta di fattura",
@@ -1177,6 +1209,10 @@
     "providerHold": {
       "title": "{provider} mantiene ancora questa prenotazione",
       "body": "Abbiamo annullato dal nostro lato, ma il fornitore non l’ha rilasciata. Il noleggio è ancora valido presso l’operatore: risolvi con lui prima di effettuare qualsiasi rimborso, altrimenti il denaro viene restituito per una settimana che ci viene ancora fatturata."
+    },
+    "commissionSource": {
+      "provider": "Comunicata dal fornitore",
+      "agreement": "Dal nostro accordo"
     }
   },
   "providers": {

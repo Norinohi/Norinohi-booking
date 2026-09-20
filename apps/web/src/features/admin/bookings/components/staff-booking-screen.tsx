@@ -278,6 +278,21 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
               </span>
             ) : null}
           </Field>
+          {/* Staff-facing and frozen at the sale: the vendor's rate on this boat moves between
+              seasons, and this is what the charter was actually sold at. Nothing customer-facing
+              carries it. */}
+          {booking.commission ? (
+            <Field label={t("fields.commission")}>
+              {format.number(booking.commission.pct / 100, {
+                style: "percent",
+                maximumFractionDigits: 2,
+              })}
+              {booking.commission.amount ? ` · ${amount(booking.commission.amount)}` : ""}
+              <span className="block text-sm text-natural-500">
+                {t(`commissionSource.${booking.commission.source}`)}
+              </span>
+            </Field>
+          ) : null}
           <Field label={t("fields.timeline")}>
             <span className="block text-sm text-natural-500">
               {t("createdAt", { at: at(booking.createdAt) })}

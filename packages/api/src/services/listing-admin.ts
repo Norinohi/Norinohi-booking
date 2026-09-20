@@ -112,6 +112,36 @@ const unpricedWithDates = sql`(
   )
 )`;
 
+/**
+ * The commission the vendor last quoted on this boat, and when it said so.
+ *
+ * Read off `listing_offer` rather than aggregated from the priced weeks, which is why the
+ * sweep stamps it there: the per-week rows are the record, and scanning them per listing
+ * turned this page into a walk of the price history.
+ *
+ * A merged hull carries one offer per vendor and they pay differently. The highest wins,
+ * because that is the offer the tie-break would sell, and its own timestamp comes with it
+ * rather than the newest of the set -- a date that belonged to a different vendor's rate
+ * would make a stale figure look fresh.
+ */
+const commissionColumn = sql<string | null>`(
+  select o.commission_pct
+  from listing_offer o
+  where o.listing_id = ${listing.id} and o.status = 'active' and o.commission_pct is not null
+  order by o.commission_pct desc, o.commission_seen_at desc nulls last
+  limit 1
+)`;
+
+/* `mapWith` the column, or the driver hands a timestamp back as a raw string and the
+   presenter's `toISOString()` throws on it. */
+const commissionSeenAtColumn = sql`(
+  select o.commission_seen_at
+  from listing_offer o
+  where o.listing_id = ${listing.id} and o.status = 'active' and o.commission_pct is not null
+  order by o.commission_pct desc, o.commission_seen_at desc nulls last
+  limit 1
+)`.mapWith(listingOffer.commissionSeenAt);
+
 /** Above one, the listing is merged and its field sources are worth a look. */
 const offerCountColumn = sql<number>`(
   select count(*)::int from listing_offer o
@@ -164,6 +194,8 @@ export async function listAdminListings(db: Database, input: ListInput): Promise
           priceFromMinor: priceFromMinorColumn,
           currency: currencyColumn,
           offerCount: offerCountColumn,
+          commissionPct: commissionColumn,
+          commissionSeenAt: commissionSeenAtColumn,
         })
         .from(listing)
         .leftJoin(operator, eq(operator.id, listing.operatorId))
@@ -204,6 +236,9 @@ export async function listAdminListings(db: Database, input: ListInput): Promise
     locationName: row.locationName,
     primaryImageUrl: images.get(row.id) ?? null,
     offerCount: row.offerCount,
+    /* The driver hands a numeric back as a string; the contract carries a number. */
+    commissionPct: row.commissionPct === null ? null : Number(row.commissionPct),
+    commissionSeenAt: row.commissionSeenAt?.toISOString() ?? null,
     priceFromMinor: row.priceFromMinor,
     currency: row.currency,
     createdAt: row.createdAt.toISOString(),

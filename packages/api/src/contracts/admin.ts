@@ -586,6 +586,57 @@ export const commissionSetActiveInputSchema = z.object({
   active: z.boolean(),
 });
 
+/*
+ * What the vendors themselves say they pay, per operator.
+ *
+ * The hand-typed rates above were written when we had no other source. Both providers now
+ * return a commission on every offer they price -- per boat, per week -- and the sweep stores
+ * it, so this reads back what they actually said rather than what somebody negotiated once.
+ *
+ * Grouped by operator because that is the level an agreement is struck at and the level the
+ * hand-typed rate addresses, so the two can be read side by side. A spread between `minPct`
+ * and `maxPct` is an operator whose rate moves by season or by boat, which is the case no
+ * single typed figure can express.
+ */
+export const reportedCommissionSchema = z.object({
+  provider: providerKeyOutputSchema,
+  providerName: z.string(),
+  operatorId: z.string().nullable(),
+  operatorName: z.string().nullable(),
+  /** Offers carrying a rate. Not boats: a hull sold by two vendors is two offers. */
+  offerCount: z.number().int(),
+  minPct: z.number(),
+  maxPct: z.number(),
+  /** The rate most of this operator's offers carry, which is the one to compare against. */
+  commonPct: z.number(),
+  /** When the vendor last stated any of it, so a stale group is visible as one. */
+  lastSeenAt: z.string().nullable(),
+  /** The active hand-typed rate covering this operator today, where one exists. */
+  agreementPct: z.number().nullable(),
+});
+
+export const reportedCommissionListInputSchema = z
+  .object({
+    provider: providerKeyOutputSchema.optional(),
+    query: z.string().trim().max(200).optional(),
+    ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: COMMISSION_PAGE_SIZE }),
+  })
+  .default(paginationInputDefault(COMMISSION_PAGE_SIZE));
+
+export const reportedCommissionListSchema = paginatedSchema(reportedCommissionSchema).extend({
+  /**
+   * How much of the fleet the vendors have actually told us about, over the whole filter.
+   *
+   * The number that says whether this screen can be trusted yet: a rate is stated only on an
+   * offer for a priced period, so an operator whose boats the sweep has not reached carries
+   * none, and that is indistinguishable from one that pays nothing until this is read.
+   */
+  coverage: z.object({
+    offersWithRate: z.number().int(),
+    activeOffers: z.number().int(),
+  }),
+});
+
 /** Backs the operator picker in the commission form. */
 export const operatorOptionsInputSchema = z
   .object({
@@ -876,6 +927,20 @@ export const listingAdminRowSchema = z.object({
   currency: z.string().nullable(),
   /** How many vendors sell this hull. Above one, the field sources are worth reviewing. */
   offerCount: z.number().int(),
+  /**
+   * What the vendor last said it pays us on this boat, as a percentage.
+   *
+   * The providers state a commission on every offer they price and never in the catalogue,
+   * so this is the rate from the most recent priced week rather than a term of the contract:
+   * an operator that moves its rate mid-season has moved it. Null until a sweep has priced
+   * the boat, or where the vendor sends no commission at all.
+   *
+   * Where several vendors sell one hull the highest rate is shown, which is the one the
+   * ranking would break a tie on. `commissionSeenAt` dates it, because a rate from six weeks
+   * ago and one from this morning are not equally good answers.
+   */
+  commissionPct: z.number().nullable(),
+  commissionSeenAt: z.string().nullable(),
   createdAt: z.string(),
 });
 

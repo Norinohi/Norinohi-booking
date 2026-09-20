@@ -11,13 +11,40 @@
     "created": "Satsen er tilføjet",
     "updated": "Satsen er gemt",
     "error": "Kommissionssatserne kunne ikke indlæses",
-    "empty": "Ingen satser endnu. Indtil en er indtastet, spiller kommission ingen rolle for, hvilket tilbud en besøgende ser.",
+    "empty": "Ingen satser endnu, og der er ikke brug for nogen, så længe udbyderne oplyser deres egne. En sats her ville kun dække et tilbud, der kommer uden kommission.",
     "emptyFiltered": "Ingen satser matcher disse filtre.",
     "allOperators": "Alle udbydere",
     "openEnded": "Ingen slutdato",
     "fromDate": "Fra {date}",
     "untilDate": "Til {date}",
-    "note": "En sats afgør kun et dødt løb mellem to tilbud, der allerede er lige på pris og obligatoriske tillæg. Den kan aldrig være grunden til, at en besøgende får vist en dyrere båd. Intet i salget læser disse satser endnu.",
+    "tabs": {
+      "reported": "Oplyst af udbydere",
+      "agreements": "Vores aftaler"
+    },
+    "reported": {
+      "filters": {
+        "search": "Søg efter udlejer",
+        "provider": "Filtrer efter udbyder",
+        "anyProvider": "Alle udbydere"
+      },
+      "table": {
+        "operator": "Udlejer",
+        "provider": "Udbyder",
+        "offers": "Tilbud",
+        "rate": "Oplyst sats",
+        "agreement": "Vores aftale",
+        "lastSeen": "Sidst set"
+      },
+      "coverage": "{rated} af {total} aktive tilbud bærer en sats fra udbyderen. En sats følger kun med et tilbud for en prissat periode, så resten er endnu ikke spurgt.",
+      "mostly": "oftest {rate}",
+      "differs": "Afviger",
+      "noAgreement": "Ingen",
+      "noOperator": "Ingen udlejer",
+      "empty": "Ingen udbyder har oplyst en kommission endnu. Tallene dukker op, efterhånden som tilgængelighedskørslen prissætter uger.",
+      "emptyFiltered": "Ingen udlejere matcher disse filtre.",
+      "error": "Kunne ikke indlæse de oplyste kommissioner"
+    },
+    "note": "En sats her er reserveværdien for et tilbud, hvor udbyderen ikke sendte sin egen kommission med. Oplyser udbyderen en, er det det tal, salget bruger, og fanen Oplyst af udbydere viser det. En kommission må kun afgøre mellem to tilbud, der i forvejen er ens på pris og obligatoriske tillæg; den må aldrig være grunden til, at nogen får vist en dyrere båd.",
     "filters": {
       "provider": "Leverandør",
       "anyProvider": "Alle leverandører",
@@ -81,7 +108,8 @@
       "dates": "Datoer",
       "total": "I alt",
       "collected": "Opkrævet",
-      "status": "Status"
+      "status": "Status",
+      "commission": "Kommission"
     },
     "status": {
       "DRAFT": "Kladde",
@@ -98,7 +126,8 @@
       "CANCELLED": "Afbestilt",
       "REFUND_PENDING": "Refusion udestår",
       "REFUNDED": "Refunderet"
-    }
+    },
+    "noCommission": "Ikke registreret"
   },
   "Users": {
     "title": "Brugere",
@@ -646,7 +675,8 @@
       "place": "Base og beliggenhed",
       "price": "Fra",
       "status": "Status",
-      "actions": "Handlinger"
+      "actions": "Handlinger",
+      "commission": "Kommission"
     },
     "status": {
       "draft": "Kladde",
@@ -714,7 +744,8 @@
       "confirmSplitAction": "Tag den ud",
       "confirmSplitBusy": "Tager ud…",
       "confirmSplitCancel": "Annuller"
-    }
+    },
+    "noCommission": "Ikke oplyst"
   },
   "Routes": {
     "title": "Foreslåede ruter",
@@ -1100,7 +1131,8 @@
       "provider": "Leverandør",
       "total": "I alt",
       "collected": "Opkrævet",
-      "timeline": "Forløb"
+      "timeline": "Forløb",
+      "commission": "Kommission"
     },
     "invoice": {
       "title": "Fakturaanmodning",
@@ -1177,6 +1209,10 @@
     "providerHold": {
       "title": "{provider} holder stadig denne reservation",
       "body": "Vi afbestilte vores side, og leverandøren slap ikke. Charteret står stadig hos udbyderen, så afklar det med dem, før der udbetales refusion, ellers gives pengene tilbage på en uge, vi stadig bliver faktureret for."
+    },
+    "commissionSource": {
+      "provider": "Oplyst af udbyderen",
+      "agreement": "Fra vores aftale"
     }
   },
   "providers": {

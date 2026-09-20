@@ -11,13 +11,40 @@
     "created": "Stawka dodana",
     "updated": "Stawka zapisana",
     "error": "Nie udało się wczytać stawek prowizji",
-    "empty": "Brak stawek. Dopóki żadna nie zostanie wprowadzona, prowizja nie ma wpływu na wybór oferty pokazywanej odwiedzającemu.",
+    "empty": "Na razie brak stawek i nie są potrzebne, dopóki dostawcy podają własne. Stawka tutaj pokryłaby jedynie ofertę, która przyszła bez prowizji.",
     "emptyFiltered": "Żadna stawka nie pasuje do tych filtrów.",
     "allOperators": "Wszyscy operatorzy",
     "openEnded": "Bez daty końcowej",
     "fromDate": "Od {date}",
     "untilDate": "Do {date}",
-    "note": "Stawka rozstrzyga jedynie remis między dwiema ofertami, które są już równe pod względem ceny i obowiązkowych dodatków. Nigdy nie może być powodem pokazania odwiedzającemu droższej łodzi. Proces sprzedaży jeszcze nie korzysta z tych stawek.",
+    "tabs": {
+      "reported": "Zgłoszone przez dostawców",
+      "agreements": "Nasze umowy"
+    },
+    "reported": {
+      "filters": {
+        "search": "Szukaj po armatorze",
+        "provider": "Filtruj po dostawcy",
+        "anyProvider": "Wszyscy dostawcy"
+      },
+      "table": {
+        "operator": "Armator",
+        "provider": "Dostawca",
+        "offers": "Oferty",
+        "rate": "Zgłoszona stawka",
+        "agreement": "Nasza umowa",
+        "lastSeen": "Ostatnio"
+      },
+      "coverage": "{rated} z {total} aktywnych ofert niesie stawkę od dostawcy. Stawka przychodzi tylko z ofertą na wyceniony okres, więc o resztę jeszcze nie pytano.",
+      "mostly": "przeważnie {rate}",
+      "differs": "Różni się",
+      "noAgreement": "Brak",
+      "noOperator": "Bez armatora",
+      "empty": "Żaden dostawca nie zgłosił jeszcze prowizji. Liczby pojawią się w miarę wyceniania tygodni przez synchronizację dostępności.",
+      "emptyFiltered": "Brak armatorów dla tych filtrów.",
+      "error": "Nie udało się wczytać zgłoszonych prowizji"
+    },
+    "note": "Stawka wpisana tutaj to wartość zapasowa dla oferty, w której dostawca nie przysłał własnej prowizji. Gdy dostawca ją podaje, to jego liczba jest używana przy sprzedaży, a zakładka Zgłoszone przez dostawców ją pokazuje. Prowizja może jedynie rozstrzygnąć remis między ofertami równymi już co do ceny i opłat obowiązkowych; nigdy nie może być powodem pokazania droższej łodzi.",
     "filters": {
       "provider": "Dostawca",
       "anyProvider": "Wszyscy dostawcy",
@@ -81,7 +108,8 @@
       "dates": "Daty",
       "total": "Suma",
       "collected": "Pobrano",
-      "status": "Status"
+      "status": "Status",
+      "commission": "Prowizja"
     },
     "status": {
       "DRAFT": "Wersja robocza",
@@ -98,7 +126,8 @@
       "CANCELLED": "Anulowana",
       "REFUND_PENDING": "Do zwrotu",
       "REFUNDED": "Zwrócona"
-    }
+    },
+    "noCommission": "Niezapisana"
   },
   "Users": {
     "title": "Użytkownicy",
@@ -646,7 +675,8 @@
       "place": "Baza i lokalizacja",
       "price": "Od",
       "status": "Status",
-      "actions": "Działania"
+      "actions": "Działania",
+      "commission": "Prowizja"
     },
     "status": {
       "draft": "Wersja robocza",
@@ -714,7 +744,8 @@
       "confirmSplitAction": "Wyłącz",
       "confirmSplitBusy": "Wyłączanie…",
       "confirmSplitCancel": "Anuluj"
-    }
+    },
+    "noCommission": "Brak danych"
   },
   "Routes": {
     "title": "Proponowane trasy",
@@ -1100,7 +1131,8 @@
       "provider": "Dostawca",
       "total": "Suma",
       "collected": "Pobrano",
-      "timeline": "Historia"
+      "timeline": "Historia",
+      "commission": "Prowizja"
     },
     "invoice": {
       "title": "Prośba o fakturę",
@@ -1177,6 +1209,10 @@
     "providerHold": {
       "title": "{provider} nadal utrzymuje tę rezerwację",
       "body": "Anulowaliśmy rezerwację po naszej stronie, ale dostawca jej nie zwolnił. Czarter nadal obowiązuje u operatora, więc rozlicz go z nim przed wypłatą jakiegokolwiek zwrotu, inaczej pieniądze wrócą za tydzień, za który nadal jesteśmy obciążani."
+    },
+    "commissionSource": {
+      "provider": "Zgłoszona przez dostawcę",
+      "agreement": "Z naszej umowy"
     }
   },
   "providers": {
