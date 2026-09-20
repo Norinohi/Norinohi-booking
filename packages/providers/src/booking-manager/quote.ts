@@ -9,6 +9,7 @@ import { DEFAULT_LINE_LABELS } from "../shared/generic-labels";
 import { wallClockTime } from "../shared/wall-clock";
 import {
   providerQuoteSchema,
+  type ProviderQuoteCommission,
   quoteRequestSchema,
   type BookingDraft,
   type CrewType,
@@ -437,6 +438,8 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
     repriced: false,
     expiresAt: input.expiresAt,
   };
+  const commission = commissionOf(offer, currency);
+  if (commission) quoteInput.commission = commission;
   if (securityDeposit) quoteInput.securityDeposit = securityDeposit;
   const times = readOfferTimes(offer);
   if (times.checkInTime) quoteInput.checkInTime = times.checkInTime;
@@ -458,6 +461,40 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
  */
 function customerPriceMinor(offer: RestOffer, price: number, currency: string): number {
   return numberToMinor(price, currency, `offer ${offer.yachtId} price`);
+}
+
+/**
+ * Our share of this charter, as the vendor states it on the offer.
+ *
+ * Both halves come from the vendor and are kept as sent rather than one being derived from
+ * the other: `commissionValue` is what it will pay, and a percentage recomputed from a
+ * rounded amount drifts in the last decimal. Nothing here touches `price` -- see
+ * `customerPriceMinor`: the commission sits inside the customer's total already.
+ */
+function commissionOf(offer: RestOffer, currency: string): ProviderQuoteCommission | undefined {
+  if (offer.commissionValue == null) return undefined;
+
+  let amountMinor: number;
+  try {
+    amountMinor = numberToMinor(
+      offer.commissionValue,
+      currency,
+      `offer ${offer.yachtId} commission`,
+    );
+  } catch {
+    return undefined;
+  }
+  if (amountMinor < 0) return undefined;
+
+  const commission: ProviderQuoteCommission = { amount: { amountMinor, currency } };
+  if (
+    offer.commissionPercentage != null &&
+    offer.commissionPercentage >= 0 &&
+    offer.commissionPercentage <= 100
+  ) {
+    commission.pct = offer.commissionPercentage;
+  }
+  return commission;
 }
 
 /* ------------------------------------------------------------------- lines */

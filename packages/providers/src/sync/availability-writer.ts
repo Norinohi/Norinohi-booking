@@ -95,6 +95,22 @@ export const confirmedOfferSchema = z.object({
    * page beneath it strikes the same one.
    */
   listPriceMinor: z.number().int().positive().optional(),
+  /**
+   * What we earn on this exact charter, as the vendor states it.
+   *
+   * Never a customer-facing number and never part of what the guest pays: both vendors quote
+   * the commission as our share *inside* the price, so nothing adds or subtracts it. It is
+   * carried for the same reason `obligatoryExtrasMinor` is -- the vendor computed it for this
+   * charter, and it is per operator, per season and per boat, so no rate typed into an admin
+   * form reproduces it.
+   *
+   * Both halves are kept where both are stated. Booking Manager sends the percentage and the
+   * money; NauSYS sends only the money, and the percentage is derived against the price it
+   * came with, which is the only price it refers to.
+   */
+  commissionMinor: z.number().int().nonnegative().optional(),
+  /** A percentage, as the rest of the schema stores one: 15 is fifteen percent. */
+  commissionPct: z.number().nonnegative().max(100).optional(),
   currency: z.string().length(3),
   sourceHash: z.string().min(1),
 });
@@ -257,6 +273,9 @@ export interface ConfirmSlotInput extends ListingRef {
   obligatoryExtrasMinor: number | null;
   /** The same charter before the vendor's discount, or null where there is none to strike. */
   listPriceMinor: number | null;
+  /** Our share inside `priceMinor`, or null where the vendor stated none. */
+  commissionMinor: number | null;
+  commissionPct: number | null;
   currency: string;
   sourceHash: string;
   seenAt: Date;
@@ -817,6 +836,8 @@ export async function runAvailabilitySync(
               priceMinor: offer.priceMinor,
               obligatoryExtrasMinor: offer.obligatoryExtrasMinor ?? null,
               listPriceMinor: offer.listPriceMinor ?? null,
+              commissionMinor: offer.commissionMinor ?? null,
+              commissionPct: offer.commissionPct ?? null,
               currency: offer.currency,
               sourceHash: offer.sourceHash,
               seenAt: startedAt,
@@ -1048,6 +1069,39 @@ export function createDrizzleAvailabilitySyncStore(
       });
 
     return indexPromise;
+  }
+
+  /**
+   * Carries the rate the vendor just quoted up onto the offer itself.
+   *
+   * The per-week rows remain the record; this is the one number a fleet list can show without
+   * aggregating them. Guarded on `commission_seen_at` so pages arriving out of order cannot
+   * leave an older week's rate on top, and so a run that restates what is already there writes
+   * nothing: the sweep re-asks every advertised week hourly, and an unconditional update would
+   * be a write per offer per run for a number that moves a few times a year.
+   *
+   * A week the vendor priced without a commission is skipped rather than nulling the offer. It
+   * is an offer with nothing said about it, not an offer that pays nothing, and the last rate
+   * we did see is the better answer to what this boat earns.
+   */
+  async function stampOfferCommission(chunk: readonly ConfirmSlotInput[]): Promise<void> {
+    const rated = chunk.filter((input) => input.commissionPct !== null);
+    if (rated.length === 0) return;
+
+    await db.execute(sql`
+      update listing_offer o
+      set commission_pct = v.commission_pct, commission_seen_at = v.seen_at
+      from (values ${sql.join(
+        rated.map(
+          (input) =>
+            sql`(${input.listingOfferId}, ${String(input.commissionPct)}::numeric, ${input.seenAt.toISOString()}::timestamp)`,
+        ),
+        sql`, `,
+      )}) v(offer_id, commission_pct, seen_at)
+      where o.id = v.offer_id
+        and (o.commission_seen_at is null or o.commission_seen_at < v.seen_at)
+        and (o.commission_pct is distinct from v.commission_pct or o.commission_seen_at is null)
+    `);
   }
 
   return {
@@ -1302,6 +1356,11 @@ export function createDrizzleAvailabilitySyncStore(
               /* Dropped rather than refused where it will not fit the column: the strike-through
                  is decoration, and losing it costs nothing the price itself does not already say. */
               listPriceMinor: storableMinor(input.listPriceMinor) ? input.listPriceMinor : null,
+              /* Dropped on the same terms as the strike-through where it will not fit the
+                 column: the rate is ours to read, and losing one week of it must never cost
+                 the row the price a customer is quoted from. */
+              commissionMinor: storableMinor(input.commissionMinor) ? input.commissionMinor : null,
+              commissionPct: input.commissionPct === null ? null : String(input.commissionPct),
               currency: input.currency,
               sourceHash: input.sourceHash,
               updatedAt: input.seenAt,
@@ -1318,6 +1377,8 @@ export function createDrizzleAvailabilitySyncStore(
               priceMinor: sql`excluded.price_minor`,
               obligatoryExtrasMinor: sql`excluded.obligatory_extras_minor`,
               listPriceMinor: sql`excluded.list_price_minor`,
+              commissionMinor: sql`excluded.commission_minor`,
+              commissionPct: sql`excluded.commission_pct`,
               currency: sql`excluded.currency`,
               sourceHash: sql`excluded.source_hash`,
               updatedAt: sql`excluded.updated_at`,
@@ -1325,10 +1386,12 @@ export function createDrizzleAvailabilitySyncStore(
             setWhere: sql`${availabilitySlot.status} = 'available' and (
               ${availabilitySlot.availabilityConfirmed}, ${availabilitySlot.priceMinor},
               ${availabilitySlot.obligatoryExtrasMinor}, ${availabilitySlot.listPriceMinor},
+              ${availabilitySlot.commissionMinor}, ${availabilitySlot.commissionPct},
               ${availabilitySlot.currency}, ${availabilitySlot.sourceHash}
             ) is distinct from (
               excluded.availability_confirmed, excluded.price_minor,
               excluded.obligatory_extras_minor, excluded.list_price_minor,
+              excluded.commission_minor, excluded.commission_pct,
               excluded.currency, excluded.source_hash
             )`,
           })
@@ -1358,6 +1421,8 @@ export function createDrizzleAvailabilitySyncStore(
             and s.status = 'available'
             and s.updated_at < v.seen_at - ${RESTAMP_AFTER}::interval
         `);
+
+        await stampOfferCommission(chunk);
       }
 
       return changed;

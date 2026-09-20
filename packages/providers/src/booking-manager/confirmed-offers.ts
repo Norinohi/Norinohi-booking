@@ -122,6 +122,7 @@ export function foldOffersToConfirmed(
     let priceMinor: number;
     let obligatoryExtrasMinor: number | undefined;
     let listPriceMinor: number | undefined;
+    let commissionMinor: number | undefined;
     try {
       priceMinor = numberToMinor(row.price, currency, `yacht ${externalYachtId} offer`);
       obligatoryExtrasMinor =
@@ -129,6 +130,10 @@ export function foldOffersToConfirmed(
           ? undefined
           : numberToMinor(row.obligatoryExtrasPrice, currency, `yacht ${externalYachtId} extras`);
       listPriceMinor = reconciledStartPriceMinor(row, priceMinor, currency);
+      commissionMinor =
+        row.commissionValue == null
+          ? undefined
+          : numberToMinor(row.commissionValue, currency, `yacht ${externalYachtId} commission`);
     } catch {
       continue;
     }
@@ -150,6 +155,10 @@ export function foldOffersToConfirmed(
         /* In the hash for the reason the price is: a discount that lapses changes nothing
            else on the row, and the writer skips a row whose hash has not moved. */
         listPriceMinor: listPriceMinor ?? null,
+        /* In the hash so a renegotiated rate reaches the row: nothing else about the offer
+           need move when an operator changes what it pays us. */
+        commissionValue: row.commissionValue ?? null,
+        commissionPercentage: row.commissionPercentage ?? null,
         currency,
       }),
     };
@@ -157,6 +166,18 @@ export function foldOffersToConfirmed(
     // is kept, and only the vendor saying nothing leaves the field unset.
     if (obligatoryExtrasMinor !== undefined) offer.obligatoryExtrasMinor = obligatoryExtrasMinor;
     if (listPriceMinor !== undefined) offer.listPriceMinor = listPriceMinor;
+    /* The vendor sends both halves and they agree, so both are kept as sent rather than one
+       being derived: `commissionValue` is what it will actually pay, and a percentage
+       recomputed from a rounded amount drifts in the last decimal. A rate outside 0-100 is a
+       vendor error and is dropped rather than stored, the price standing on its own. */
+    if (commissionMinor !== undefined) offer.commissionMinor = commissionMinor;
+    if (
+      row.commissionPercentage != null &&
+      row.commissionPercentage >= 0 &&
+      row.commissionPercentage <= 100
+    ) {
+      offer.commissionPct = row.commissionPercentage;
+    }
 
     chosen.set(externalYachtId, offer);
   }

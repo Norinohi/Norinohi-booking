@@ -12,7 +12,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 
-import { id, timestamps } from "./_shared";
+import { id, pct, timestamps } from "./_shared";
 import { listing } from "./listing";
 import { listingOffer } from "./listing-offer";
 import { listingSource } from "./listing-source";
@@ -68,6 +68,20 @@ export const availabilitySlot = pgTable(
      * the ordinary case: most weeks are sold at the published rate.
      */
     listPriceMinor: integer("list_price_minor"),
+    /**
+     * What we earn on this exact charter, as the vendor priced it, inside `price_minor`.
+     *
+     * Both providers return it per offer and never in the catalogue rate list, which is why it
+     * is stored here beside the price it belongs to rather than on the listing: the same hull
+     * carries a different rate by season and by operator agreement. It is our number, not the
+     * customer's -- nothing may add it to, or subtract it from, anything a guest is shown.
+     *
+     * `provider_commission` remains the hand-typed rate. It is a fallback for an offer the
+     * vendor sent none for, and a check against what it did send; these columns are the fact.
+     */
+    commissionMinor: integer("commission_minor"),
+    /** A percentage, matching `provider_commission.rate_pct`: 15.0000 is fifteen percent. */
+    commissionPct: pct("commission_pct"),
     currency: text("currency"),
     minNights: integer("min_nights"),
     checkinWeekday: integer("checkin_weekday"),

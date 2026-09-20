@@ -261,6 +261,24 @@ export const providerQuoteSchema = z.object({
       }),
     )
     .default([]),
+  /**
+   * What we earn on this charter, as the vendor priced it, inside `total`.
+   *
+   * Internal to the point of being dangerous: nothing may add it to, subtract it from, or
+   * echo it in anything a guest is shown, and no oRPC contract carries it. It is here because
+   * both vendors state it per offer and nowhere else -- a rate typed into the admin form is a
+   * guess about one boat in one season, and this is the number the operator will actually pay.
+   *
+   * Absent where the offer said nothing, which is not the same as earning nothing: the manual
+   * agreement in `provider_commission` is the fallback for exactly that case.
+   */
+  commission: z
+    .object({
+      amount: moneySchema,
+      /** A percentage, as everything else stores one: 15 is fifteen percent. */
+      pct: z.number().nonnegative().max(100).optional(),
+    })
+    .optional(),
   priceSourceHash: z.string(),
   expiresAt: z.string(),
   repriced: z.boolean(),
@@ -276,6 +294,9 @@ export const providerQuoteSchema = z.object({
   checkOutTime: z.string().optional(),
 });
 export type ProviderQuote = z.infer<typeof providerQuoteSchema>;
+
+/** What an adapter fills `ProviderQuote.commission` with. Internal; never customer-facing. */
+export type ProviderQuoteCommission = NonNullable<ProviderQuote["commission"]>;
 
 export const bookingDraftSchema = z.object({
   listingId: z.string(),

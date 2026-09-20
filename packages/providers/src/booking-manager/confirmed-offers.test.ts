@@ -174,6 +174,41 @@ describe("foldOffersToConfirmed", () => {
     expect(confirmed).toMatchObject({ priceMinor: 334_000, listPriceMinor: 400_000 });
   });
 
+  /*
+   * Both halves are the vendor's own: the money is what it will pay, and the percentage is
+   * what it agreed to, so neither is recomputed from the other. 16.4% of 3,340 is 547.76 and
+   * the vendor says 547.77; deriving either would disagree with what it bills.
+   */
+  it("carries the vendor's commission as both money and rate, as sent", () => {
+    const [confirmed] = foldOffersToConfirmed(
+      [offer({ commissionValue: 547.77, commissionPercentage: 16.4 })],
+      "2026-10-03",
+      "2026-10-10",
+    );
+
+    expect(confirmed).toMatchObject({ commissionMinor: 54_777, commissionPct: 16.4 });
+  });
+
+  it("says nothing where the offer states no commission", () => {
+    const [confirmed] = foldOffersToConfirmed([offer()], "2026-10-03", "2026-10-10");
+
+    expect(confirmed).not.toHaveProperty("commissionMinor");
+    expect(confirmed).not.toHaveProperty("commissionPct");
+  });
+
+  /* A renegotiated rate moves nothing else on the offer, and the writer skips a row whose
+     hash has not changed. */
+  it("moves the source hash when only the commission changed", () => {
+    const [before] = foldOffersToConfirmed([offer()], "2026-10-03", "2026-10-10");
+    const [after] = foldOffersToConfirmed(
+      [offer({ commissionValue: 547.77, commissionPercentage: 16.4 })],
+      "2026-10-03",
+      "2026-10-10",
+    );
+
+    expect(after?.sourceHash).not.toBe(before?.sourceHash);
+  });
+
   it("strikes nothing through when the percentage does not explain the difference", () => {
     const [confirmed] = foldOffersToConfirmed(
       [offer({ startPrice: 4_000, discountPercentage: 10 })],

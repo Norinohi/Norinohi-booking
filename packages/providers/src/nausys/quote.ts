@@ -11,6 +11,7 @@ import { stableSourceHash } from "../shared/raw-retention";
 import { wallClockTime } from "../shared/wall-clock";
 import {
   providerQuoteSchema,
+  type ProviderQuoteCommission,
   quoteRequestSchema,
   type CrewType,
   type Money,
@@ -392,6 +393,8 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
     ...selected,
   ]);
 
+  const commission = commissionOf(yacht.price, currency, clientPriceMinor);
+
   return providerQuoteSchema.parse({
     // freeYachts creates nothing provider-side, so there is no vendor quote id to
     // carry: this identifies our observation and must never be sent to NauSYS.
@@ -410,6 +413,7 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
     securityDeposit: input.securityDeposit,
     paymentPolicy,
     offeredExtras,
+    ...(commission === undefined ? null : { commission }),
     priceSourceHash,
     // `QuoteRequest` carries no expected price, so the adapter has nothing to
     // compare against; `repriceQuote` sets this itself when the caller asked for
@@ -419,6 +423,37 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
     checkInTime: wallClockTime(yacht.checkIn),
     checkOutTime: wallClockTime(yacht.checkOut),
   });
+}
+
+/**
+ * Our share of this charter, from `agencyCommission`.
+ *
+ * NauSYS states the money and not the rate, so the rate is derived against `clientPrice`,
+ * which is the price the commission arrives inside. Undefined where the vendor says nothing:
+ * silence is not a statement that we earn nothing, and the hand-typed agreement is the
+ * fallback for that case.
+ */
+function commissionOf(
+  price: { agencyCommission?: string },
+  currency: string,
+  clientPriceMinor: number,
+): ProviderQuoteCommission | undefined {
+  if (price.agencyCommission == null) return undefined;
+
+  let amountMinor: number;
+  try {
+    amountMinor = decimalStringToMinor(price.agencyCommission, currency);
+  } catch {
+    return undefined;
+  }
+  if (amountMinor < 0) return undefined;
+
+  const commission: ProviderQuoteCommission = { amount: { amountMinor, currency } };
+  /* Four decimals, matching the column, so 1,120.00 of 5,600.00 reads as 20 and not 19.9999. */
+  const pct =
+    clientPriceMinor > 0 ? Math.round((amountMinor / clientPriceMinor) * 1e6) / 1e4 : null;
+  if (pct !== null && pct >= 0 && pct <= 100) commission.pct = pct;
+  return commission;
 }
 
 /* ------------------------------------------------------------------- lines */

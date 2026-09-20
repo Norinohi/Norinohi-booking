@@ -196,14 +196,19 @@ export function mapFreeYachtToConfirmedOffer(yacht: RestFreeYacht): ConfirmedOff
   /* The figure the card strikes through, on the same terms the quote strikes it; see
      `reconciledListPriceMinor`. */
   const listPriceMinor = reconciledListPriceMinor(yacht.price, currency);
+  const priceMinor = decimalStringToMinor(yacht.price.clientPrice, currency);
+  const commissionMinor = commissionMinorOf(yacht.price, currency);
+  const commissionPct = commissionPctOf(commissionMinor, priceMinor);
   return {
     externalYachtId: String(yacht.yachtId),
     startDate: parseNausysDate(yacht.periodFrom),
     endDate: parseNausysDate(yacht.periodTo),
-    priceMinor: decimalStringToMinor(yacht.price.clientPrice, currency),
+    priceMinor,
     currency,
     ...(obligatoryExtrasMinor === undefined ? null : { obligatoryExtrasMinor }),
     ...(listPriceMinor === undefined ? null : { listPriceMinor }),
+    ...(commissionMinor === undefined ? null : { commissionMinor }),
+    ...(commissionPct === undefined ? null : { commissionPct }),
     sourceHash: stableSourceHash({
       yachtId: yacht.yachtId,
       periodFrom: yacht.periodFrom,
@@ -212,6 +217,9 @@ export function mapFreeYachtToConfirmedOffer(yacht: RestFreeYacht): ConfirmedOff
       /* In the hash because a discount that lapses moves nothing else on the row, and an
          unchanged hash is how the writer decides it has nothing to update. */
       priceListPrice: yacht.price.priceListPrice,
+      /* In the hash for the same reason the discount is: a renegotiated rate moves nothing
+         else on the row, and the writer skips a row whose hash has not changed. */
+      agencyCommission: yacht.price.agencyCommission ?? null,
       currency,
       status: yacht.status,
     }),
@@ -253,4 +261,39 @@ function minorOrUndefined(value: string | undefined, currency: string): number |
   } catch {
     return undefined;
   }
+}
+
+/**
+ * Our share of this charter, from `agencyCommission`.
+ *
+ * Undefined rather than zero where the vendor says nothing: an offer that omits the field has
+ * not told us we earn nothing, and storing a zero would read as a rate somebody negotiated.
+ * A malformed decimal is dropped the same way -- the price is what the charter is sold on, and
+ * it stands whether or not the commission parsed.
+ */
+function commissionMinorOf(price: RestFreeYacht["price"], currency: string): number | undefined {
+  if (price.agencyCommission == null) return undefined;
+  try {
+    const minor = decimalStringToMinor(price.agencyCommission, currency);
+    return minor >= 0 ? minor : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The rate behind that amount, against the price it came with.
+ *
+ * NauSYS states only the money, so the percentage is ours to derive, and `clientPrice` is the
+ * only figure it can refer to: the commission arrives inside that price, in the same object.
+ * Four decimals, matching how the column stores a rate, so 1,120.00 of 5,600.00 reads as
+ * exactly 20 rather than 19.9999.
+ */
+function commissionPctOf(
+  commissionMinor: number | undefined,
+  priceMinor: number,
+): number | undefined {
+  if (commissionMinor === undefined || priceMinor <= 0) return undefined;
+  const pct = Math.round((commissionMinor / priceMinor) * 1_000_000) / 10_000;
+  return pct >= 0 && pct <= 100 ? pct : undefined;
 }
