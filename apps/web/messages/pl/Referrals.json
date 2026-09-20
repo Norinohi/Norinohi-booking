@@ -2,7 +2,7 @@
   "title": "Twoje polecenia",
   "invite": {
     "heading": "Zapraszaj znajomych. Zdobywaj środki na rejsy.",
-    "description": "Podaruj znajomym 100 € na pierwszą rezerwację i otrzymaj 100 € środków dla siebie, gdy wyruszą w rejs.",
+    "description": "Podaruj znajomym {discount} na pierwszą rezerwację i otrzymaj {reward} środków dla siebie, gdy wyruszą w rejs.",
     "copy": "Kopiuj link polecający",
     "copied": "Link skopiowany",
     "generate": "Wygeneruj nowy kod",
@@ -10,8 +10,8 @@
     "generateFailed": "Nie udało się wygenerować nowego kodu. Spróbuj ponownie.",
     "information": "Informacje",
     "rules": {
-      "minBooking": "Środki można wykorzystać przy każdej rezerwacji jachtu powyżej 1000 €.",
-      "expiry": "Środki z poleceń wygasają po 12 miesiącach od ich zdobycia.",
+      "minBooking": "Środki można wykorzystać przy każdej rezerwacji jachtu powyżej {minBooking}.",
+      "expiry": "Środki z poleceń wygasają po {months, plural, one {# miesiącu} few {# miesiącach} many {# miesiącach} other {# miesiąca}} od ich zdobycia.",
       "cash": "Środków nie można wypłacić w gotówce.",
       "firstTime": "Dotyczy wyłącznie pierwszej rezerwacji zaproszonych znajomych."
     },
@@ -31,11 +31,11 @@
       },
       "book": {
         "title": "Znajomy rezerwuje",
-        "description": "Otrzymuje 100 € zniżki na pierwszą rezerwację jachtu powyżej 1000 €"
+        "description": "Otrzymuje {discount} zniżki na pierwszą rezerwację jachtu powyżej {minBooking}"
       },
       "credit": {
         "title": "Otrzymujesz środki",
-        "description": "Gdy znajomy zakończy rejs, otrzymujesz 100 € środków"
+        "description": "Gdy znajomy zakończy rejs, otrzymujesz {reward} środków"
       }
     },
     "level": {

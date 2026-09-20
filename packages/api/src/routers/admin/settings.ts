@@ -55,6 +55,12 @@ export const settingsAdminRouter = {
         displayCurrencyDefault: "EUR",
         displayCurrencyByCountry: {},
         nameSearchEnabled: false,
+        referral: {
+          rewardMinor: 10000,
+          inviteeDiscountMinor: 10000,
+          creditMinBookingMinor: 100000,
+          creditTtlMonths: 12,
+        },
       }),
     })
     .input(marketplaceSettingsUpdateInputSchema)
@@ -67,6 +73,7 @@ export const settingsAdminRouter = {
         catalogueShowsBasePrice: input.catalogueShowsBasePrice,
         offerRankingUsesReliability: input.offerRankingUsesReliability,
         reliabilityWindowDays: input.reliabilityWindowDays,
+        referral: input.referral,
         displayCurrencyEnabled: input.displayCurrencyEnabled,
         displayCurrencyDefault: input.displayCurrencyDefault,
         displayCurrencyByCountry: input.displayCurrencyByCountry,

@@ -1,5 +1,5 @@
 import { auditAdminRouter } from "./audit";
-import { bookingAdminRouter, invoiceAdminRouter } from "./booking";
+import { bookingAdminRouter, invoiceAdminRouter, paymentAdminRouter } from "./booking";
 import { commissionAdminRouter } from "./commission";
 import { discountAdminRouter } from "./discount";
 import { faqAdminRouter } from "./faq";
@@ -34,6 +34,7 @@ export const adminRouter = {
   audit: auditAdminRouter,
   booking: bookingAdminRouter,
   invoice: invoiceAdminRouter,
+  payment: paymentAdminRouter,
   maintenance: maintenanceAdminRouter,
   lead: leadAdminRouter,
   enquiry: enquiryAdminRouter,

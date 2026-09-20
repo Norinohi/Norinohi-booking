@@ -2,7 +2,7 @@
 
 Eight jobs keep a live provider catalogue current, price the weeks ahead a visitor might
 search, stop expired holds from selling a slot twice, notice when an operator has changed a
-charter behind our back, tell a customer their balance is coming due, clean retired provider media, and deliver the mail
+charter behind our back, chase the money a customer still owes before a hold or a charter lapses over it, clean retired provider media, and deliver the mail
 checkout wrote down instead of sending. None of them run on the `server` service itself: that service
 answers requests, and a catalogue walk takes hours.
 
@@ -287,10 +287,31 @@ The cursor lives in `sync_cursor` under a `reservations` kind. That kind never o
 `sync_run` — there is nothing to lock, and no import to resume — which is why `SyncKind` in
 `sync/run.ts` excludes it.
 
-The reminder window is ten days wide and each installment is claimed before it is
-mailed, so the daily tick is a floor rather than a deadline: a missed day catches
-the same booking tomorrow, and an extra run the same day sends nothing. 09:00 UTC
-puts it in the customer's morning across Europe rather than overnight.
+The reminder tick sends four letters, not one, and each is claimed on its own column
+before it is mailed:
+
+| Letter          | When                                       | Claimed on                                |
+| --------------- | ------------------------------------------ | ----------------------------------------- |
+| Balance due     | 10 days before the installment's date      | `payment_schedule.reminder_sent_at`       |
+| Balance shortly | 3 days before it                           | `payment_schedule.final_reminder_sent_at` |
+| Balance overdue | after the date, up to 30 days past it      | `payment_schedule.overdue_notice_sent_at` |
+| Hold expiring   | 36 hours before an unpaid hold is released | `booking.hold_reminder_sent_at`           |
+
+So the daily tick is a floor rather than a deadline: a missed day catches the same
+booking tomorrow, and an extra run the same day sends nothing. 09:00 UTC puts it in
+the customer's morning across Europe rather than overnight.
+
+Three of those windows are wide enough to absorb a missed day. The hold warning's is
+not, and cannot be: real provider holds run from about twenty hours to six days, so a
+window measured in days would mail some customers before they had left the checkout
+and others after the yacht was gone. A day on which this service does not run is a
+day on which some holds lapse unannounced, which is the state everything was in
+before the letter existed.
+
+The overdue notice stops at 30 days past the date on purpose. Without a floor every
+unpaid installment in the table was eligible the first time it ran; 30 days keeps
+that first batch to the ones ops would chase anyway, and an older one is a booking a
+human has already decided something about.
 
 ## The cron services
 
@@ -478,16 +499,30 @@ stay at its `mock` default there. What they do need is the mailer, and need it m
 than anything else on this page needs its optional variables:
 
 ```
-RESEND_API_KEY         ${{api.RESEND_API_KEY}}
-EMAIL_FROM             ${{api.EMAIL_FROM}}
-EMAIL_FROM_NAME        ${{api.EMAIL_FROM_NAME}}
-REPLY_TO_EMAIL         ${{api.REPLY_TO_EMAIL}}
+RESEND_API_KEY           ${{api.RESEND_API_KEY}}
+EMAIL_FROM               ${{api.EMAIL_FROM}}
+EMAIL_FROM_NAME          ${{api.EMAIL_FROM_NAME}}
+REPLY_TO_EMAIL           ${{api.REPLY_TO_EMAIL}}
+BOOKING_REPLY_TO_EMAIL   ${{api.BOOKING_REPLY_TO_EMAIL}}
 ```
+
+Both reply-to addresses, because between them these two services send both kinds of
+mail. `cron-reminders` sends booking mail only, so only `BOOKING_REPLY_TO_EMAIL` is
+load-bearing there and `REPLY_TO_EMAIL` is referenced because the booking address
+falls back to it when it is unset. `cron-outbox` genuinely sends both: the queued
+booking confirmation is booking mail, and the set-password invitation beside it is
+not.
+
+Neither needs `STAFF_EMAIL` or `BOOKING_STAFF_EMAIL`. Every internal alert -- a new
+lead, a question about a booking, a confirmed booking -- is raised on the request
+path, by the `server` service. Nothing on a schedule announces anything to the team,
+which is worth knowing the other way round too: a scheduled job that starts doing so
+needs those two added here.
 
 `RESEND_API_KEY` and `EMAIL_FROM` are optional in the schema, and a send without
 them is skipped rather than failed. That is right for a checkout that must not be
 undone by a mailer outage and wrong here: `reminder_sent_at` is claimed before the
-send, so an unconfigured service would mark every due installment reminded and mail
+send, so an unconfigured service would mark every row due a letter as mailed and mail
 nobody, once, unrecoverably. `payment-reminders.ts` therefore checks the pair itself
 and exits non-zero before it reads a row. `drain-outbox.ts` checks it for the same
 reason: a skipped send is indistinguishable from a delivery to the drain, so an

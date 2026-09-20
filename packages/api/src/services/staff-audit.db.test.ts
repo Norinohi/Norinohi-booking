@@ -114,6 +114,7 @@ describe("marketplace settings", () => {
       catalogueShowsBasePrice: current.catalogueShowsBasePrice,
       offerRankingUsesReliability: current.offerRankingUsesReliability,
       reliabilityWindowDays: current.reliabilityWindowDays + 1,
+      referral: current.referral,
       displayCurrencyEnabled: current.displayCurrencyEnabled,
       displayCurrencyDefault: current.displayCurrencyDefault,
       displayCurrencyByCountry: current.displayCurrencyByCountry,

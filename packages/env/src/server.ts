@@ -73,15 +73,36 @@ export const env = createEnv({
      * noreply, so without this every "just reply to this email" is a dead end. Unset means
      * no header, which is the old behaviour rather than a guessed address. Internal staff
      * alerts deliberately do not carry it.
+     *
+     * This is the general inbox: sign-up and password mail, enquiry acknowledgements, and
+     * answers to a question that names no booking.
      */
     REPLY_TO_EMAIL: z.email().optional(),
     /*
-     * Where new enquiries and booking questions are announced. Unset means no internal
+     * Where a reply about an existing charter lands — confirmations, receipts, invoices,
+     * balance reminders, hold warnings, cancellations and refunds.
+     *
+     * Kept apart from REPLY_TO_EMAIL because the two are read by different people: a reply to
+     * a confirmation is about a charter somebody is running, and one to a welcome mail is not.
+     * Unset falls back to REPLY_TO_EMAIL, so a deployment that has not split its inboxes is
+     * unchanged rather than sending booking mail nobody can answer.
+     */
+    BOOKING_REPLY_TO_EMAIL: z.email().optional(),
+    /*
+     * Where new leads are announced — contact form, consultation, quote and booking
+     * requests, all from someone who has not booked anything yet. Unset means no internal
      * alert is sent — the staff inbox at /inbox still lists everything, so nothing is
      * lost, and there is no fallback address because guessing one would mail an internal
      * alert to a customer.
      */
     STAFF_EMAIL: z.email().optional(),
+    /*
+     * Where a question about an existing booking is announced. Split from STAFF_EMAIL for
+     * the same reason BOOKING_REPLY_TO_EMAIL is split from REPLY_TO_EMAIL: the person who
+     * answers a customer mid-charter is not the person who works a lead. Unset falls back
+     * to STAFF_EMAIL, so a deployment with one inbox keeps getting both alerts there.
+     */
+    BOOKING_STAFF_EMAIL: z.email().optional(),
     // Shared secret for the scheduled maintenance endpoint. Unset means the route
     // refuses every request rather than running unauthenticated.
     CRON_SECRET: z.string().min(16).optional(),

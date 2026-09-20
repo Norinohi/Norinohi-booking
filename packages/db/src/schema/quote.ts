@@ -219,6 +219,9 @@ export const quoteOfferOutcome = pgEnum("quote_offer_outcome", [
  * exactly the case worth being able to count. `listing_id` and the dates are carried so
  * a row stays readable without one.
  */
+/** Where an attempt's commission rate came from. See `quote_offer_attempt.commission_source`. */
+export const commissionSource = pgEnum("commission_source", ["provider", "agreement"]);
+
 export const quoteOfferAttempt = pgTable(
   "quote_offer_attempt",
   {
@@ -249,6 +252,19 @@ export const quoteOfferAttempt = pgTable(
     baseMinor: integer("base_minor"),
     obligatoryExtrasMinor: integer("obligatory_extras_minor"),
     commissionPct: pct("commission_pct"),
+    /**
+     * The money behind that rate, where the vendor stated it, and which of the two answers
+     * the ranking actually used.
+     *
+     * Both providers return a commission on every offer, per boat and per week, and that is
+     * now what `commission_pct` carries whenever an offer had one. `provider_commission` --
+     * a rate staff type in for a vendor or one of its operators -- is the fallback for an
+     * offer that carried none. The source is recorded because the two are different kinds of
+     * claim: replaying a tie broken on a live vendor figure and one broken on an agreement
+     * that has since lapsed are not the same exercise.
+     */
+    commissionMinor: integer("commission_minor"),
+    commissionSource: commissionSource("commission_source"),
     currency: text("currency"),
     latencyMs: integer("latency_ms"),
     /** The `RangeVerdict` for `ineligible`, the provider error class otherwise. */

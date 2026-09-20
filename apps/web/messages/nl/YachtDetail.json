@@ -58,7 +58,8 @@
     "finish": "Finish",
     "day": "Dag {day}",
     "stopTitle": "Dag {day} - {place}",
-    "disclaimer": "Indicatieve route. Het uiteindelijke vaarplan en de overnachtingsplekken hangen af van het weer, de beschikbaarheid en de beslissing van de schipper."
+    "disclaimer": "Indicatieve route. Het uiteindelijke vaarplan en de overnachtingsplekken hangen af van het weer, de beschikbaarheid en de beslissing van de schipper.",
+    "openOnMap": "Bekijk deze route op de kaart"
   },
   "review": {
     "count": "({count, plural, one {# review} other {# reviews}})",

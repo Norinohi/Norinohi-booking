@@ -8,6 +8,8 @@ import {
   commissionUpdateInputSchema,
   operatorOptionsInputSchema,
   operatorOptionsSchema,
+  reportedCommissionListInputSchema,
+  reportedCommissionListSchema,
 } from "../../contracts/admin";
 import { adminProcedure } from "../../index";
 import {
@@ -15,15 +17,19 @@ import {
   getCommission,
   listCommissions,
   listOperatorOptions,
+  listReportedCommissions,
   setCommissionActive,
   updateCommission,
 } from "../../services/commission-admin";
 import { withJsonBodyExample } from "../openapi-examples";
 
 /*
- * Commission rates, shipped empty. Nothing in the sale reads them yet: the agreed ranking
- * uses commission only to separate two offers already equal on price and obligatory extras,
- * so an empty table is that step switched off and entering rates is what turns it on.
+ * Commission, from two sources.
+ *
+ * `reported` is what the vendors say: both return a rate on every offer they price, the
+ * availability sweep stores it per week and stamps the offer with the last one seen, and the
+ * quote now ranks on it. The hand-typed rates below predate that and are the fallback for an
+ * offer whose vendor sent none -- worth keeping, and no longer the only answer.
  */
 export const commissionAdminRouter = {
   list: adminProcedure
@@ -102,6 +108,21 @@ export const commissionAdminRouter = {
     .handler(({ context, input }) =>
       setCommissionActive(context.db, context.session.user.id, input.id, input.active),
     ),
+  reported: adminProcedure
+    .route({
+      method: "POST",
+      path: "/admin/commission/reported",
+      operationId: "listReportedCommissions",
+      summary: "List the commission the providers themselves report",
+      description:
+        "What each vendor says it pays, grouped by operator, from the rate the availability sweep last saw on every active offer. `commonPct` is the rate most of that operator's offers carry, and a spread between `minPct` and `maxPct` is an operator whose rate moves by season or by boat - which no single hand-typed figure can express. `agreementPct` is the typed rate in force for the same operator today, so the two can be compared. `coverage` says how much of the fleet the vendors have actually stated a rate for: a rate arrives only on an offer for a priced period, so an operator the sweep has not reached carries none, which reads the same as one that pays nothing.",
+      tags: ["Admin"],
+      successDescription: "A page of operators with their reported rates.",
+      spec: withJsonBodyExample({ page: 1, pageSize: 20 }),
+    })
+    .input(reportedCommissionListInputSchema)
+    .output(reportedCommissionListSchema)
+    .handler(({ context, input }) => listReportedCommissions(context.db, input)),
   operatorOptions: adminProcedure
     .route({
       method: "POST",

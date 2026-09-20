@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useMoney } from "@/hooks/use-money";
 
 import illustration from "../assets/referral-invite.png";
+import { useReferralTerms } from "../lib/referral-terms";
 import { useReferralSummary, useRotateReferralCode } from "../hooks/use-referrals";
 
 /*
@@ -40,6 +41,9 @@ export default function ReferralsInvite() {
   /* referral.summary returns a path (/register?ref=CODE); the app origin makes it shareable. */
   const { data: summary } = useReferralSummary();
   const rotate = useRotateReferralCode();
+  /* The programme's own terms, so the headline and the rules state the offer actually in
+     force rather than a figure frozen into the copy. */
+  const terms = useReferralTerms(summary);
 
   const referralUrl = summary ? new URL(summary.urlPath, env.NEXT_PUBLIC_APP_URL) : undefined;
   const displayLink = referralUrl
@@ -95,7 +99,11 @@ export default function ReferralsInvite() {
       {/* Heading 972:54830 — 586px on desktop, 330px + 32px top offset on tablet, 185px on mobile */}
       <div className="relative flex w-full max-w-46.25 flex-col gap-3 text-foreground md:mt-8 md:max-w-82.5 lg:mt-0 lg:max-w-146.5">
         <h3 className="text-h5 md:text-h4">{t("invite.heading")}</h3>
-        <p className="text-body-xl">{t("invite.description")}</p>
+        {terms ? (
+          <p className="text-body-xl">{t("invite.description", terms)}</p>
+        ) : (
+          <Skeleton className="h-6 w-full max-w-160 rounded-md" />
+        )}
       </div>
 
       {/* Link + generate 972:54833 — 48px field flexes beside a 200px brand button, stacked on mobile */}
@@ -134,7 +142,11 @@ export default function ReferralsInvite() {
           {RULE_KEYS.map((rule) => (
             <li key={rule} className="flex items-center gap-2 py-2">
               <CircleCheck className="size-5 shrink-0 self-start text-brand" />
-              <span className="text-body-s text-foreground">{t(`invite.rules.${rule}`)}</span>
+              <span className="text-body-s text-foreground">
+                {/* Two of the four quote a figure and two do not; passing the values to all
+                    of them costs nothing and keeps the list one loop. */}
+                {terms ? t(`invite.rules.${rule}`, terms) : <Skeleton className="h-4 w-64" />}
+              </span>
             </li>
           ))}
         </ul>

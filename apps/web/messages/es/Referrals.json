@@ -2,7 +2,7 @@
   "title": "Tus referidos",
   "invite": {
     "heading": "Invita amigos. Gana crédito de navegación.",
-    "description": "Regala €100 a tus amigos para su primera reserva y recibe €100 de crédito cuando naveguen.",
+    "description": "Regala {discount} a tus amigos para su primera reserva y recibe {reward} de crédito cuando naveguen.",
     "copy": "Copiar enlace de referido",
     "copied": "Enlace copiado",
     "generate": "Generar nuevo código",
@@ -10,8 +10,8 @@
     "generateFailed": "No se pudo generar un nuevo código. Inténtalo de nuevo.",
     "information": "Información",
     "rules": {
-      "minBooking": "Los créditos se pueden usar en cualquier reserva de yate superior a €1000.",
-      "expiry": "Los créditos de referido caducan 12 meses después de obtenerse.",
+      "minBooking": "Los créditos se pueden usar en cualquier reserva de yate superior a {minBooking}.",
+      "expiry": "Los créditos de referido caducan {months, plural, one {# mes} other {# meses}} después de obtenerse.",
       "cash": "Los créditos no se pueden retirar en efectivo.",
       "firstTime": "Solo válido para primeras reservas de amigos invitados."
     },
@@ -31,11 +31,11 @@
       },
       "book": {
         "title": "Tu amigo reserva",
-        "description": "Obtienen €100 de descuento en su primera reserva de yate superior a €1000"
+        "description": "Obtienen {discount} de descuento en su primera reserva de yate superior a {minBooking}"
       },
       "credit": {
         "title": "Recibes crédito",
-        "description": "Cuando completan su viaje, recibes €100 en créditos"
+        "description": "Cuando completan su viaje, recibes {reward} en créditos"
       }
     },
     "level": {

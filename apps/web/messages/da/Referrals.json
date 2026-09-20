@@ -2,7 +2,7 @@
   "title": "Dine henvisninger",
   "invite": {
     "heading": "Inviter venner. Optjen sejlkredit.",
-    "description": "Giv dine venner 100 € til deres første booking, og få selv 100 € i tilgodehavende, når de sejler.",
+    "description": "Giv dine venner {discount} til deres første booking, og få selv {reward} i tilgodehavende, når de sejler.",
     "copy": "Kopier henvisningslink",
     "copied": "Link kopieret",
     "generate": "Generer ny kode",
@@ -10,8 +10,8 @@
     "generateFailed": "Der kunne ikke genereres en ny kode. Prøv igen.",
     "information": "Information",
     "rules": {
-      "minBooking": "Tilgodehavendet kan bruges til enhver bådbooking over 1.000 €.",
-      "expiry": "Tilgodehavende fra henvisninger udløber 12 måneder efter, det er optjent.",
+      "minBooking": "Tilgodehavendet kan bruges til enhver bådbooking over {minBooking}.",
+      "expiry": "Tilgodehavende fra henvisninger udløber {months, plural, one {# måned} other {# måneder}} efter, det er optjent.",
       "cash": "Tilgodehavendet kan ikke udbetales kontant.",
       "firstTime": "Gælder kun for inviterede venners første booking."
     },
@@ -31,11 +31,11 @@
       },
       "book": {
         "title": "Vennen booker",
-        "description": "De får 100 € i rabat på deres første bådbooking over 1.000 €"
+        "description": "De får {discount} i rabat på deres første bådbooking over {minBooking}"
       },
       "credit": {
         "title": "Du får tilgodehavende",
-        "description": "Når de har været på deres tur, får du 100 € i tilgodehavende"
+        "description": "Når de har været på deres tur, får du {reward} i tilgodehavende"
       }
     },
     "level": {

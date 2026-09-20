@@ -11,13 +11,40 @@
     "created": "Stawka dodana",
     "updated": "Stawka zapisana",
     "error": "Nie udało się wczytać stawek prowizji",
-    "empty": "Brak stawek. Dopóki żadna nie zostanie wprowadzona, prowizja nie ma wpływu na wybór oferty pokazywanej odwiedzającemu.",
+    "empty": "Na razie brak stawek i nie są potrzebne, dopóki dostawcy podają własne. Stawka tutaj pokryłaby jedynie ofertę, która przyszła bez prowizji.",
     "emptyFiltered": "Żadna stawka nie pasuje do tych filtrów.",
     "allOperators": "Wszyscy operatorzy",
     "openEnded": "Bez daty końcowej",
     "fromDate": "Od {date}",
     "untilDate": "Do {date}",
-    "note": "Stawka rozstrzyga jedynie remis między dwiema ofertami, które są już równe pod względem ceny i obowiązkowych dodatków. Nigdy nie może być powodem pokazania odwiedzającemu droższej łodzi. Proces sprzedaży jeszcze nie korzysta z tych stawek.",
+    "tabs": {
+      "reported": "Zgłoszone przez dostawców",
+      "agreements": "Nasze umowy"
+    },
+    "reported": {
+      "filters": {
+        "search": "Szukaj po armatorze",
+        "provider": "Filtruj po dostawcy",
+        "anyProvider": "Wszyscy dostawcy"
+      },
+      "table": {
+        "operator": "Armator",
+        "provider": "Dostawca",
+        "offers": "Oferty",
+        "rate": "Zgłoszona stawka",
+        "agreement": "Nasza umowa",
+        "lastSeen": "Ostatnio"
+      },
+      "coverage": "{rated} z {total} aktywnych ofert niesie stawkę od dostawcy. Stawka przychodzi tylko z ofertą na wyceniony okres, więc o resztę jeszcze nie pytano.",
+      "mostly": "przeważnie {rate}",
+      "differs": "Różni się",
+      "noAgreement": "Brak",
+      "noOperator": "Bez armatora",
+      "empty": "Żaden dostawca nie zgłosił jeszcze prowizji. Liczby pojawią się w miarę wyceniania tygodni przez synchronizację dostępności.",
+      "emptyFiltered": "Brak armatorów dla tych filtrów.",
+      "error": "Nie udało się wczytać zgłoszonych prowizji"
+    },
+    "note": "Stawka wpisana tutaj to wartość zapasowa dla oferty, w której dostawca nie przysłał własnej prowizji. Gdy dostawca ją podaje, to jego liczba jest używana przy sprzedaży, a zakładka Zgłoszone przez dostawców ją pokazuje. Prowizja może jedynie rozstrzygnąć remis między ofertami równymi już co do ceny i opłat obowiązkowych; nigdy nie może być powodem pokazania droższej łodzi.",
     "filters": {
       "provider": "Dostawca",
       "anyProvider": "Wszyscy dostawcy",
@@ -81,7 +108,8 @@
       "dates": "Daty",
       "total": "Suma",
       "collected": "Pobrano",
-      "status": "Status"
+      "status": "Status",
+      "commission": "Prowizja"
     },
     "status": {
       "DRAFT": "Wersja robocza",
@@ -98,7 +126,8 @@
       "CANCELLED": "Anulowana",
       "REFUND_PENDING": "Do zwrotu",
       "REFUNDED": "Zwrócona"
-    }
+    },
+    "noCommission": "Niezapisana"
   },
   "Users": {
     "title": "Użytkownicy",
@@ -646,7 +675,8 @@
       "place": "Baza i lokalizacja",
       "price": "Od",
       "status": "Status",
-      "actions": "Działania"
+      "actions": "Działania",
+      "commission": "Prowizja"
     },
     "status": {
       "draft": "Wersja robocza",
@@ -714,7 +744,8 @@
       "confirmSplitAction": "Wyłącz",
       "confirmSplitBusy": "Wyłączanie…",
       "confirmSplitCancel": "Anuluj"
-    }
+    },
+    "noCommission": "Brak danych"
   },
   "Routes": {
     "title": "Proponowane trasy",
@@ -930,10 +961,11 @@
   },
   "Payments": {
     "title": "Płatności",
-    "subtitle": "Przelewy bankowe oczekujące na rozliczenie oraz kwoty do zwrotu klientom.",
+    "subtitle": "Wszystkie otrzymane płatności, przelewy czekające na rozliczenie i pieniądze do zwrotu klientom.",
     "tabs": {
       "invoices": "Prośby o fakturę",
-      "refunds": "Zwroty do wykonania"
+      "refunds": "Zwroty do wykonania",
+      "ledger": "Wszystkie płatności"
     },
     "invoices": {
       "filters": {
@@ -982,6 +1014,54 @@
       },
       "empty": "Obecnie nie ma nic do zwrotu.",
       "error": "Nie udało się wczytać kolejki zwrotów."
+    },
+    "ledger": {
+      "filters": {
+        "search": "Szukaj po numerze, nazwisku lub e-mailu",
+        "status": "Filtruj po statusie",
+        "allStatuses": "Wszystkie statusy",
+        "kind": "Filtruj po rodzaju",
+        "allKinds": "Wszystkie rodzaje",
+        "method": "Filtruj po metodzie",
+        "allMethods": "Wszystkie metody"
+      },
+      "table": {
+        "date": "Data",
+        "booking": "Rezerwacja",
+        "customer": "Klient",
+        "kind": "Rodzaj",
+        "method": "Metoda",
+        "amount": "Kwota",
+        "status": "Status"
+      },
+      "status": {
+        "requires_payment": "Nieopłacone",
+        "processing": "W trakcie",
+        "authorized": "Zablokowane na karcie",
+        "succeeded": "Opłacone",
+        "failed": "Nieudane",
+        "refunded": "Zwrócone"
+      },
+      "kind": {
+        "deposit": "Zaliczka",
+        "balance": "Dopłata",
+        "full": "Pełna płatność",
+        "checkin_extras": "Dodatki przy zaokrętowaniu",
+        "security_deposit": "Kaucja"
+      },
+      "method": {
+        "card": "Karta",
+        "transfer": "Przelew"
+      },
+      "totals": {
+        "collected": "Wpłynęło z {count, plural, one {# płatności} few {# płatności} many {# płatności} other {# płatności}}",
+        "refunded": "Zwrócono {amount}"
+      },
+      "startedAt": "Rozpoczęte, nieopłacone",
+      "returned": "Zwrócono {amount}",
+      "disputed": "Zakwestionowane",
+      "empty": "Brak płatności dla tych filtrów.",
+      "error": "Nie udało się wczytać płatności."
     },
     "settle": {
       "title": "Zarejestruj otrzymany przelew",
@@ -1051,7 +1131,8 @@
       "provider": "Dostawca",
       "total": "Suma",
       "collected": "Pobrano",
-      "timeline": "Historia"
+      "timeline": "Historia",
+      "commission": "Prowizja"
     },
     "invoice": {
       "title": "Prośba o fakturę",
@@ -1128,6 +1209,10 @@
     "providerHold": {
       "title": "{provider} nadal utrzymuje tę rezerwację",
       "body": "Anulowaliśmy rezerwację po naszej stronie, ale dostawca jej nie zwolnił. Czarter nadal obowiązuje u operatora, więc rozlicz go z nim przed wypłatą jakiegokolwiek zwrotu, inaczej pieniądze wrócą za tydzień, za który nadal jesteśmy obciążani."
+    },
+    "commissionSource": {
+      "provider": "Zgłoszona przez dostawcę",
+      "agreement": "Z naszej umowy"
     }
   },
   "providers": {
@@ -1385,7 +1470,6 @@
   },
   "Settings": {
     "title": "Ustawienia marketplace",
-    "subtitle": "Jaka część czarteru jest pobierana z góry i przez którego dostawcę sprzedajemy, gdy oferty są równe.",
     "source": {
       "legend": "Który plan płatności stosujemy",
       "vendor": {
@@ -1430,6 +1514,15 @@
       "legend": "Ranking ofert",
       "toggle": "Szereguj według stawki czarterowej",
       "hint": "Po wyłączeniu wygrywa dostawca z niższą łączną kwotą, czyli tym, co gość faktycznie płaci. Po włączeniu decyduje stawka czarterowa, a obowiązkowe dodatki rozstrzygają jedynie remis. Szeregowanie według stawki może wybrać czarter, który łącznie kosztuje gościa więcej."
+    },
+    "referral": {
+      "legend": "Program poleceń",
+      "hint": "Ile płaci polecenie, w euro. Kwoty na stronie Polecenia pochodzą stąd.",
+      "reward": "Polecający zarabia",
+      "inviteeDiscount": "Zniżka dla znajomego",
+      "minBooking": "Minimalna rezerwacja",
+      "ttlMonths": "Środki ważne (miesięcy)",
+      "appliesNext": "Dotyczy poleceń zaksięgowanych od teraz. Już przyznane środki zachowują swoją kwotę i termin ważności."
     },
     "nameSearch": {
       "legend": "Wyszukiwanie tekstowe",

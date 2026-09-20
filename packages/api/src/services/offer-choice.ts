@@ -51,8 +51,18 @@ export type OfferQuoteResult =
       /** What sits on top of the rate. Derived, so the two always add up to the total. */
       obligatoryMinor: number;
       currency: string;
-      /** What we earn through this vendor on the day, as a percentage. Zero when unpriced. */
+      /**
+       * What we earn on this charter, as a percentage. Zero where nothing says.
+       *
+       * The vendor's own figure where the offer carried one, and the hand-typed agreement in
+       * `provider_commission` otherwise -- `commissionSource` says which, because the two are
+       * different kinds of claim. The provider's is what it will pay on this boat this week;
+       * ours is what somebody negotiated and typed in, which can be stale or absent.
+       */
       commissionPct: number;
+      commissionSource: "provider" | "agreement" | "none";
+      /** The money behind that rate, where the vendor stated it rather than us deriving it. */
+      commissionMinor?: number | null;
       /**
        * The vendor's recent answer rate, nought to one, or null where it is not measured yet.
        * Read only when the caller asks for it, so an unmeasured vendor is never ranked on noise.

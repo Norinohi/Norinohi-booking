@@ -11,13 +11,40 @@
     "created": "Tarief toegevoegd",
     "updated": "Tarief opgeslagen",
     "error": "De commissietarieven konden niet worden geladen",
-    "empty": "Nog geen tarieven. Zolang er geen is ingevoerd, speelt commissie geen rol bij welke aanbieding een bezoeker ziet.",
+    "empty": "Nog geen tarieven, en zolang de aanbieders hun eigen tarief opgeven zijn ze ook niet nodig. Een tarief hier dekt alleen een aanbod dat zonder commissie binnenkomt.",
     "emptyFiltered": "Geen tarieven die aan deze filters voldoen.",
     "allOperators": "Alle operators",
     "openEnded": "Geen einddatum",
     "fromDate": "Vanaf {date}",
     "untilDate": "Tot {date}",
-    "note": "Een tarief beslist alleen tussen twee aanbiedingen die al gelijk zijn in prijs en verplichte extra's. Het kan nooit de reden zijn dat een bezoeker een duurdere boot te zien krijgt. Het verkoopproces gebruikt deze tarieven nog nergens.",
+    "tabs": {
+      "reported": "Door aanbieders opgegeven",
+      "agreements": "Onze afspraken"
+    },
+    "reported": {
+      "filters": {
+        "search": "Zoek op verhuurder",
+        "provider": "Filter op aanbieder",
+        "anyProvider": "Alle aanbieders"
+      },
+      "table": {
+        "operator": "Verhuurder",
+        "provider": "Aanbieder",
+        "offers": "Aanbiedingen",
+        "rate": "Opgegeven tarief",
+        "agreement": "Onze afspraak",
+        "lastSeen": "Laatst gezien"
+      },
+      "coverage": "{rated} van {total} actieve aanbiedingen dragen een tarief van de aanbieder. Een tarief komt alleen mee met een aanbod voor een geprijsde periode, de rest is dus nog niet gevraagd.",
+      "mostly": "meestal {rate}",
+      "differs": "Wijkt af",
+      "noAgreement": "Geen",
+      "noOperator": "Geen verhuurder",
+      "empty": "Nog geen enkele aanbieder heeft een commissie opgegeven. De cijfers verschijnen zodra de beschikbaarheidsronde weken beprijst.",
+      "emptyFiltered": "Geen verhuurders met deze filters.",
+      "error": "Kan de opgegeven commissies niet laden"
+    },
+    "note": "Een tarief hier is de terugvaloptie voor een aanbod waarbij de aanbieder geen eigen commissie meestuurde. Noemt de aanbieder er wel een, dan is dat het getal dat de verkoop gebruikt, en het tabblad Door aanbieders opgegeven laat het zien. Een commissie mag alleen de doorslag geven tussen aanbiedingen die al gelijk zijn in prijs en verplichte toeslagen; ze mag nooit de reden zijn dat iemand een duurdere boot te zien krijgt.",
     "filters": {
       "provider": "Provider",
       "anyProvider": "Alle providers",
@@ -81,7 +108,8 @@
       "dates": "Data",
       "total": "Totaal",
       "collected": "Geïnd",
-      "status": "Status"
+      "status": "Status",
+      "commission": "Commissie"
     },
     "status": {
       "DRAFT": "Concept",
@@ -98,7 +126,8 @@
       "CANCELLED": "Geannuleerd",
       "REFUND_PENDING": "Terugbetaling open",
       "REFUNDED": "Terugbetaald"
-    }
+    },
+    "noCommission": "Niet vastgelegd"
   },
   "Users": {
     "title": "Gebruikers",
@@ -646,7 +675,8 @@
       "place": "Basis & locatie",
       "price": "Vanaf",
       "status": "Status",
-      "actions": "Acties"
+      "actions": "Acties",
+      "commission": "Commissie"
     },
     "status": {
       "draft": "Concept",
@@ -714,7 +744,8 @@
       "confirmSplitAction": "Eruit halen",
       "confirmSplitBusy": "Eruit halen…",
       "confirmSplitCancel": "Annuleren"
-    }
+    },
+    "noCommission": "Niet opgegeven"
   },
   "Routes": {
     "title": "Voorgestelde routes",
@@ -930,10 +961,11 @@
   },
   "Payments": {
     "title": "Betalingen",
-    "subtitle": "Bankoverschrijvingen die nog moeten worden verwerkt en geld dat klanten terug moeten krijgen.",
+    "subtitle": "Alle ontvangen betalingen, de bankoverschrijvingen die nog verwerkt moeten worden en het geld dat klanten terugkrijgen.",
     "tabs": {
       "invoices": "Factuuraanvragen",
-      "refunds": "Terug te betalen"
+      "refunds": "Terug te betalen",
+      "ledger": "Alle betalingen"
     },
     "invoices": {
       "filters": {
@@ -982,6 +1014,54 @@
       },
       "empty": "Er hoeft op dit moment niets te worden terugbetaald.",
       "error": "De wachtrij met terugbetalingen kon niet worden geladen."
+    },
+    "ledger": {
+      "filters": {
+        "search": "Zoek op referentie, naam of e-mail",
+        "status": "Filter op status",
+        "allStatuses": "Alle statussen",
+        "kind": "Filter op soort",
+        "allKinds": "Alle soorten",
+        "method": "Filter op methode",
+        "allMethods": "Alle methodes"
+      },
+      "table": {
+        "date": "Datum",
+        "booking": "Boeking",
+        "customer": "Klant",
+        "kind": "Soort",
+        "method": "Methode",
+        "amount": "Bedrag",
+        "status": "Status"
+      },
+      "status": {
+        "requires_payment": "Niet betaald",
+        "processing": "In verwerking",
+        "authorized": "Gereserveerd op kaart",
+        "succeeded": "Betaald",
+        "failed": "Mislukt",
+        "refunded": "Terugbetaald"
+      },
+      "kind": {
+        "deposit": "Aanbetaling",
+        "balance": "Restbedrag",
+        "full": "Volledige betaling",
+        "checkin_extras": "Extra's bij check-in",
+        "security_deposit": "Borg"
+      },
+      "method": {
+        "card": "Kaart",
+        "transfer": "Overschrijving"
+      },
+      "totals": {
+        "collected": "Ontvangen uit {count, plural, one {# betaling} other {# betalingen}}",
+        "refunded": "{amount} terugbetaald"
+      },
+      "startedAt": "Gestart, niet betaald",
+      "returned": "{amount} terugbetaald",
+      "disputed": "Betwist",
+      "empty": "Geen betalingen met deze filters.",
+      "error": "Kan de betalingen niet laden."
     },
     "settle": {
       "title": "Ontvangen overschrijving vastleggen",
@@ -1051,7 +1131,8 @@
       "provider": "Provider",
       "total": "Totaal",
       "collected": "Geïnd",
-      "timeline": "Tijdlijn"
+      "timeline": "Tijdlijn",
+      "commission": "Commissie"
     },
     "invoice": {
       "title": "Factuuraanvraag",
@@ -1128,6 +1209,10 @@
     "providerHold": {
       "title": "{provider} houdt deze reservering nog vast",
       "body": "We hebben onze kant geannuleerd, maar de provider heeft de reservering niet losgelaten. De charter staat nog bij de operator, dus regel het met hen voordat er wordt terugbetaald, anders gaat het geld terug voor een week die ons nog in rekening wordt gebracht."
+    },
+    "commissionSource": {
+      "provider": "Door de aanbieder opgegeven",
+      "agreement": "Uit onze afspraak"
     }
   },
   "providers": {
@@ -1385,7 +1470,6 @@
   },
   "Settings": {
     "title": "Marktplaatsinstellingen",
-    "subtitle": "Hoeveel van een charter vooraf wordt geïnd en via welke provider we verkopen als de aanbiedingen gelijk zijn.",
     "source": {
       "legend": "Welk betalingsplan we gebruiken",
       "vendor": {
@@ -1430,6 +1514,15 @@
       "legend": "Rangschikking van aanbiedingen",
       "toggle": "Rangschikken op het chartertarief",
       "hint": "Uit wint de leverancier met het laagste totaalbedrag, wat de gast daadwerkelijk betaalt. Aan beslist het chartertarief en bepalen de verplichte extra's alleen een gelijkspel daarop. Rangschikken op het tarief kan de charter kiezen die de gast in totaal meer kost."
+    },
+    "referral": {
+      "legend": "Verwijsprogramma",
+      "hint": "Wat een verwijzing oplevert, in euro. De bedragen op de Verwijzingen-pagina komen hiervandaan.",
+      "reward": "Verwijzer verdient",
+      "inviteeDiscount": "Korting voor de vriend",
+      "minBooking": "Minimale boeking",
+      "ttlMonths": "Tegoed geldig (maanden)",
+      "appliesNext": "Geldt voor verwijzingen die vanaf nu worden bijgeschreven. Al toegekend tegoed houdt zijn bedrag en vervaldatum."
     },
     "nameSearch": {
       "legend": "Vrij zoeken op tekst",

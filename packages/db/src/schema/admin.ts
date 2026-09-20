@@ -234,6 +234,29 @@ export const marketplaceSetting = pgTable(
      * Deliberately untyped here: the reader zod-parses it, because a shape asserted by the
      * driver is not a shape the database promised.
      */
+    /**
+     * The referral programme's three numbers: what a referral pays, the smallest booking
+     * credit may be spent against, and how long credit lives.
+     *
+     * Here rather than in code because they are a commercial offer that the client changes
+     * without a release, and here rather than in their own table because there is exactly one
+     * of each and no history to keep: a rate already granted is frozen in `credit_ledger`,
+     * which carries its own amount and expiry per row. Changing these moves the next referral
+     * and nobody's existing balance.
+     *
+     * Minor units, in `CREDIT_CURRENCY`. Defaults restate the constants they replaced, so an
+     * unwritten row runs the programme exactly as the code did before this column existed.
+     */
+    referralRewardMinor: integer("referral_reward_minor").default(10000).notNull(),
+    /**
+     * What the invited friend comes off their first booking. Its own column rather than a
+     * second reading of the reward: the two are the same figure today because the copy says
+     * so, and they are different promises to different people -- moving what a referrer earns
+     * should not silently move what a newcomer is offered.
+     */
+    inviteeDiscountMinor: integer("invitee_discount_minor").default(10000).notNull(),
+    creditMinBookingMinor: integer("credit_min_booking_minor").default(100000).notNull(),
+    creditTtlMonths: integer("credit_ttl_months").default(12).notNull(),
     popularYachtsConfig: jsonb("popular_yachts_config"),
     updatedByUserId: text("updated_by_user_id").references(() => user.id, { onDelete: "set null" }),
     ...timestamps,

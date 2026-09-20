@@ -20,7 +20,12 @@ export default function SuggestedRouteSection() {
 
   return (
     <DetailSection id="suggested-route" title={t("sections.suggestedRoute")}>
-      <SuggestedRouteView title={route.title} description={route.description} stops={route.stops} />
+      <SuggestedRouteView
+        title={route.title}
+        description={route.description}
+        routeHref={`/routes/${route.slug}`}
+        stops={route.stops}
+      />
     </DetailSection>
   );
 }

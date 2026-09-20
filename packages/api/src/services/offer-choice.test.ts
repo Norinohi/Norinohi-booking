@@ -25,6 +25,9 @@ const priced = (
   obligatoryMinor: over.obligatoryMinor ?? 0,
   currency,
   commissionPct: over.commissionPct ?? 0,
+  /* The ranking reads the rate, never where it came from, so these cases say the least
+     they can: an agreement where one is set, nothing where none is. */
+  commissionSource: over.commissionPct ? ("agreement" as const) : ("none" as const),
   reliability: over.reliability,
 });
 

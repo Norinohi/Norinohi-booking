@@ -14,7 +14,7 @@ import { providerCommission } from "@yacht-charter/db/schema/commission";
 import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
 import { operator } from "@yacht-charter/db/schema/operator";
 import { provider } from "@yacht-charter/db/schema/provider";
-import { and, asc, count, desc, eq, ilike, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, isNull, max, min, ne, sql } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database } from "../context";
@@ -26,6 +26,8 @@ import type {
   commissionUpdateInputSchema,
   operatorOptionsInputSchema,
   operatorOptionsSchema,
+  reportedCommissionListInputSchema,
+  reportedCommissionListSchema,
   providerKeyOutputSchema,
 } from "../contracts/admin";
 import { writeAuditLog } from "./audit";
@@ -38,6 +40,8 @@ type Commission = z.infer<typeof commissionSchema>;
 type CreateInput = z.infer<typeof commissionCreateInputSchema>;
 type UpdateInput = z.infer<typeof commissionUpdateInputSchema>;
 type ProviderKey = z.infer<typeof providerKeyOutputSchema>;
+type ReportedListInput = z.infer<typeof reportedCommissionListInputSchema>;
+type ReportedListResult = z.infer<typeof reportedCommissionListSchema>;
 
 /** How many operators the picker offers at once. A search box, not a directory listing. */
 const OPERATOR_OPTIONS_LIMIT = 20;
@@ -382,4 +386,146 @@ function overlaps(
   const rightEndsBefore =
     right.endsAt != null && left.startsAt !== null && right.endsAt < left.startsAt;
   return !leftEndsBefore && !rightEndsBefore;
+}
+
+/**
+ * What the vendors themselves report, per operator.
+ *
+ * The rates above are a negotiation somebody typed in; this is a reading of `listing_offer`,
+ * which the availability sweep stamps with whatever commission the vendor quoted on the last
+ * week it priced. Both are shown because they answer different questions -- what we agreed,
+ * and what is actually arriving -- and a gap between them is the reason this exists.
+ *
+ * Grouped in SQL rather than in memory, unlike the hand-typed list: that table is staff-sized
+ * and this one spans the whole catalogue.
+ */
+export async function listReportedCommissions(
+  db: Database,
+  input: ReportedListInput,
+): Promise<ReportedListResult> {
+  const filters = [eq(listingOffer.status, "active")];
+  if (input.provider) filters.push(eq(provider.code, input.provider));
+  if (input.query) filters.push(ilike(operator.name, `%${input.query}%`));
+  const scope = and(...filters);
+  const rated = and(scope, sql`${listingOffer.commissionPct} is not null`);
+
+  /*
+   * `mode()` rather than an average: a rate is a term, not a measurement, and an operator that
+   * charges 15 on most boats and 20 on two catamarans has two rates rather than a mean of
+   * 15.4 that appears in no agreement.
+   */
+  const grouped = db
+    .select({
+      providerCode: provider.code,
+      providerName: provider.name,
+      operatorId: listingOffer.operatorId,
+      operatorName: operator.name,
+      offerCount: count(),
+      minPct: min(listingOffer.commissionPct),
+      maxPct: max(listingOffer.commissionPct),
+      commonPct: sql<string>`mode() within group (order by ${listingOffer.commissionPct})`,
+      /* Drizzle's own aggregate, not raw SQL: `max()` over a timestamp comes back from the
+         driver as a string, and a hand-written one drops the column's date mapping with it. */
+      lastSeenAt: max(listingOffer.commissionSeenAt),
+    })
+    .from(listingOffer)
+    .innerJoin(provider, eq(provider.id, listingOffer.providerId))
+    .leftJoin(operator, eq(operator.id, listingOffer.operatorId))
+    .where(rated)
+    .groupBy(provider.code, provider.name, listingOffer.operatorId, operator.name)
+    .orderBy(desc(count()), asc(provider.code));
+
+  const [rows, [rated_], [active], agreements] = await Promise.all([
+    grouped.limit(input.pageSize).offset((input.page - 1) * input.pageSize),
+    db
+      .select({ totalItems: count() })
+      .from(listingOffer)
+      .innerJoin(provider, eq(provider.id, listingOffer.providerId))
+      .leftJoin(operator, eq(operator.id, listingOffer.operatorId))
+      .where(rated),
+    db
+      .select({ totalItems: count() })
+      .from(listingOffer)
+      .innerJoin(provider, eq(provider.id, listingOffer.providerId))
+      .leftJoin(operator, eq(operator.id, listingOffer.operatorId))
+      .where(scope),
+    activeAgreementRates(db),
+  ]);
+
+  /*
+   * The group count, not the offer count: paging is over operators, and the coverage figures
+   * below answer the question about offers. A separate count over the grouping rather than
+   * `rows.length`, or the last page would claim to be the whole table.
+   */
+  const [groups] = await db.select({ totalItems: sql<number>`count(*)::int` }).from(
+    db
+      .select({ one: sql`1` })
+      .from(listingOffer)
+      .innerJoin(provider, eq(provider.id, listingOffer.providerId))
+      .leftJoin(operator, eq(operator.id, listingOffer.operatorId))
+      .where(rated)
+      .groupBy(provider.code, listingOffer.operatorId, operator.name)
+      .as("grouped"),
+  );
+
+  const items = rows.map((row) => ({
+    provider: asProviderKey(row.providerCode),
+    providerName: row.providerName,
+    operatorId: row.operatorId,
+    operatorName: row.operatorName,
+    offerCount: row.offerCount,
+    minPct: Number(row.minPct),
+    maxPct: Number(row.maxPct),
+    commonPct: Number(row.commonPct),
+    lastSeenAt: row.lastSeenAt?.toISOString() ?? null,
+    /* The typed rate that covers this operator today: one written for it, or failing that
+       the vendor-wide one, which is the same precedence `resolveCommissionRate` applies. */
+    agreementPct:
+      agreements.get(`${row.providerCode}|${row.operatorId ?? ""}`) ??
+      agreements.get(`${row.providerCode}|`) ??
+      null,
+  }));
+
+  return {
+    items,
+    pagination: paginationFor({
+      page: input.page,
+      pageSize: input.pageSize,
+      totalItems: groups?.totalItems ?? 0,
+      itemCount: items.length,
+    }),
+    coverage: {
+      offersWithRate: rated_?.totalItems ?? 0,
+      activeOffers: active?.totalItems ?? 0,
+    },
+  };
+}
+
+/** The hand-typed rates in force today, keyed provider|operator (empty operator = vendor-wide). */
+async function activeAgreementRates(db: Database): Promise<Map<string, number>> {
+  const today = new Date().toISOString().slice(0, 10);
+  const rows = await db
+    .select({
+      providerCode: provider.code,
+      operatorId: providerCommission.operatorId,
+      ratePct: providerCommission.ratePct,
+    })
+    .from(providerCommission)
+    .innerJoin(provider, eq(provider.id, providerCommission.providerId))
+    .where(
+      and(
+        eq(providerCommission.active, true),
+        sql`(${providerCommission.startsAt} is null or ${providerCommission.startsAt} <= ${today})`,
+        sql`(${providerCommission.endsAt} is null or ${providerCommission.endsAt} >= ${today})`,
+      ),
+    );
+
+  const rates = new Map<string, number>();
+  for (const row of rows) {
+    const key = `${row.providerCode}|${row.operatorId ?? ""}`;
+    /* Overlapping windows are possible, and the resolver settles them by taking the higher
+       rate; this shows the same figure rather than a second opinion. */
+    rates.set(key, Math.max(rates.get(key) ?? 0, Number(row.ratePct)));
+  }
+  return rates;
 }

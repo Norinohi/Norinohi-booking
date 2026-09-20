@@ -58,7 +58,8 @@
     "finish": "Mål",
     "day": "Dag {day}",
     "stopTitle": "Dag {day} - {place}",
-    "disclaimer": "Vägledande rutt. Den slutliga resplanen och övernattningsstoppen beror på väder, tillgänglighet och skepparens beslut."
+    "disclaimer": "Vägledande rutt. Den slutliga resplanen och övernattningsstoppen beror på väder, tillgänglighet och skepparens beslut.",
+    "openOnMap": "Se rutten på kartan"
   },
   "review": {
     "count": "({count, plural, one {# omdöme} other {# omdömen}})",

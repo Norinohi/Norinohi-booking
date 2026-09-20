@@ -2,7 +2,7 @@
   "title": "Vervingene dine",
   "invite": {
     "heading": "Inviter venner. Tjen seilbonus.",
-    "description": "Gi 100 € til vennene dine på deres første booking, og få 100 € i bonus selv når de seiler.",
+    "description": "Gi {discount} til vennene dine på deres første booking, og få {reward} i bonus selv når de seiler.",
     "copy": "Kopier vervelenke",
     "copied": "Lenken er kopiert",
     "generate": "Lag ny kode",
@@ -10,8 +10,8 @@
     "generateFailed": "Kunne ikke lage en ny kode. Prøv igjen.",
     "information": "Informasjon",
     "rules": {
-      "minBooking": "Bonusen kan brukes på alle yachtbookinger over 1000 €.",
-      "expiry": "Vervebonus utløper 12 måneder etter at den er opptjent.",
+      "minBooking": "Bonusen kan brukes på alle yachtbookinger over {minBooking}.",
+      "expiry": "Vervebonus utløper {months, plural, one {# måned} other {# måneder}} etter at den er opptjent.",
       "cash": "Bonusen kan ikke tas ut som kontanter.",
       "firstTime": "Gjelder bare for inviterte venners aller første booking."
     },
@@ -31,11 +31,11 @@
       },
       "book": {
         "title": "Vennen booker",
-        "description": "De får 100 € avslag på sin første yachtbooking over 1000 €"
+        "description": "De får {discount} avslag på sin første yachtbooking over {minBooking}"
       },
       "credit": {
         "title": "Du får bonus",
-        "description": "Når de har fullført turen sin, får du 100 € i bonus"
+        "description": "Når de har fullført turen sin, får du {reward} i bonus"
       }
     },
     "level": {

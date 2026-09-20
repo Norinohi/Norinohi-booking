@@ -2,7 +2,7 @@
   "title": "Ihre Empfehlungen",
   "invite": {
     "heading": "Freunde einladen. Segelguthaben verdienen.",
-    "description": "Schenken Sie Ihren Freunden €100 für ihre erste Buchung und erhalten Sie selbst €100 Guthaben, sobald sie segeln.",
+    "description": "Schenken Sie Ihren Freunden {discount} für ihre erste Buchung und erhalten Sie selbst {reward} Guthaben, sobald sie segeln.",
     "copy": "Empfehlungslink kopieren",
     "copied": "Link kopiert",
     "generate": "Neuen Code erstellen",
@@ -10,8 +10,8 @@
     "generateFailed": "Es konnte kein neuer Code erstellt werden. Bitte versuchen Sie es erneut.",
     "information": "Informationen",
     "rules": {
-      "minBooking": "Guthaben kann für jede Yachtbuchung über €1000 eingesetzt werden.",
-      "expiry": "Empfehlungsguthaben verfällt 12 Monate nach dem Erhalt.",
+      "minBooking": "Guthaben kann für jede Yachtbuchung über {minBooking} eingesetzt werden.",
+      "expiry": "Empfehlungsguthaben verfällt {months, plural, one {# Monat} other {# Monate}} nach dem Erhalt.",
       "cash": "Guthaben kann nicht bar ausgezahlt werden.",
       "firstTime": "Gilt nur für Erstbuchungen eingeladener Freunde."
     },
@@ -31,11 +31,11 @@
       },
       "book": {
         "title": "Freund bucht",
-        "description": "Sie erhalten €100 Rabatt auf ihre erste Yachtbuchung über €1000"
+        "description": "Sie erhalten {discount} Rabatt auf ihre erste Yachtbuchung über {minBooking}"
       },
       "credit": {
         "title": "Sie erhalten Guthaben",
-        "description": "Sobald die Reise abgeschlossen ist, erhalten Sie €100 Guthaben"
+        "description": "Sobald die Reise abgeschlossen ist, erhalten Sie {reward} Guthaben"
       }
     },
     "level": {

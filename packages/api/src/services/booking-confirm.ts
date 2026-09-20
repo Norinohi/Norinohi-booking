@@ -10,7 +10,7 @@ import { and, eq } from "drizzle-orm";
 import { parseError } from "evlog";
 
 import type { Database } from "../context";
-import { notifyBookingConfirmed } from "./booking-email";
+import { announceBookingToStaff, notifyBookingConfirmed } from "./booking-email";
 import { canTransition, type BookingStatus } from "./booking-state";
 import { recordProviderFailure } from "./error-audit";
 import { outstandingMinor } from "./checkout-amounts";
@@ -204,15 +204,16 @@ async function markConfirmed(
 }
 
 /**
- * The one mail that means the charter exists.
+ * The two announcements a confirmation earns: the one mail that means the charter exists, and
+ * the tap on the shoulder that tells the team it does.
  *
  * Sent from here rather than from either caller, for the same reason the commit itself is
  * shared: money arrives by card through the Stripe webhook and by transfer through an admin
- * settling an invoice, and a customer must not learn that their charter is real only on one
- * of those two paths.
+ * settling an invoice, and neither a customer nor the team must learn that a charter is real
+ * only on one of those two paths.
  *
  * After `markConfirmed`, so nothing is announced that the compare-and-set did not apply, and
- * best-effort inside the notify function, so a mail that fails cannot unwind a confirmation
+ * best-effort inside each notify function, so a mail that fails cannot unwind a confirmation
  * the provider has already accepted.
  */
 async function announceConfirmation(
@@ -221,27 +222,43 @@ async function announceConfirmation(
   priced: typeof quote.$inferSelect,
   reservation: Awaited<ReturnType<InventoryProvider["confirmBooking"]>>,
 ): Promise<void> {
-  if (!row.guestEmail) return;
-
   const settled = await db
     .select({ amountMinor: payment.amountMinor })
     .from(payment)
     .where(and(eq(payment.bookingId, row.id), eq(payment.status, "succeeded")));
 
   const paidMinor = settled.reduce((total, entry) => total + entry.amountMinor, 0);
+  const owed = outstandingMinor(priced, paidMinor);
+  const providerReference = reservation.providerReservationId ?? row.providerReservationId;
 
-  await notifyBookingConfirmed({
-    to: row.guestEmail,
-    guestName: row.guestFullName ?? "Guest",
+  // The customer's mail is the one with an address to fail on; the staff alert reads its own
+  // out of the environment and goes out either way.
+  if (row.guestEmail) {
+    await notifyBookingConfirmed({
+      to: row.guestEmail,
+      guestName: row.guestFullName ?? "Guest",
+      bookingId: row.id,
+      reference: row.reference,
+      snapshot: row.commercialSnapshot,
+      priced,
+      paidMinor,
+      outstandingMinor: owed,
+      providerReference,
+      // A confirmation that returns no link has not retracted the one the hold carried.
+      crewListLink: reservation.crewListLink ?? row.crewListLink,
+    });
+  }
+
+  await announceBookingToStaff({
     bookingId: row.id,
     reference: row.reference,
     snapshot: row.commercialSnapshot,
     priced,
+    guestName: row.guestFullName,
+    guestEmail: row.guestEmail,
     paidMinor,
-    outstandingMinor: outstandingMinor(priced, paidMinor),
-    providerReference: reservation.providerReservationId ?? row.providerReservationId,
-    // A confirmation that returns no link has not retracted the one the hold carried.
-    crewListLink: reservation.crewListLink ?? row.crewListLink,
+    outstandingMinor: owed,
+    providerReference,
   });
 }
 

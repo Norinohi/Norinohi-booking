@@ -4,11 +4,12 @@ import { motion, useReducedMotion } from "motion/react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 
-import { Info, MapPin } from "lucide-react";
+import { Info, Map, MapPin } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import DayTimeline, { type TimelineDay } from "@/components/shared/data-display/day-timeline";
 import MapPreview from "@/components/shared/overlay/map-preview";
+import { Link } from "@/i18n/navigation";
 import { staticMapFrame, stillPositionStyle } from "@/lib/mapbox";
 
 import {
@@ -214,11 +215,21 @@ function RouteStill({ route }: { route: { title: string; stops: RouteStop[] } })
 export type SuggestedRouteViewProps = {
   title: string;
   description: string | null;
+  /**
+   * The route's own page on the routes map, where it is drawn over the whole sailing area with
+   * the marinas along it. Absent in the admin preview, which is showing an unpublished draft.
+   */
+  routeHref?: string;
   /** In day order. `day` is the number the page prints, not the row's `sort_order`. */
   stops: { day: number; name: string; note: string | null; lat: number; lng: number }[];
 };
 
-export default function SuggestedRouteView({ title, description, stops }: SuggestedRouteViewProps) {
+export default function SuggestedRouteView({
+  title,
+  description,
+  routeHref,
+  stops,
+}: SuggestedRouteViewProps) {
   const t = useTranslations("YachtDetail.route");
 
   /* The only thing the web still writes is the "Day N - place" line; the place and the note are
@@ -241,6 +252,15 @@ export default function SuggestedRouteView({ title, description, stops }: Sugges
     <div className="flex flex-col gap-3">
       <p className="text-xl text-foreground">{title}</p>
       {description ? <p className="text-base leading-5.5 text-natural-500">{description}</p> : null}
+      {routeHref ? (
+        <Link
+          href={routeHref}
+          className="flex w-fit items-center gap-1.5 text-base font-semibold text-brand underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/40"
+        >
+          <Map className="size-4" />
+          {t("openOnMap")}
+        </Link>
+      ) : null}
 
       <RouteStill route={{ title, stops: routeStops }} />
 

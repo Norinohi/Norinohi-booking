@@ -1,4 +1,5 @@
 import { availabilitySlot, listingRefusedPeriod } from "@yacht-charter/db/schema/availability";
+import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
 import { createTestDatabase, type TestDatabase } from "@yacht-charter/db/test-support/database";
 import { seedListing, seedSearchWorld } from "@yacht-charter/db/test-support/search-fixture";
 import { and, eq, sql } from "drizzle-orm";
@@ -57,11 +58,24 @@ function confirmation(ref: ListingRef, overrides: Partial<ConfirmSlotInput> = {}
     priceMinor: 300_000,
     obligatoryExtrasMinor: 20_000,
     listPriceMinor: null,
+    commissionMinor: null,
+    commissionPct: null,
     currency: "EUR",
     sourceHash: "hash-a",
     seenAt: T0,
     ...overrides,
   } satisfies ConfirmSlotInput;
+}
+
+async function offerCommissionOf(offerId: string) {
+  const [row] = await test.db
+    .select({
+      commissionPct: listingOffer.commissionPct,
+      commissionSeenAt: listingOffer.commissionSeenAt,
+    })
+    .from(listingOffer)
+    .where(eq(listingOffer.id, offerId));
+  return row;
 }
 
 async function slotOf(offerId: string, startDate = "2027-06-05", endDate = "2027-06-12") {
@@ -71,6 +85,8 @@ async function slotOf(offerId: string, startDate = "2027-06-05", endDate = "2027
       priceMinor: availabilitySlot.priceMinor,
       obligatoryExtrasMinor: availabilitySlot.obligatoryExtrasMinor,
       listPriceMinor: availabilitySlot.listPriceMinor,
+      commissionMinor: availabilitySlot.commissionMinor,
+      commissionPct: availabilitySlot.commissionPct,
       availabilityConfirmed: availabilitySlot.availabilityConfirmed,
       updatedAt: availabilitySlot.updatedAt,
       version: sql<string>`xmin::text`,
@@ -199,6 +215,76 @@ describe("confirmSlots", () => {
       expect.objectContaining({ action: "availability.amounts_not_stored", count: 1 }),
     );
     warn.mockRestore();
+  });
+
+  /*
+   * The commission is why the sweep stores anything about money that is not the customer's:
+   * both vendors state it per week, per boat, and nowhere in the catalogue, so the slot is
+   * the only place it can be kept.
+   */
+  it("stores the commission the vendor quoted for the week", async () => {
+    const ref = await refOf("confirm-commission");
+
+    await store().confirmSlots([confirmation(ref, { commissionMinor: 60_000, commissionPct: 20 })]);
+
+    expect(await slotOf(ref.listingOfferId)).toMatchObject({
+      commissionMinor: 60_000,
+      commissionPct: "20.0000",
+    });
+  });
+
+  /* The fleet list asks one question per boat, and aggregating every stored week to answer it
+     made that screen a scan of the price history. */
+  it("carries the rate up onto the offer, newest week last", async () => {
+    const ref = await refOf("confirm-commission-stamp");
+
+    await store().confirmSlots([confirmation(ref, { commissionPct: 15 })]);
+    expect(await offerCommissionOf(ref.listingOfferId)).toMatchObject({
+      commissionPct: "15.0000",
+      commissionSeenAt: T0,
+    });
+
+    const later = new Date(T0.getTime() + DAY);
+    await store().confirmSlots([
+      confirmation(ref, {
+        startDate: "2027-07-03",
+        endDate: "2027-07-10",
+        commissionPct: 18,
+        seenAt: later,
+      }),
+    ]);
+    expect(await offerCommissionOf(ref.listingOfferId)).toMatchObject({
+      commissionPct: "18.0000",
+      commissionSeenAt: later,
+    });
+  });
+
+  /* An older page arriving late is not news, and a week with nothing said about it is not a
+     statement that the boat pays nothing. */
+  it("keeps the rate against a stale page and against a week that states none", async () => {
+    const ref = await refOf("confirm-commission-stale");
+
+    await store().confirmSlots([confirmation(ref, { commissionPct: 17 })]);
+
+    await store().confirmSlots([
+      confirmation(ref, {
+        startDate: "2027-07-10",
+        endDate: "2027-07-17",
+        commissionPct: 9,
+        seenAt: new Date(T0.getTime() - DAY),
+      }),
+      confirmation(ref, {
+        startDate: "2027-07-17",
+        endDate: "2027-07-24",
+        commissionPct: null,
+        seenAt: new Date(T0.getTime() + DAY),
+      }),
+    ]);
+
+    expect(await offerCommissionOf(ref.listingOfferId)).toMatchObject({
+      commissionPct: "17.0000",
+      commissionSeenAt: T0,
+    });
   });
 
   it("drops a strike-through that will not fit and keeps the price", async () => {

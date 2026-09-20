@@ -58,7 +58,8 @@
     "finish": "Meta",
     "day": "Dzień {day}",
     "stopTitle": "Dzień {day} - {place}",
-    "disclaimer": "Trasa orientacyjna. Ostateczny plan rejsu i miejsca nocowania zależą od pogody, dostępności i decyzji skippera."
+    "disclaimer": "Trasa orientacyjna. Ostateczny plan rejsu i miejsca nocowania zależą od pogody, dostępności i decyzji skippera.",
+    "openOnMap": "Zobacz tę trasę na mapie"
   },
   "review": {
     "count": "({count, plural, one {# opinia} few {# opinie} many {# opinii} other {# opinii}})",

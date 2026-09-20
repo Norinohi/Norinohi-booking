@@ -2,7 +2,7 @@
   "title": "Your Referrals",
   "invite": {
     "heading": "Invite friends. Earn sailing credit.",
-    "description": "Give €100 to your friends for their first booking and get €100 credit for yourself when they sail.",
+    "description": "Give {discount} to your friends for their first booking and get {reward} credit for yourself when they sail.",
     "copy": "Copy referral link",
     "copied": "Link copied",
     "generate": "Generate New Code",
@@ -10,8 +10,8 @@
     "generateFailed": "Could not generate a new code. Please try again.",
     "information": "Information",
     "rules": {
-      "minBooking": "Credits are usable for any yacht booking over €1000.",
-      "expiry": "Referral credits expire 12 months after being earned.",
+      "minBooking": "Credits are usable for any yacht booking over {minBooking}.",
+      "expiry": "Referral credits expire {months, plural, one {# month} other {# months}} after being earned.",
       "cash": "Credits cannot be withdrawn as cash.",
       "firstTime": "Only valid for first-time bookings of invited friends."
     },
@@ -31,11 +31,11 @@
       },
       "book": {
         "title": "Friend book",
-        "description": "They get €100 off their first yacht booking over €1000"
+        "description": "They get {discount} off their first yacht booking over {minBooking}"
       },
       "credit": {
         "title": "You get credit",
-        "description": "Once they complete their trip, you receive €100 credits"
+        "description": "Once they complete their trip, you receive {reward} credits"
       }
     },
     "level": {

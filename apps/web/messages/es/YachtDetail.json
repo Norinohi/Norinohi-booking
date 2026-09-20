@@ -58,7 +58,8 @@
     "finish": "Fin",
     "day": "Día {day}",
     "stopTitle": "Día {day} - {place}",
-    "disclaimer": "Ruta orientativa. El itinerario final y los fondeos nocturnos dependen del tiempo, la disponibilidad y la decisión del patrón."
+    "disclaimer": "Ruta orientativa. El itinerario final y los fondeos nocturnos dependen del tiempo, la disponibilidad y la decisión del patrón.",
+    "openOnMap": "Ver esta ruta en el mapa"
   },
   "review": {
     "count": "({count, plural, one {# opinión} other {# opiniones}})",

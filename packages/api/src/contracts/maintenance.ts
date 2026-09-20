@@ -48,10 +48,16 @@ export const sweepResultSchema = z.object({
 });
 
 export const reminderResultSchema = z.object({
-  /** Balance installments a reminder went out for. Each is only ever mailed once. */
+  /** Every letter this run sent, across all four kinds below. */
   sent: z.number().int(),
-  /** Installments due but with no address on the booking — nothing to send to. */
+  /** Rows that were owed a letter but had no address on the booking — nothing to send to. */
   skipped: z.number().int(),
+  /** Of `sent`, second reminders for a balance the first one did not settle. */
+  finalSent: z.number().int(),
+  /** Of `sent`, notices for an installment whose due date has already passed. */
+  overdueSent: z.number().int(),
+  /** Of `sent`, warnings that an unpaid hold is about to be released. */
+  holdSent: z.number().int(),
 });
 
 export const outboxDrainResultSchema = z.object({

@@ -197,6 +197,7 @@ export async function announceEnquiry(db: Database, id: string): Promise<void> {
     body: row.question,
     path: "/inbox",
     actionLabel: "Open the inbox",
+    audience: "booking",
   });
 }
 

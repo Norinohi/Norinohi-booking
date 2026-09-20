@@ -2,7 +2,7 @@
   "title": "Vos parrainages",
   "invite": {
     "heading": "Invitez vos amis. Gagnez des crédits de navigation.",
-    "description": "Offrez 100 € à vos amis pour leur première réservation et recevez 100 € de crédit lorsqu’ils partent en mer.",
+    "description": "Offrez {discount} à vos amis pour leur première réservation et recevez {reward} de crédit lorsqu’ils partent en mer.",
     "copy": "Copier le lien de parrainage",
     "copied": "Lien copié",
     "generate": "Générer un nouveau code",
@@ -10,8 +10,8 @@
     "generateFailed": "Impossible de générer un nouveau code. Veuillez réessayer.",
     "information": "Informations",
     "rules": {
-      "minBooking": "Les crédits sont utilisables pour toute réservation de yacht supérieure à 1000 €.",
-      "expiry": "Les crédits de parrainage expirent 12 mois après leur obtention.",
+      "minBooking": "Les crédits sont utilisables pour toute réservation de yacht supérieure à {minBooking}.",
+      "expiry": "Les crédits de parrainage expirent {months, plural, one {# mois} other {# mois}} après leur obtention.",
       "cash": "Les crédits ne peuvent pas être retirés en espèces.",
       "firstTime": "Valable uniquement pour la première réservation des amis invités."
     },
@@ -31,11 +31,11 @@
       },
       "book": {
         "title": "Votre ami réserve",
-        "description": "Il bénéficie de 100 € de réduction sur sa première réservation de yacht supérieure à 1000 €"
+        "description": "Il bénéficie de {discount} de réduction sur sa première réservation de yacht supérieure à {minBooking}"
       },
       "credit": {
         "title": "Vous recevez un crédit",
-        "description": "Une fois son voyage terminé, vous recevez 100 € de crédit"
+        "description": "Une fois son voyage terminé, vous recevez {reward} de crédit"
       }
     },
     "level": {

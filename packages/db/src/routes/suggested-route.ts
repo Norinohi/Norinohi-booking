@@ -22,6 +22,7 @@ export async function suggestedRouteFor(
 ): Promise<SuggestedRoute | null> {
   const rows = await db.execute<{
     title: string;
+    slug: string;
     description: string | null;
     name: string;
     note: string | null;
@@ -33,7 +34,7 @@ export async function suggestedRouteFor(
     baseLng: number | null;
   }>(sql`
     with picked as (
-      select r.id, r.title, r.description
+      select r.id, r.title, r.slug, r.description
       from suggested_route r
       where r.active
         and (
@@ -52,6 +53,7 @@ export async function suggestedRouteFor(
        otherwise -- the same fallback the home page's popular-routes read uses. */
     select
       coalesce(nullif(trim(t.title), ''), p.title) as title,
+      p.slug,
       coalesce(nullif(trim(t.description), ''), p.description) as description,
       s.name, s.lat, s.lng, s.sort_order as "sortOrder",
       coalesce(nullif(trim(st.note), ''), s.note) as note,
@@ -86,6 +88,7 @@ export async function suggestedRouteFor(
 
   return {
     title: first.title,
+    slug: first.slug,
     description: first.description,
     stops: rows.rows.map((stop, index) => {
       const atBase = home && (index === 0 || index === last);

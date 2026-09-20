@@ -58,7 +58,8 @@
     "finish": "Finish",
     "day": "Day {day}",
     "stopTitle": "Day {day} - {place}",
-    "disclaimer": "Indicative route. The final itinerary and overnight stops depend on weather, availability and the skipper's decision."
+    "disclaimer": "Indicative route. The final itinerary and overnight stops depend on weather, availability and the skipper's decision.",
+    "openOnMap": "See this route on the map"
   },
   "review": {
     "count": "({count, plural, one {# review} other {# reviews}})",

@@ -7,6 +7,8 @@
  */
 export type SuggestedRoute = {
   title: string;
+  /** The route's own page, `/routes/<slug>`, where it is drawn over the whole sailing area. */
+  slug: string;
   description: string | null;
   stops: {
     /** Position in the itinerary, from 1. Not a calendar date: a route is not a charter. */

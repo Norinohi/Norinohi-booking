@@ -295,6 +295,41 @@ describe("mapFreeYachtToConfirmedOffer", () => {
     });
   });
 
+  /*
+   * The vendor states the money and not the rate, and the rate is what a fleet list shows, so
+   * the division is ours and has to land exactly: 1,120.00 of 5,600.00 is twenty percent, not
+   * 19.9999, or every boat on that operator reads a hundredth short.
+   */
+  it("carries the vendor's commission and the rate it works out to", () => {
+    const yacht = firstFreeYacht();
+    yacht.price.clientPrice = "5600.00";
+    yacht.price.agencyCommission = "1120.00";
+
+    expect(mapFreeYachtToConfirmedOffer(yacht)).toMatchObject({
+      commissionMinor: 112_000,
+      commissionPct: 20,
+    });
+  });
+
+  it("says nothing where the offer states no commission, rather than claiming we earn none", () => {
+    const yacht = firstFreeYacht();
+    delete yacht.price.agencyCommission;
+
+    const offer = mapFreeYachtToConfirmedOffer(yacht);
+    expect(offer).not.toHaveProperty("commissionMinor");
+    expect(offer).not.toHaveProperty("commissionPct");
+  });
+
+  /* A renegotiated rate moves nothing else on the offer, and an unchanged hash is how the
+     writer decides it has nothing to update. */
+  it("moves the source hash when only the commission changed", () => {
+    const before = mapFreeYachtToConfirmedOffer(firstFreeYacht())?.sourceHash;
+    const yacht = firstFreeYacht();
+    yacht.price.agencyCommission = "999.00";
+
+    expect(mapFreeYachtToConfirmedOffer(yacht)?.sourceHash).not.toBe(before);
+  });
+
   it("says nothing about fees when the offer lists none, leaving the catalogue to answer", () => {
     const yacht = firstFreeYacht();
     delete yacht.obligatoryExtras;

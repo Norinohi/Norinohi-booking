@@ -98,9 +98,14 @@ function reachedTier(tiers: readonly LadderTier[], completed: number): LadderTie
 }
 
 /**
- * "Credits are usable for any yacht booking over €1000." Below that the balance is untouched
+ * "Credits are usable for any yacht booking over euro1,000." Below that the balance is untouched
  * rather than partially spent, which is what the rule on the screen says and keeps small
  * bookings from quietly draining someone's credit.
+ *
+ * The threshold in force is `marketplace_setting.credit_min_booking_minor`, which staff can
+ * change without a release. This is the figure the programme launched with, kept as the
+ * default an unwritten settings row runs on and as the fixture this module's own tests use --
+ * the decision function takes the threshold as an argument so it stays pure.
  */
 export const MIN_BOOKING_FOR_CREDIT_MINOR = 100_000;
 
@@ -116,7 +121,8 @@ export function spendableFrom(
   balanceMinor: number,
   bookingTotalMinor: number,
   payableNowMinor: number,
+  minBookingMinor: number = MIN_BOOKING_FOR_CREDIT_MINOR,
 ): number {
-  if (bookingTotalMinor < MIN_BOOKING_FOR_CREDIT_MINOR) return 0;
+  if (bookingTotalMinor < minBookingMinor) return 0;
   return Math.max(Math.min(balanceMinor, payableNowMinor), 0);
 }

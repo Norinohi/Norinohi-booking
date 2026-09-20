@@ -13,7 +13,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 
-import { id, timestamps } from "./_shared";
+import { id, pct, timestamps } from "./_shared";
 import { base } from "./geography";
 import { listing } from "./listing";
 import { listingSource } from "./listing-source";
@@ -117,6 +117,21 @@ export const listingOffer = pgTable(
      * this offer has already refused should stop being sent to it.
      */
     guestsRefusedFrom: integer("guests_refused_from"),
+    /**
+     * The commission rate this vendor last quoted on this boat, and when.
+     *
+     * A convenience over `availability_slot.commission_pct`, which is the record: that table
+     * holds one rate per priced week, and the question staff ask of a fleet list is "what does
+     * this boat pay us", singular. Answering it by aggregating every stored week per row made
+     * the listings table a scan of the price history, so the sweep writes the rate it just saw
+     * here as it goes.
+     *
+     * Last seen, not typical: an operator that moves its rate mid-season has moved it, and a
+     * mean across weeks already sold would describe a rate nobody can book at now. Where the
+     * seasons differ enough to matter, the per-week rows are what to read.
+     */
+    commissionPct: pct("commission_pct"),
+    commissionSeenAt: timestamp("commission_seen_at"),
     securityDepositMinor: integer("security_deposit_minor"),
     /** The deposit this offer takes when the charter carries deposit insurance. */
     securityDepositWhenInsuredMinor: integer("security_deposit_when_insured_minor"),

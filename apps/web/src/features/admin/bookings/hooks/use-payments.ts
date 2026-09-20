@@ -11,14 +11,21 @@ import {
   cancelInvoiceMutationOptions,
   invoiceKey,
   invoiceListQueryOptions,
+  paymentListQueryOptions,
   refundBookingMutationOptions,
   setBookingExcludedMutationOptions,
   settleInvoiceMutationOptions,
 } from "../api/queries";
-import type { BookingStatus, InvoiceStatus } from "../types";
+import type {
+  BookingStatus,
+  InvoiceStatus,
+  PaymentKind,
+  PaymentMethod,
+  PaymentStatus,
+} from "../types";
 
 /*
- * Hooks over the two payment queues.
+ * Hooks over the payments screen: the two queues that are worked, and the ledger that is read.
  *
  * Every write here crosses both segments: settling an invoice confirms its booking, and a
  * provider that then refuses moves that booking straight into the refund queue. So each
@@ -38,6 +45,21 @@ function useInvalidateQueues() {
 
 export function useInvoices(input: { status?: InvoiceStatus; page: number }) {
   return useQuery(invoiceListQueryOptions(input));
+}
+
+/**
+ * The payment ledger. Keeps the previous page on screen while the next one loads, like the
+ * bookings table and unlike the two queues: this is the one payment list long enough to page
+ * through, and blanking it on every filter change is what makes a table feel broken.
+ */
+export function usePaymentLedger(input: {
+  status?: readonly PaymentStatus[];
+  kind?: readonly PaymentKind[];
+  method?: PaymentMethod;
+  query?: string;
+  page: number;
+}) {
+  return useQuery({ ...paymentListQueryOptions(input), placeholderData: keepPreviousData });
 }
 
 export function useBookingQueue(input: {

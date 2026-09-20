@@ -19,6 +19,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import IconAction from "../../shared/components/icon-action";
+import { useInstant } from "../../shared/hooks/use-instant";
 import ListingSourcesDialog from "./listing-sources-dialog";
 import { toast } from "sonner";
 
@@ -64,14 +65,15 @@ const STATUS_VARIANTS = {
   merged: "neutral",
 } as const satisfies Record<ListingStatus, string>;
 
-const COLUMN_COUNT = 8;
+const COLUMN_COUNT = 9;
 const SKELETON_ROWS = 5;
-const SKELETON_WIDTHS = ["w-40", "w-20", "w-24", "w-24", "w-28", "w-20", "w-16", "w-40"];
+const SKELETON_WIDTHS = ["w-40", "w-20", "w-24", "w-24", "w-28", "w-20", "w-14", "w-16", "w-40"];
 
 export default function ListingsTable() {
   const t = useTranslations("Admin.Listings");
   const tProviders = useTranslations("Admin.providers");
   const format = useFormatter();
+  const instant = useInstant();
   const [provider, setProvider] = useState(ALL);
   const [operatorId, setOperatorId] = useState(ALL);
   const [status, setStatus] = useState(ALL);
@@ -218,6 +220,7 @@ export default function ListingsTable() {
             <TableHead>{t("table.model")}</TableHead>
             <TableHead>{t("table.place")}</TableHead>
             <TableHead>{t("table.price")}</TableHead>
+            <TableHead className="w-24">{t("table.commission")}</TableHead>
             <TableHead>{t("table.status")}</TableHead>
             <TableHead className="w-36 text-right">{t("table.actions")}</TableHead>
           </TableRow>
@@ -300,6 +303,28 @@ export default function ListingsTable() {
                         </span>
                       </TableCell>
                       <TableCell className="whitespace-nowrap">{priceLabel(listing)}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {/* The rate the vendor last quoted on this boat, dated: it is read off
+                            the most recent priced week, so a figure from six weeks ago and one
+                            from this morning are not equally good answers. */}
+                        {listing.commissionPct === null ? (
+                          <span className="text-natural-500">{t("noCommission")}</span>
+                        ) : (
+                          <>
+                            <span className="block font-medium text-foreground">
+                              {format.number(listing.commissionPct / 100, {
+                                style: "percent",
+                                maximumFractionDigits: 2,
+                              })}
+                            </span>
+                            {listing.commissionSeenAt ? (
+                              <span className="block text-sm text-natural-500">
+                                {instant(listing.commissionSeenAt, { dateStyle: "short" })}
+                              </span>
+                            ) : null}
+                          </>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Chip variant={STATUS_VARIANTS[listing.status]}>
                           {t(`status.${listing.status}`)}

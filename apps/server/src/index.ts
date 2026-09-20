@@ -114,9 +114,10 @@ app.post("/api/cron/reconcile-reservations", cronSecret, async (c) => {
   return c.json(await reconcileReservations(db, inventoryProvider));
 });
 
-// Daily. The window is ten days wide and every installment is claimed before it is mailed, so
-// running this more often sends nothing extra — and missing a day still catches the same booking
-// tomorrow.
+// Daily. Every letter is claimed on its own row before it is mailed, so running this more often
+// sends nothing extra — and missing a day still catches the same booking tomorrow, except for an
+// expiring hold, whose window is only 36 hours wide because the shortest real hold is not much
+// longer than that.
 app.post("/api/cron/payment-reminders", cronSecret, async (c) => {
   return c.json(await sendBalanceReminders(db));
 });

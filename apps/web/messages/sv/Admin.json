@@ -11,13 +11,40 @@
     "created": "Satsen har lagts till",
     "updated": "Satsen har sparats",
     "error": "Det gick inte att ladda provisionssatserna",
-    "empty": "Inga satser än. Tills en är angiven spelar provisionen ingen roll för vilket erbjudande en besökare ser.",
+    "empty": "Inga satser än, och det behövs inte så länge leverantörerna anger sina egna. En sats här skulle bara täcka ett erbjudande som kommer utan provision.",
     "emptyFiltered": "Inga satser matchar dessa filter.",
     "allOperators": "Alla operatörer",
     "openEnded": "Inget slutdatum",
     "fromDate": "Från {date}",
     "untilDate": "Till {date}",
-    "note": "En sats avgör bara mellan två erbjudanden som redan är lika på pris och obligatoriska tillval. Den kan aldrig vara skälet till att en besökare visas en dyrare båt. Inget i försäljningen läser de här satserna än.",
+    "tabs": {
+      "reported": "Angivna av leverantörer",
+      "agreements": "Våra avtal"
+    },
+    "reported": {
+      "filters": {
+        "search": "Sök på uthyrare",
+        "provider": "Filtrera på leverantör",
+        "anyProvider": "Alla leverantörer"
+      },
+      "table": {
+        "operator": "Uthyrare",
+        "provider": "Leverantör",
+        "offers": "Erbjudanden",
+        "rate": "Angiven sats",
+        "agreement": "Vårt avtal",
+        "lastSeen": "Senast"
+      },
+      "coverage": "{rated} av {total} aktiva erbjudanden bär en sats från leverantören. En sats kommer bara med ett erbjudande för en prissatt period, så resten har inte tillfrågats än.",
+      "mostly": "oftast {rate}",
+      "differs": "Avviker",
+      "noAgreement": "Inget",
+      "noOperator": "Ingen uthyrare",
+      "empty": "Ingen leverantör har angett någon provision än. Siffrorna dyker upp allteftersom tillgänglighetskörningen prissätter veckor.",
+      "emptyFiltered": "Inga uthyrare matchar dessa filter.",
+      "error": "Det gick inte att ladda de angivna provisionerna"
+    },
+    "note": "En sats här är reservvärdet för ett erbjudande där leverantören inte skickade med någon egen provision. Anger leverantören en, är det den siffran försäljningen använder, och fliken Angivna av leverantörer visar den. En provision får bara skilja två erbjudanden som redan är lika i pris och obligatoriska tillägg; den får aldrig vara skälet till att någon visas en dyrare båt.",
     "filters": {
       "provider": "Leverantör",
       "anyProvider": "Alla leverantörer",
@@ -81,7 +108,8 @@
       "dates": "Datum",
       "total": "Totalt",
       "collected": "Inbetalt",
-      "status": "Status"
+      "status": "Status",
+      "commission": "Provision"
     },
     "status": {
       "DRAFT": "Utkast",
@@ -98,7 +126,8 @@
       "CANCELLED": "Avbokad",
       "REFUND_PENDING": "Återbetalning väntar",
       "REFUNDED": "Återbetald"
-    }
+    },
+    "noCommission": "Ej registrerad"
   },
   "Users": {
     "title": "Användare",
@@ -646,7 +675,8 @@
       "place": "Bas och plats",
       "price": "Från",
       "status": "Status",
-      "actions": "Åtgärder"
+      "actions": "Åtgärder",
+      "commission": "Provision"
     },
     "status": {
       "draft": "Utkast",
@@ -714,7 +744,8 @@
       "confirmSplitAction": "Ta ut den",
       "confirmSplitBusy": "Tar ut…",
       "confirmSplitCancel": "Avbryt"
-    }
+    },
+    "noCommission": "Ej angiven"
   },
   "Routes": {
     "title": "Föreslagna rutter",
@@ -930,10 +961,11 @@
   },
   "Payments": {
     "title": "Betalningar",
-    "subtitle": "Banköverföringar som väntar på att regleras, och pengar som ska tillbaka till kunder.",
+    "subtitle": "Alla mottagna betalningar, banköverföringarna som väntar på att regleras och pengar som ska tillbaka till kunderna.",
     "tabs": {
       "invoices": "Fakturaförfrågningar",
-      "refunds": "Återbetalningar att göra"
+      "refunds": "Återbetalningar att göra",
+      "ledger": "Alla betalningar"
     },
     "invoices": {
       "filters": {
@@ -982,6 +1014,54 @@
       },
       "empty": "Inget ska betalas tillbaka just nu.",
       "error": "Det gick inte att ladda återbetalningskön."
+    },
+    "ledger": {
+      "filters": {
+        "search": "Sök på referens, namn eller e-post",
+        "status": "Filtrera efter status",
+        "allStatuses": "Alla statusar",
+        "kind": "Filtrera efter typ",
+        "allKinds": "Alla typer",
+        "method": "Filtrera efter metod",
+        "allMethods": "Alla metoder"
+      },
+      "table": {
+        "date": "Datum",
+        "booking": "Bokning",
+        "customer": "Kund",
+        "kind": "Typ",
+        "method": "Metod",
+        "amount": "Belopp",
+        "status": "Status"
+      },
+      "status": {
+        "requires_payment": "Ej betald",
+        "processing": "Behandlas",
+        "authorized": "Reserverad på kortet",
+        "succeeded": "Betald",
+        "failed": "Misslyckades",
+        "refunded": "Återbetald"
+      },
+      "kind": {
+        "deposit": "Handpenning",
+        "balance": "Slutbetalning",
+        "full": "Full betalning",
+        "checkin_extras": "Tillval vid incheckning",
+        "security_deposit": "Depositionsavgift"
+      },
+      "method": {
+        "card": "Kort",
+        "transfer": "Överföring"
+      },
+      "totals": {
+        "collected": "Mottaget från {count, plural, one {# betalning} other {# betalningar}}",
+        "refunded": "{amount} återbetalt"
+      },
+      "startedAt": "Påbörjad, ej betald",
+      "returned": "{amount} återbetalt",
+      "disputed": "Bestridd",
+      "empty": "Inga betalningar med dessa filter.",
+      "error": "Det gick inte att ladda betalningarna."
     },
     "settle": {
       "title": "Registrera en mottagen överföring",
@@ -1051,7 +1131,8 @@
       "provider": "Leverantör",
       "total": "Totalt",
       "collected": "Inbetalt",
-      "timeline": "Tidslinje"
+      "timeline": "Tidslinje",
+      "commission": "Provision"
     },
     "invoice": {
       "title": "Fakturaförfrågan",
@@ -1128,6 +1209,10 @@
     "providerHold": {
       "title": "{provider} håller fortfarande den här reservationen",
       "body": "Vi avbokade på vår sida och leverantören släppte inte. Chartern står kvar hos operatören, så reglera den med dem innan någon återbetalning görs, annars går pengarna tillbaka på en vecka som vi fortfarande faktureras för."
+    },
+    "commissionSource": {
+      "provider": "Angiven av leverantören",
+      "agreement": "Från vårt avtal"
     }
   },
   "providers": {
@@ -1385,7 +1470,6 @@
   },
   "Settings": {
     "title": "Marknadsplatsinställningar",
-    "subtitle": "Hur stor del av en charter som tas in i förskott, och vilken leverantör vi säljer genom när erbjudandena är likvärdiga.",
     "source": {
       "legend": "Vilken betalningsplan vi använder",
       "vendor": {
@@ -1430,6 +1514,15 @@
       "legend": "Rangordning av erbjudanden",
       "toggle": "Rangordna på charterpriset",
       "hint": "Avstängt vinner den leverantör vars totalsumma inklusive allt är lägre, vilket är vad gästen faktiskt betalar. Påslaget avgör charterpriset och de obligatoriska tillvalen avgör bara oavgjort på det. Att rangordna på priset kan välja den charter som kostar gästen mer totalt."
+    },
+    "referral": {
+      "legend": "Värvningsprogram",
+      "hint": "Vad en värvning ger, i euro. Siffrorna på Värvningar-sidan kommer härifrån.",
+      "reward": "Värvaren tjänar",
+      "inviteeDiscount": "Rabatt till vännen",
+      "minBooking": "Minsta bokning",
+      "ttlMonths": "Tillgodohavande giltigt (månader)",
+      "appliesNext": "Gäller värvningar som krediteras från och med nu. Redan tilldelat tillgodohavande behåller sitt belopp och utgångsdatum."
     },
     "nameSearch": {
       "legend": "Fritextsökning",

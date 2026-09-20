@@ -355,6 +355,21 @@ async function askOffer(
      * quote's own figure is what keeps the comparison identical to the number we then show.
      */
     const baseMinor = baseLineOf(priced);
+    /*
+     * The vendor's own commission wins over the agreement staff typed in.
+     *
+     * Both providers state it per offer, per boat and per week, and the agreement cannot: it is
+     * one rate for a vendor, or for one of its operators, over a date window. So the typed rate
+     * is the fallback for an offer that carried none, and `commissionSource` records which
+     * answer the ranking actually used, because a tie broken on a stale agreement and one
+     * broken on the vendor's live figure are not the same decision to replay.
+     */
+    const quoted = priced.commission;
+    const quotedPct =
+      quoted?.pct ??
+      (quoted && priced.total.amountMinor > 0
+        ? Math.round((quoted.amount.amountMinor / priced.total.amountMinor) * 1e6) / 1e4
+        : undefined);
 
     return {
       provider,
@@ -370,7 +385,10 @@ async function askOffer(
            vendor that omits it would otherwise leave part of the bill in neither half. */
         obligatoryMinor: priced.total.amountMinor - baseMinor,
         currency: priced.currency,
-        commissionPct,
+        commissionPct: quotedPct ?? commissionPct,
+        commissionSource:
+          quotedPct !== undefined ? "provider" : commissionPct > 0 ? "agreement" : "none",
+        commissionMinor: quoted?.amount.amountMinor ?? null,
         reliability,
         latencyMs: Date.now() - started,
       },
@@ -579,6 +597,13 @@ export async function recordOfferAttempts(
     baseMinor: attempt.outcome === "priced" ? attempt.baseMinor : null,
     obligatoryExtrasMinor: attempt.outcome === "priced" ? attempt.obligatoryMinor : null,
     commissionPct: attempt.outcome === "priced" ? attempt.commissionPct.toFixed(4) : null,
+    commissionMinor: attempt.outcome === "priced" ? (attempt.commissionMinor ?? null) : null,
+    /* Null for "nothing said", which is neither of the two sources and is how most rows read
+       until both vendors have been swept. */
+    commissionSource:
+      attempt.outcome === "priced" && attempt.commissionSource !== "none"
+        ? attempt.commissionSource
+        : null,
     currency: attempt.outcome === "priced" ? attempt.currency : null,
     latencyMs: attempt.latencyMs,
     reason: attempt.outcome === "priced" ? null : attempt.reason,

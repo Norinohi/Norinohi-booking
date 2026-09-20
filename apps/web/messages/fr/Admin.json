@@ -11,13 +11,40 @@
     "created": "Taux ajouté",
     "updated": "Taux enregistré",
     "error": "Impossible de charger les taux de commission",
-    "empty": "Aucun taux pour l’instant. Tant qu’aucun n’est saisi, la commission n’intervient pas dans le choix de l’offre présentée au visiteur.",
+    "empty": "Aucun taux pour l'instant, et aucun n'est nécessaire tant que les fournisseurs indiquent le leur. Un taux ici ne couvrirait qu'une offre arrivant sans commission.",
     "emptyFiltered": "Aucun taux ne correspond à ces filtres.",
     "allOperators": "Tous les opérateurs",
     "openEnded": "Sans date de fin",
     "fromDate": "À partir du {date}",
     "untilDate": "Jusqu’au {date}",
-    "note": "Un taux ne sert qu’à départager deux offres déjà identiques en prix et en suppléments obligatoires. Il ne peut jamais conduire à montrer au visiteur un bateau plus cher. Rien dans la vente ne lit encore ces taux.",
+    "tabs": {
+      "reported": "Communiquées par les fournisseurs",
+      "agreements": "Nos accords"
+    },
+    "reported": {
+      "filters": {
+        "search": "Rechercher un loueur",
+        "provider": "Filtrer par fournisseur",
+        "anyProvider": "Tous les fournisseurs"
+      },
+      "table": {
+        "operator": "Loueur",
+        "provider": "Fournisseur",
+        "offers": "Offres",
+        "rate": "Taux communiqué",
+        "agreement": "Notre accord",
+        "lastSeen": "Vu le"
+      },
+      "coverage": "{rated} offres actives sur {total} portent un taux du fournisseur. Un taux n'arrive qu'avec une offre pour une période tarifée, le reste n'a donc pas encore été interrogé.",
+      "mostly": "le plus souvent {rate}",
+      "differs": "Diffère",
+      "noAgreement": "Aucun",
+      "noOperator": "Sans loueur",
+      "empty": "Aucun fournisseur n'a encore communiqué de commission. Les chiffres apparaîtront à mesure que le balayage des disponibilités tarife les semaines.",
+      "emptyFiltered": "Aucun loueur ne correspond à ces filtres.",
+      "error": "Impossible de charger les commissions communiquées"
+    },
+    "note": "Un taux saisi ici sert de valeur de repli pour une offre dont le fournisseur n'a envoyé aucune commission. Lorsque le fournisseur en indique une, c'est ce chiffre que la vente utilise, et l'onglet Communiquées l'affiche. Une commission ne peut que départager deux offres déjà égales en prix et en suppléments obligatoires ; elle ne peut jamais être la raison pour laquelle un bateau plus cher est montré.",
     "filters": {
       "provider": "Fournisseur",
       "anyProvider": "Tous les fournisseurs",
@@ -81,7 +108,8 @@
       "dates": "Dates",
       "total": "Total",
       "collected": "Encaissé",
-      "status": "Statut"
+      "status": "Statut",
+      "commission": "Commission"
     },
     "status": {
       "DRAFT": "Brouillon",
@@ -98,7 +126,8 @@
       "CANCELLED": "Annulée",
       "REFUND_PENDING": "Remboursement dû",
       "REFUNDED": "Remboursée"
-    }
+    },
+    "noCommission": "Non enregistrée"
   },
   "Users": {
     "title": "Utilisateurs",
@@ -646,7 +675,8 @@
       "place": "Base et emplacement",
       "price": "À partir de",
       "status": "Statut",
-      "actions": "Actions"
+      "actions": "Actions",
+      "commission": "Commission"
     },
     "status": {
       "draft": "Brouillon",
@@ -714,7 +744,8 @@
       "confirmSplitAction": "Retirer",
       "confirmSplitBusy": "Retrait…",
       "confirmSplitCancel": "Annuler"
-    }
+    },
+    "noCommission": "Non communiquée"
   },
   "Routes": {
     "title": "Itinéraires suggérés",
@@ -930,10 +961,11 @@
   },
   "Payments": {
     "title": "Paiements",
-    "subtitle": "Virements bancaires en attente de règlement et sommes à rembourser aux clients.",
+    "subtitle": "Tous les paiements encaissés, les virements en attente de rapprochement et l'argent à rembourser aux clients.",
     "tabs": {
       "invoices": "Demandes de facture",
-      "refunds": "Remboursements dus"
+      "refunds": "Remboursements dus",
+      "ledger": "Tous les paiements"
     },
     "invoices": {
       "filters": {
@@ -982,6 +1014,54 @@
       },
       "empty": "Aucun remboursement dû pour le moment.",
       "error": "Impossible de charger la file des remboursements."
+    },
+    "ledger": {
+      "filters": {
+        "search": "Rechercher par référence, nom ou e-mail",
+        "status": "Filtrer par statut",
+        "allStatuses": "Tous les statuts",
+        "kind": "Filtrer par type",
+        "allKinds": "Tous les types",
+        "method": "Filtrer par moyen",
+        "allMethods": "Tous les moyens"
+      },
+      "table": {
+        "date": "Date",
+        "booking": "Réservation",
+        "customer": "Client",
+        "kind": "Type",
+        "method": "Moyen",
+        "amount": "Montant",
+        "status": "Statut"
+      },
+      "status": {
+        "requires_payment": "Non payé",
+        "processing": "En cours",
+        "authorized": "Bloqué sur la carte",
+        "succeeded": "Payé",
+        "failed": "Échoué",
+        "refunded": "Remboursé"
+      },
+      "kind": {
+        "deposit": "Acompte",
+        "balance": "Solde",
+        "full": "Paiement intégral",
+        "checkin_extras": "Options à l'arrivée",
+        "security_deposit": "Caution"
+      },
+      "method": {
+        "card": "Carte",
+        "transfer": "Virement"
+      },
+      "totals": {
+        "collected": "Encaissé sur {count, plural, one {# paiement} other {# paiements}}",
+        "refunded": "{amount} remboursé"
+      },
+      "startedAt": "Commencé, non payé",
+      "returned": "{amount} remboursé",
+      "disputed": "Contesté",
+      "empty": "Aucun paiement pour ces filtres.",
+      "error": "Impossible de charger les paiements."
     },
     "settle": {
       "title": "Enregistrer un virement reçu",
@@ -1051,7 +1131,8 @@
       "provider": "Fournisseur",
       "total": "Total",
       "collected": "Encaissé",
-      "timeline": "Chronologie"
+      "timeline": "Chronologie",
+      "commission": "Commission"
     },
     "invoice": {
       "title": "Demande de facture",
@@ -1128,6 +1209,10 @@
     "providerHold": {
       "title": "{provider} détient toujours cette réservation",
       "body": "Nous avons annulé de notre côté, mais le fournisseur ne l’a pas libérée. La location reste active chez l’opérateur : réglez la situation avec lui avant tout remboursement, sinon l’argent sera rendu pour une semaine qui nous est toujours facturée."
+    },
+    "commissionSource": {
+      "provider": "Communiquée par le fournisseur",
+      "agreement": "Issue de notre accord"
     }
   },
   "providers": {
@@ -1385,7 +1470,6 @@
   },
   "Settings": {
     "title": "Paramètres de la marketplace",
-    "subtitle": "Quelle part d’une location est encaissée à l’avance, et par quel fournisseur nous vendons lorsque les offres sont équivalentes.",
     "source": {
       "legend": "Plan de paiement utilisé",
       "vendor": {
@@ -1430,6 +1514,15 @@
       "legend": "Classement des offres",
       "toggle": "Classer selon le tarif de location",
       "hint": "Désactivé, le fournisseur dont le total tout compris est le plus bas l’emporte, ce qui correspond à ce que paie réellement le client. Activé, le tarif de location décide et les suppléments obligatoires ne font que départager une égalité. Classer selon le tarif peut retenir la location qui coûte globalement plus cher au client."
+    },
+    "referral": {
+      "legend": "Programme de parrainage",
+      "hint": "Ce que rapporte un parrainage, en euros. Les chiffres de la page Parrainage viennent d'ici.",
+      "reward": "Le parrain gagne",
+      "inviteeDiscount": "Réduction pour l'ami",
+      "minBooking": "Réservation minimale",
+      "ttlMonths": "Crédit valable (mois)",
+      "appliesNext": "S'applique aux parrainages crédités à partir de maintenant. Un crédit déjà accordé garde son montant et son échéance."
     },
     "nameSearch": {
       "legend": "Recherche libre",

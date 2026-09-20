@@ -17,6 +17,8 @@ import {
   invoiceListSchema,
   invoiceSettleInputSchema,
   invoiceSettleSchema,
+  paymentAdminListInputSchema,
+  paymentAdminListSchema,
 } from "../../contracts/booking";
 import { adminProcedure } from "../../index";
 import { cancelBooking } from "../../services/booking";
@@ -31,6 +33,7 @@ import {
   listInvoiceRequests,
   settleInvoiceRequest,
 } from "../../services/invoice";
+import { listPaymentsForAdmin } from "../../services/payment-admin";
 import { providerForBooking } from "../../services/provider-routing";
 import { refundBooking } from "../../services/refund";
 import { withJsonBodyExample } from "../openapi-examples";
@@ -156,6 +159,24 @@ export const bookingAdminRouter = {
         actorUserId: context.session.user.id,
       }),
     ),
+};
+
+export const paymentAdminRouter = {
+  list: adminProcedure
+    .route({
+      method: "POST",
+      path: "/admin/payment/list",
+      operationId: "listPaymentsForAdmin",
+      summary: "List every payment taken, across every booking",
+      description:
+        "One row per payment rather than per booking, because a single charter can be a deposit paid by card and a balance paid by transfer months later. Filterable by payment status, installment kind and method, and searchable by booking reference, customer name or email. `totals` sums the whole filter rather than the page, per currency, and counts only succeeded payments as collected - an authorization is a hold on the customer's card, not money we have. The invoice and refund tabs beside this one are queues of work; this one is the record, and it is the only place a card payment that simply worked is visible.",
+      tags: ["Admin"],
+      successDescription: "A page of payments, with the totals behind the filter.",
+      spec: withJsonBodyExample({ status: ["succeeded"], page: 1, pageSize: 20 }),
+    })
+    .input(paymentAdminListInputSchema)
+    .output(paymentAdminListSchema)
+    .handler(({ context, input }) => listPaymentsForAdmin(context.db, input)),
 };
 
 export const invoiceAdminRouter = {

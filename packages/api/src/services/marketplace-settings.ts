@@ -24,6 +24,20 @@ const ENTITY_TYPE = "marketplace_settings";
 /** Restated here so an unwritten settings row prices exactly as a written default one does. */
 export const DEFAULT_RELIABILITY_WINDOW_DAYS = 30;
 
+/**
+ * The referral programme as it shipped, restated so an unwritten settings row runs it exactly
+ * as the constants in `loyalty.ts` did before it was configurable.
+ *
+ * Minor units, in `CREDIT_CURRENCY`: 10000 is the euro100 a referral pays, 100000 the euro1,000 a
+ * booking must reach before credit may be spent against it.
+ */
+export const DEFAULT_REFERRAL_SETTINGS = {
+  rewardMinor: 10_000,
+  inviteeDiscountMinor: 10_000,
+  creditMinBookingMinor: 100_000,
+  creditTtlMonths: 12,
+} as const;
+
 export { DEFAULT_TRANSACTING_PREFERENCE };
 
 export type ProviderCode = z.infer<typeof providerKeyOutputSchema>;
@@ -31,6 +45,17 @@ export type DisplayCurrency = z.infer<typeof displayCurrencyDefaultSchema>;
 
 /** Country code to currency. Open by nature: the keys are whatever countries someone names. */
 export type CurrencyOverrides = Record<string, DisplayCurrency>;
+
+export interface ReferralSettings {
+  /** What one completed referral pays the referrer, in minor units of `CREDIT_CURRENCY`. */
+  rewardMinor: number;
+  /** What the invited friend comes off their first booking. The same figure today, not the same rule. */
+  inviteeDiscountMinor: number;
+  /** The smallest booking total credit may be spent against. Below it the balance is untouched. */
+  creditMinBookingMinor: number;
+  /** How long a granted credit lives, in months from the day it was earned. */
+  creditTtlMonths: number;
+}
 
 /**
  * The stored default, narrowed to a currency this build can actually render.
@@ -91,6 +116,11 @@ export interface MarketplaceSettings {
   displayCurrencyByCountry: CurrencyOverrides;
   /** Whether the yacht search bar offers the free-text field. A testing aid, off by default. */
   nameSearchEnabled: boolean;
+  /**
+   * The referral programme's terms. Changing them moves the next referral and no existing
+   * balance: a granted credit carries its own amount and expiry in `credit_ledger`.
+   */
+  referral: ReferralSettings;
   updatedAt: string | null;
   updatedByUserId: string | null;
 }
@@ -121,6 +151,7 @@ export async function getMarketplaceSettings(db: DatabaseExecutor): Promise<Mark
       displayCurrencyDefault: "EUR",
       displayCurrencyByCountry: {},
       nameSearchEnabled: false,
+      referral: { ...DEFAULT_REFERRAL_SETTINGS },
       updatedAt: null,
       updatedByUserId: null,
     };
@@ -147,6 +178,12 @@ export async function getMarketplaceSettings(db: DatabaseExecutor): Promise<Mark
     displayCurrencyDefault: parseDisplayCurrency(row.displayCurrencyDefault),
     displayCurrencyByCountry: parseCurrencyOverrides(row.displayCurrencyByCountry),
     nameSearchEnabled: row.nameSearchEnabled,
+    referral: {
+      rewardMinor: row.referralRewardMinor,
+      inviteeDiscountMinor: row.inviteeDiscountMinor,
+      creditMinBookingMinor: row.creditMinBookingMinor,
+      creditTtlMonths: row.creditTtlMonths,
+    },
     updatedAt: row.updatedAt.toISOString(),
     updatedByUserId: row.updatedByUserId,
   };
@@ -163,6 +200,7 @@ export interface UpdateMarketplaceSettingsInput {
   displayCurrencyDefault: DisplayCurrency;
   displayCurrencyByCountry: CurrencyOverrides;
   nameSearchEnabled: boolean;
+  referral: ReferralSettings;
   actorUserId: string;
 }
 
@@ -196,6 +234,10 @@ export async function updateMarketplaceSettings(
     displayCurrencyDefault: input.displayCurrencyDefault,
     displayCurrencyByCountry: input.displayCurrencyByCountry,
     nameSearchEnabled: input.nameSearchEnabled,
+    referralRewardMinor: input.referral.rewardMinor,
+    inviteeDiscountMinor: input.referral.inviteeDiscountMinor,
+    creditMinBookingMinor: input.referral.creditMinBookingMinor,
+    creditTtlMonths: input.referral.creditTtlMonths,
     updatedByUserId: input.actorUserId,
   };
 

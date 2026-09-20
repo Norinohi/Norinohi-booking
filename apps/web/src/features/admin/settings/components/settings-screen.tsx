@@ -44,9 +44,46 @@ interface FormState {
   displayCurrencyEnabled: boolean;
   displayCurrencyDefault: DisplayCurrency;
   nameSearchEnabled: boolean;
+  /*
+   * The referral terms as an operator types them: whole euro, not minor units. Kept as strings
+   * for the same reason the percentage above is - a half-typed number is a valid thing to have
+   * on screen and not a valid number - and converted at the edges only.
+   */
+  referralReward: string;
+  referralInviteeDiscount: string;
+  referralMinBooking: string;
+  referralTtlMonths: string;
 }
 
 const PRESET_PERCENTS = ["30", "50", "100"] as const;
+
+/*
+ * Whether the payment-plan chooser is on the screen at all.
+ *
+ * Off: every quote follows the provider's own instalments, which is what `source: "vendor"` -- the
+ * stored default -- already does. The form still loads and saves whatever is in the row, so
+ * flipping this back to true returns the section with its value intact; nothing is migrated away.
+ */
+const SHOW_PAYMENT_SOURCE: boolean = false;
+
+/*
+ * Whether the offer-ranking switches are on the screen at all.
+ *
+ * Off: ranking stays on the all-in total with no reliability tie-break, and a card advertises the
+ * all-in total -- the stored defaults, and the standardised display we sell on. As with the
+ * payment section, the form still loads and saves the row untouched, so flipping this back to
+ * true restores the switches with whatever was last saved behind them.
+ */
+const SHOW_OFFER_RANKING: boolean = false;
+
+/*
+ * Whether the lead-time floor is on the screen at all.
+ *
+ * Off: the floor keeps running on the stored values -- on, 60 days -- so a charter starting inside
+ * the window is still payable in full whatever the provider's plan said. Only the ability to
+ * retune or lift it from the admin screen goes away.
+ */
+const SHOW_LEAD_TIME: boolean = false;
 
 /*
  * The vendors worth offering as a first choice. `mock` is a real provider code and stays in the
@@ -100,6 +137,10 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
       displayCurrencyEnabled: data.displayCurrencyEnabled,
       displayCurrencyDefault: data.displayCurrencyDefault,
       nameSearchEnabled: data.nameSearchEnabled,
+      referralReward: String(data.referral.rewardMinor / 100),
+      referralInviteeDiscount: String(data.referral.inviteeDiscountMinor / 100),
+      referralMinBooking: String(data.referral.creditMinBookingMinor / 100),
+      referralTtlMonths: String(data.referral.creditTtlMonths),
     });
   }, [data?.updatedAt, data]);
 
@@ -112,6 +153,21 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
      past a year is a claim about connectors that have since been rewritten. */
   const reliabilityDaysValid =
     Number.isInteger(reliabilityDays) && reliabilityDays >= 1 && reliabilityDays <= 365;
+  /*
+   * Whole euro in, minor units out. Bounded as the contract is, so a slipped decimal is
+   * refused at the form rather than granted: a reward is money we pay on every referral.
+   */
+  const euros = (typed: string | undefined) => Number(typed);
+  const reward = euros(form?.referralReward);
+  const inviteeDiscount = euros(form?.referralInviteeDiscount);
+  const minBooking = euros(form?.referralMinBooking);
+  const ttlMonths = Number(form?.referralTtlMonths);
+  const amountValid = (value: number, max: number) =>
+    Number.isInteger(value) && value >= 0 && value <= max;
+  const rewardValid = amountValid(reward, 10_000);
+  const inviteeDiscountValid = amountValid(inviteeDiscount, 10_000);
+  const minBookingValid = amountValid(minBooking, 100_000);
+  const ttlMonthsValid = Number.isInteger(ttlMonths) && ttlMonths >= 1 && ttlMonths <= 120;
   const percentValid = Number.isFinite(percent) && percent >= 1 && percent <= 100;
   const daysValid = Number.isInteger(days) && days >= 0 && days <= 365;
   /* A percentage only has to be valid when it is the one in force; an unused field left blank
@@ -120,6 +176,10 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
     form !== null &&
     daysValid &&
     reliabilityDaysValid &&
+    rewardValid &&
+    inviteeDiscountValid &&
+    minBookingValid &&
+    ttlMonthsValid &&
     (form.source === "vendor" || form.mode === "full" || percentValid) &&
     !update.isPending;
 
@@ -145,6 +205,12 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
            payload would clear it. Sent back exactly as it was read. */
         displayCurrencyByCountry: data?.displayCurrencyByCountry ?? {},
         nameSearchEnabled: form.nameSearchEnabled,
+        referral: {
+          rewardMinor: reward * 100,
+          inviteeDiscountMinor: inviteeDiscount * 100,
+          creditMinBookingMinor: minBooking * 100,
+          creditTtlMonths: ttlMonths,
+        },
       },
       {
         onSuccess: () => toast.success(t("saved")),
@@ -181,7 +247,6 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
               <h1 className="text-lg leading-[1.3] font-bold text-foreground md:text-xl">
                 {t("title")}
               </h1>
-              <p className="text-sm leading-[1.3] font-medium text-natural-500">{t("subtitle")}</p>
             </div>
 
             {isPending || !form ? (
@@ -191,147 +256,151 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
               </div>
             ) : (
               <div className="flex flex-col gap-6 p-4 md:p-5">
-                <fieldset className="flex flex-col gap-3">
-                  <legend className="mb-3 text-sm leading-4.5 font-bold text-foreground">
-                    {t("source.legend")}
-                  </legend>
+                {SHOW_PAYMENT_SOURCE ? (
+                  <fieldset className="flex flex-col gap-3">
+                    <legend className="mb-3 text-sm leading-4.5 font-bold text-foreground">
+                      {t("source.legend")}
+                    </legend>
 
-                  {/*
-                    Base UI's RadioGroup is a composite and cannot contain another one, so the
-                    mode radios sit outside this group rather than inside the card they belong
-                    to. Nesting them rendered fine and silently swallowed every click on the
-                    outer group.
-                  */}
-                  <RadioGroup
-                    value={form.source}
-                    onValueChange={(value) => {
-                      if (value === "vendor" || value === "marketplace") set({ source: value });
-                    }}
-                    className="gap-3"
-                  >
-                    <FlowOption
-                      value="vendor"
-                      selected={form.source === "vendor"}
-                      title={t("source.vendor.title")}
-                      hint={t("source.vendor.hint")}
-                    />
-                    <FlowOption
-                      value="marketplace"
-                      selected={marketplaceSelected}
-                      title={t("source.marketplace.title")}
-                      hint={t("source.marketplace.hint")}
-                    />
-                  </RadioGroup>
-
-                  {/* Inert until our own policy is chosen: these numbers do nothing at all
-                      while the provider's schedule is in force. */}
-                  <div
-                    className={cn(
-                      "flex flex-col gap-3 rounded-xl border border-natural-100 p-4",
-                      marketplaceSelected ? "" : "pointer-events-none opacity-50",
-                    )}
-                    aria-hidden={!marketplaceSelected}
-                  >
+                    {/*
+                      Base UI's RadioGroup is a composite and cannot contain another one, so the
+                      mode radios sit outside this group rather than inside the card they belong
+                      to. Nesting them rendered fine and silently swallowed every click on the
+                      outer group.
+                    */}
                     <RadioGroup
-                      value={form.mode}
+                      value={form.source}
                       onValueChange={(value) => {
-                        if (value === "deposit" || value === "full") set({ mode: value });
+                        if (value === "vendor" || value === "marketplace") set({ source: value });
                       }}
-                      className="flex-row gap-4"
+                      className="gap-3"
                     >
-                      <label className="flex cursor-pointer items-center gap-2 text-sm leading-4.5 font-medium text-foreground">
-                        <Radio value="deposit" disabled={!marketplaceSelected} />
-                        {t("ourPolicy.deposit")}
-                      </label>
-                      <label className="flex cursor-pointer items-center gap-2 text-sm leading-4.5 font-medium text-foreground">
-                        <Radio value="full" disabled={!marketplaceSelected} />
-                        {t("ourPolicy.full")}
-                      </label>
+                      <FlowOption
+                        value="vendor"
+                        selected={form.source === "vendor"}
+                        title={t("source.vendor.title")}
+                        hint={t("source.vendor.hint")}
+                      />
+                      <FlowOption
+                        value="marketplace"
+                        selected={marketplaceSelected}
+                        title={t("source.marketplace.title")}
+                        hint={t("source.marketplace.hint")}
+                      />
                     </RadioGroup>
 
-                    {form.mode === "deposit" ? (
-                      <div className="flex flex-col gap-2">
-                        <Label htmlFor="deposit-percent">{t("ourPolicy.percentLabel")}</Label>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Input
-                            id="deposit-percent"
-                            type="number"
-                            inputMode="numeric"
-                            min={1}
-                            max={100}
-                            value={form.depositPercent}
-                            disabled={!marketplaceSelected}
-                            onChange={(event) => set({ depositPercent: event.target.value })}
-                            className="w-28"
-                            aria-invalid={!percentValid}
-                          />
-                          <span className="text-sm leading-4.5 font-medium text-natural-500">
-                            %
-                          </span>
-                          {PRESET_PERCENTS.map((preset) => (
-                            <Button
-                              key={preset}
-                              type="button"
-                              variant="outline"
-                              size="sm"
+                    {/* Inert until our own policy is chosen: these numbers do nothing at all
+                        while the provider's schedule is in force. */}
+                    <div
+                      className={cn(
+                        "flex flex-col gap-3 rounded-xl border border-natural-100 p-4",
+                        marketplaceSelected ? "" : "pointer-events-none opacity-50",
+                      )}
+                      aria-hidden={!marketplaceSelected}
+                    >
+                      <RadioGroup
+                        value={form.mode}
+                        onValueChange={(value) => {
+                          if (value === "deposit" || value === "full") set({ mode: value });
+                        }}
+                        className="flex-row gap-4"
+                      >
+                        <label className="flex cursor-pointer items-center gap-2 text-sm leading-4.5 font-medium text-foreground">
+                          <Radio value="deposit" disabled={!marketplaceSelected} />
+                          {t("ourPolicy.deposit")}
+                        </label>
+                        <label className="flex cursor-pointer items-center gap-2 text-sm leading-4.5 font-medium text-foreground">
+                          <Radio value="full" disabled={!marketplaceSelected} />
+                          {t("ourPolicy.full")}
+                        </label>
+                      </RadioGroup>
+
+                      {form.mode === "deposit" ? (
+                        <div className="flex flex-col gap-2">
+                          <Label htmlFor="deposit-percent">{t("ourPolicy.percentLabel")}</Label>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Input
+                              id="deposit-percent"
+                              type="number"
+                              inputMode="numeric"
+                              min={1}
+                              max={100}
+                              value={form.depositPercent}
                               disabled={!marketplaceSelected}
-                              onClick={() => set({ depositPercent: preset })}
-                            >
-                              {preset}%
-                            </Button>
-                          ))}
+                              onChange={(event) => set({ depositPercent: event.target.value })}
+                              className="w-28"
+                              aria-invalid={!percentValid}
+                            />
+                            <span className="text-sm leading-4.5 font-medium text-natural-500">
+                              %
+                            </span>
+                            {PRESET_PERCENTS.map((preset) => (
+                              <Button
+                                key={preset}
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={!marketplaceSelected}
+                                onClick={() => set({ depositPercent: preset })}
+                              >
+                                {preset}%
+                              </Button>
+                            ))}
+                          </div>
+                          {marketplaceSelected && !percentValid ? (
+                            <p className="text-xs leading-4 font-medium text-error-600">
+                              {t("ourPolicy.percentError")}
+                            </p>
+                          ) : null}
                         </div>
-                        {marketplaceSelected && !percentValid ? (
-                          <p className="text-xs leading-4 font-medium text-error-600">
-                            {t("ourPolicy.percentError")}
-                          </p>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </div>
-                </fieldset>
+                      ) : null}
+                    </div>
+                  </fieldset>
+                ) : null}
 
-                <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">
-                  <legend className="px-1 text-sm leading-4.5 font-bold text-foreground">
-                    {t("leadTime.legend")}
-                  </legend>
+                {SHOW_LEAD_TIME ? (
+                  <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">
+                    <legend className="px-1 text-sm leading-4.5 font-bold text-foreground">
+                      {t("leadTime.legend")}
+                    </legend>
 
-                  <label className="flex items-start justify-between gap-4">
-                    <span className="flex flex-col gap-1">
-                      <span className="text-sm leading-4.5 font-medium text-foreground">
-                        {t("leadTime.toggle")}
+                    <label className="flex items-start justify-between gap-4">
+                      <span className="flex flex-col gap-1">
+                        <span className="text-sm leading-4.5 font-medium text-foreground">
+                          {t("leadTime.toggle")}
+                        </span>
+                        <span className="text-xs leading-4 font-medium text-natural-500">
+                          {t("leadTime.hint")}
+                        </span>
                       </span>
-                      <span className="text-xs leading-4 font-medium text-natural-500">
-                        {t("leadTime.hint")}
-                      </span>
-                    </span>
-                    <Switch
-                      checked={form.enforceLeadTime}
-                      onCheckedChange={(checked) => set({ enforceLeadTime: checked })}
-                    />
-                  </label>
+                      <Switch
+                        checked={form.enforceLeadTime}
+                        onCheckedChange={(checked) => set({ enforceLeadTime: checked })}
+                      />
+                    </label>
 
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="lead-time-days">{t("leadTime.daysLabel")}</Label>
-                    <Input
-                      id="lead-time-days"
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      max={365}
-                      value={form.leadTimeDays}
-                      disabled={!form.enforceLeadTime}
-                      onChange={(event) => set({ leadTimeDays: event.target.value })}
-                      className="w-28"
-                      aria-invalid={!daysValid}
-                    />
-                    {daysValid ? null : (
-                      <p className="text-xs leading-4 font-medium text-error-600">
-                        {t("leadTime.daysError")}
-                      </p>
-                    )}
-                  </div>
-                </fieldset>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="lead-time-days">{t("leadTime.daysLabel")}</Label>
+                      <Input
+                        id="lead-time-days"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={365}
+                        value={form.leadTimeDays}
+                        disabled={!form.enforceLeadTime}
+                        onChange={(event) => set({ leadTimeDays: event.target.value })}
+                        className="w-28"
+                        aria-invalid={!daysValid}
+                      />
+                      {daysValid ? null : (
+                        <p className="text-xs leading-4 font-medium text-error-600">
+                          {t("leadTime.daysError")}
+                        </p>
+                      )}
+                    </div>
+                  </fieldset>
+                ) : null}
 
                 <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">
                   <legend className="px-1 text-sm leading-4.5 font-bold text-foreground">
@@ -367,72 +436,74 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
                   </p>
                 </fieldset>
 
-                <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">
-                  <legend className="px-1 text-sm leading-4.5 font-bold text-foreground">
-                    {t("ranking.legend")}
-                  </legend>
+                {SHOW_OFFER_RANKING ? (
+                  <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">
+                    <legend className="px-1 text-sm leading-4.5 font-bold text-foreground">
+                      {t("ranking.legend")}
+                    </legend>
 
-                  <label className="flex items-start justify-between gap-4">
-                    <span className="flex flex-col gap-1">
-                      <span className="text-sm leading-4.5 font-medium text-foreground">
-                        {t("ranking.toggle")}
+                    <label className="flex items-start justify-between gap-4">
+                      <span className="flex flex-col gap-1">
+                        <span className="text-sm leading-4.5 font-medium text-foreground">
+                          {t("ranking.toggle")}
+                        </span>
+                        <span className="text-xs leading-4 font-medium text-natural-500">
+                          {t("ranking.hint")}
+                        </span>
                       </span>
-                      <span className="text-xs leading-4 font-medium text-natural-500">
-                        {t("ranking.hint")}
-                      </span>
-                    </span>
-                    <Switch
-                      checked={form.offerRankingUsesBasePrice}
-                      onCheckedChange={(checked) => set({ offerRankingUsesBasePrice: checked })}
-                    />
-                  </label>
+                      <Switch
+                        checked={form.offerRankingUsesBasePrice}
+                        onCheckedChange={(checked) => set({ offerRankingUsesBasePrice: checked })}
+                      />
+                    </label>
 
-                  <label className="flex items-start justify-between gap-4">
-                    <span className="flex flex-col gap-1">
-                      <span className="text-sm leading-4.5 font-medium text-foreground">
-                        {t("ranking.catalogueToggle")}
+                    <label className="flex items-start justify-between gap-4">
+                      <span className="flex flex-col gap-1">
+                        <span className="text-sm leading-4.5 font-medium text-foreground">
+                          {t("ranking.catalogueToggle")}
+                        </span>
+                        <span className="text-xs leading-4 font-medium text-natural-500">
+                          {t("ranking.catalogueHint")}
+                        </span>
                       </span>
-                      <span className="text-xs leading-4 font-medium text-natural-500">
-                        {t("ranking.catalogueHint")}
-                      </span>
-                    </span>
-                    <Switch
-                      checked={form.catalogueShowsBasePrice}
-                      onCheckedChange={(checked) => set({ catalogueShowsBasePrice: checked })}
-                    />
-                  </label>
+                      <Switch
+                        checked={form.catalogueShowsBasePrice}
+                        onCheckedChange={(checked) => set({ catalogueShowsBasePrice: checked })}
+                      />
+                    </label>
 
-                  <label className="flex items-start justify-between gap-4">
-                    <span className="flex flex-col gap-1">
-                      <span className="text-sm leading-4.5 font-medium text-foreground">
-                        {t("ranking.reliabilityToggle")}
+                    <label className="flex items-start justify-between gap-4">
+                      <span className="flex flex-col gap-1">
+                        <span className="text-sm leading-4.5 font-medium text-foreground">
+                          {t("ranking.reliabilityToggle")}
+                        </span>
+                        <span className="text-xs leading-4 font-medium text-natural-500">
+                          {t("ranking.reliabilityHint")}
+                        </span>
                       </span>
-                      <span className="text-xs leading-4 font-medium text-natural-500">
-                        {t("ranking.reliabilityHint")}
-                      </span>
-                    </span>
-                    <Switch
-                      checked={form.offerRankingUsesReliability}
-                      onCheckedChange={(checked) => set({ offerRankingUsesReliability: checked })}
-                    />
-                  </label>
+                      <Switch
+                        checked={form.offerRankingUsesReliability}
+                        onCheckedChange={(checked) => set({ offerRankingUsesReliability: checked })}
+                      />
+                    </label>
 
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="reliability-window-days">{t("ranking.windowDays")}</Label>
-                    <Input
-                      id="reliability-window-days"
-                      type="number"
-                      inputMode="numeric"
-                      min={1}
-                      max={365}
-                      value={form.reliabilityWindowDays}
-                      disabled={!form.offerRankingUsesReliability}
-                      onChange={(event) => set({ reliabilityWindowDays: event.target.value })}
-                      className="w-28"
-                      aria-invalid={!reliabilityDaysValid}
-                    />
-                  </div>
-                </fieldset>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="reliability-window-days">{t("ranking.windowDays")}</Label>
+                      <Input
+                        id="reliability-window-days"
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={365}
+                        value={form.reliabilityWindowDays}
+                        disabled={!form.offerRankingUsesReliability}
+                        onChange={(event) => set({ reliabilityWindowDays: event.target.value })}
+                        className="w-28"
+                        aria-invalid={!reliabilityDaysValid}
+                      />
+                    </div>
+                  </fieldset>
+                ) : null}
 
                 <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">
                   <legend className="px-1 text-sm leading-4.5 font-bold text-foreground">
@@ -476,6 +547,80 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
                       ))}
                     </RadioGroup>
                   </div>
+                </fieldset>
+
+                <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">
+                  <legend className="px-1 text-sm leading-4.5 font-bold text-foreground">
+                    {t("referral.legend")}
+                  </legend>
+
+                  <p className="text-xs leading-4 font-medium text-natural-500">
+                    {t("referral.hint")}
+                  </p>
+
+                  <div className="flex flex-wrap gap-4">
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="referral-reward">{t("referral.reward")}</Label>
+                      <Input
+                        id="referral-reward"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={10000}
+                        value={form.referralReward}
+                        onChange={(event) => set({ referralReward: event.target.value })}
+                        className="w-28"
+                        aria-invalid={!rewardValid}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="referral-invitee">{t("referral.inviteeDiscount")}</Label>
+                      <Input
+                        id="referral-invitee"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={10000}
+                        value={form.referralInviteeDiscount}
+                        onChange={(event) => set({ referralInviteeDiscount: event.target.value })}
+                        className="w-28"
+                        aria-invalid={!inviteeDiscountValid}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="referral-min-booking">{t("referral.minBooking")}</Label>
+                      <Input
+                        id="referral-min-booking"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={100000}
+                        value={form.referralMinBooking}
+                        onChange={(event) => set({ referralMinBooking: event.target.value })}
+                        className="w-32"
+                        aria-invalid={!minBookingValid}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="referral-ttl">{t("referral.ttlMonths")}</Label>
+                      <Input
+                        id="referral-ttl"
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={120}
+                        value={form.referralTtlMonths}
+                        onChange={(event) => set({ referralTtlMonths: event.target.value })}
+                        className="w-28"
+                        aria-invalid={!ttlMonthsValid}
+                      />
+                    </div>
+                  </div>
+
+                  {/* The one thing about this section that is not obvious from the fields. */}
+                  <p className="text-xs leading-4 font-medium text-natural-500">
+                    {t("referral.appliesNext")}
+                  </p>
                 </fieldset>
 
                 <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">

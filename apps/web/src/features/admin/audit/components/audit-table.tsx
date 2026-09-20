@@ -321,7 +321,10 @@ export default function AuditTable() {
                           {entity ? t(`entity.${entity}`) : row.entityType}
                         </TableCell>
                         <TableCell className="font-mono text-xs">
-                          <span className="block max-w-48 truncate" title={row.entityId ?? undefined}>
+                          <span
+                            className="block max-w-48 truncate"
+                            title={row.entityId ?? undefined}
+                          >
                             {row.entityId}
                           </span>
                         </TableCell>

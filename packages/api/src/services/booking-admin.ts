@@ -1,7 +1,7 @@
 import { booking, payment, paymentSchedule } from "@yacht-charter/db/schema/booking";
 import { invoiceRequest } from "@yacht-charter/db/schema/checkout";
 import { user } from "@yacht-charter/db/schema/auth";
-import { quote } from "@yacht-charter/db/schema/quote";
+import { quote, quoteOfferAttempt } from "@yacht-charter/db/schema/quote";
 import { listing } from "@yacht-charter/db/schema/listing";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { baseLabel, facetTranslator, localizeQuoteLines } from "@yacht-charter/db/search";
@@ -68,12 +68,39 @@ export async function listBookingsForAdmin(db: Database, input: ListInput): Prom
     where ${payment.bookingId} = ${booking.id} and ${payment.status} = 'succeeded'
   ), 0)`;
 
+  /*
+   * The commission recorded on the attempt that won each quote. Three correlated reads rather
+   * than a join, for the reason `paidMinor` is one: a quote has an attempt per vendor asked,
+   * and joining would multiply the booking row and break the page size and the count alike.
+   */
+  const wonAttempt = (column: string) => sql`(
+    select a.${sql.raw(column)}
+    from ${quoteOfferAttempt} a
+    where a.quote_id = ${booking.quoteId} and a.outcome = 'won'
+    order by a.created_at desc
+    limit 1
+  )`;
+  const commissionPct = wonAttempt("commission_pct").mapWith(quoteOfferAttempt.commissionPct);
+  const commissionMinor = wonAttempt("commission_minor").mapWith(quoteOfferAttempt.commissionMinor);
+  const commissionSource = wonAttempt("commission_source").mapWith(
+    quoteOfferAttempt.commissionSource,
+  );
+
   const { rows, pagination } = await paginatedQuery({
     page: input.page,
     pageSize: input.pageSize,
     rows: (limit, offset) =>
       db
-        .select({ booking, quote, customer: user, paidMinor, listingSlug: listing.slug })
+        .select({
+          booking,
+          quote,
+          customer: user,
+          paidMinor,
+          listingSlug: listing.slug,
+          commissionPct,
+          commissionMinor,
+          commissionSource,
+        })
         .from(booking)
         .innerJoin(quote, eq(quote.id, booking.quoteId))
         .leftJoin(listing, eq(listing.id, quote.listingId))
@@ -101,6 +128,9 @@ function present(row: {
   customer: typeof user.$inferSelect;
   paidMinor: number;
   listingSlug: string | null;
+  commissionPct: string | null;
+  commissionMinor: number | null;
+  commissionSource: "provider" | "agreement" | null;
 }): Row {
   return {
     id: row.booking.id,
@@ -116,6 +146,12 @@ function present(row: {
     // The driver hands a numeric sum back as a string, and Number() on it is exact:
     // these are integer minor units, never a decimal.
     paid: { amountMinor: Number(row.paidMinor), currency: row.quote.currency },
+    commission: commissionOf({
+      commissionPct: row.commissionPct,
+      commissionMinor: row.commissionMinor,
+      commissionSource: row.commissionSource,
+      currency: row.quote.currency,
+    }),
     cancelledAt: row.booking.cancelledAt?.toISOString() ?? null,
     cancelReason: row.booking.cancelReason,
     excludedAt: row.booking.excludedAt?.toISOString() ?? null,
@@ -139,32 +175,51 @@ export async function getBookingForAdmin(
 ): Promise<Detail> {
   const row = await readAnyBooking(db, id);
 
-  const [customer, schedules, payments, invoices, translate, lines, listed] = await Promise.all([
-    db.select().from(user).where(eq(user.id, row.booking.userId)).limit(1),
-    db
-      .select()
-      .from(paymentSchedule)
-      .where(eq(paymentSchedule.bookingId, id))
-      .orderBy(asc(paymentSchedule.dueAt), asc(paymentSchedule.id)),
-    db
-      .select()
-      .from(payment)
-      .where(eq(payment.bookingId, id))
-      .orderBy(asc(payment.createdAt), asc(payment.id)),
-    db
-      .select()
-      .from(invoiceRequest)
-      .where(eq(invoiceRequest.bookingId, id))
-      .orderBy(desc(invoiceRequest.createdAt))
-      .limit(1),
-    facetTranslator(db, locale),
-    localizeQuoteLines(db, row.quote.listingId, row.quote.lines, locale),
-    db
-      .select({ slug: listing.slug })
-      .from(listing)
-      .where(eq(listing.id, row.quote.listingId))
-      .limit(1),
-  ]);
+  const [customer, schedules, payments, invoices, translate, lines, listed, won] =
+    await Promise.all([
+      db.select().from(user).where(eq(user.id, row.booking.userId)).limit(1),
+      db
+        .select()
+        .from(paymentSchedule)
+        .where(eq(paymentSchedule.bookingId, id))
+        .orderBy(asc(paymentSchedule.dueAt), asc(paymentSchedule.id)),
+      db
+        .select()
+        .from(payment)
+        .where(eq(payment.bookingId, id))
+        .orderBy(asc(payment.createdAt), asc(payment.id)),
+      db
+        .select()
+        .from(invoiceRequest)
+        .where(eq(invoiceRequest.bookingId, id))
+        .orderBy(desc(invoiceRequest.createdAt))
+        .limit(1),
+      facetTranslator(db, locale),
+      localizeQuoteLines(db, row.quote.listingId, row.quote.lines, locale),
+      db
+        .select({ slug: listing.slug })
+        .from(listing)
+        .where(eq(listing.id, row.quote.listingId))
+        .limit(1),
+      /*
+       * The attempt that won this quote, which is where the commission was recorded at the
+       * moment of sale. Read from there rather than from the offer or the agreement: both
+       * move afterwards, and neither would then describe what this booking was sold at.
+       */
+      db
+        .select({
+          commissionPct: quoteOfferAttempt.commissionPct,
+          commissionMinor: quoteOfferAttempt.commissionMinor,
+          commissionSource: quoteOfferAttempt.commissionSource,
+          currency: quoteOfferAttempt.currency,
+        })
+        .from(quoteOfferAttempt)
+        .where(
+          and(eq(quoteOfferAttempt.quoteId, row.quote.id), eq(quoteOfferAttempt.outcome, "won")),
+        )
+        .orderBy(desc(quoteOfferAttempt.createdAt))
+        .limit(1),
+    ]);
 
   const owner = customer[0];
   if (!owner) throw new NotFoundError({ message: "Unknown booking" });
@@ -183,6 +238,11 @@ export async function getBookingForAdmin(
       customer: owner,
       paidMinor,
       listingSlug: listed[0]?.slug ?? null,
+      /* The same winning attempt the list reads, fetched here as its own query rather than
+         as three correlated columns: this path is already loading one booking's worth. */
+      commissionPct: won[0]?.commissionPct ?? null,
+      commissionMinor: won[0]?.commissionMinor ?? null,
+      commissionSource: won[0]?.commissionSource ?? null,
     }),
     provider: row.booking.provider,
     providerReservationId: row.booking.providerReservationId,
@@ -391,4 +451,34 @@ export async function excludeBookingsByCompany(
 
     return result;
   });
+}
+
+/**
+ * The commission on the winning attempt, or nothing.
+ *
+ * `source` is what makes the figure readable: without it a rate of 15 could be the vendor's
+ * own statement about this charter or a rate somebody typed into the admin form two years ago,
+ * and the two warrant different confidence. An attempt recorded before either was captured has
+ * no source and is reported as no commission rather than as zero.
+ */
+function commissionOf(
+  attempt:
+    | {
+        commissionPct: string | null;
+        commissionMinor: number | null;
+        commissionSource: "provider" | "agreement" | null;
+        currency: string | null;
+      }
+    | undefined,
+): Row["commission"] {
+  if (!attempt?.commissionPct || attempt.commissionSource === null) return null;
+
+  return {
+    pct: Number(attempt.commissionPct),
+    amount:
+      attempt.commissionMinor !== null && attempt.currency !== null
+        ? { amountMinor: attempt.commissionMinor, currency: attempt.currency }
+        : null,
+    source: attempt.commissionSource,
+  };
 }

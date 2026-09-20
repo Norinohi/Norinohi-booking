@@ -11,13 +11,40 @@
     "created": "Rate added",
     "updated": "Rate saved",
     "error": "Couldn't load the commission rates",
-    "empty": "No rates yet. Until one is entered, commission plays no part in choosing which offer a visitor sees.",
+    "empty": "No rates yet, and none are needed while the providers state their own. A rate here would only cover an offer that arrives without one.",
     "emptyFiltered": "No rates match these filters.",
     "allOperators": "All operators",
     "openEnded": "No end date",
     "fromDate": "From {date}",
     "untilDate": "Until {date}",
-    "note": "A rate only breaks a tie between two offers already equal on price and on obligatory extras. It can never be the reason a visitor is shown a dearer boat. Nothing in the sale reads these rates yet.",
+    "tabs": {
+      "reported": "Reported by providers",
+      "agreements": "Our agreements"
+    },
+    "reported": {
+      "filters": {
+        "search": "Search by operator",
+        "provider": "Filter by provider",
+        "anyProvider": "All providers"
+      },
+      "table": {
+        "operator": "Operator",
+        "provider": "Provider",
+        "offers": "Offers",
+        "rate": "Reported rate",
+        "agreement": "Our agreement",
+        "lastSeen": "Last seen"
+      },
+      "coverage": "{rated} of {total} active offers carry a rate from the provider. A rate arrives only on an offer for a priced period, so the rest have not been asked yet.",
+      "mostly": "mostly {rate}",
+      "differs": "Differs",
+      "noAgreement": "None",
+      "noOperator": "No operator",
+      "empty": "No provider has reported a commission yet. The figures appear as the availability sweep prices weeks.",
+      "emptyFiltered": "No operators match these filters.",
+      "error": "Couldn't load the reported commissions"
+    },
+    "note": "A rate here is the fallback for an offer whose vendor sent no commission of its own. Where the vendor does state one, that figure is what the sale uses, and the Reported tab shows it. A commission may only break a tie between offers already equal on price and on obligatory extras; it can never be the reason a visitor is shown a dearer boat.",
     "filters": {
       "provider": "Provider",
       "anyProvider": "All providers",
@@ -81,7 +108,8 @@
       "dates": "Dates",
       "total": "Total",
       "collected": "Collected",
-      "status": "Status"
+      "status": "Status",
+      "commission": "Commission"
     },
     "status": {
       "DRAFT": "Draft",
@@ -98,7 +126,8 @@
       "CANCELLED": "Cancelled",
       "REFUND_PENDING": "Refund due",
       "REFUNDED": "Refunded"
-    }
+    },
+    "noCommission": "Not recorded"
   },
   "Users": {
     "title": "Users",
@@ -646,7 +675,8 @@
       "place": "Base & location",
       "price": "From",
       "status": "Status",
-      "actions": "Actions"
+      "actions": "Actions",
+      "commission": "Commission"
     },
     "status": {
       "draft": "Draft",
@@ -714,7 +744,8 @@
       "confirmSplitAction": "Take it out",
       "confirmSplitBusy": "Taking out…",
       "confirmSplitCancel": "Cancel"
-    }
+    },
+    "noCommission": "Not reported"
   },
   "Routes": {
     "title": "Suggested routes",
@@ -930,10 +961,11 @@
   },
   "Payments": {
     "title": "Payments",
-    "subtitle": "Bank transfers waiting to be settled, and money owed back to customers.",
+    "subtitle": "Every payment taken, the bank transfers waiting to be settled, and money owed back to customers.",
     "tabs": {
       "invoices": "Invoice requests",
-      "refunds": "Refunds due"
+      "refunds": "Refunds due",
+      "ledger": "All payments"
     },
     "invoices": {
       "filters": {
@@ -982,6 +1014,54 @@
       },
       "empty": "Nothing is owed back right now.",
       "error": "Could not load the refund queue."
+    },
+    "ledger": {
+      "filters": {
+        "search": "Search by reference, name or email",
+        "status": "Filter by status",
+        "allStatuses": "All statuses",
+        "kind": "Filter by type",
+        "allKinds": "All types",
+        "method": "Filter by method",
+        "allMethods": "All methods"
+      },
+      "table": {
+        "date": "Date",
+        "booking": "Booking",
+        "customer": "Customer",
+        "kind": "Type",
+        "method": "Method",
+        "amount": "Amount",
+        "status": "Status"
+      },
+      "status": {
+        "requires_payment": "Not paid",
+        "processing": "Processing",
+        "authorized": "Held on card",
+        "succeeded": "Paid",
+        "failed": "Failed",
+        "refunded": "Refunded"
+      },
+      "kind": {
+        "deposit": "Deposit",
+        "balance": "Balance",
+        "full": "Full payment",
+        "checkin_extras": "Extras at check-in",
+        "security_deposit": "Security deposit"
+      },
+      "method": {
+        "card": "Card",
+        "transfer": "Transfer"
+      },
+      "totals": {
+        "collected": "Collected from {count, plural, one {# payment} other {# payments}}",
+        "refunded": "{amount} returned"
+      },
+      "startedAt": "Started, not paid",
+      "returned": "{amount} returned",
+      "disputed": "Disputed",
+      "empty": "No payments match these filters.",
+      "error": "Could not load the payments."
     },
     "settle": {
       "title": "Record a received transfer",
@@ -1051,7 +1131,8 @@
       "provider": "Provider",
       "total": "Total",
       "collected": "Collected",
-      "timeline": "Timeline"
+      "timeline": "Timeline",
+      "commission": "Commission"
     },
     "invoice": {
       "title": "Invoice request",
@@ -1128,6 +1209,10 @@
     "providerHold": {
       "title": "{provider} still holds this reservation",
       "body": "We cancelled our side and the provider did not let go. The charter still stands with the operator, so settle it with them before any refund is paid, or the money goes back on a week we are still billed for."
+    },
+    "commissionSource": {
+      "provider": "Reported by the provider",
+      "agreement": "From our agreement"
     }
   },
   "providers": {
@@ -1385,7 +1470,6 @@
   },
   "Settings": {
     "title": "Marketplace settings",
-    "subtitle": "How much of a charter is collected up front, and which provider we sell through when the offers are equal.",
     "source": {
       "legend": "Which payment plan we use",
       "vendor": {
@@ -1430,6 +1514,15 @@
       "legend": "Offer ranking",
       "toggle": "Rank on the charter rate",
       "hint": "Off, the vendor whose all-in total is lower wins, which is what the guest actually pays. On, the charter rate decides and the obligatory extras only settle a tie on it. Ranking on the rate can pick the charter that costs the guest more overall."
+    },
+    "referral": {
+      "legend": "Referral programme",
+      "hint": "What a referral pays, in euro. The figures the Referrals page quotes come from here.",
+      "reward": "Referrer earns",
+      "inviteeDiscount": "Friend gets off",
+      "minBooking": "Minimum booking",
+      "ttlMonths": "Credit valid (months)",
+      "appliesNext": "Applies to referrals credited from now on. Credit already granted keeps the amount and expiry it was given."
     },
     "nameSearch": {
       "legend": "Free-text search",
