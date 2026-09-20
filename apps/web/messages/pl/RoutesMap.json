@@ -14,7 +14,7 @@
   "noResults": "Żadna trasa nie pasuje do tych filtrów.",
   "resetFilters": "Wyczyść filtry",
   "allRoutes": "Wszystkie trasy",
-  "showRouteYachts": "Pokaż jachty dla tej trasy",
+  "showRouteYachts": "Pokaż jachty",
   "itinerary": "Plan rejsu",
   "nearbyMarinas": "Mariny z jachtami na trasie",
   "loadingMarinas": "Szukamy marin…",
@@ -33,5 +33,9 @@
   "filtersButton": "Filtry{count, plural, =0 {} one { (#)} few { (#)} many { (#)} other { (#)}}",
   "back": "Wstecz",
   "closeFilters": "Zamknij filtry",
-  "showRoutes": "{count, plural, =0 {Brak tras} one {Pokaż # trasę} few {Pokaż # trasy} many {Pokaż # tras} other {Pokaż # trasy}}"
+  "showRoutes": "{count, plural, =0 {Brak tras} one {Pokaż # trasę} few {Pokaż # trasy} many {Pokaż # tras} other {Pokaż # trasy}}",
+  "hidePanel": "Ukryj panel",
+  "showDetails": "Szczegóły trasy",
+  "closeDetails": "Zamknij szczegóły trasy",
+  "showOnMap": "Na mapie"
 }

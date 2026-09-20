@@ -14,7 +14,7 @@
   "noResults": "Inga rutter matchar dessa filter.",
   "resetFilters": "Återställ filter",
   "allRoutes": "Alla rutter",
-  "showRouteYachts": "Visa båtar för den här rutten",
+  "showRouteYachts": "Visa båtar",
   "itinerary": "Resplan",
   "nearbyMarinas": "Marinor med båtar längs rutten",
   "loadingMarinas": "Letar efter marinor…",
@@ -33,5 +33,9 @@
   "filtersButton": "Filter{count, plural, =0 {} other { (#)}}",
   "back": "Tillbaka",
   "closeFilters": "Stäng filter",
-  "showRoutes": "{count, plural, =0 {Inga rutter} one {Visa # rutt} other {Visa # rutter}}"
+  "showRoutes": "{count, plural, =0 {Inga rutter} one {Visa # rutt} other {Visa # rutter}}",
+  "hidePanel": "Dölj panelen",
+  "showDetails": "Ruttdetaljer",
+  "closeDetails": "Stäng ruttdetaljerna",
+  "showOnMap": "På kartan"
 }

@@ -202,7 +202,8 @@
     "zoomIn": "Inzoomen",
     "zoomOut": "Uitzoomen",
     "locate": "Mijn locatie tonen",
-    "locateUnavailable": "Locatie niet beschikbaar"
+    "locateUnavailable": "Locatie niet beschikbaar",
+    "frameAll": "Alles tonen"
   },
   "leadForm": {
     "fields": {

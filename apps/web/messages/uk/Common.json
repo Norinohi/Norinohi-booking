@@ -202,7 +202,8 @@
     "zoomIn": "Збільшити",
     "zoomOut": "Зменшити",
     "locate": "Показати моє місцезнаходження",
-    "locateUnavailable": "Місцезнаходження недоступне"
+    "locateUnavailable": "Місцезнаходження недоступне",
+    "frameAll": "Показати все"
   },
   "leadForm": {
     "fields": {

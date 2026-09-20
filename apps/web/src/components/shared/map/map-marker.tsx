@@ -16,6 +16,11 @@ const RING = {
 interface MapMarkerBaseProps {
   coordinates: Coordinates;
   label: string;
+  /**
+   * "sm" halves the ring. The search map is all marinas and wears the full size; a map where they
+   * share the coast with something else - the routes map's days - gives them less room.
+   */
+  size?: "md" | "sm";
   /** Position in the set, which becomes the stagger. Ignored when `delayMs` is given. */
   order?: number;
   onSelect: () => void;
@@ -46,7 +51,8 @@ export interface MapClusterMarkerProps extends MapMarkerBaseProps {
 export type MapMarkerProps = MapPinMarkerProps | MapClusterMarkerProps;
 
 export default function MapMarker(props: MapMarkerProps) {
-  const { coordinates, label, order = 0, onSelect } = props;
+  const { coordinates, label, order = 0, size = "md", onSelect } = props;
+  const small = size === "sm";
   const cluster = props.variant === "cluster";
   const delayMs = props.variant === "pin" ? props.delayMs : undefined;
 
@@ -74,14 +80,22 @@ export default function MapMarker(props: MapMarkerProps) {
           "relative flex cursor-pointer items-center justify-center rounded-full border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-white",
           "duration-300 animate-in fade-in-0 zoom-in-50 fill-mode-backwards",
           props.variant === "cluster"
-            ? cn("size-21 hover:bg-white/40", RING.idle)
+            ? cn(small ? "size-11" : "size-21", "hover:bg-white/40", RING.idle)
             : /* Smaller on a phone: seven of these at 84px merge into one blur on a 343px map. */
-              cn("size-12 md:size-21", props.selected ? RING.selected : RING.idle),
+              cn(
+                small ? "size-9" : "size-12 md:size-21",
+                props.selected ? RING.selected : RING.idle,
+              ),
         )}
       >
         <MapPin className="size-6 fill-brand text-white" />
         {props.variant === "cluster" ? (
-          <span className="absolute top-1 right-1 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-white bg-brand px-1.5 text-xs font-semibold text-brand-foreground">
+          <span
+            className={cn(
+              "absolute flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-white bg-brand px-1.5 text-xs font-semibold text-brand-foreground",
+              small ? "-top-1 -right-1" : "top-1 right-1",
+            )}
+          >
             {props.count}
           </span>
         ) : props.caption ? (

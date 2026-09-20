@@ -14,7 +14,7 @@
   "noResults": "Ingen ruter matcher disse filtre.",
   "resetFilters": "Nulstil filtre",
   "allRoutes": "Alle ruter",
-  "showRouteYachts": "Vis både til denne rute",
+  "showRouteYachts": "Vis både",
   "itinerary": "Rejseplan",
   "nearbyMarinas": "Marinaer med både langs ruten",
   "loadingMarinas": "Leder efter marinaer…",
@@ -33,5 +33,9 @@
   "filtersButton": "Filtre{count, plural, =0 {} other { (#)}}",
   "back": "Tilbage",
   "closeFilters": "Luk filtre",
-  "showRoutes": "{count, plural, =0 {Ingen ruter} one {Vis # rute} other {Vis # ruter}}"
+  "showRoutes": "{count, plural, =0 {Ingen ruter} one {Vis # rute} other {Vis # ruter}}",
+  "hidePanel": "Skjul panelet",
+  "showDetails": "Ruteoplysninger",
+  "closeDetails": "Luk ruteoplysningerne",
+  "showOnMap": "På kortet"
 }

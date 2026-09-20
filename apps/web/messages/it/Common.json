@@ -202,7 +202,8 @@
     "zoomIn": "Ingrandisci",
     "zoomOut": "Riduci",
     "locate": "Mostra la mia posizione",
-    "locateUnavailable": "Posizione non disponibile"
+    "locateUnavailable": "Posizione non disponibile",
+    "frameAll": "Mostra tutto"
   },
   "leadForm": {
     "fields": {

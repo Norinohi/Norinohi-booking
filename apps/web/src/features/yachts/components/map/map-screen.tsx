@@ -9,8 +9,10 @@ import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
+import { fitPlaces } from "@/components/shared/map/camera";
 import type { MapInstance } from "@/components/shared/map/map-canvas";
 import { Link } from "@/i18n/navigation";
+import { MAP_MARINA_ZOOM } from "@/lib/mapbox";
 
 import {
   MARINA_PAGE_SIZE,
@@ -24,6 +26,7 @@ import { useMapClusters } from "../../hooks/use-map-clusters";
 import { useMapPadding } from "../../hooks/use-map-padding";
 import { useMapSelection } from "../../hooks/use-map-selection";
 import { useRememberSearch } from "../../hooks/use-remember-search";
+import { CLUSTER_FLIGHT_MS } from "../../lib/map-flights";
 import { useSearchFilters } from "../../hooks/use-search-filters";
 import { useSearchInput } from "../../hooks/use-search-input";
 import { serializeSearch } from "../../lib/search-params";
@@ -129,6 +132,12 @@ export default function MapScreen() {
       >
         <MapCanvas
           locateControl
+          styleControl
+          /* Back to the search's own frame, which panning and zooming have left. */
+          onRecentre={() =>
+            map &&
+            fitPlaces(map, marinas, { maxZoom: MAP_MARINA_ZOOM, duration: CLUSTER_FLIGHT_MS })
+          }
           initialViewState={openingView}
           onReady={setMap}
           onBackgroundPress={selection.dismiss}

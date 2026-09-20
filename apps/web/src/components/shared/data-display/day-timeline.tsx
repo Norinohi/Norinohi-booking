@@ -23,6 +23,11 @@ export interface DayTimelineProps {
   columns: TimelineDay[][];
   /** Smaller type and tighter rows, for a side panel rather than a page section. */
   compact?: boolean;
+  /**
+   * Numbers the days inside their dots, in the green of the routes map's own markers, so a day in
+   * the panel and its dot on the map are plainly the same thing.
+   */
+  numbered?: boolean;
   /** Makes each day pressable, given its position across all columns. */
   onSelect?: (index: number) => void;
 }
@@ -35,7 +40,12 @@ export interface DayTimelineProps {
  *
  * Remounting it (a new `key`) plays it again, which is what a different route should do.
  */
-export default function DayTimeline({ columns, compact = false, onSelect }: DayTimelineProps) {
+export default function DayTimeline({
+  columns,
+  compact = false,
+  numbered = false,
+  onSelect,
+}: DayTimelineProps) {
   const ref = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const total = columns.reduce((sum, column) => sum + column.length, 0);
@@ -78,6 +88,7 @@ export default function DayTimeline({ columns, compact = false, onSelect }: DayT
                 isLast={row === column.length - 1}
                 progress={progress}
                 compact={compact}
+                numbered={numbered}
                 onSelect={onSelect ? () => onSelect(first + row) : undefined}
               />
             ))}
@@ -96,6 +107,7 @@ function DayItem({
   isLast,
   progress,
   compact,
+  numbered,
   onSelect,
 }: {
   day: TimelineDay;
@@ -105,6 +117,7 @@ function DayItem({
   isLast: boolean;
   progress: Progress;
   compact: boolean;
+  numbered: boolean;
   onSelect?: () => void;
 }) {
   const span = Math.max(total - 1, 1);
@@ -114,6 +127,12 @@ function DayItem({
   // The stop fills just as the line reaches it; the first one is filled from the start.
   const dotOpacity = useTransform(progress, [Math.max(start - 0.08, 0), start], [0, 1]);
   const fillScale = useTransform(progress, [start, end], [0, 1]);
+  /* Grown rather than scaled: a scaled dotted border stretches its dots into dashes. */
+  const fillHeight = useTransform(fillScale, (scale) => `${scale * 100}%`);
+  /* The number turns white as its dot fills, which is the same moment the line reaches the day. */
+  const numberColour = useTransform(dotOpacity, (shown) =>
+    shown > 0.5 ? "var(--color-white)" : "var(--color-positive-700)",
+  );
 
   /* Headings where the day stands alone; a button may only hold phrasing content. */
   const Title = onSelect ? "span" : "h3";
@@ -149,34 +168,62 @@ function DayItem({
 
   return (
     <li className={cn("flex", compact ? "gap-3" : "gap-4")}>
-      <div className="relative flex w-4 shrink-0 flex-col items-center">
+      <div className={cn("relative flex shrink-0 flex-col items-center", numbered ? "w-7" : "w-4")}>
         {/* The soft track behind the dots, drawn per row so it ends at the last dot instead of
             running on past it to the bottom of the column's text. */}
         <span
           aria-hidden
           className={cn(
-            "absolute left-0.5 w-3 bg-brand-50/50",
+            "absolute",
+            numbered ? "left-2.5 w-2 bg-positive-50" : "left-0.5 w-3 bg-brand-50/50",
             isFirst ? "top-2 rounded-t-full" : "top-0",
             isLast ? "h-5.5 rounded-b-full" : "bottom-0",
           )}
         />
-        <span className="relative size-4 shrink-0 rounded-full border-2 border-brand bg-card">
-          <motion.span
-            aria-hidden
-            style={{ opacity: dotOpacity }}
-            className="absolute -inset-0.5 rounded-full bg-brand"
-          />
-        </span>
+        {numbered ? (
+          <span className="relative flex size-7 shrink-0 items-center justify-center rounded-full border-2 border-positive-600 bg-card text-xs font-bold text-positive-700">
+            <motion.span
+              aria-hidden
+              style={{ opacity: dotOpacity }}
+              className="absolute -inset-0.5 rounded-full bg-positive-600"
+            />
+            <motion.span style={{ color: numberColour }} className="relative">
+              {position + 1}
+            </motion.span>
+          </span>
+        ) : (
+          <span className="relative size-4 shrink-0 rounded-full border-2 border-brand bg-card">
+            <motion.span
+              aria-hidden
+              style={{ opacity: dotOpacity }}
+              className="absolute -inset-0.5 rounded-full bg-brand"
+            />
+          </span>
+        )}
         {!isLast && (
-          /* Lighter than the dots: the stops are the subject, the rail only joins them. */
+          /* Lighter than the dots: the stops are the subject, the rail only joins them.
+             Numbered, the rail stays dotted throughout and the dots alone carry the reveal: a bar
+             sliding down a 28px-spaced column read as a segment that had failed to finish. */
           <span
             aria-hidden
-            className="relative w-0.75 flex-1 border-l-3 border-dotted border-brand-100"
+            className={cn(
+              "relative w-0.75 flex-1 border-l-3 border-dotted",
+              numbered ? "border-positive-200" : "border-brand-100",
+            )}
           >
-            <motion.span
-              style={{ scaleY: fillScale }}
-              className="absolute inset-y-0 -left-0.75 w-0.75 origin-top bg-brand"
-            />
+            {numbered ? (
+              /* The same dotted rail in the route's own green, grown from the top as the days are
+                 reached, so the line fills in step with the dots. */
+              <motion.span
+                style={{ height: fillHeight }}
+                className="absolute top-0 -left-0.75 w-0.75 border-l-3 border-dotted border-positive-600"
+              />
+            ) : (
+              <motion.span
+                style={{ scaleY: fillScale }}
+                className="absolute inset-y-0 -left-0.75 w-0.75 origin-top bg-brand"
+              />
+            )}
           </span>
         )}
       </div>

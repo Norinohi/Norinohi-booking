@@ -14,7 +14,7 @@
   "noResults": "Ingen ruter passer med disse filtrene.",
   "resetFilters": "Nullstill filtre",
   "allRoutes": "Alle ruter",
-  "showRouteYachts": "Vis yachter for denne ruten",
+  "showRouteYachts": "Vis båter",
   "itinerary": "Reiserute",
   "nearbyMarinas": "Marinaer med yachter langs ruten",
   "loadingMarinas": "Leter etter marinaer…",
@@ -33,5 +33,9 @@
   "filtersButton": "Filtre{count, plural, =0 {} other { (#)}}",
   "back": "Tilbake",
   "closeFilters": "Lukk filtre",
-  "showRoutes": "{count, plural, =0 {Ingen ruter} one {Vis # rute} other {Vis # ruter}}"
+  "showRoutes": "{count, plural, =0 {Ingen ruter} one {Vis # rute} other {Vis # ruter}}",
+  "hidePanel": "Skjul panelet",
+  "showDetails": "Ruteinformasjon",
+  "closeDetails": "Lukk ruteinformasjonen",
+  "showOnMap": "På kartet"
 }

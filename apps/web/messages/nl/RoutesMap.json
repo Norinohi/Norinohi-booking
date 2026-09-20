@@ -14,7 +14,7 @@
   "noResults": "Geen routes die aan deze filters voldoen.",
   "resetFilters": "Filters resetten",
   "allRoutes": "Alle routes",
-  "showRouteYachts": "Jachten voor deze route tonen",
+  "showRouteYachts": "Jachten tonen",
   "itinerary": "Vaarplan",
   "nearbyMarinas": "Jachthavens met jachten langs de route",
   "loadingMarinas": "Jachthavens zoeken…",
@@ -33,5 +33,9 @@
   "filtersButton": "Filters{count, plural, =0 {} other { (#)}}",
   "back": "Terug",
   "closeFilters": "Filters sluiten",
-  "showRoutes": "{count, plural, =0 {Geen routes} one {# route tonen} other {# routes tonen}}"
+  "showRoutes": "{count, plural, =0 {Geen routes} one {# route tonen} other {# routes tonen}}",
+  "hidePanel": "Paneel verbergen",
+  "showDetails": "Routedetails",
+  "closeDetails": "Routedetails sluiten",
+  "showOnMap": "Op de kaart"
 }

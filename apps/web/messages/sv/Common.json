@@ -202,7 +202,8 @@
     "zoomIn": "Zooma in",
     "zoomOut": "Zooma ut",
     "locate": "Visa min position",
-    "locateUnavailable": "Positionen är inte tillgänglig"
+    "locateUnavailable": "Positionen är inte tillgänglig",
+    "frameAll": "Visa allt"
   },
   "leadForm": {
     "fields": {

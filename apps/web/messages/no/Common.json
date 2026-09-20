@@ -202,7 +202,8 @@
     "zoomIn": "Zoom inn",
     "zoomOut": "Zoom ut",
     "locate": "Vis posisjonen min",
-    "locateUnavailable": "Posisjon er ikke tilgjengelig"
+    "locateUnavailable": "Posisjon er ikke tilgjengelig",
+    "frameAll": "Vis alt"
   },
   "leadForm": {
     "fields": {

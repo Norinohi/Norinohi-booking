@@ -17,6 +17,19 @@ const ROUTE_STROKES: LineStroke[] = [
   { color: "#ffffff", opacity: 0.9, width: 3, dash: [3, 2, 0.5, 2] },
   { color: "#2f80ed", opacity: 1, width: 1.5, dash: [6, 4, 1, 4] },
 ];
+
+/*
+ * The routes map's own: one thin solid green line over a white casing, matching its day markers.
+ * Solid because that map is read as a course from place to place rather than as an illustration,
+ * and a dashed line broke up at the zooms where the whole itinerary is on screen.
+ */
+export const SAILED_ROUTE_STROKES: LineStroke[] = [
+  /* The glow: a wide, blurred, dim copy under the line, so the course reads over both the dark
+     water of the satellite map and the pale sea of the street one. */
+  { color: "#22c55e", opacity: 0.35, width: 9, blur: 6 },
+  { color: "#ffffff", opacity: 0.85, width: 3 },
+  { color: "#16a34a", opacity: 1, width: 1.5 },
+];
 const ROUTE_FADE_RANGE = 0.08;
 
 /**
@@ -31,9 +44,11 @@ const ROUTE_FADE_RANGE = 0.08;
 export interface RouteLineProps {
   curve: RouteCurve;
   animate: boolean;
+  /** Left off, the listing page's dashed blue line. */
+  strokes?: LineStroke[];
 }
 
-export default function RouteLine({ curve, animate }: RouteLineProps) {
+export default function RouteLine({ curve, animate, strokes = ROUTE_STROKES }: RouteLineProps) {
   const [progress, setProgress] = useState(animate ? 0 : 1);
 
   useEffect(() => {
@@ -56,7 +71,7 @@ export default function RouteLine({ curve, animate }: RouteLineProps) {
     <LineLayer
       id={ROUTE_SOURCE}
       coordinates={curve.points}
-      strokes={ROUTE_STROKES}
+      strokes={strokes}
       progress={animate ? progress : 1}
       fadeRange={ROUTE_FADE_RANGE}
     />

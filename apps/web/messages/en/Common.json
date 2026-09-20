@@ -202,7 +202,8 @@
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "locate": "Show my location",
-    "locateUnavailable": "Location unavailable"
+    "locateUnavailable": "Location unavailable",
+    "frameAll": "Frame everything"
   },
   "leadForm": {
     "fields": {

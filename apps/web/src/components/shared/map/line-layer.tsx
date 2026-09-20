@@ -11,6 +11,8 @@ export interface LineStroke {
   opacity?: number;
   /** Mapbox's `line-dasharray`, in multiples of this stroke's own width rather than in pixels. */
   dash?: number[];
+  /** Softens the stroke's edges, in pixels: a wide blurred stroke under a line is its glow. */
+  blur?: number;
 }
 
 export interface LineLayerProps {
@@ -75,6 +77,7 @@ export default function LineLayer({
           "line-width": stroke.width,
         };
         if (stroke.dash) paint["line-dasharray"] = stroke.dash;
+        if (stroke.blur) paint["line-blur"] = stroke.blur;
         if (revealing) {
           paint["line-trim-offset"] = [progress, 1];
           paint["line-trim-fade-range"] = [0, fadeRange];

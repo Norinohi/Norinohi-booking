@@ -1,8 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "@yacht-charter/ui/components/actions/button";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { useLocale } from "next-intl";
+import { Filter, List } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
@@ -18,6 +20,7 @@ import { routeStart } from "../lib/route-geometry";
 import { routesMapParsers, serializeRoutesMap } from "../lib/search-params";
 import { RouteStartsLayer, SelectedRouteLayer } from "./routes-map-layers";
 import RoutesMapChrome from "./routes-map-chrome";
+import RouteFiltersDialog from "./route-filters-dialog";
 import RoutesPanel, { RouteFiltersCard } from "./routes-panel";
 
 const MapCanvas = dynamic(() => import("@/components/shared/map/map-canvas"), {
@@ -42,8 +45,13 @@ function freeArea(map: MapInstance, panel: HTMLElement | null): Padding {
 
   const box = map.getContainer().getBoundingClientRect();
   const card = panel.getBoundingClientRect();
-  if (card.width < box.width / 2) padding.left += card.right - box.left;
-  else padding.bottom += box.bottom - card.top;
+  /*
+   * Capped at half the map, because a phone's card covers all of it: padding taller than the
+   * container leaves mapbox nothing to fit into, and it answered by not moving at all.
+   */
+  const room = (claimed: number, whole: number) => Math.min(claimed, whole / 2);
+  if (card.width < box.width / 2) padding.left += room(card.right - box.left, box.width);
+  else padding.bottom += room(box.bottom - card.top, box.height);
   return padding;
 }
 
@@ -60,6 +68,7 @@ function frame(map: MapInstance, points: Coordinates[], padding: Padding) {
 
 export default function RoutesMapScreen() {
   const locale = useLocale();
+  const t = useTranslations("RoutesMap");
   const [state, setState] = useQueryStates(routesMapParsers, { history: "replace" });
   const { slug } = useParams<{ slug?: string }>();
   const router = useRouter();
@@ -69,6 +78,8 @@ export default function RoutesMapScreen() {
   /* Phones only. The list waits behind its button, as on the yachts map; an open route shows at
      once and folds per route, so opening another one unfolds it. */
   const [listOpen, setListOpen] = useState(false);
+  /* From md the two cards can be put away, so the map can be read whole. */
+  const [cards, setCards] = useState({ filters: true, list: true });
   const [fold, setFold] = useState({ key: "", collapsed: false });
   const panelRef = useRef<HTMLElement>(null);
 
@@ -81,6 +92,9 @@ export default function RoutesMapScreen() {
     level: state.level,
   };
   const visible = routes.filter((route) => matchesFilters(route, filters));
+  const activeFilters = [filters.q.trim(), filters.country, filters.length, filters.level].filter(
+    Boolean,
+  ).length;
   /* A link to a route stays open whatever the filters say: it was asked for by name. */
   const selected = routes.find((route) => route.slug === slug) ?? null;
 
@@ -89,6 +103,8 @@ export default function RoutesMapScreen() {
     enabled: Boolean(selected),
   });
   const marinas = selected ? (marinasQuery.data?.marinas ?? []) : [];
+  /* Everything the filters leave except the one on screen, whose own days are drawn instead. */
+  const others = visible.filter((route) => route.id !== selected?.id);
 
   /*
    * The camera follows what is on the panel: the open route and its marinas, or every route the
@@ -97,13 +113,14 @@ export default function RoutesMapScreen() {
   const framedKey = selected
     ? `${selected.id}:${marinas.map((marina) => marina.value).join()}`
     : visible.map((route) => route.id).join();
-  useEffect(() => {
+  const framePoints = () => {
     if (!map) return;
     const points: Coordinates[] = selected
       ? [...selected.stops, ...marinas]
       : visible.flatMap((route) => routeStart(route) ?? []);
     frame(map, points, freeArea(map, panelRef.current));
-  }, [map, framedKey]);
+  };
+  useEffect(framePoints, [map, framedKey]);
 
   /* A navigation, not a query change: each route is its own page with its own metadata. The
      layout keeps the map, and the filters travel along so "All routes" returns to the same list. */
@@ -129,6 +146,8 @@ export default function RoutesMapScreen() {
       <MapCanvas
         pathDepth={2}
         locateControl
+        styleControl
+        onRecentre={framePoints}
         dimOpacity={0}
         onReady={setMap}
         onBackgroundPress={() => setDismissSignal((signal) => signal + 1)}
@@ -143,42 +162,63 @@ export default function RoutesMapScreen() {
             openMarina={openMarina}
             onOpenMarina={setOpenMarina}
           />
-        ) : (
-          <RouteStartsLayer
-            routes={visible}
-            map={map}
-            onSelect={select}
-            dismissSignal={dismissSignal}
-          />
-        )}
+        ) : null}
+        {/* The other routes keep their pins while one is open, so another is one press away. */}
+        <RouteStartsLayer
+          routes={others}
+          map={map}
+          onSelect={select}
+          dismissSignal={dismissSignal}
+        />
       </MapCanvas>
 
       {/* The cards the map's left edge belongs to, laid out as the yachts map lays its own. */}
       <div
         className={cn(
-          "pointer-events-none absolute inset-x-3 bottom-3 flex items-start gap-5 md:inset-x-auto md:top-6 md:bottom-6 md:left-6 2xl:top-8 2xl:bottom-8 2xl:left-8",
-          /* On a phone the list opens under the buttons and fills the rest, as the yachts map's
-             does; an open route sits at the bottom instead, so the map above it stays in view. */
-          selected ? "max-h-[55%] md:max-h-none" : "max-md:top-18",
+          "pointer-events-none absolute inset-x-3 bottom-3 z-10 flex items-start gap-5 md:inset-x-auto md:top-6 md:bottom-6 md:left-6 2xl:top-8 2xl:bottom-8 2xl:left-8",
+          /* On a phone both the list and an open route fill the screen under the buttons, as the
+             yachts map's list does; the route's own bar folds it away to see the map. */
+          "max-md:top-18",
           /* A marina's boats open over the map, and on a phone the panel would sit on top of them,
              as the search map's chrome would; it steps aside until the card is closed. */
           (openMarina || (!selected && !listOpen)) && "max-md:hidden",
         )}
       >
-        <RouteFiltersCard
+        {/* A tablet has no room for the card beside the map, so there it opens from a button. */}
+        <RouteFiltersDialog
           routes={routes}
+          visibleCount={visible.length}
           filters={filters}
           onChange={(next) => void setState(next)}
           onReset={resetFilters}
-          className="pointer-events-auto hidden max-h-full w-83.5 shrink-0 xl:flex"
+          className="hidden shrink-0 max-xl:shadow-brand-glow md:inline-flex xl:hidden"
         />
+        {cards.filters ? (
+          <RouteFiltersCard
+            routes={routes}
+            filters={filters}
+            onChange={(next) => void setState(next)}
+            onReset={resetFilters}
+            onClose={() => setCards((open) => ({ ...open, filters: false }))}
+            className="pointer-events-auto hidden max-h-full w-83.5 shrink-0 xl:flex"
+          />
+        ) : (
+          <Button
+            type="button"
+            /* The same blue the yachts map's filters button wears, on both maps and at every width. */
+            variant="brand"
+            onClick={() => setCards((open) => ({ ...open, filters: true }))}
+            className="pointer-events-auto hidden w-auto shrink-0 shadow-brand-glow xl:inline-flex"
+          >
+            <Filter />
+            {t("filtersButton", { count: activeFilters })}
+          </Button>
+        )}
         <RoutesPanel
           ref={panelRef}
           routes={routes}
           visible={visible}
           selected={selected}
-          filters={filters}
-          onFiltersChange={(next) => void setState(next)}
           onResetFilters={resetFilters}
           onSelect={select}
           onFocus={focus}
@@ -186,14 +226,36 @@ export default function RoutesMapScreen() {
           marinasPending={Boolean(selected) && marinasQuery.isPending}
           marinasFailed={marinasQuery.isError}
           collapsed={collapsed}
+          onClose={() => setCards((open) => ({ ...open, list: false }))}
+          onShowOnMap={
+            selected
+              ? () => {
+                  setCollapsed(true);
+                  framePoints();
+                }
+              : undefined
+          }
           onCollapsedChange={setCollapsed}
           className={cn(
             /* As tall as what it holds, up to the room there is: two routes are not a column
                of empty card. */
             "pointer-events-auto w-full md:max-h-full md:w-100",
-            selected ? "max-h-[50dvh]" : "max-h-full",
+            "max-h-full",
+            /* Put away from md up; a phone opens and closes it from the button over the map. */
+            !cards.list && "md:hidden",
           )}
         />
+        {!cards.list ? (
+          <Button
+            type="button"
+            variant="neutral"
+            onClick={() => setCards((open) => ({ ...open, list: true }))}
+            className="pointer-events-auto hidden w-auto shrink-0 shadow-brand-glow md:inline-flex"
+          >
+            <List />
+            {t("showList")}
+          </Button>
+        ) : null}
       </div>
 
       <RoutesMapChrome

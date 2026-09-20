@@ -14,7 +14,7 @@
   "noResults": "Aucun itinéraire ne correspond à ces filtres.",
   "resetFilters": "Réinitialiser les filtres",
   "allRoutes": "Tous les itinéraires",
-  "showRouteYachts": "Voir les yachts pour cet itinéraire",
+  "showRouteYachts": "Voir les yachts",
   "itinerary": "Itinéraire",
   "nearbyMarinas": "Marinas avec des yachts le long de l’itinéraire",
   "loadingMarinas": "Recherche des marinas…",
@@ -33,5 +33,9 @@
   "filtersButton": "Filtres{count, plural, =0 {} other { (#)}}",
   "back": "Retour",
   "closeFilters": "Fermer les filtres",
-  "showRoutes": "{count, plural, =0 {Aucun itinéraire} one {Voir # itinéraire} other {Voir # itinéraires}}"
+  "showRoutes": "{count, plural, =0 {Aucun itinéraire} one {Voir # itinéraire} other {Voir # itinéraires}}",
+  "hidePanel": "Masquer le panneau",
+  "showDetails": "Détails de l'itinéraire",
+  "closeDetails": "Fermer les détails de l'itinéraire",
+  "showOnMap": "Sur la carte"
 }

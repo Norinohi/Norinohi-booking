@@ -1,17 +1,15 @@
 "use client";
 
 import { Button, buttonVariants } from "@yacht-charter/ui/components/actions/button";
-import { Dialog, DialogContent, DialogTrigger } from "@yacht-charter/ui/components/overlay/dialog";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { ArrowLeft, Filter, List, X } from "lucide-react";
+import { ArrowLeft, List, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 
 import { Link } from "@/i18n/navigation";
 
 import type { MapRoute } from "../api/queries";
 import type { RouteFilters } from "../lib/route-filters";
-import { RouteFiltersCard } from "./routes-panel";
+import RouteFiltersDialog from "./route-filters-dialog";
 
 export interface RoutesMapChromeProps {
   routes: MapRoute[];
@@ -42,16 +40,11 @@ export default function RoutesMapChrome({
   popupOpen,
 }: RoutesMapChromeProps) {
   const t = useTranslations("RoutesMap");
-  const [filtersOpen, setFiltersOpen] = useState(false);
-
-  const active = [filters.q.trim(), filters.country, filters.length, filters.level].filter(
-    Boolean,
-  ).length;
 
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-x-3 top-3 flex transition-opacity duration-200 md:hidden",
+        "pointer-events-none absolute inset-x-3 top-3 z-10 flex transition-opacity duration-200 md:hidden",
         popupOpen && "opacity-0 **:pointer-events-none",
       )}
     >
@@ -68,23 +61,13 @@ export default function RoutesMapChrome({
           <ArrowLeft />
         </Link>
 
-        <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
-          <DialogTrigger render={<Button variant="primary" className="pointer-events-auto" />}>
-            <Filter />
-            {t("filtersButton", { count: active })}
-          </DialogTrigger>
-          <DialogContent className="inset-4 top-4 left-4 h-auto w-auto max-w-none translate-x-0 translate-y-0 items-stretch gap-0 rounded-2xl p-0">
-            <RouteFiltersCard
-              routes={routes}
-              filters={filters}
-              onChange={onFiltersChange}
-              onReset={onResetFilters}
-              onClose={() => setFiltersOpen(false)}
-              resultCount={visibleCount}
-              className="min-h-0 flex-1 border-0 shadow-none"
-            />
-          </DialogContent>
-        </Dialog>
+        <RouteFiltersDialog
+          routes={routes}
+          visibleCount={visibleCount}
+          filters={filters}
+          onChange={onFiltersChange}
+          onReset={onResetFilters}
+        />
 
         {/* The yachts map's own pair: the list button stays, and a close joins it once open. */}
         <Button
