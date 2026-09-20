@@ -17,10 +17,16 @@ something else, which nobody notices until a native reader sees two screens side
   form recorded for your locale. If the entry says the locale is inconsistent, use the recommended
   form and leave the other occurrence for the reviewer.
 - **Reviewing.** Work through "Inconsistencies to resolve" at the end. It is the worklist: every
-  conflict found, grouped by locale.
+  conflict still open, grouped by locale, each with the reason it was left. Conflicts that have been
+  settled move to "Resolved" below it, which records what was chosen.
 - **Adding a language.** Fill in a column for it as you go, and add any term you had to decide
   rather than look up.
 - **Adding a term.** Add it here in the same change, not afterwards.
+
+The mechanical checks live in `.claude/skills/translate-locale/scripts/check-icu.mjs`: placeholders,
+plural categories, key coverage, JSON shape. They cannot see that two files say the same thing two
+ways, which is what this glossary is for. Run the script for the mechanical pass; the glossary is
+what the review pass reads.
 
 Each entry gives a file and key for at least one occurrence so a reviewer can jump straight to it.
 Keys are written `Namespace|path` for UI messages, which means
@@ -57,10 +63,10 @@ option, not a price or a hull type.
 
 | Locale | Term |
 | --- | --- |
-| es | Sin patrón **[!]** (also "Sin tripulación") |
+| es | Sin patrón |
 | uk | Без екіпажу |
 | de | Bareboat **[!] [EN]** (also "Ohne Crew") |
-| fr | Sans équipage **[!]** (also "Sans skipper") |
+| fr | Sans skipper |
 | pl | Bez załogi |
 | it | Senza skipper |
 | nl | Bareboat **[EN]** |
@@ -71,15 +77,11 @@ option, not a price or a hull type.
 Source: `Common|crewTypes.bareboat`, `Common|boatCard.charterTypes.bareboat`,
 `Home|Hero.options.bareboat`, `Layout|Footer.links.bareboat`.
 
-Conflicts: es renders it "Sin tripulación" on `Common|crewTypes.bareboat` but "Sin patrón" on the
-other three. de renders it "Bareboat" in `Common` and "Ohne Crew" in `Home` and `Layout`. fr
-renders it "Sans équipage" in `Common|crewTypes` and `Home` but "Sans skipper" in
-`Common|boatCard.charterTypes`. nl leaves it in English everywhere.
+es and fr are settled: es "Sin patrón" and fr "Sans skipper" on all four keys.
 
-Recommendation, awaiting a native reviewer: es "Sin patrón" (three of four occurrences, and it
-matches the es rendering of skipper as "patrón"); de "Ohne Crew" (German for the customer-facing
-hero and footer, and de already uses "Crew" for crew); fr "Sans skipper" is the pairing that mirrors
-"Avec skipper", so the whole fr set stays symmetric.
+Conflict: de renders it "Bareboat" in `Common` and "Ohne Crew" in `Home` and `Layout`, two keys each
+way. Both are current German charter usage, so this is a reviewer's preference and not a defect; it
+stays open deliberately. nl leaves it in English everywhere, which for a trade term may be right.
 
 ## 2. skippered / with skipper
 
@@ -89,7 +91,7 @@ with bareboat on the same control.
 | Locale | Term |
 | --- | --- |
 | es | Con patrón incluido |
-| uk | З капітаном **[!]** (see below) |
+| uk | Зі шкіпером |
 | de | Mit Skipper |
 | fr | Avec skipper |
 | pl | Ze skipperem |
@@ -101,11 +103,8 @@ with bareboat on the same control.
 
 Source: `Home|Hero.options.skippered`, `Layout|Footer.links.skippered`.
 
-Conflict: uk says "З капітаном" (captain) here, but `Common|crewTypes.skipper` says "Зі шкіпером"
-and `Home|BudgetFinder.labels.skipper` says "Шкіпер". Two different words for the same person on
-two screens.
-
-Recommendation, awaiting a native reviewer: uk "Зі шкіпером", to agree with the standalone term.
+Settled: uk said "З капітаном" (captain) here against "Зі шкіпером" elsewhere, and now says
+"Зі шкіпером" on the hero option too. No conflicts.
 
 ## 3. skipper
 
@@ -114,13 +113,13 @@ The licensed professional who sails the yacht. Also a role on the crew list.
 | Locale | Term |
 | --- | --- |
 | es | Patrón **[!]** ("Con patrón" where the value labels the crew option) |
-| uk | Шкіпер **[!]** (see entry 2) |
+| uk | Шкіпер |
 | de | Skipper |
 | fr | Skipper |
 | pl | Skipper **[!]** ("Ze skipperem" on `Common|crewTypes.skipper`) |
 | it | Skipper |
-| nl | Schipper **[!]** vs "Skipper" in the extras |
-| sv | Skeppare **[!]** vs "Skipper" in the extras |
+| nl | Schipper |
+| sv | Skeppare |
 | no | Skipper |
 | da | Skipper |
 
@@ -128,12 +127,12 @@ Source: `Common|crewTypes.skipper`, `Home|BudgetFinder.labels.skipper`,
 `PlanMyTrip|result.labels.skipper`; extras: `packages/db/src/translations/extra-labels.json` key
 `"Skipper"`.
 
-Conflicts: nl says "Schipper" throughout the UI but "Skipper" on the priced extra of the same name.
-sv says "Skeppare" in the UI and "Skipper" in the extras. A customer reading a yacht page then a
-price breakdown sees both words.
+Settled: the priced extra now reads "Schipper" in nl and "Skeppare" in sv, matching each locale's
+UI. no and da keep "Skipper" in both places, which is consistent within each locale.
 
-Recommendation, awaiting a native reviewer: nl "Schipper" and sv "Skeppare" in both places; the UI
-form is the one the customer meets first and more often.
+Conflict: pl uses the bare noun "Skipper" on `Home|BudgetFinder.labels.skipper` and
+`PlanMyTrip|result.labels.skipper` but the prepositional "Ze skipperem" on `Common|crewTypes.skipper`,
+where the other locales carry a bare noun.
 
 ## 4. crew
 
@@ -212,10 +211,10 @@ same thing.
 | Locale | Term (charter base) | Term (home base, admin) |
 | --- | --- | --- |
 | es | Una base de chárter | Base de origen **[!]** (also plain "Base") |
-| uk | Чартерної бази | Домашня база **[!]** (also "База") |
-| de | Einer Charterbasis | Heimatbasis **[!]** (also "Heimathafen") |
+| uk | Чартерної бази | Домашня база |
+| de | Einer Charterbasis | Heimatbasis |
 | fr | Une base de location | Base |
-| pl | Bazy czarterowej | Baza macierzysta **[!]** (also "Port macierzysty") |
+| pl | Bazy czarterowej | Baza macierzysta |
 | it | Una base charter | Base |
 | nl | Een charterbasis | Thuishaven |
 | sv | En charterbas | Hemmabas |
@@ -225,14 +224,16 @@ same thing.
 Source: `Admin|Routes.target.levelBase`, `Booking|review.depositRefundable`;
 `Admin|Duplicates.fields.base` and `Admin|Listings.sources.fields.home_base` for the admin field.
 
-Conflicts: es, uk, de and pl each render "Home base" two ways across those two admin keys. de is the
-sharpest: "Heimathafen" (home port, a place) against "Heimatbasis" (home base, the operation). es
-also renders the customer-facing base as "la base náutica" in `Booking|review.depositRefundable`,
-a third form.
+Settled in uk, de and pl: `Admin|Duplicates.fields.base` now carries the base form and agrees with
+`Admin|Listings.sources.fields.home_base` - uk "Домашня база", de "Heimatbasis", pl
+"Baza macierzysta". The port form ("Heimathafen", "Port macierzysty") is gone.
 
-Recommendation, awaiting a native reviewer: pick the base form, not the port form, since the field
-identifies the operator's site and not the harbour: de "Heimatbasis", pl "Baza macierzysta",
-uk "Домашня база", es "Base de origen".
+Conflict: es still renders "Base" on `Admin|Duplicates.fields.base` against "Base de origen" on
+`Admin|Listings.sources.fields.home_base`, and the customer-facing base is a third form,
+"la base náutica" in `Booking|review.depositRefundable`.
+
+Recommendation, awaiting a native reviewer: es "Base de origen" for the admin field, since it
+identifies the operator's site and not the harbour.
 
 ## 8. marina
 
@@ -240,7 +241,7 @@ The harbour itself, as a search facet and as a field on a booking.
 
 | Locale | Term |
 | --- | --- |
-| es | Marina **[!]** (also "Puerto") |
+| es | Marina |
 | uk | Марина |
 | de | Marina |
 | fr | Marina |
@@ -253,10 +254,8 @@ The harbour itself, as a search facet and as a field on a booking.
 
 Source: `Filters|labels.marina`, `Yachts|searchBar.kinds.base`, `Booking|detail.marina`.
 
-Conflict: es says "Marina" in the filter and the search bar but "Puerto" on the booking detail.
-
-Recommendation, awaiting a native reviewer: es "Marina" on all three; "Puerto" is the generic port
-and would also have to serve for "home port".
+Settled: es said "Puerto" on `Booking|detail.marina` and now says "Marina" on all three. No
+conflicts.
 
 ## 9. berth
 
@@ -309,7 +308,7 @@ The people the charter is booked for. Distinct from crew, and distinct from bert
 
 | Locale | Term |
 | --- | --- |
-| es | Huéspedes **[!]** (also "Personas") |
+| es | Huéspedes |
 | uk | Гості |
 | de | Gäste |
 | fr | Passagers |
@@ -322,12 +321,11 @@ The people the charter is booked for. Distinct from crew, and distinct from bert
 
 Source: `Booking|invoice.summary.guests`, `Booking|detail.guestsLabel`.
 
-Conflicts: es says "Huéspedes" on the invoice and "Personas" on the booking detail. fr translates it
-as "Passagers" (passengers), which is a defensible choice for a yacht but is the only locale that
-shifts the concept.
+Settled: es said "Personas" on `Booking|detail.guestsLabel` and now says "Huéspedes" on both.
 
-Recommendation, awaiting a native reviewer: es "Huéspedes" on both, since it is the word on the
-document the customer keeps.
+Open, but not a conflict: fr renders it "Passagers" (passengers), the only locale that shifts the
+concept. It is defensible for a yacht and internally consistent, so it is a decision for the French
+reviewer rather than something to correct.
 
 "Passengers" as an English source term does not occur anywhere in the repository. Do not introduce
 it as a second word for the same thing.
@@ -419,27 +417,25 @@ The business that owns and runs the yacht. The party we hold a commission agreem
 | --- | --- |
 | es | Operador |
 | uk | Оператор |
-| de | Betreiber **[!]** (also "Vercharterer", also "Anbieter") |
+| de | Vercharterer |
 | fr | Opérateur |
-| pl | Operator **[!]** (also "Armator") |
+| pl | Armator |
 | it | Operatore |
 | nl | Operator **[EN]** |
 | sv | Operatör |
 | no | Operatør |
-| da | Udbyder |
+| da | Udlejer |
 
 Source: `Admin|Listings.table.operator`, `Admin|Commissions.table.operator`,
 `Admin|Listings.filters.operator`, `Admin|Duplicates.fields.operator` (twelve occurrences in all).
 
-Conflicts: **de renders it three ways** across the admin: "Vercharterer" in Commissions, "Betreiber"
-in Duplicates and Listings tables, "Anbieter" in the Listings filter. "Anbieter" is also de's word
-for **provider**, so the German admin uses one word for two different entities. pl splits evenly
-between "Operator" and "Armator" (shipowner). da uses "Udbyder", which is da's natural word for
-provider, creating the same collision as de.
+Settled in all three: de renders all four keys "Vercharterer", which is the charter-specific word
+and leaves "Anbieter" free to mean provider alone (entry 17); pl is "Armator" everywhere; da is
+"Udlejer", which no longer collides with "Leverandør" for provider.
 
-Recommendation, awaiting a native reviewer: de "Vercharterer" (it is the charter-specific word and
-leaves "Anbieter" free for provider); pl "Armator" or "Operator" consistently, reviewer's choice,
-but not both; da needs a word that is not "Udbyder" so that operator and provider stay apart.
+The three neighbouring admin keys that named the same party - `Admin|Duplicates.signalFields.operator`
+and the two under `Admin|Listings.sources` - were swept into "Vercharterer" in the same pass, so
+"Betreiber" no longer appears in the German messages at all.
 
 ## 16. charter company
 
@@ -469,21 +465,21 @@ The inventory system we sync from, NauSYS or Booking Manager. Admin-only. Never 
 | --- | --- |
 | es | Proveedor |
 | uk | Постачальник |
-| de | Anbieter **[!]** (collides with operator, see entry 15) |
+| de | Anbieter |
 | fr | Fournisseur |
 | pl | Dostawca |
 | it | Fornitore |
 | nl | Provider **[EN]** |
 | sv | Leverantör |
 | no | Leverandør |
-| da | Leverandør **[!]** (collides with "Udbyder" for operator, see entry 15) |
+| da | Leverandør |
 
 Source: `Admin|Sync.table.provider`, `Admin|Commissions.table.provider`,
 `Admin|Audit.entity.provider` (twelve occurrences, internally consistent in every locale).
 
-The conflict is between terms, not within one: de and da both use near-synonyms for operator and
-provider, so a German or Danish admin cannot tell the two columns apart. Flagged for the reviewer of
-each language.
+This used to collide with operator in de and da. Both are settled: de now says "Vercharterer" for
+operator, leaving "Anbieter" to mean provider alone, and da says "Udlejer" against "Leverandør". The
+two admin columns are distinct in every locale.
 
 ## 18. booking
 
@@ -497,7 +493,7 @@ The confirmed reservation with money against it, the record a customer opens und
 | fr | Réservation |
 | pl | Rezerwacja |
 | it | Prenotazione |
-| nl | Boeking **[!]** ("Boeken" on the FAQ category) |
+| nl | Boeking |
 | sv | Bokning |
 | no | Booking **[EN]** |
 | da | Booking **[EN]** |
@@ -505,12 +501,13 @@ The confirmed reservation with money against it, the record a customer opens und
 Source: `Booking|detail.panels.main`, `Admin|Audit.entity.booking`,
 `Admin|Faq.categories.booking`, `YachtDetail|faqCategories.booking`.
 
-Conflict: nl uses the noun "Boeking" everywhere except the two FAQ-category keys, which say "Boeken"
-(the verb, "to book"). es pluralises to "Reservas" on `YachtDetail|faqCategories.booking` while the
-admin FAQ category stays singular.
+Settled: nl said "Boeken" (the verb) on the two FAQ-category keys and now says the noun "Boeking"
+on both, matching the entity.
 
-Recommendation, awaiting a native reviewer: nl "Boeking" on the FAQ category too, so the category
-name matches the entity; es make the two FAQ-category keys agree with each other.
+Conflict: es pluralises to "Reservas" on `YachtDetail|faqCategories.booking` while the admin FAQ
+category stays singular "Reserva".
+
+Recommendation, awaiting a native reviewer: es make the two FAQ-category keys agree with each other.
 
 ## 19. hold / option
 
@@ -688,8 +685,8 @@ Extras the customer chooses. Some are paid now, some at the base.
 | es | Extras opcionales |
 | uk | Додаткові опції |
 | de | Optionale Extras |
-| fr | Options **[!]** (also "Suppléments facultatifs") |
-| pl | Opcjonalne dodatki **[!]** (also "Dodatki opcjonalne") |
+| fr | Suppléments facultatifs |
+| pl | Dodatki opcjonalne |
 | it | Extra facoltativi |
 | nl | Optionele extra's |
 | sv | Valfria tillval |
@@ -699,13 +696,12 @@ Extras the customer chooses. Some are paid now, some at the base.
 Source: `Booking|extras.optional`, `YachtDetail|tabs.optional-extras`,
 `YachtDetail|sections.optionalExtras`.
 
-Conflicts: fr says "Suppléments facultatifs" in the booking flow and the bare "Options" on the yacht
-page. That is the worse of the two, because fr also uses "Option" for a **hold** (entry 19). pl
-merely reorders the words.
+Settled in fr: the yacht page said the bare "Options", which collided with fr's word for a **hold**
+(entry 19), and now says "Suppléments facultatifs" on the tab and the section, as the booking flow
+already did.
 
-Recommendation, awaiting a native reviewer: fr "Suppléments facultatifs" everywhere, to keep
-"Option" reserved for the hold; pl settle on "Dodatki opcjonalne" to match "Obowiązkowe dodatki"
-word order.
+Settled in pl: the tab said "Opcjonalne dodatki" against "Dodatki opcjonalne" on the other two keys,
+a word order difference only, and now reads "Dodatki opcjonalne" everywhere.
 
 ## 27. final cleaning
 
@@ -781,8 +777,8 @@ The customer's saved yachts. One list, no folders.
 | --- | --- | --- |
 | es | Tus favoritos | favoritos |
 | uk | Ваше обране | обране |
-| de | Ihre Merkliste **[!]** | Wunschliste |
-| fr | Vos favoris / Votre liste d'envies **[!]** | favoris |
+| de | Ihre Merkliste | Zur Merkliste |
+| fr | Vos favoris | favoris |
 | pl | Twoje ulubione | ulubionych |
 | it | I tuoi preferiti | preferiti |
 | nl | Jouw verlanglijst | verlanglijst |
@@ -793,13 +789,10 @@ The customer's saved yachts. One list, no folders.
 Source: `Wishlist|title`, `Seo|Wishlist.title`, `YachtDetail|addToWishlist`,
 `YachtDetail|removeFromWishlist`, `Common|boatCard.save`.
 
-Conflicts: **de calls the same list "Merkliste" on the page and "Wunschliste" on the button.** fr
-uses "favoris" on the SEO title and the buttons but "liste d'envies" as the page heading, so the
-page title does not match its own tab title.
-
-Recommendation, awaiting a native reviewer: de settle on one, most likely "Merkliste", which is the
-established German word for a saved-items list on a booking site; fr settle on "favoris", which is
-already three of the four occurrences.
+Settled in both: de called the same list "Wunschliste" on the add and remove buttons and now says
+"Zur Merkliste" and "Von Merkliste entfernen", matching the page. fr used "liste d'envies" as the
+page heading against "favoris" everywhere else, and `Wishlist|title` now reads "Vos favoris". No
+conflicts.
 
 ## 31. referral
 
@@ -828,8 +821,8 @@ The balance earned by referring someone, spendable against a charter.
 
 | Locale | Term |
 | --- | --- |
-| es | Crédito por recomendación **[!]** (also "Crédito de referidos") |
-| uk | Бонус за рекомендацією **[!]** (also "Реферальний кредит") |
+| es | Crédito por recomendación |
+| uk | Бонус за рекомендацією |
 | de | Empfehlungsguthaben |
 | fr | Crédit de parrainage |
 | pl | Środki z poleceń **[!]** (also "Środki z polecenia") |
@@ -842,13 +835,10 @@ The balance earned by referring someone, spendable against a charter.
 Source: `Common|quoteLines.referral-credit`, `Booking|detail.priceLineLabels.referralCredit`,
 `Admin|StaffBooking.priceLines.labels.referralCredit`, `YachtDetail|sidebar.credit.label`.
 
-Conflicts: **es and uk each use a different term on the yacht page from the one on the price
-breakdown and the booking detail.** In uk the two are not even built from the same root
-("рекомендація" versus "реферальний"). pl differs only in number.
-
-Recommendation, awaiting a native reviewer: es "Crédito por recomendación" and uk
-"Бонус за рекомендацією", each being three of the four occurrences, including the price line the
-customer actually reads at checkout.
+Settled: es and uk each carried a different term on `YachtDetail|sidebar.credit.label` from the one
+on the price breakdown, and in uk the two were not even built from the same root. Both now use the
+price-line form on all four keys - es "Crédito por recomendación", uk "Бонус за рекомендацією".
+pl still differs only in number ("Środki z poleceń" against "Środki z polecenia").
 
 Note that es, uk and it use a different root here ("recomendación", "рекомендація", "invito") from
 the one they use for the referral scheme itself in entry 31 ("Referidos", "Реферали", "Inviti"). it
@@ -928,7 +918,7 @@ The operator's own price reduction, arriving from the provider on a quote line. 
 | uk | Знижка на чартер |
 | de | Charter-Rabatt |
 | fr | Remise sur la location |
-| pl | Rabat na czarter **[!]** (also "Rabat czarterowy") |
+| pl | Rabat na czarter |
 | it | Sconto charter |
 | nl | Charterkorting |
 | sv | Charterrabatt |
@@ -938,11 +928,8 @@ The operator's own price reduction, arriving from the provider on a quote line. 
 Source: `Common|quoteLines.provider-discount`, `Booking|detail.priceLineLabels.charterDiscount`,
 `Admin|StaffBooking.priceLines.labels.charterDiscount`.
 
-Conflict: pl says "Rabat na czarter" on two keys and "Rabat czarterowy" on
-`Common|quoteLines.provider-discount`, which is the line the customer sees in the price breakdown.
-
-Recommendation, awaiting a native reviewer: pl one form on all three; "Rabat czarterowy" is the
-adjectival form and reads better in a table, but the majority is currently "Rabat na czarter".
+Settled: pl said "Rabat czarterowy" on `Common|quoteLines.provider-discount`, the line the customer
+sees in the price breakdown, and now says "Rabat na czarter" on all three keys.
 
 ## 37. builder
 
@@ -975,7 +962,7 @@ and a home page section.
 | uk | Тип човна |
 | de | Bootstyp |
 | fr | Type de bateau |
-| pl | Typ łodzi **[!]** (also "Typ jachtu") |
+| pl | Typ jachtu |
 | it | Tipo di barca |
 | nl | Boottype |
 | sv | Båttyp |
@@ -984,10 +971,8 @@ and a home page section.
 
 Source: `Filters|labels.boatType`, `YachtDetail|overview.boatType`, `Layout|Nav.boatTypes`.
 
-Conflict: pl says "Typ łodzi" (boat) in the filter and "Typ jachtu" (yacht) on the yacht page.
-
-Recommendation, awaiting a native reviewer: pl "Typ jachtu", because the facet values are yachts and
-pl already uses "Jacht" for the yacht itself (entry 53).
+Settled: pl said "Typ łodzi" (boat) in the filter against "Typ jachtu" (yacht) on the yacht page,
+and now says "Typ jachtu" in both, which agrees with pl's "Jacht" for the yacht itself (entry 53).
 
 ## 39. mainsail type
 
@@ -1002,7 +987,7 @@ How the mainsail is rigged: full batten, furling and so on. A spec and a filter.
 | pl | Typ grota |
 | it | Tipo di randa |
 | nl | Type grootzeil |
-| sv | Storsegelstyp **[!]** (also "Typ av storsegel") |
+| sv | Storsegelstyp |
 | no | Type storseil |
 | da | Storsejlstype |
 
@@ -1010,11 +995,9 @@ Source: `Filters|labels.mainsailType`, `Common|boatCard.specs.mainsail`,
 `YachtDetail|overview.mainsail`. The values themselves are in
 `packages/db/src/translations/facet-labels.json` under `sail_type`.
 
-Conflict: sv uses the compound "Storsegelstyp" twice and the phrase "Typ av storsegel" on the yacht
-page. Cosmetic, but the yacht page is where a customer compares boats.
-
-Recommendation, awaiting a native reviewer: sv "Storsegelstyp", matching the compound style of
-"Båttyp".
+Settled: sv used the phrase "Typ av storsegel" on `YachtDetail|overview.mainsail` against the
+compound "Storsegelstyp" elsewhere, and now uses the compound in all three places, matching the
+style of "Båttyp".
 
 ## 40. catamaran
 
@@ -1065,6 +1048,12 @@ Recommendation, awaiting a native reviewer: sv "Segelbåt", no "Seilbåt", da "S
 "Barca a vela" in both places. In all four languages the boat word is what a native customer
 searches for, and the card copy was written as prose rather than as a machine-translated label.
 
+Still open, and left on purpose: the UI side of this pair is a facet label that arrives from the
+provider through the catalogue sync, so matching it to the card means checking in an override in
+`packages/db/src/translations/facet-labels.json` and overriding vendor data for four locales. That
+is a decision about how far we override the provider, not a typo fix, so it waits for that decision
+rather than being applied here.
+
 ## 42. motor yacht
 
 A powered yacht, as opposed to a motor boat, which is the smaller category.
@@ -1092,7 +1081,7 @@ A traditional wooden Turkish motorsailer, chartered with a full crew.
 
 | Locale | UI | boat-types.json |
 | --- | --- | --- |
-| es | Gulet **[!]** | Goleta |
+| es | Gulet | Gulet |
 | uk | Гулет | Гулет |
 | de | Gulet | Gulet |
 | fr | Goélette **[!]** | Goélette turque (Gulet) |
@@ -1107,13 +1096,14 @@ Source: `Home|Hero.options.gulet`, `PlanMyTrip|result.yachtType.gulet`, `Discoun
 `packages/db/src/boat-types.json`, entry `"Gulet"`; facet values in
 `packages/db/src/translations/{uk,da}.json` under `facets.category.Gulet`.
 
-Conflicts: **es translates it as "Goleta" (schooner) in the database and keeps "Gulet" in the UI.**
-A schooner is not a gulet, so this is a meaning change, not a style choice. fr and it keep the
-loanword in parentheses in the database card but drop it in the UI.
+Settled: es rendered it "Goleta" (schooner) on the boat-type card, which was a meaning error and not
+a style choice, and the card now says "Gulet" like the UI. Any explanation belongs in the card's
+description text.
 
-Recommendation, awaiting a native reviewer: es "Gulet" in both, with any explanation kept to the
-card's description text; fr and it keep the parenthesised form on the card, since it is the card
-that has room to teach the word, and use the bare loanword in controls.
+Open, but deliberate: fr and it keep the loanword in parentheses on the card
+("Goélette turque (Gulet)", "Caicco (Gulet)") and drop it in the controls. The card has room to
+teach the word and a control does not, so this is left for the French and Italian reviewers to
+confirm rather than flatten.
 
 ## 44. house boat
 
@@ -1168,7 +1158,7 @@ apart.
 | uk | Чернетка |
 | de | Entwurf |
 | fr | Brouillon |
-| pl | Wersja robocza **[!]** (also "Szkic") |
+| pl | Wersja robocza |
 | it | Bozza |
 | nl | Concept |
 | sv | Utkast |
@@ -1179,13 +1169,9 @@ Source: `Admin|Duplicates.detailFields.draft` for the nautical sense;
 `Admin|Listings.status.draft`, `Admin|Routes.status.draft`, `Admin|Bookings.status.DRAFT`,
 `Booking|detail.status.DRAFT` for the status.
 
-Conflict: pl is the only locale with two words for the status, "Szkic" on
-`Admin|Bookings.status.DRAFT`, `Booking|detail.status.DRAFT` and
-`Admin|Duplicates.listingStatus.draft`, and "Wersja robocza" on `Admin|Listings.status.draft` and
-`Admin|Routes.status.draft`.
-
-Recommendation, awaiting a native reviewer: pl "Wersja robocza" throughout; it is the standard term
-for an unpublished record and "Szkic" reads as a sketch.
+Settled: pl carried two words for the status, "Szkic" on three keys and "Wersja robocza" on two, and
+now says "Wersja robocza" on all five. It is the standard term for an unpublished record; "Szkic"
+read as a sketch.
 
 ## 46. length
 
@@ -1213,8 +1199,14 @@ fr, it and nl correctly translate it as duration there ("Duración", "Трива
 so a Polish, Swedish, Norwegian or Danish reader sees a route labelled with a hull measurement.
 
 Recommendation, awaiting a native reviewer: pl, sv, no and da change `RoutesMap|length` to their
-word for duration. The English key should probably be renamed too, but that is a source change and
-out of scope for this file.
+word for duration.
+
+Still open, and left on purpose: the cause is the English key name. `RoutesMap|length` means a
+route's duration, so a translator reading the key alone reaches for the hull word, and the six
+locales that got it right did so by reading the screen. The real fix is renaming the key to
+`duration` in the source and in all eleven locale files. That was not done in this pass because
+another change was already in flight in those same `RoutesMap.json` files, and two edits to one file
+from two directions is how a locale loses keys.
 
 ## 47. beam
 
@@ -1290,7 +1282,7 @@ Ending a confirmed booking, and the policy that governs it.
 | es | Cancelación | Política de cancelación |
 | uk | Скасування | Політика скасування |
 | de | Stornierung | Stornierungsbedingungen |
-| fr | Annulation | Conditions d'annulation **[!]** (also "Politique d'annulation") |
+| fr | Annulation | Conditions d'annulation |
 | pl | Anulowanie | Zasady anulowania |
 | it | Cancellazione | Condizioni di cancellazione |
 | nl | Annulering | Annuleringsbeleid |
@@ -1301,11 +1293,9 @@ Ending a confirmed booking, and the policy that governs it.
 Source: `Admin|Faq.categories.cancellation`, `YachtDetail|faqCategories.cancellation`;
 `Layout|Legal.cancellation`, `Seo|Legal.cancellation.title`.
 
-Conflict: fr names the same legal page "Conditions d'annulation" in the footer and
-"Politique d'annulation" in its own page title and metadata.
-
-Recommendation, awaiting a native reviewer: fr "Conditions d'annulation" in both, since French
-consumer contracts are conventionally "conditions" and the footer link is what a customer clicks.
+Settled: fr named the same legal page "Politique d'annulation" in its own title and metadata against
+"Conditions d'annulation" in the footer, and `Seo|Legal.cancellation.title` now reads
+"Conditions d'annulation" too. French consumer contracts are conventionally "conditions".
 
 ## 51. invoice
 
@@ -1383,171 +1373,230 @@ where the same choice causes a real conflict.
 
 # Inconsistencies to resolve
 
-Grouped by locale. Every item is a place where one locale renders the same English term two
-different ways, or leaves it in English where the locale otherwise translates. Each carries a
-recommendation from the entry above, which is a suggestion for a native reviewer and not a decision.
+Grouped by locale. Every item is a place where one locale still renders the same English term two
+different ways, or leaves it in English where the locale otherwise translates, with the reason it
+was left rather than fixed. Each carries a recommendation from the entry above, which is a
+suggestion for a native reviewer and not a decision. Items that have been settled are in "Resolved"
+below.
 
 ## es (established locale)
 
-1. **bareboat** renders as "Sin tripulación" on `Common|crewTypes.bareboat` and "Sin patrón" on
-   `Common|boatCard.charterTypes.bareboat`, `Home|Hero.options.bareboat`,
-   `Layout|Footer.links.bareboat`. Recommend "Sin patrón".
-2. **guests** renders as "Huéspedes" on `Booking|invoice.summary.guests` and "Personas" on
-   `Booking|detail.guestsLabel`. Recommend "Huéspedes".
-3. **marina** renders as "Marina" on `Filters|labels.marina` and "Puerto" on `Booking|detail.marina`.
-   Recommend "Marina".
-4. **referral credit** renders as "Crédito por recomendación" on three keys and
-   "Crédito de referidos" on `YachtDetail|sidebar.credit.label`. Recommend
-   "Crédito por recomendación".
-5. **gulet** renders as "Gulet" in the UI and "Goleta" (schooner) in
-   `packages/db/src/boat-types.json`. This one is a meaning change, not a wording choice. Recommend
-   "Gulet".
-6. **home base** renders as "Base" on `Admin|Duplicates.fields.base` and "Base de origen" on
+1. **home base** renders as "Base" on `Admin|Duplicates.fields.base` and "Base de origen" on
    `Admin|Listings.sources.fields.home_base`; the customer-facing form in
-   `Booking|review.depositRefundable` is a third, "la base náutica".
-7. **booking** as an FAQ category is singular in the admin (`Admin|Faq.categories.booking`) and
-   plural on the yacht page (`YachtDetail|faqCategories.booking`).
-8. **VAT** introduces "NIF" on `Booking|invoice.vat` that does not appear on
-   `Booking|payment.invoice.vat`.
+   `Booking|review.depositRefundable` is a third, "la base náutica". Three surfaces, three registers;
+   the reviewer has to decide whether the customer-facing sentence is allowed its own wording before
+   the admin pair can be settled. Recommend "Base de origen" for the admin field.
+2. **booking** as an FAQ category is singular in the admin (`Admin|Faq.categories.booking`,
+   "Reserva") and plural on the yacht page (`YachtDetail|faqCategories.booking`, "Reservas"). Left
+   because a category heading may legitimately be plural on the customer page; it needs a reviewer
+   looking at both screens, not a find and replace.
+3. **VAT** introduces "NIF" on `Booking|invoice.vat` ("NIF/IVA") that does not appear on
+   `Booking|payment.invoice.vat` ("Número de IVA"). Left because the two are different sentences and
+   Spanish invoices do commonly carry "NIF"; only a Spanish accountant's eye settles it.
 
 ## uk (established locale)
 
-1. **skipper** renders as "капітан" in `Home|Hero.options.skippered` and "шкіпер" in
-   `Common|crewTypes.skipper` and `Home|BudgetFinder.labels.skipper`. Recommend "шкіпер".
-2. **referral credit** renders as "Бонус за рекомендацією" on three keys and
-   "Реферальний кредит" on `YachtDetail|sidebar.credit.label`, from two unrelated roots. Recommend
-   "Бонус за рекомендацією".
-3. **check-in** renders as "заселення" on `Booking|invoice.payWhen.at_check_in` and "заїзд" on
-   `Common|extras.payAtCheckIn`.
-4. **cabin** renders as "Каюти" on four keys and "Кают" on `Common|boatCard.specs.cabins`. May be a
-   correct count form; needs confirming.
+1. **check-in** renders as "заселення" on `Booking|invoice.payWhen.at_check_in` and "заїзд" on
+   `Common|extras.payAtCheckIn`. Left open because neither is right: "заселення" reads as checking
+   into a hotel and "заїзд" as driving in, and picking between two wrong words is a native
+   reviewer's call, not an alignment.
+2. **cabin** renders as "Каюти" on four keys and the genitive "Кают" on `Common|boatCard.specs.cabins`.
+   Left because the card renders "3 кают" and the genitive may be the correct count form there; the
+   fix, if any, is a plural-aware message rather than a flat label, which is a code change.
+3. **transit log** is translated as "Транзитний журнал" on the standalone extra but kept as the Latin
+   "Transit log" inside longer vendor strings in the same file. Left because the long strings are
+   vendor text carried through verbatim, so making them agree means deciding how far we rewrite
+   vendor copy.
+4. **extras** uses "Додатково" for the bare term and "доплати" (surcharges) in "Обов'язкові доплати",
+   so the pair is not built from one root. Left because both readings are good Ukrainian and the
+   mandatory list really is surcharges; a reviewer picks the root for the whole family at once.
 5. **sailing area** renders as "Регіон плавання" on `Filters|labels.sailingArea` and the bare
-   "Регіон" on `Yachts|searchBar.kinds.region`.
-6. **home base** renders as "База" on `Admin|Duplicates.fields.base` and "Домашня база" on
-   `Admin|Listings.sources.fields.home_base`.
-7. **transit log** is translated as "Транзитний журнал" on the standalone extra but kept as the Latin
-   "Transit log" inside longer vendor strings in the same file.
-8. **extras** uses "Додатково" for the bare term and "доплати" in "Обов'язкові доплати", so the pair
-   is not built from one root.
+   "Регіон" on `Yachts|searchBar.kinds.region`. Left because the short form may be a deliberate fit
+   for a narrow control.
 
 ## de (established locale)
 
-1. **operator** renders three ways: "Vercharterer" (`Admin|Commissions.table.operator`), "Betreiber"
-   (`Admin|Duplicates.fields.operator`, `Admin|Listings.table.operator`) and "Anbieter"
-   (`Admin|Listings.filters.operator`). **"Anbieter" is also de's word for provider**, so two
-   different entities share a label. Recommend "Vercharterer".
-2. **wishlist** is "Merkliste" on `Wishlist|title` and `Seo|Wishlist.title` but "Wunschliste" on
-   `YachtDetail|addToWishlist` and `YachtDetail|removeFromWishlist`. Recommend "Merkliste".
-3. **bareboat** is "Bareboat" on the two `Common` keys and "Ohne Crew" on `Home|Hero.options.bareboat`
-   and `Layout|Footer.links.bareboat`. Recommend "Ohne Crew".
-4. **home base** is "Heimathafen" on `Admin|Duplicates.fields.base` and "Heimatbasis" on
-   `Admin|Listings.sources.fields.home_base`. Recommend "Heimatbasis".
-5. **credits and balance**: `Credits|title` reads "Guthaben & Saldo", and "Guthaben" is also the word
-   inside "Empfehlungsguthaben", so the screen title reads close to "balance and balance".
-6. **English left in place** on purpose but worth confirming: "Crew" (`Filters|labels.crew` and six
-   others), "Charter" (`Booking|detail.charterTitle`), "Bareboat".
+1. **bareboat** is "Bareboat" on the two `Common` keys and "Ohne Crew" on `Home|Hero.options.bareboat`
+   and `Layout|Footer.links.bareboat`, two keys each way. Left open because both are current German
+   charter usage: "Bareboat" is what the trade writes and "Ohne Crew" is what a first-time customer
+   reads. It is a reviewer's preference, so there is no majority to defer to.
+2. **credits and balance**: `Credits|title` reads "Guthaben & Saldo", and "Guthaben" is also the word
+   inside "Empfehlungsguthaben" (entry 32), so the screen title reads close to "balance and balance".
+   Left because fixing it means renaming either the wallet title or the referral credit, and those
+   are two different entries that have to move together.
+3. **English left in place** on purpose but worth confirming: "Crew" (`Filters|labels.crew` and six
+   others) and "Charter" (`Booking|detail.charterTitle`). Both are standard in German charter copy.
 
 ## fr (machine translation, awaiting native review)
 
-1. **optional extras** is "Suppléments facultatifs" on `Booking|extras.optional` and "Options" on
-   `YachtDetail|tabs.optional-extras` and `YachtDetail|sections.optionalExtras`. "Option" is also
-   fr's word for a **hold**, so the two collide. Recommend "Suppléments facultatifs".
-2. **wishlist** is "favoris" on `Seo|Wishlist.title` and the buttons but "liste d'envies" on
-   `Wishlist|title`, so the page heading does not match its own tab title. Recommend "favoris".
-3. **cancellation policy** is "Conditions d'annulation" on `Layout|Legal.cancellation` and
-   "Politique d'annulation" on `Seo|Legal.cancellation.title`. Recommend "Conditions d'annulation".
-4. **bareboat** is "Sans équipage" on `Common|crewTypes.bareboat` and `Home|Hero.options.bareboat`
-   but "Sans skipper" on `Common|boatCard.charterTypes.bareboat`. Recommend "Sans skipper", to mirror
-   "Avec skipper".
-5. **guests** is translated as "Passagers", the only locale that shifts guest to passenger. Not a
-   conflict, but a decision that should be conscious.
-6. **charter** is "Location" as a standalone term while compounds keep "charter"
-   ("Une base de location" but also fr's own use of charter elsewhere in extras). Confirm.
+1. **guests** is translated as "Passagers", the only locale that shifts guest to passenger. Left
+   because it is internally consistent and defensible on a yacht; it is a conscious decision for the
+   reviewer, not a defect. "Passengers" as an English source term does not occur anywhere.
+2. **charter** is "Location" as a standalone term while compounds keep "charter"
+   ("Une base de location" against charter inside the extras). Left because the standalone generic
+   word and the compound trade word may both be right; changing it touches the whole charter family.
 
 ## pl (machine translation, awaiting native review)
 
 1. **length** on `RoutesMap|length` reuses "Długość", the hull-length word, for a route's duration.
-   Six other locales say duration there. Recommend pl's word for duration.
-2. **operator** splits evenly between "Operator" (Commissions, Duplicates) and "Armator"
-   (`Admin|Listings.filters.operator`, `Admin|Listings.table.operator` and two more). Recommend one.
-3. **draft status** is "Szkic" on `Admin|Bookings.status.DRAFT`, `Booking|detail.status.DRAFT` and
-   `Admin|Duplicates.listingStatus.draft`, but "Wersja robocza" on `Admin|Listings.status.draft` and
-   `Admin|Routes.status.draft`. Recommend "Wersja robocza".
-4. **boat type** is "Typ łodzi" on `Filters|labels.boatType` and "Typ jachtu" on
-   `YachtDetail|overview.boatType`. Recommend "Typ jachtu".
-5. **charter discount** is "Rabat na czarter" on two keys and "Rabat czarterowy" on
-   `Common|quoteLines.provider-discount`, the line the customer reads.
-6. **home base** is "Port macierzysty" on `Admin|Duplicates.fields.base` and "Baza macierzysta" on
-   `Admin|Listings.sources.fields.home_base`. Recommend "Baza macierzysta".
-7. **skipper** is "Skipper" on `Home|BudgetFinder.labels.skipper` and `PlanMyTrip|result.labels.skipper`
-   but "Ze skipperem" on `Common|crewTypes.skipper`, where the other locales use a bare noun.
-8. **optional extras** word order differs: "Dodatki opcjonalne" against "Opcjonalne dodatki".
-9. **total** is "Suma" on `Admin|Bookings.table.total` and "Razem" on `Admin|StaffBooking.fields.total`.
+   Left because the English key name is the cause and the real fix is renaming the key to `duration`
+   at source, which was not done in this pass with another change in flight in those files.
+2. **skipper** is the bare "Skipper" on `Home|BudgetFinder.labels.skipper` and
+   `PlanMyTrip|result.labels.skipper` but "Ze skipperem" on `Common|crewTypes.skipper`, where the
+   other locales use a bare noun. Left because `crewTypes` is the crew *option*, which reads
+   naturally as a prepositional phrase in Polish.
+3. **referral credit** differs only in number, "Środki z poleceń" against "Środki z polecenia". Left
+   as the smallest item on the list; a reviewer settles it in passing.
 
 ## it (machine translation, awaiting native review)
 
 1. **sailing yacht** is "Yacht a vela" in the UI and "Barca a vela" in
-   `packages/db/src/boat-types.json`, two labels for the same category on the same page. Recommend
-   "Barca a vela".
-2. **gulet** is "Caicco" in the UI and "Caicco (Gulet)" on the boat-type card. Recommend keeping the
-   parenthesised loanword on the card only.
+   `packages/db/src/boat-types.json`, two labels for the same category on the same page. Left
+   because the UI label comes from the provider through the catalogue sync, so aligning it means
+   overriding vendor data in `packages/db/src/translations/facet-labels.json`. Recommend
+   "Barca a vela" once that override is agreed.
+2. **gulet** is "Caicco" in the UI and "Caicco (Gulet)" on the boat-type card. Left on purpose: the
+   card has room to teach the loanword and a control does not.
 3. **charter** is "Noleggio" as a standalone term but "charter" inside compounds
-   ("Una base charter", "Sconto charter"). Confirm.
-4. **VAT** abbreviates to "P. IVA" on the invoice against "Partita IVA" on the field.
+   ("Una base charter", "Sconto charter"). Same open question as fr.
+4. **VAT** abbreviates to "P. IVA" on the invoice against "Partita IVA" on the field. Left because
+   "P. IVA" is the conventional Italian abbreviation on an invoice line.
 
 ## nl (machine translation, awaiting native review)
 
-1. **skipper** is "Schipper" throughout the UI but "Skipper" on the priced extra of the same name in
-   `packages/db/src/translations/extra-labels.json`. Recommend "Schipper" in both.
-2. **booking** is "Boeking" everywhere except `Admin|Faq.categories.booking` and
-   `YachtDetail|faqCategories.booking`, which say "Boeken" (the verb). Recommend "Boeking".
-3. **English left untranslated** where nl translates elsewhere: "Bareboat"
+1. **English left untranslated** where nl translates elsewhere: "Bareboat"
    (`Common|crewTypes.bareboat` and three more), "Operator"
    (`Admin|Commissions.table.operator` and seven more), "Provider"
    (`Admin|Sync.table.provider` and eleven more), "Charter" (`Booking|detail.charterTitle`),
-   "Reviews" (`YachtDetail|tabs.review`). Bareboat and charter are trade terms and may be right;
-   operator, provider and reviews have ordinary Dutch equivalents.
+   "Reviews" (`YachtDetail|tabs.review`). Left because Dutch charter and admin copy genuinely mixes
+   English in, and replacing five terms at once changes the register of the whole locale. Bareboat
+   and charter are trade terms and may be right; operator, provider and reviews have ordinary Dutch
+   equivalents and are the three to ask about first.
 
 ## sv (machine translation, awaiting native review)
 
 1. **sailing yacht** is "Segelyacht" in the UI and "Segelbåt" in
-   `packages/db/src/boat-types.json`. Recommend "Segelbåt".
-2. **skipper** is "Skeppare" in the UI and "Skipper" on the priced extra. Recommend "Skeppare".
-3. **length** on `RoutesMap|length` reuses "Längd", the hull-length word, for a route's duration.
-4. **mainsail type** is "Storsegelstyp" twice and "Typ av storsegel" on
-   `YachtDetail|overview.mainsail`. Recommend "Storsegelstyp".
-5. **hold** is "Reservation", which is close to sv's own reading of booking; confirm the admin sync
-   screen still distinguishes them.
-6. **VAT** abbreviates to "Momsnr" on the invoice against "Momsregistreringsnummer" on the field.
+   `packages/db/src/boat-types.json`. Left for the same reason as it: the UI label is provider data
+   and overriding it is a decision. Recommend "Segelbåt".
+2. **length** on `RoutesMap|length` reuses "Längd", the hull-length word, for a route's duration.
+   Same cause as pl: the English key name, whose rename is the real fix.
+3. **hold** is "Reservation", which is close to sv's own reading of booking ("Bokning"); confirm the
+   admin sync screen still distinguishes them. Left because both words are correct in isolation.
+4. **VAT** abbreviates to "Momsnr" on the invoice against "Momsregistreringsnummer" on the field.
+   The abbreviation is expected on an invoice line; only the full stop, which da writes and sv does
+   not, should be settled once.
 
 ## no (machine translation, awaiting native review)
 
 1. **sailing yacht** is "Seilyacht" in the UI and "Seilbåt" in
-   `packages/db/src/boat-types.json`. Recommend "Seilbåt".
+   `packages/db/src/boat-types.json`. Provider data on the UI side; recommend "Seilbåt".
 2. **length** on `RoutesMap|length` reuses "Lengde", the hull-length word, for a route's duration.
+   Same key-name cause as pl.
 3. **extras** is "Ekstrautstyr" (extra equipment), which is narrower than the list's contents
-   (cleaning, transfers, a skipper).
+   (cleaning, transfers, a skipper). Left because replacing it means finding a Norwegian word that
+   covers services and equipment at once, which is a reviewer's job.
 4. **credits and balance** is "Bonus og saldo", and "Vervebonus" uses the same "bonus" for the
-   referral credit, so the wallet title reads close to "bonus and balance of bonus".
+   referral credit, so the wallet title reads close to "bonus and balance of bonus". Left for the
+   same reason as the German pair: the title and the credit have to move together.
 5. **hold** is "Reservasjon", close to no's "Booking"; confirm the two stay distinct.
-6. **booking** is left as the English "Booking" while the locale translates elsewhere.
+6. **booking** is left as the English "Booking" while the locale translates elsewhere. Left because
+   "Booking" is ordinary Norwegian usage, but it is the one term where the English makes the hold
+   above harder to tell apart.
 
 ## da (machine translation, awaiting native review)
 
-1. **operator** is "Udbyder" and **provider** is "Leverandør". "Udbyder" is Danish's natural word for
-   provider, so the two admin columns are hard to tell apart. Needs a distinct word for one of them.
-2. **sailing yacht** is "Sejlyacht" in the UI and "Sejlbåd" in
-   `packages/db/src/boat-types.json`. Recommend "Sejlbåd".
-3. **length** on `RoutesMap|length` reuses "Længde", the hull-length word, for a route's duration.
-4. **hold** is "Reservation", close to da's "Booking"; confirm the two stay distinct.
-5. **VAT** abbreviates to "Momsnr." on the invoice against "Momsnummer" on the field.
-6. **booking** is left as the English "Booking" while the locale translates elsewhere.
+1. **sailing yacht** is "Sejlyacht" in the UI and "Sejlbåd" in
+   `packages/db/src/boat-types.json`. Provider data on the UI side; recommend "Sejlbåd".
+2. **length** on `RoutesMap|length` reuses "Længde", the hull-length word, for a route's duration.
+   Same key-name cause as pl.
+3. **hold** is "Reservation", close to da's "Booking"; confirm the two stay distinct.
+4. **VAT** abbreviates to "Momsnr." on the invoice against "Momsnummer" on the field. Settle the
+   full stop against sv's "Momsnr" once, for both locales.
+5. **booking** is left as the English "Booking" while the locale translates elsewhere, with the same
+   caveat as no.
 
 ## Cross-locale, worth one decision each
 
-- **operator vs provider** collide in **de** ("Anbieter" for both) and in **da** ("Udbyder" and
-  "Leverandør", near synonyms). These are the two entities the admin most needs to tell apart.
 - **`RoutesMap|length`** reuses the hull-length word for a route's duration in **pl, sv, no and da**.
-  The English key is the root cause and should probably be renamed at source.
-- **sailing yacht** disagrees between the UI and `boat-types.json` in **it, sv, no and da**.
-- **skipper** disagrees between the UI and `extra-labels.json` in **nl and sv**.
+  The English key name is the root cause: it says "length" and means duration. Renaming it to
+  `duration` in the source and in all eleven locale files is the real fix, and it was deliberately
+  not done here because another change was already in flight in those `RoutesMap.json` files.
+- **sailing yacht** disagrees between the UI facet label and `boat-types.json` in **it, sv, no and
+  da**. The UI label comes from the provider through the catalogue sync, so aligning the two means
+  checking in an override in `packages/db/src/translations/facet-labels.json`. That is a decision
+  about overriding vendor data, not a typo fix.
+- **charter inside compounds** in **fr and it**, where the standalone term is the generic rental
+  word but compounds keep "charter".
+- **VAT abbreviations on the invoice** in **it, sv and da**, all three shorter than the field label
+  the customer filled in.
+
+---
+
+# Resolved
+
+Conflicts that were open in an earlier pass of this file and have since been fixed in the message
+and database files. Recorded so the same choice is not re-litigated, and so a reviewer who disagrees
+knows what to change back.
+
+**es**
+
+- **bareboat** - "Sin patrón"; `Common|crewTypes.bareboat` joined the other three keys.
+- **guests** - "Huéspedes"; `Booking|detail.guestsLabel` was "Personas".
+- **marina** - "Marina"; `Booking|detail.marina` was "Puerto".
+- **referral credit** - "Crédito por recomendación"; `YachtDetail|sidebar.credit.label` was
+  "Crédito de referidos".
+- **gulet** - "Gulet" on the boat-type card; `packages/db/src/boat-types.json` said "Goleta"
+  (schooner), a meaning error rather than a style choice.
+
+**de**
+
+- **operator** - "Vercharterer" on all four admin keys, which also frees "Anbieter" to mean provider
+  alone.
+- **wishlist** - "Merkliste"; `YachtDetail|addToWishlist` is "Zur Merkliste" and `removeFromWishlist`
+  is "Von Merkliste entfernen", where both said "Wunschliste".
+- **home base** - "Heimatbasis"; `Admin|Duplicates.fields.base` said "Heimathafen".
+
+**uk**
+
+- **skipper** - "Зі шкіпером"; `Home|Hero.options.skippered` said "З капітаном".
+- **referral credit** - "Бонус за рекомендацією"; `YachtDetail|sidebar.credit.label` said
+  "Реферальний кредит".
+- **home base** - "Домашня база"; `Admin|Duplicates.fields.base` said "База".
+
+**fr**
+
+- **optional extras** - "Suppléments facultatifs"; `YachtDetail|tabs.optional-extras` and
+  `YachtDetail|sections.optionalExtras` said "Options", which collided with fr's word for a hold.
+- **wishlist** - "Vos favoris"; `Wishlist|title` said "Votre liste d'envies".
+- **cancellation policy** - "Conditions d'annulation"; `Seo|Legal.cancellation.title` said
+  "Politique d'annulation".
+- **bareboat** - "Sans skipper"; `Common|crewTypes.bareboat` and `Home|Hero.options.bareboat` said
+  "Sans équipage".
+
+**pl**
+
+- **operator** - "Armator" everywhere; "Operator" is gone.
+- **draft status** - "Wersja robocza" on all five status keys; "Szkic" is gone.
+- **boat type** - "Typ jachtu"; `Filters|labels.boatType` said "Typ łodzi".
+- **charter discount** - "Rabat na czarter"; `Common|quoteLines.provider-discount` said
+  "Rabat czarterowy".
+- **home base** - "Baza macierzysta"; `Admin|Duplicates.fields.base` said "Port macierzysty".
+- **total** - "Suma"; `Admin|StaffBooking.fields.total` said "Razem".
+
+**nl**
+
+- **booking** - "Boeking"; `Admin|Faq.categories.booking` and `YachtDetail|faqCategories.booking`
+  said "Boeken", the verb.
+- **skipper** - "Schipper" on the "Skipper" priced extra in
+  `packages/db/src/translations/extra-labels.json`.
+
+**sv**
+
+- **mainsail type** - "Storsegelstyp"; `YachtDetail|overview.mainsail` said "Typ av storsegel".
+- **skipper** - "Skeppare" on the "Skipper" priced extra in
+  `packages/db/src/translations/extra-labels.json`.
+
+**da**
+
+- **operator** - "Udlejer" on all four admin keys, so it no longer collides with "Leverandør" for
+  provider.

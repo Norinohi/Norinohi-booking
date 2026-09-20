@@ -32,7 +32,7 @@
     },
     "table": {
       "provider": "Dostawca",
-      "operator": "Operator",
+      "operator": "Armator",
       "rate": "Stawka",
       "window": "Ważność",
       "status": "Status",
@@ -84,7 +84,7 @@
       "status": "Status"
     },
     "status": {
-      "DRAFT": "Szkic",
+      "DRAFT": "Wersja robocza",
       "QUOTED": "Wyceniona",
       "OPTION_PENDING": "Blokowanie",
       "OPTION_HELD": "Zablokowana",
@@ -205,18 +205,18 @@
       "externalId": "ID dostawcy",
       "status": "Status oferty",
       "matchStatus": "Status dopasowania",
-      "operator": "Operator",
+      "operator": "Armator",
       "model": "Model",
       "year": "Rok budowy",
       "length": "Długość",
       "cabins": "Kabiny",
       "berths": "Koje",
-      "base": "Port macierzysty",
+      "base": "Baza macierzysta",
       "location": "Lokalizacja"
     },
     "lengthValue": "{value} m",
     "listingStatus": {
-      "draft": "Szkic",
+      "draft": "Wersja robocza",
       "published": "Opublikowana",
       "hidden": "Ukryta"
     },
@@ -1049,7 +1049,7 @@
       "customer": "Klient",
       "charter": "Czarter",
       "provider": "Dostawca",
-      "total": "Razem",
+      "total": "Suma",
       "collected": "Pobrano",
       "timeline": "Historia"
     },

@@ -312,7 +312,7 @@
       "refunded": "Zwrócona"
     },
     "status": {
-      "DRAFT": "Szkic",
+      "DRAFT": "Wersja robocza",
       "QUOTED": "Wyceniona",
       "OPTION_PENDING": "Rezerwowanie",
       "OPTION_HELD": "Wstępnie zarezerwowana",

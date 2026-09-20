@@ -1,6 +1,6 @@
 {
   "crewTypes": {
-    "bareboat": "Sans équipage",
+    "bareboat": "Sans skipper",
     "skipper": "Skipper",
     "full-crew": "Équipage complet"
   },

@@ -211,7 +211,7 @@
       "length": "Довжина",
       "cabins": "Каюти",
       "berths": "Спальні місця",
-      "base": "База",
+      "base": "Домашня база",
       "location": "Локація"
     },
     "lengthValue": "{value} м",

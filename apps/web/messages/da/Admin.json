@@ -32,7 +32,7 @@
     },
     "table": {
       "provider": "Leverandør",
-      "operator": "Udbyder",
+      "operator": "Udlejer",
       "rate": "Sats",
       "window": "Gyldig",
       "status": "Status",
@@ -205,7 +205,7 @@
       "externalId": "Leverandør-id",
       "status": "Annoncens status",
       "matchStatus": "Matchstatus",
-      "operator": "Udbyder",
+      "operator": "Udlejer",
       "model": "Model",
       "year": "Byggeår",
       "length": "Længde",
@@ -633,7 +633,7 @@
       "provider": "Leverandør",
       "status": "Status",
       "allProviders": "Alle leverandører",
-      "operator": "Udbyder",
+      "operator": "Udlejer",
       "allOperators": "Alle udbydere",
       "allStatuses": "Alle statusser",
       "search": "Søg på titel eller slug"
@@ -641,7 +641,7 @@
     "table": {
       "listing": "Annonce",
       "provider": "Leverandør",
-      "operator": "Udbyder",
+      "operator": "Udlejer",
       "model": "Model og år",
       "place": "Base og beliggenhed",
       "price": "Fra",
