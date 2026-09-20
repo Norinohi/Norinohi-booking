@@ -30,6 +30,18 @@
       "nl": {
         "label": "Catamaran",
         "description": "Stabiel, breed en met weinig diepgang. De standaardkeuze voor gezinnen en groepen."
+      },
+      "sv": {
+        "label": "Katamaran",
+        "description": "Stabil, bred och med litet djupgående. Standardvalet för familjer och sällskap."
+      },
+      "no": {
+        "label": "Katamaran",
+        "description": "Stabil, bred og med liten dypgang. Standardvalget for familier og grupper."
+      },
+      "da": {
+        "label": "Katamaran",
+        "description": "Stabil, bred og med lav dybgang. Standardvalget for familier og grupper."
       }
     }
   },
@@ -64,6 +76,18 @@
       "nl": {
         "label": "Zeiljacht",
         "description": "De klassieke eenrompcharter. De beste prijs per hut onder zeil."
+      },
+      "sv": {
+        "label": "Segelbåt",
+        "description": "Den klassiska enskrovscharten. Bäst värde per hytt under segel."
+      },
+      "no": {
+        "label": "Seilbåt",
+        "description": "Det klassiske charteret med enskrogsbåt. Best pris per lugar under seil."
+      },
+      "da": {
+        "label": "Sejlbåd",
+        "description": "Det klassiske charter med enkeltskrog. Bedst værdi pr. kahyt under sejl."
       }
     }
   },
@@ -98,6 +122,18 @@
       "nl": {
         "label": "Motorboot",
         "description": "Een snelle en wendbare optie voor kusttochten en dagtochten. Een prima keuze als je vrijheid en flexibiliteit belangrijk vindt."
+      },
+      "sv": {
+        "label": "Motorbåt",
+        "description": "Ett snabbt och lättrört alternativ för kustturer och dagsutflykter. Ett utmärkt val för dig som värderar frihet och flexibilitet."
+      },
+      "no": {
+        "label": "Motorbåt",
+        "description": "Et raskt og kvikt alternativ for kystturer og dagsturer. Et godt valg for deg som setter pris på frihet og fleksibilitet."
+      },
+      "da": {
+        "label": "Motorbåd",
+        "description": "En hurtig og adræt mulighed til kystture og dagsudflugter. Et godt valg, hvis du sætter pris på frihed og fleksibilitet."
       }
     }
   },
@@ -132,6 +168,18 @@
       "nl": {
         "label": "Motorjacht",
         "description": "Meer kust per dag, zonder dat je zeilervaring nodig hebt."
+      },
+      "sv": {
+        "label": "Motoryacht",
+        "description": "Täck mer kust per dag, utan att du behöver någon seglingsvana."
+      },
+      "no": {
+        "label": "Motoryacht",
+        "description": "Dekk mer kyst per dag, uten at det kreves seilerfaring."
+      },
+      "da": {
+        "label": "Motoryacht",
+        "description": "Dæk mere kyst på en dag, uden at du behøver sejlerfaring."
       }
     }
   },
@@ -166,6 +214,18 @@
       "nl": {
         "label": "Woonboot",
         "description": "Een drijvend huis met een gezellige leefruimte en alles wat je nodig hebt voor een comfortabel verblijf. Ideaal voor rustige tochten op binnenwateren."
+      },
+      "sv": {
+        "label": "Husbåt",
+        "description": "Ett flytande hem med ett mysigt vardagsrum och allt du behöver för en bekväm vistelse. Perfekt för lugna färder på inre vatten."
+      },
+      "no": {
+        "label": "Husbåt",
+        "description": "Et flytende hjem med koselig oppholdsrom og alt du trenger for et komfortabelt opphold. Ideell for rolige turer på innlandsvann."
+      },
+      "da": {
+        "label": "Husbåd",
+        "description": "Et flydende hjem med hyggelig opholdsplads og alt det nødvendige til et behageligt ophold. Ideel til rolige ture på indre farvande."
       }
     }
   },
@@ -200,6 +260,18 @@
       "nl": {
         "label": "Gulet",
         "description": "Een traditioneel houten jacht met een ruim dek en comfortabele plekken om te ontspannen. Een ideale keuze voor rustige tochten langs de kust."
+      },
+      "sv": {
+        "label": "Gulet",
+        "description": "En traditionell träyacht med rymligt däck och bekväma ytor att koppla av på. Ett idealiskt val för lugna kustfärder."
+      },
+      "no": {
+        "label": "Gulet",
+        "description": "En tradisjonell trebåt med romslig dekk og behagelige områder for avslapning. Et ideelt valg for rolige turer langs kysten."
+      },
+      "da": {
+        "label": "Gulet",
+        "description": "En traditionel træyacht med rummeligt dæk og behagelige områder til afslapning. Et ideelt valg til afslappede ture langs kysten."
       }
     }
   },
@@ -234,6 +306,18 @@
       "nl": {
         "label": "Motorcatamaran",
         "description": "Een ruim en stabiel jacht met comfortabele plekken om te ontspannen. Een prima keuze voor langere tochten en groepsreizen."
+      },
+      "sv": {
+        "label": "Motorkatamaran",
+        "description": "En rymlig och stabil båt med bekväma ytor att koppla av på. Ett utmärkt val för längre färder och sällskapsresor."
+      },
+      "no": {
+        "label": "Motorkatamaran",
+        "description": "En romslig og stabil båt med behagelige områder for avslapning. Et godt valg for lengre turer og grupper."
+      },
+      "da": {
+        "label": "Motorkatamaran",
+        "description": "En rummelig og stabil yacht med behagelige områder til afslapning. Et godt valg til længere ture og grupperejser."
       }
     }
   },
@@ -268,6 +352,18 @@
       "nl": {
         "label": "Luxe jacht",
         "description": "Met bemanning, volledige verzorging en ingericht op hotelniveau."
+      },
+      "sv": {
+        "label": "Lyxyacht",
+        "description": "Med besättning, full förplägnad och inredd till hotellstandard."
+      },
+      "no": {
+        "label": "Luksusyacht",
+        "description": "Med mannskap, full forpleining og utstyrt til hotellstandard."
+      },
+      "da": {
+        "label": "Luksusyacht",
+        "description": "Med besætning, fuld forplejning og indrettet til hotelstandard."
       }
     }
   }

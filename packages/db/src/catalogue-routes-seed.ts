@@ -71,6 +71,9 @@ export const RETURN_NOTE = {
   pl: "Powrót do bazy: jacht jest zdawany rano.",
   it: "Rientro alla base: la barca si riconsegna in mattinata.",
   nl: "Terug op de basis: de boot wordt 's ochtends overgedragen.",
+  sv: "Tillbaka vid basen: båten lämnas tillbaka på morgonen.",
+  no: "Tilbake på basen: båten leveres tilbake om morgenen.",
+  da: "Tilbage på basen: båden afleveres om formiddagen.",
 } satisfies Record<Locale, string>;
 
 const copySchema = z.object({ title: z.string(), description: z.string() });

@@ -7,7 +7,10 @@
       "fr": "Bonaire, Saint-Eustache et Saba",
       "pl": "Bonaire, Sint Eustatius i Saba",
       "it": "Bonaire, Sint Eustatius e Saba",
-      "nl": "Bonaire, Sint Eustatius en Saba"
+      "nl": "Bonaire, Sint Eustatius en Saba",
+      "sv": "Bonaire, Sint Eustatius och Saba",
+      "no": "Bonaire, Sint Eustatius og Saba",
+      "da": "Bonaire, Sint Eustatius og Saba"
     },
     "United Kingdom": {
       "de": "Vereinigtes Königreich",
@@ -16,7 +19,10 @@
       "fr": "Royaume-Uni",
       "pl": "Wielka Brytania",
       "it": "Regno Unito",
-      "nl": "Verenigd Koninkrijk"
+      "nl": "Verenigd Koninkrijk",
+      "sv": "Storbritannien",
+      "no": "Storbritannia",
+      "da": "Storbritannien"
     }
   },
   "category": {
@@ -27,7 +33,10 @@
       "fr": "Catamaran à moteur",
       "pl": "Katamaran motorowy",
       "it": "Catamarano a motore",
-      "nl": "Motorcatamaran"
+      "nl": "Motorcatamaran",
+      "sv": "Motorkatamaran",
+      "no": "Motorkatamaran",
+      "da": "Motorkatamaran"
     },
     "Other": {
       "de": "Sonstige",
@@ -36,7 +45,10 @@
       "fr": "Autre",
       "pl": "Inne",
       "it": "Altro",
-      "nl": "Overig"
+      "nl": "Overig",
+      "sv": "Annat",
+      "no": "Annet",
+      "da": "Andet"
     },
     "Fisherman": {
       "de": "Fischerboot",
@@ -45,7 +57,10 @@
       "fr": "Bateau de pêche",
       "pl": "Łódź rybacka",
       "it": "Fisherman",
-      "nl": "Vissersboot"
+      "nl": "Vissersboot",
+      "sv": "Fiskebåt",
+      "no": "Fiskebåt",
+      "da": "Fiskerbåd"
     },
     "Floating villa": {
       "de": "Schwimmende Villa",
@@ -54,7 +69,10 @@
       "fr": "Villa flottante",
       "pl": "Pływająca willa",
       "it": "Villa galleggiante",
-      "nl": "Drijvende villa"
+      "nl": "Drijvende villa",
+      "sv": "Flytande villa",
+      "no": "Flytende villa",
+      "da": "Flydende villa"
     },
     "Jet Ski": {
       "de": "Jetski",
@@ -63,7 +81,10 @@
       "fr": "Jet-ski",
       "pl": "Skuter wodny",
       "it": "Moto d'acqua",
-      "nl": "Waterscooter"
+      "nl": "Waterscooter",
+      "sv": "Vattenskoter",
+      "no": "Vannscooter",
+      "da": "Jetski"
     },
     "Motorsailer": {
       "de": "Motorsegler",
@@ -72,7 +93,10 @@
       "fr": "Motorsailer",
       "pl": "Motorżaglowiec",
       "it": "Motorsailer",
-      "nl": "Motorsailer"
+      "nl": "Motorsailer",
+      "sv": "Motorseglare",
+      "no": "Motorseiler",
+      "da": "Motorsejler"
     },
     "Power catamaran": {
       "de": "Motorkatamaran",
@@ -81,7 +105,10 @@
       "fr": "Catamaran à moteur",
       "pl": "Katamaran motorowy",
       "it": "Catamarano a motore",
-      "nl": "Motorcatamaran"
+      "nl": "Motorcatamaran",
+      "sv": "Motorkatamaran",
+      "no": "Motorkatamaran",
+      "da": "Motorkatamaran"
     }
   },
   "region": {
@@ -92,7 +119,10 @@
       "fr": "Îles Abacos",
       "pl": "Wyspy Abaco",
       "it": "Isole Abaco",
-      "nl": "Abaco-eilanden"
+      "nl": "Abaco-eilanden",
+      "sv": "Abacoöarna",
+      "no": "Abaco-øyene",
+      "da": "Abaco-øerne"
     },
     "Abruzzo": {
       "de": "Abruzzen",
@@ -101,7 +131,10 @@
       "fr": "Abruzzes",
       "pl": "Abruzja",
       "it": "Abruzzo",
-      "nl": "Abruzzen"
+      "nl": "Abruzzen",
+      "sv": "Abruzzo",
+      "no": "Abruzzo",
+      "da": "Abruzzo"
     },
     "Alicante": {
       "de": "Alicante",
@@ -110,7 +143,10 @@
       "fr": "Alicante",
       "pl": "Alicante",
       "it": "Alicante",
-      "nl": "Alicante"
+      "nl": "Alicante",
+      "sv": "Alicante",
+      "no": "Alicante",
+      "da": "Alicante"
     },
     "Andalusia": {
       "de": "Andalusien",
@@ -119,7 +155,10 @@
       "fr": "Andalousie",
       "pl": "Andaluzja",
       "it": "Andalusia",
-      "nl": "Andalusië"
+      "nl": "Andalusië",
+      "sv": "Andalusien",
+      "no": "Andalusia",
+      "da": "Andalusien"
     },
     "Anguilla": {
       "de": "Anguilla",
@@ -128,7 +167,10 @@
       "fr": "Anguilla",
       "pl": "Anguilla",
       "it": "Anguilla",
-      "nl": "Anguilla"
+      "nl": "Anguilla",
+      "sv": "Anguilla",
+      "no": "Anguilla",
+      "da": "Anguilla"
     },
     "Apulia": {
       "de": "Apulien",
@@ -137,7 +179,10 @@
       "fr": "Pouilles",
       "pl": "Apulia",
       "it": "Puglia",
-      "nl": "Apulië"
+      "nl": "Apulië",
+      "sv": "Apulien",
+      "no": "Apulia",
+      "da": "Apulien"
     },
     "Australia and Oceania": {
       "de": "Australien und Ozeanien",
@@ -146,7 +191,10 @@
       "fr": "Australie et Océanie",
       "pl": "Australia i Oceania",
       "it": "Australia e Oceania",
-      "nl": "Australië en Oceanië"
+      "nl": "Australië en Oceanië",
+      "sv": "Australien och Oceanien",
+      "no": "Australia og Oseania",
+      "da": "Australien og Oceanien"
     },
     "Azores": {
       "de": "Azoren",
@@ -155,7 +203,10 @@
       "fr": "Açores",
       "pl": "Azory",
       "it": "Azzorre",
-      "nl": "Azoren"
+      "nl": "Azoren",
+      "sv": "Azorerna",
+      "no": "Asorene",
+      "da": "Azorerne"
     },
     "Baja California Sur": {
       "de": "Baja California Sur",
@@ -164,7 +215,10 @@
       "fr": "Basse-Californie du Sud",
       "pl": "Kalifornia Dolna Południowa",
       "it": "Baja California Sur",
-      "nl": "Baja California Sur"
+      "nl": "Baja California Sur",
+      "sv": "Baja California Sur",
+      "no": "Baja California Sur",
+      "da": "Baja California Sur"
     },
     "Balearic Islands": {
       "de": "Balearen",
@@ -173,7 +227,10 @@
       "fr": "Îles Baléares",
       "pl": "Baleary",
       "it": "Isole Baleari",
-      "nl": "Balearen"
+      "nl": "Balearen",
+      "sv": "Balearerna",
+      "no": "Balearene",
+      "da": "Balearerne"
     },
     "Bali": {
       "de": "Bali",
@@ -182,7 +239,10 @@
       "fr": "Bali",
       "pl": "Bali",
       "it": "Bali",
-      "nl": "Bali"
+      "nl": "Bali",
+      "sv": "Bali",
+      "no": "Bali",
+      "da": "Bali"
     },
     "Barlavento": {
       "de": "Barlavento",
@@ -191,7 +251,10 @@
       "fr": "Barlavento",
       "pl": "Barlavento",
       "it": "Barlavento",
-      "nl": "Barlavento"
+      "nl": "Barlavento",
+      "sv": "Barlavento",
+      "no": "Barlavento",
+      "da": "Barlavento"
     },
     "Belize": {
       "de": "Belize",
@@ -200,7 +263,10 @@
       "fr": "Belize",
       "pl": "Belize",
       "it": "Belize",
-      "nl": "Belize"
+      "nl": "Belize",
+      "sv": "Belize",
+      "no": "Belize",
+      "da": "Belize"
     },
     "Bermuda": {
       "de": "Bermuda",
@@ -209,7 +275,10 @@
       "fr": "Bermudes",
       "pl": "Bermudy",
       "it": "Bermuda",
-      "nl": "Bermuda"
+      "nl": "Bermuda",
+      "sv": "Bermuda",
+      "no": "Bermuda",
+      "da": "Bermuda"
     },
     "Bocas del Toro": {
       "de": "Bocas del Toro",
@@ -218,7 +287,10 @@
       "fr": "Bocas del Toro",
       "pl": "Bocas del Toro",
       "it": "Bocas del Toro",
-      "nl": "Bocas del Toro"
+      "nl": "Bocas del Toro",
+      "sv": "Bocas del Toro",
+      "no": "Bocas del Toro",
+      "da": "Bocas del Toro"
     },
     "Bonaire": {
       "de": "Bonaire",
@@ -227,7 +299,10 @@
       "fr": "Bonaire",
       "pl": "Bonaire",
       "it": "Bonaire",
-      "nl": "Bonaire"
+      "nl": "Bonaire",
+      "sv": "Bonaire",
+      "no": "Bonaire",
+      "da": "Bonaire"
     },
     "Brandenburg": {
       "de": "Brandenburg",
@@ -236,7 +311,10 @@
       "fr": "Brandebourg",
       "pl": "Brandenburgia",
       "it": "Brandeburgo",
-      "nl": "Brandenburg"
+      "nl": "Brandenburg",
+      "sv": "Brandenburg",
+      "no": "Brandenburg",
+      "da": "Brandenburg"
     },
     "Brittany": {
       "de": "Bretagne",
@@ -245,7 +323,10 @@
       "fr": "Bretagne",
       "pl": "Bretania",
       "it": "Bretagna",
-      "nl": "Bretagne"
+      "nl": "Bretagne",
+      "sv": "Bretagne",
+      "no": "Bretagne",
+      "da": "Bretagne"
     },
     "Calabria": {
       "de": "Kalabrien",
@@ -254,7 +335,10 @@
       "fr": "Calabre",
       "pl": "Kalabria",
       "it": "Calabria",
-      "nl": "Calabrië"
+      "nl": "Calabrië",
+      "sv": "Kalabrien",
+      "no": "Calabria",
+      "da": "Calabrien"
     },
     "California": {
       "de": "Kalifornien",
@@ -263,7 +347,10 @@
       "fr": "Californie",
       "pl": "Kalifornia",
       "it": "California",
-      "nl": "Californië"
+      "nl": "Californië",
+      "sv": "Kalifornien",
+      "no": "California",
+      "da": "Californien"
     },
     "Catalonia": {
       "de": "Katalonien",
@@ -272,7 +359,10 @@
       "fr": "Catalogne",
       "pl": "Katalonia",
       "it": "Catalogna",
-      "nl": "Catalonië"
+      "nl": "Catalonië",
+      "sv": "Katalonien",
+      "no": "Catalonia",
+      "da": "Catalonien"
     },
     "Central Region of Malta": {
       "de": "Zentralregion Malta",
@@ -281,7 +371,10 @@
       "fr": "Région centrale de Malte",
       "pl": "Region Centralny Malty",
       "it": "Regione centrale di Malta",
-      "nl": "Centrale regio van Malta"
+      "nl": "Centrale regio van Malta",
+      "sv": "Maltas centrala region",
+      "no": "Malta, sentralregionen",
+      "da": "Maltas centralregion"
     },
     "Chesapeake Bay": {
       "de": "Chesapeake Bay",
@@ -290,7 +383,10 @@
       "fr": "Baie de Chesapeake",
       "pl": "Zatoka Chesapeake",
       "it": "Baia di Chesapeake",
-      "nl": "Chesapeake Bay"
+      "nl": "Chesapeake Bay",
+      "sv": "Chesapeake Bay",
+      "no": "Chesapeake Bay",
+      "da": "Chesapeake Bay"
     },
     "Colon": {
       "de": "Colón",
@@ -299,7 +395,10 @@
       "fr": "Colón",
       "pl": "Colón",
       "it": "Colón",
-      "nl": "Colón"
+      "nl": "Colón",
+      "sv": "Colon",
+      "no": "Colón",
+      "da": "Colón"
     },
     "Costa Brava": {
       "de": "Costa Brava",
@@ -308,7 +407,10 @@
       "fr": "Costa Brava",
       "pl": "Costa Brava",
       "it": "Costa Brava",
-      "nl": "Costa Brava"
+      "nl": "Costa Brava",
+      "sv": "Costa Brava",
+      "no": "Costa Brava",
+      "da": "Costa Brava"
     },
     "Crete": {
       "de": "Kreta",
@@ -317,7 +419,10 @@
       "fr": "Crète",
       "pl": "Kreta",
       "it": "Creta",
-      "nl": "Kreta"
+      "nl": "Kreta",
+      "sv": "Kreta",
+      "no": "Kreta",
+      "da": "Kreta"
     },
     "Cuba": {
       "de": "Kuba",
@@ -326,7 +431,10 @@
       "fr": "Cuba",
       "pl": "Kuba",
       "it": "Cuba",
-      "nl": "Cuba"
+      "nl": "Cuba",
+      "sv": "Kuba",
+      "no": "Cuba",
+      "da": "Cuba"
     },
     "Dodecanese": {
       "de": "Dodekanes",
@@ -335,7 +443,10 @@
       "fr": "Dodécanèse",
       "pl": "Dodekanez",
       "it": "Dodecaneso",
-      "nl": "Dodekanesos"
+      "nl": "Dodekanesos",
+      "sv": "Dodekaneserna",
+      "no": "Dodekanesene",
+      "da": "Dodekaneserne"
     },
     "East Macedonia and Thrace": {
       "de": "Ostmakedonien und Thrakien",
@@ -344,7 +455,10 @@
       "fr": "Macédoine-Orientale-et-Thrace",
       "pl": "Macedonia Wschodnia i Tracja",
       "it": "Macedonia orientale e Tracia",
-      "nl": "Oost-Macedonië en Thracië"
+      "nl": "Oost-Macedonië en Thracië",
+      "sv": "Östra Makedonien och Thrakien",
+      "no": "Øst-Makedonia og Thrakia",
+      "da": "Østmakedonien og Thrakien"
     },
     "Eastern Province": {
       "de": "Ostprovinz",
@@ -353,7 +467,10 @@
       "fr": "Province de l'Est",
       "pl": "Prowincja Wschodnia",
       "it": "Provincia orientale",
-      "nl": "Oostelijke Provincie"
+      "nl": "Oostelijke Provincie",
+      "sv": "Östra provinsen",
+      "no": "Østprovinsen",
+      "da": "Østprovinsen"
     },
     "Epirus": {
       "de": "Epirus",
@@ -362,7 +479,10 @@
       "fr": "Épire",
       "pl": "Epir",
       "it": "Epiro",
-      "nl": "Epirus"
+      "nl": "Epirus",
+      "sv": "Epirus",
+      "no": "Epirus",
+      "da": "Epirus"
     },
     "Exuma Islands": {
       "de": "Exuma-Inseln",
@@ -371,7 +491,10 @@
       "fr": "Îles Exumas",
       "pl": "Wyspy Exuma",
       "it": "Isole Exuma",
-      "nl": "Exuma-eilanden"
+      "nl": "Exuma-eilanden",
+      "sv": "Exumaöarna",
+      "no": "Exuma-øyene",
+      "da": "Exuma-øerne"
     },
     "Faro": {
       "de": "Faro",
@@ -380,7 +503,10 @@
       "fr": "Faro",
       "pl": "Faro",
       "it": "Faro",
-      "nl": "Faro"
+      "nl": "Faro",
+      "sv": "Faro",
+      "no": "Faro",
+      "da": "Faro"
     },
     "Flemish Region": {
       "de": "Flämische Region",
@@ -389,7 +515,10 @@
       "fr": "Région flamande",
       "pl": "Region Flamandzki",
       "it": "Regione fiamminga",
-      "nl": "Vlaams Gewest"
+      "nl": "Vlaams Gewest",
+      "sv": "Flandern",
+      "no": "Flandern",
+      "da": "Flandern"
     },
     "Flevoland": {
       "de": "Flevoland",
@@ -398,7 +527,10 @@
       "fr": "Flevoland",
       "pl": "Flevoland",
       "it": "Flevoland",
-      "nl": "Flevoland"
+      "nl": "Flevoland",
+      "sv": "Flevoland",
+      "no": "Flevoland",
+      "da": "Flevoland"
     },
     "French Polynesia": {
       "de": "Französisch-Polynesien",
@@ -407,7 +539,10 @@
       "fr": "Polynésie française",
       "pl": "Polinezja Francuska",
       "it": "Polinesia francese",
-      "nl": "Frans-Polynesië"
+      "nl": "Frans-Polynesië",
+      "sv": "Franska Polynesien",
+      "no": "Fransk Polynesia",
+      "da": "Fransk Polynesien"
     },
     "Friuli-Venezia Giulia": {
       "de": "Friaul-Julisch Venetien",
@@ -416,7 +551,10 @@
       "fr": "Frioul-Vénétie Julienne",
       "pl": "Friuli-Wenecja Julijska",
       "it": "Friuli-Venezia Giulia",
-      "nl": "Friuli-Venezia Giulia"
+      "nl": "Friuli-Venezia Giulia",
+      "sv": "Friuli-Venezia Giulia",
+      "no": "Friuli-Venezia Giulia",
+      "da": "Friuli-Venezia Giulia"
     },
     "Galapagos": {
       "de": "Galapagos",
@@ -425,7 +563,10 @@
       "fr": "Galápagos",
       "pl": "Galapagos",
       "it": "Galápagos",
-      "nl": "Galápagos"
+      "nl": "Galápagos",
+      "sv": "Galapagos",
+      "no": "Galápagos",
+      "da": "Galapagos"
     },
     "Gibraltar": {
       "de": "Gibraltar",
@@ -434,7 +575,10 @@
       "fr": "Gibraltar",
       "pl": "Gibraltar",
       "it": "Gibilterra",
-      "nl": "Gibraltar"
+      "nl": "Gibraltar",
+      "sv": "Gibraltar",
+      "no": "Gibraltar",
+      "da": "Gibraltar"
     },
     "Guadeloupe": {
       "de": "Guadeloupe",
@@ -443,7 +587,10 @@
       "fr": "Guadeloupe",
       "pl": "Gwadelupa",
       "it": "Guadalupa",
-      "nl": "Guadeloupe"
+      "nl": "Guadeloupe",
+      "sv": "Guadeloupe",
+      "no": "Guadeloupe",
+      "da": "Guadeloupe"
     },
     "Kingston Parish": {
       "de": "Kingston Parish",
@@ -452,7 +599,10 @@
       "fr": "Paroisse de Kingston",
       "pl": "Parafia Kingston",
       "it": "Parrocchia di Kingston",
-      "nl": "Kingston Parish"
+      "nl": "Kingston Parish",
+      "sv": "Kingston",
+      "no": "Kingston Parish",
+      "da": "Kingston Parish"
     },
     "Ko Chang": {
       "de": "Ko Chang",
@@ -461,7 +611,10 @@
       "fr": "Ko Chang",
       "pl": "Ko Chang",
       "it": "Ko Chang",
-      "nl": "Ko Chang"
+      "nl": "Ko Chang",
+      "sv": "Ko Chang",
+      "no": "Ko Chang",
+      "da": "Ko Chang"
     },
     "Ko Samui": {
       "de": "Ko Samui",
@@ -470,7 +623,10 @@
       "fr": "Ko Samui",
       "pl": "Ko Samui",
       "it": "Ko Samui",
-      "nl": "Ko Samui"
+      "nl": "Ko Samui",
+      "sv": "Ko Samui",
+      "no": "Ko Samui",
+      "da": "Ko Samui"
     },
     "Langkawi": {
       "de": "Langkawi",
@@ -479,7 +635,10 @@
       "fr": "Langkawi",
       "pl": "Langkawi",
       "it": "Langkawi",
-      "nl": "Langkawi"
+      "nl": "Langkawi",
+      "sv": "Langkawi",
+      "no": "Langkawi",
+      "da": "Langkawi"
     },
     "Lazio": {
       "de": "Latium",
@@ -488,7 +647,10 @@
       "fr": "Latium",
       "pl": "Lacjum",
       "it": "Lazio",
-      "nl": "Lazio"
+      "nl": "Lazio",
+      "sv": "Lazio",
+      "no": "Lazio",
+      "da": "Lazio"
     },
     "Liguria": {
       "de": "Ligurien",
@@ -497,7 +659,10 @@
       "fr": "Ligurie",
       "pl": "Liguria",
       "it": "Liguria",
-      "nl": "Ligurië"
+      "nl": "Ligurië",
+      "sv": "Ligurien",
+      "no": "Liguria",
+      "da": "Ligurien"
     },
     "Madagascar": {
       "de": "Madagaskar",
@@ -506,7 +671,10 @@
       "fr": "Madagascar",
       "pl": "Madagaskar",
       "it": "Madagascar",
-      "nl": "Madagaskar"
+      "nl": "Madagaskar",
+      "sv": "Madagaskar",
+      "no": "Madagaskar",
+      "da": "Madagaskar"
     },
     "Madeira": {
       "de": "Madeira",
@@ -515,7 +683,10 @@
       "fr": "Madère",
       "pl": "Madera",
       "it": "Madeira",
-      "nl": "Madeira"
+      "nl": "Madeira",
+      "sv": "Madeira",
+      "no": "Madeira",
+      "da": "Madeira"
     },
     "Mahé": {
       "de": "Mahé",
@@ -524,7 +695,10 @@
       "fr": "Mahé",
       "pl": "Mahé",
       "it": "Mahé",
-      "nl": "Mahé"
+      "nl": "Mahé",
+      "sv": "Mahé",
+      "no": "Mahé",
+      "da": "Mahé"
     },
     "Maldives": {
       "de": "Malediven",
@@ -533,7 +707,10 @@
       "fr": "Maldives",
       "pl": "Malediwy",
       "it": "Maldive",
-      "nl": "Malediven"
+      "nl": "Malediven",
+      "sv": "Maldiverna",
+      "no": "Maldivene",
+      "da": "Maldiverne"
     },
     "Malta": {
       "de": "Malta",
@@ -542,7 +719,10 @@
       "fr": "Malte",
       "pl": "Malta",
       "it": "Malta",
-      "nl": "Malta"
+      "nl": "Malta",
+      "sv": "Malta",
+      "no": "Malta",
+      "da": "Malta"
     },
     "Malta Xlokk": {
       "de": "Malta Xlokk",
@@ -551,7 +731,10 @@
       "fr": "Malte Xlokk",
       "pl": "Region Południowo-Wschodni Malty",
       "it": "Malta Xlokk",
-      "nl": "Malta Xlokk"
+      "nl": "Malta Xlokk",
+      "sv": "Malta Xlokk",
+      "no": "Malta Xlokk",
+      "da": "Malta Xlokk"
     },
     "Martinique": {
       "de": "Martinique",
@@ -560,7 +743,10 @@
       "fr": "Martinique",
       "pl": "Martynika",
       "it": "Martinica",
-      "nl": "Martinique"
+      "nl": "Martinique",
+      "sv": "Martinique",
+      "no": "Martinique",
+      "da": "Martinique"
     },
     "Mauritius": {
       "de": "Mauritius",
@@ -569,7 +755,10 @@
       "fr": "Maurice",
       "pl": "Mauritius",
       "it": "Mauritius",
-      "nl": "Mauritius"
+      "nl": "Mauritius",
+      "sv": "Mauritius",
+      "no": "Mauritius",
+      "da": "Mauritius"
     },
     "Mecklenburg": {
       "de": "Mecklenburg",
@@ -578,7 +767,10 @@
       "fr": "Mecklembourg",
       "pl": "Meklemburgia",
       "it": "Meclemburgo",
-      "nl": "Mecklenburg"
+      "nl": "Mecklenburg",
+      "sv": "Mecklenburg",
+      "no": "Mecklenburg",
+      "da": "Mecklenburg"
     },
     "Mediterranean": {
       "de": "Mittelmeer",
@@ -587,7 +779,10 @@
       "fr": "Méditerranée",
       "pl": "Morze Śródziemne",
       "it": "Mediterraneo",
-      "nl": "Middellandse Zee"
+      "nl": "Middellandse Zee",
+      "sv": "Medelhavet",
+      "no": "Middelhavet",
+      "da": "Middelhavet"
     },
     "Mkuranga": {
       "de": "Mkuranga",
@@ -596,7 +791,10 @@
       "fr": "Mkuranga",
       "pl": "Mkuranga",
       "it": "Mkuranga",
-      "nl": "Mkuranga"
+      "nl": "Mkuranga",
+      "sv": "Mkuranga",
+      "no": "Mkuranga",
+      "da": "Mkuranga"
     },
     "Montenegro": {
       "de": "Montenegro",
@@ -605,7 +803,10 @@
       "fr": "Monténégro",
       "pl": "Czarnogóra",
       "it": "Montenegro",
-      "nl": "Montenegro"
+      "nl": "Montenegro",
+      "sv": "Montenegro",
+      "no": "Montenegro",
+      "da": "Montenegro"
     },
     "Murcia": {
       "de": "Murcia",
@@ -614,7 +815,10 @@
       "fr": "Murcie",
       "pl": "Murcja",
       "it": "Murcia",
-      "nl": "Murcia"
+      "nl": "Murcia",
+      "sv": "Murcia",
+      "no": "Murcia",
+      "da": "Murcia"
     },
     "New Caledonia": {
       "de": "Neukaledonien",
@@ -623,7 +827,10 @@
       "fr": "Nouvelle-Calédonie",
       "pl": "Nowa Kaledonia",
       "it": "Nuova Caledonia",
-      "nl": "Nieuw-Caledonië"
+      "nl": "Nieuw-Caledonië",
+      "sv": "Nya Kaledonien",
+      "no": "Ny-Caledonia",
+      "da": "Ny Kaledonien"
     },
     "New England": {
       "de": "Neuengland",
@@ -632,7 +839,10 @@
       "fr": "Nouvelle-Angleterre",
       "pl": "Nowa Anglia",
       "it": "New England",
-      "nl": "New England"
+      "nl": "New England",
+      "sv": "New England",
+      "no": "New England",
+      "da": "New England"
     },
     "North Holland": {
       "de": "Nordholland",
@@ -641,7 +851,10 @@
       "fr": "Hollande-Septentrionale",
       "pl": "Holandia Północna",
       "it": "Olanda Settentrionale",
-      "nl": "Noord-Holland"
+      "nl": "Noord-Holland",
+      "sv": "Nordholland",
+      "no": "Nord-Holland",
+      "da": "Nordholland"
     },
     "Northern America": {
       "de": "Nordamerika",
@@ -650,7 +863,10 @@
       "fr": "Amérique du Nord",
       "pl": "Ameryka Północna",
       "it": "Nord America",
-      "nl": "Noord-Amerika"
+      "nl": "Noord-Amerika",
+      "sv": "Nordamerika",
+      "no": "Nord-Amerika",
+      "da": "Nordamerika"
     },
     "Northern Europe": {
       "de": "Nordeuropa",
@@ -659,7 +875,10 @@
       "fr": "Europe du Nord",
       "pl": "Europa Północna",
       "it": "Europa settentrionale",
-      "nl": "Noord-Europa"
+      "nl": "Noord-Europa",
+      "sv": "Nordeuropa",
+      "no": "Nord-Europa",
+      "da": "Nordeuropa"
     },
     "Northern Greece/Aegean": {
       "de": "Nordgriechenland/Ägäis",
@@ -668,7 +887,10 @@
       "fr": "Grèce du Nord/Égée",
       "pl": "Grecja Północna / Morze Egejskie",
       "it": "Grecia settentrionale/Egeo",
-      "nl": "Noord-Griekenland/Egeïsche Zee"
+      "nl": "Noord-Griekenland/Egeïsche Zee",
+      "sv": "Norra Grekland/Egeiska havet",
+      "no": "Nord-Hellas/Egeerhavet",
+      "da": "Nordgrækenland/Ægæerhavet"
     },
     "Occitanie": {
       "de": "Okzitanien",
@@ -677,7 +899,10 @@
       "fr": "Occitanie",
       "pl": "Oksytania",
       "it": "Occitania",
-      "nl": "Occitanië"
+      "nl": "Occitanië",
+      "sv": "Occitanien",
+      "no": "Occitanie",
+      "da": "Occitanie"
     },
     "Okinawa": {
       "de": "Okinawa",
@@ -686,7 +911,10 @@
       "fr": "Okinawa",
       "pl": "Okinawa",
       "it": "Okinawa",
-      "nl": "Okinawa"
+      "nl": "Okinawa",
+      "sv": "Okinawa",
+      "no": "Okinawa",
+      "da": "Okinawa"
     },
     "Panama Oeste": {
       "de": "Panamá Oeste",
@@ -695,7 +923,10 @@
       "fr": "Panama Oeste",
       "pl": "Panama Zachodnia",
       "it": "Panamá Oeste",
-      "nl": "Panamá Oeste"
+      "nl": "Panamá Oeste",
+      "sv": "Panama Oeste",
+      "no": "Panama Oeste",
+      "da": "Panamá Oeste"
     },
     "Pays de la Loire": {
       "de": "Pays de la Loire",
@@ -704,7 +935,10 @@
       "fr": "Pays de la Loire",
       "pl": "Kraj Loary",
       "it": "Paesi della Loira",
-      "nl": "Pays de la Loire"
+      "nl": "Pays de la Loire",
+      "sv": "Pays de la Loire",
+      "no": "Pays de la Loire",
+      "da": "Pays de la Loire"
     },
     "Phuket": {
       "de": "Phuket",
@@ -713,7 +947,10 @@
       "fr": "Phuket",
       "pl": "Phuket",
       "it": "Phuket",
-      "nl": "Phuket"
+      "nl": "Phuket",
+      "sv": "Phuket",
+      "no": "Phuket",
+      "da": "Phuket"
     },
     "Poitou-Charentes": {
       "de": "Poitou-Charentes",
@@ -722,7 +959,10 @@
       "fr": "Poitou-Charentes",
       "pl": "Poitou-Charentes",
       "it": "Poitou-Charentes",
-      "nl": "Poitou-Charentes"
+      "nl": "Poitou-Charentes",
+      "sv": "Poitou-Charentes",
+      "no": "Poitou-Charentes",
+      "da": "Poitou-Charentes"
     },
     "Primorska": {
       "de": "Primorska",
@@ -731,7 +971,10 @@
       "fr": "Primorska",
       "pl": "Primorska",
       "it": "Primorska",
-      "nl": "Primorska"
+      "nl": "Primorska",
+      "sv": "Primorska",
+      "no": "Primorska",
+      "da": "Primorska"
     },
     "Puerto Rico": {
       "de": "Puerto Rico",
@@ -740,7 +983,10 @@
       "fr": "Porto Rico",
       "pl": "Portoryko",
       "it": "Porto Rico",
-      "nl": "Puerto Rico"
+      "nl": "Puerto Rico",
+      "sv": "Puerto Rico",
+      "no": "Puerto Rico",
+      "da": "Puerto Rico"
     },
     "Red Sea": {
       "de": "Rotes Meer",
@@ -749,7 +995,10 @@
       "fr": "Mer Rouge",
       "pl": "Morze Czerwone",
       "it": "Mar Rosso",
-      "nl": "Rode Zee"
+      "nl": "Rode Zee",
+      "sv": "Röda havet",
+      "no": "Rødehavet",
+      "da": "Det Røde Hav"
     },
     "Rhode Island": {
       "de": "Rhode Island",
@@ -758,7 +1007,10 @@
       "fr": "Rhode Island",
       "pl": "Rhode Island",
       "it": "Rhode Island",
-      "nl": "Rhode Island"
+      "nl": "Rhode Island",
+      "sv": "Rhode Island",
+      "no": "Rhode Island",
+      "da": "Rhode Island"
     },
     "San Blas": {
       "de": "San Blas",
@@ -767,7 +1019,10 @@
       "fr": "San Blas",
       "pl": "San Blas",
       "it": "San Blas",
-      "nl": "San Blas"
+      "nl": "San Blas",
+      "sv": "San Blas",
+      "no": "San Blas",
+      "da": "San Blas"
     },
     "Sardinia": {
       "de": "Sardinien",
@@ -776,7 +1031,10 @@
       "fr": "Sardaigne",
       "pl": "Sardynia",
       "it": "Sardegna",
-      "nl": "Sardinië"
+      "nl": "Sardinië",
+      "sv": "Sardinien",
+      "no": "Sardinia",
+      "da": "Sardinien"
     },
     "Schleswig-Holstein": {
       "de": "Schleswig-Holstein",
@@ -785,7 +1043,10 @@
       "fr": "Schleswig-Holstein",
       "pl": "Szlezwik-Holsztyn",
       "it": "Schleswig-Holstein",
-      "nl": "Sleeswijk-Holstein"
+      "nl": "Sleeswijk-Holstein",
+      "sv": "Schleswig-Holstein",
+      "no": "Schleswig-Holstein",
+      "da": "Slesvig-Holsten"
     },
     "Sharjah": {
       "de": "Schardscha",
@@ -794,7 +1055,10 @@
       "fr": "Charjah",
       "pl": "Szardża",
       "it": "Sharjah",
-      "nl": "Sharjah"
+      "nl": "Sharjah",
+      "sv": "Sharjah",
+      "no": "Sharjah",
+      "da": "Sharjah"
     },
     "Sicily": {
       "de": "Sizilien",
@@ -803,7 +1067,10 @@
       "fr": "Sicile",
       "pl": "Sycylia",
       "it": "Sicilia",
-      "nl": "Sicilië"
+      "nl": "Sicilië",
+      "sv": "Sicilien",
+      "no": "Sicilia",
+      "da": "Sicilien"
     },
     "Skagit, Washington": {
       "de": "Skagit, Washington",
@@ -812,7 +1079,10 @@
       "fr": "Skagit, Washington",
       "pl": "Skagit, Waszyngton",
       "it": "Skagit, Washington",
-      "nl": "Skagit, Washington"
+      "nl": "Skagit, Washington",
+      "sv": "Skagit, Washington",
+      "no": "Skagit, Washington",
+      "da": "Skagit, Washington"
     },
     "Skiathos/Sporades, Volos": {
       "de": "Skiathos/Sporaden, Volos",
@@ -821,7 +1091,10 @@
       "fr": "Skiathos/Sporades, Volos",
       "pl": "Skiathos / Sporady, Wolos",
       "it": "Skiathos/Sporadi, Volos",
-      "nl": "Skiathos/Sporaden, Volos"
+      "nl": "Skiathos/Sporaden, Volos",
+      "sv": "Skiathos/Sporaderna, Volos",
+      "no": "Skiathos/Sporadene, Volos",
+      "da": "Skiathos/Sporaderne, Volos"
     },
     "Southampton": {
       "de": "Southampton",
@@ -830,7 +1103,10 @@
       "fr": "Southampton",
       "pl": "Southampton",
       "it": "Southampton",
-      "nl": "Southampton"
+      "nl": "Southampton",
+      "sv": "Southampton",
+      "no": "Southampton",
+      "da": "Southampton"
     },
     "Southeast, Brasil": {
       "de": "Südosten, Brasilien",
@@ -839,7 +1115,10 @@
       "fr": "Sud-Est, Brésil",
       "pl": "Region Południowo-Wschodni, Brazylia",
       "it": "Sud-est, Brasile",
-      "nl": "Zuidoost-Brazilië"
+      "nl": "Zuidoost-Brazilië",
+      "sv": "Sydöstra Brasilien",
+      "no": "Sørøst, Brasil",
+      "da": "Sydøst, Brasilien"
     },
     "Southern Europe": {
       "de": "Südeuropa",
@@ -848,7 +1127,10 @@
       "fr": "Europe du Sud",
       "pl": "Europa Południowa",
       "it": "Europa meridionale",
-      "nl": "Zuid-Europa"
+      "nl": "Zuid-Europa",
+      "sv": "Sydeuropa",
+      "no": "Sør-Europa",
+      "da": "Sydeuropa"
     },
     "Southern Province": {
       "de": "Südprovinz",
@@ -857,7 +1139,10 @@
       "fr": "Province du Sud",
       "pl": "Prowincja Południowa",
       "it": "Provincia meridionale",
-      "nl": "Zuidelijke Provincie"
+      "nl": "Zuidelijke Provincie",
+      "sv": "Södra provinsen",
+      "no": "Sørprovinsen",
+      "da": "Sydprovinsen"
     },
     "St. Lucia": {
       "de": "St. Lucia",
@@ -866,7 +1151,10 @@
       "fr": "Sainte-Lucie",
       "pl": "Saint Lucia",
       "it": "Saint Lucia",
-      "nl": "Saint Lucia"
+      "nl": "Saint Lucia",
+      "sv": "Saint Lucia",
+      "no": "St. Lucia",
+      "da": "St. Lucia"
     },
     "St. Vincent": {
       "de": "St. Vincent",
@@ -875,7 +1163,10 @@
       "fr": "Saint-Vincent",
       "pl": "Saint Vincent",
       "it": "Saint Vincent",
-      "nl": "Saint Vincent"
+      "nl": "Saint Vincent",
+      "sv": "Saint Vincent",
+      "no": "St. Vincent",
+      "da": "St. Vincent"
     },
     "Stockholm County": {
       "de": "Stockholms län",
@@ -884,7 +1175,10 @@
       "fr": "Comté de Stockholm",
       "pl": "Region Sztokholm",
       "it": "Contea di Stoccolma",
-      "nl": "Provincie Stockholm"
+      "nl": "Provincie Stockholm",
+      "sv": "Stockholms län",
+      "no": "Stockholms län",
+      "da": "Stockholms len"
     },
     "Tarragona": {
       "de": "Tarragona",
@@ -893,7 +1187,10 @@
       "fr": "Tarragone",
       "pl": "Tarragona",
       "it": "Tarragona",
-      "nl": "Tarragona"
+      "nl": "Tarragona",
+      "sv": "Tarragona",
+      "no": "Tarragona",
+      "da": "Tarragona"
     },
     "The Andaman Islands": {
       "de": "Andamanen",
@@ -902,7 +1199,10 @@
       "fr": "Îles Andaman",
       "pl": "Andamany",
       "it": "Isole Andamane",
-      "nl": "Andamanen"
+      "nl": "Andamanen",
+      "sv": "Andamanerna",
+      "no": "Andamanene",
+      "da": "Andamanerne"
     },
     "Tioman": {
       "de": "Tioman",
@@ -911,7 +1211,10 @@
       "fr": "Tioman",
       "pl": "Tioman",
       "it": "Tioman",
-      "nl": "Tioman"
+      "nl": "Tioman",
+      "sv": "Tioman",
+      "no": "Tioman",
+      "da": "Tioman"
     },
     "Troms og Finnmark": {
       "de": "Troms og Finnmark",
@@ -920,7 +1223,10 @@
       "fr": "Troms og Finnmark",
       "pl": "Troms og Finnmark",
       "it": "Troms og Finnmark",
-      "nl": "Troms og Finnmark"
+      "nl": "Troms og Finnmark",
+      "sv": "Troms og Finnmark",
+      "no": "Troms og Finnmark",
+      "da": "Troms og Finnmark"
     },
     "Tuscany": {
       "de": "Toskana",
@@ -929,7 +1235,10 @@
       "fr": "Toscane",
       "pl": "Toskania",
       "it": "Toscana",
-      "nl": "Toscane"
+      "nl": "Toscane",
+      "sv": "Toscana",
+      "no": "Toscana",
+      "da": "Toscana"
     },
     "Uppland": {
       "de": "Uppland",
@@ -938,7 +1247,10 @@
       "fr": "Uppland",
       "pl": "Uppland",
       "it": "Uppland",
-      "nl": "Uppland"
+      "nl": "Uppland",
+      "sv": "Uppland",
+      "no": "Uppland",
+      "da": "Uppland"
     },
     "US- Virgin Islands": {
       "de": "Amerikanische Jungferninseln",
@@ -947,7 +1259,10 @@
       "fr": "Îles Vierges des États-Unis",
       "pl": "Wyspy Dziewicze Stanów Zjednoczonych",
       "it": "Isole Vergini americane",
-      "nl": "Amerikaanse Maagdeneilanden"
+      "nl": "Amerikaanse Maagdeneilanden",
+      "sv": "Amerikanska Jungfruöarna",
+      "no": "De amerikanske Jomfruøyene",
+      "da": "De Amerikanske Jomfruøer"
     },
     "Veneto": {
       "de": "Venetien",
@@ -956,7 +1271,10 @@
       "fr": "Vénétie",
       "pl": "Wenecja Euganejska",
       "it": "Veneto",
-      "nl": "Veneto"
+      "nl": "Veneto",
+      "sv": "Veneto",
+      "no": "Veneto",
+      "da": "Veneto"
     },
     "Vermont": {
       "de": "Vermont",
@@ -965,7 +1283,10 @@
       "fr": "Vermont",
       "pl": "Vermont",
       "it": "Vermont",
-      "nl": "Vermont"
+      "nl": "Vermont",
+      "sv": "Vermont",
+      "no": "Vermont",
+      "da": "Vermont"
     },
     "Vestfold og Telemark": {
       "de": "Vestfold og Telemark",
@@ -974,7 +1295,10 @@
       "fr": "Vestfold og Telemark",
       "pl": "Vestfold og Telemark",
       "it": "Vestfold og Telemark",
-      "nl": "Vestfold og Telemark"
+      "nl": "Vestfold og Telemark",
+      "sv": "Vestfold og Telemark",
+      "no": "Vestfold og Telemark",
+      "da": "Vestfold og Telemark"
     },
     "Vestland": {
       "de": "Vestland",
@@ -983,7 +1307,10 @@
       "fr": "Vestland",
       "pl": "Vestland",
       "it": "Vestland",
-      "nl": "Vestland"
+      "nl": "Vestland",
+      "sv": "Vestland",
+      "no": "Vestland",
+      "da": "Vestland"
     },
     "Vlorë": {
       "de": "Vlora",
@@ -992,7 +1319,10 @@
       "fr": "Vlorë",
       "pl": "Wlora",
       "it": "Valona",
-      "nl": "Vlorë"
+      "nl": "Vlorë",
+      "sv": "Vlorë",
+      "no": "Vlorë",
+      "da": "Vlorë"
     },
     "Värmdö": {
       "de": "Värmdö",
@@ -1001,7 +1331,10 @@
       "fr": "Värmdö",
       "pl": "Värmdö",
       "it": "Värmdö",
-      "nl": "Värmdö"
+      "nl": "Värmdö",
+      "sv": "Värmdö",
+      "no": "Värmdö",
+      "da": "Värmdö"
     },
     "Västra Götalands län": {
       "de": "Västra Götalands län",
@@ -1010,7 +1343,10 @@
       "fr": "Västra Götalands län",
       "pl": "Västra Götaland",
       "it": "Västra Götalands län",
-      "nl": "Västra Götaland"
+      "nl": "Västra Götaland",
+      "sv": "Västra Götalands län",
+      "no": "Västra Götalands län",
+      "da": "Västra Götalands län"
     },
     "Western Europe": {
       "de": "Westeuropa",
@@ -1019,7 +1355,10 @@
       "fr": "Europe de l'Ouest",
       "pl": "Europa Zachodnia",
       "it": "Europa occidentale",
-      "nl": "West-Europa"
+      "nl": "West-Europa",
+      "sv": "Västeuropa",
+      "no": "Vest-Europa",
+      "da": "Vesteuropa"
     },
     "Whitsunday Region of Queensland": {
       "de": "Whitsunday-Region, Queensland",
@@ -1028,7 +1367,10 @@
       "fr": "Région des Whitsunday, Queensland",
       "pl": "Region Whitsunday, Queensland",
       "it": "Regione delle Whitsunday, Queensland",
-      "nl": "Whitsunday-regio van Queensland"
+      "nl": "Whitsunday-regio van Queensland",
+      "sv": "Whitsundayregionen i Queensland",
+      "no": "Whitsunday-regionen i Queensland",
+      "da": "Whitsunday-regionen i Queensland"
     },
     "Yucatan Peninsula": {
       "de": "Halbinsel Yucatán",
@@ -1037,7 +1379,10 @@
       "fr": "Péninsule du Yucatán",
       "pl": "Półwysep Jukatan",
       "it": "Penisola dello Yucatán",
-      "nl": "Yucatán-schiereiland"
+      "nl": "Yucatán-schiereiland",
+      "sv": "Yucatánhalvön",
+      "no": "Yucatán-halvøya",
+      "da": "Yucatán-halvøen"
     },
     "Zanzibar": {
       "de": "Sansibar",
@@ -1046,7 +1391,10 @@
       "fr": "Zanzibar",
       "pl": "Zanzibar",
       "it": "Zanzibar",
-      "nl": "Zanzibar"
+      "nl": "Zanzibar",
+      "sv": "Zanzibar",
+      "no": "Zanzibar",
+      "da": "Zanzibar"
     },
     "Zeeland": {
       "de": "Zeeland",
@@ -1055,7 +1403,10 @@
       "fr": "Zélande",
       "pl": "Zelandia",
       "it": "Zelanda",
-      "nl": "Zeeland"
+      "nl": "Zeeland",
+      "sv": "Zeeland",
+      "no": "Zeeland",
+      "da": "Zeeland"
     },
     "Älvsborgsbron": {
       "de": "Älvsborgsbron",
@@ -1064,7 +1415,10 @@
       "fr": "Älvsborgsbron",
       "pl": "Älvsborgsbron",
       "it": "Älvsborgsbron",
-      "nl": "Älvsborgsbron"
+      "nl": "Älvsborgsbron",
+      "sv": "Älvsborgsbron",
+      "no": "Älvsborgsbron",
+      "da": "Älvsborgsbron"
     },
     "Île-de-France": {
       "de": "Île-de-France",
@@ -1073,7 +1427,10 @@
       "fr": "Île-de-France",
       "pl": "Île-de-France",
       "it": "Île-de-France",
-      "nl": "Île-de-France"
+      "nl": "Île-de-France",
+      "sv": "Île-de-France",
+      "no": "Île-de-France",
+      "da": "Île-de-France"
     }
   },
   "equipment": {
@@ -1084,7 +1441,10 @@
       "fr": "Sol de cockpit en Iroko",
       "pl": "Podłoga kokpitu z Iro deck",
       "it": "Pavimento del pozzetto in Iro deck",
-      "nl": "Iro deck-kuipvloer"
+      "nl": "Iro deck-kuipvloer",
+      "sv": "Iro-däck i sittbrunnen",
+      "no": "Iro-dekk i cockpitgulvet",
+      "da": "Iro-dæk i cockpittet"
     },
     "Second VHF handset": {
       "de": "Zweites UKW-Handgerät",
@@ -1093,7 +1453,10 @@
       "fr": "Second combiné VHF",
       "pl": "Druga słuchawka VHF",
       "it": "Secondo ricevitore VHF",
-      "nl": "Tweede marifoonhandset"
+      "nl": "Tweede marifoonhandset",
+      "sv": "Extra VHF-handenhet",
+      "no": "Ekstra VHF-håndsett",
+      "da": "Ekstra VHF-håndsæt"
     },
     "Teak Cockpit": {
       "de": "Teakcockpit",
@@ -1102,7 +1465,10 @@
       "fr": "Cockpit en teck",
       "pl": "Kokpit z drewnem tekowym",
       "it": "Pozzetto in teak",
-      "nl": "Teakhouten kuip"
+      "nl": "Teakhouten kuip",
+      "sv": "Teakdäck i sittbrunnen",
+      "no": "Teakcockpit",
+      "da": "Teakcockpit"
     },
     "Air condition": {
       "de": "Klimaanlage",
@@ -1111,7 +1477,10 @@
       "fr": "Climatisation",
       "pl": "Klimatyzacja",
       "it": "Aria condizionata",
-      "nl": "Airconditioning"
+      "nl": "Airconditioning",
+      "sv": "Luftkonditionering",
+      "no": "Klimaanlegg",
+      "da": "Aircondition"
     },
     "Barbecue grill in cockpit": {
       "de": "Grill im Cockpit",
@@ -1120,7 +1489,10 @@
       "fr": "Barbecue dans le cockpit",
       "pl": "Grill w kokpicie",
       "it": "Barbecue nel pozzetto",
-      "nl": "Barbecue in de kuip"
+      "nl": "Barbecue in de kuip",
+      "sv": "Grill i sittbrunnen",
+      "no": "Grill i cockpit",
+      "da": "Grill i cockpittet"
     },
     "Bimini": {
       "de": "Bimini-Verdeck",
@@ -1129,7 +1501,10 @@
       "fr": "Bimini",
       "pl": "Bimini",
       "it": "Bimini",
-      "nl": "Bimini"
+      "nl": "Bimini",
+      "sv": "Bimini",
+      "no": "Bimini",
+      "da": "Bimini"
     },
     "Chart plotter": {
       "de": "Kartenplotter",
@@ -1138,7 +1513,10 @@
       "fr": "Traceur de cartes",
       "pl": "Ploter nawigacyjny",
       "it": "Chartplotter",
-      "nl": "Kaartplotter"
+      "nl": "Kaartplotter",
+      "sv": "Kartplotter",
+      "no": "Kartplotter",
+      "da": "Kortplotter"
     },
     "Chart plotter in cockpit": {
       "de": "Kartenplotter im Cockpit",
@@ -1147,7 +1525,10 @@
       "fr": "Traceur de cartes dans le cockpit",
       "pl": "Ploter w kokpicie",
       "it": "Chartplotter nel pozzetto",
-      "nl": "Kaartplotter in de kuip"
+      "nl": "Kaartplotter in de kuip",
+      "sv": "Kartplotter i sittbrunnen",
+      "no": "Kartplotter i cockpit",
+      "da": "Kortplotter i cockpittet"
     },
     "Cockpit speakers": {
       "de": "Cockpit-Lautsprecher",
@@ -1156,7 +1537,10 @@
       "fr": "Haut-parleurs de cockpit",
       "pl": "Głośniki w kokpicie",
       "it": "Altoparlanti nel pozzetto",
-      "nl": "Speakers in de kuip"
+      "nl": "Speakers in de kuip",
+      "sv": "Högtalare i sittbrunnen",
+      "no": "Høyttalere i cockpit",
+      "da": "Højttalere i cockpittet"
     },
     "Coffee maker": {
       "de": "Kaffeemaschine",
@@ -1165,7 +1549,10 @@
       "fr": "Cafetière",
       "pl": "Ekspres do kawy",
       "it": "Macchina del caffè",
-      "nl": "Koffiezetapparaat"
+      "nl": "Koffiezetapparaat",
+      "sv": "Kaffebryggare",
+      "no": "Kaffetrakter",
+      "da": "Kaffemaskine"
     },
     "Electric winches": {
       "de": "Elektrische Winschen",
@@ -1174,7 +1561,10 @@
       "fr": "Winchs électriques",
       "pl": "Elektryczne kabestany",
       "it": "Winch elettrici",
-      "nl": "Elektrische lieren"
+      "nl": "Elektrische lieren",
+      "sv": "Elvinschar",
+      "no": "Elektriske vinsjer",
+      "da": "Elektriske spil"
     },
     "Game console": {
       "de": "Spielkonsole",
@@ -1183,7 +1573,10 @@
       "fr": "Console de jeux",
       "pl": "Konsola do gier",
       "it": "Console per videogiochi",
-      "nl": "Spelcomputer"
+      "nl": "Spelcomputer",
+      "sv": "Spelkonsol",
+      "no": "Spillkonsoll",
+      "da": "Spillekonsol"
     },
     "Holding tank": {
       "de": "Fäkalientank",
@@ -1192,7 +1585,10 @@
       "fr": "Cuve à eaux noires",
       "pl": "Zbiornik na nieczystości",
       "it": "Serbatoio acque nere",
-      "nl": "Vuilwatertank"
+      "nl": "Vuilwatertank",
+      "sv": "Septiktank",
+      "no": "Septiktank",
+      "da": "Holdingtank"
     },
     "Lazy jack": {
       "de": "Lazy Jacks",
@@ -1201,7 +1597,10 @@
       "fr": "Lazy jack",
       "pl": "Lazy jack",
       "it": "Lazy jack",
-      "nl": "Lazy jack"
+      "nl": "Lazy jack",
+      "sv": "Lazy jack",
+      "no": "Lazy jack",
+      "da": "Lazy jack"
     },
     "Outside Steering Position": {
       "de": "Außensteuerstand",
@@ -1210,7 +1609,10 @@
       "fr": "Poste de pilotage extérieur",
       "pl": "Zewnętrzne stanowisko sterowania",
       "it": "Timoneria esterna",
-      "nl": "Buitenstuurstand"
+      "nl": "Buitenstuurstand",
+      "sv": "Yttre styrplats",
+      "no": "Utvendig styreplass",
+      "da": "Ydre styreplads"
     },
     "Railing net": {
       "de": "Relingnetz",
@@ -1219,7 +1621,10 @@
       "fr": "Filet de filières",
       "pl": "Siatka na relingach",
       "it": "Rete per battagliola",
-      "nl": "Zeerailingnet"
+      "nl": "Zeerailingnet",
+      "sv": "Skyddsnät vid relingen",
+      "no": "Rekkverksnett",
+      "da": "Net på søgelænder"
     },
     "Rudder blades": {
       "de": "Ruderblätter",
@@ -1228,7 +1633,10 @@
       "fr": "Safrans",
       "pl": "Płetwy sterowe",
       "it": "Pale del timone",
-      "nl": "Roerbladen"
+      "nl": "Roerbladen",
+      "sv": "Roderblad",
+      "no": "Rorblad",
+      "da": "Rorblade"
     },
     "Stand up paddle": {
       "de": "Stand-up-Paddle",
@@ -1237,7 +1645,10 @@
       "fr": "Stand up paddle",
       "pl": "Deska SUP",
       "it": "Stand up paddle",
-      "nl": "Stand-up paddleboard"
+      "nl": "Stand-up paddleboard",
+      "sv": "Stand up-paddleboard",
+      "no": "SUP-brett",
+      "da": "Stand up paddle"
     },
     "Swimming platform": {
       "de": "Badeplattform",
@@ -1246,7 +1657,10 @@
       "fr": "Plateforme de bain",
       "pl": "Platforma kąpielowa",
       "it": "Plancetta bagno",
-      "nl": "Zwemplatform"
+      "nl": "Zwemplatform",
+      "sv": "Badplattform",
+      "no": "Badeplattform",
+      "da": "Badeplatform"
     },
     "Swimming pool": {
       "de": "Swimmingpool",
@@ -1255,7 +1669,10 @@
       "fr": "Piscine",
       "pl": "Basen",
       "it": "Piscina",
-      "nl": "Zwembad"
+      "nl": "Zwembad",
+      "sv": "Pool",
+      "no": "Basseng",
+      "da": "Swimmingpool"
     },
     "Tender garage": {
       "de": "Tendergarage",
@@ -1264,7 +1681,10 @@
       "fr": "Garage à annexe",
       "pl": "Garaż na ponton",
       "it": "Garage per tender",
-      "nl": "Tendergarage"
+      "nl": "Tendergarage",
+      "sv": "Jollegarage",
+      "no": "Jollegarasje",
+      "da": "Garage til gummibåd"
     },
     "Tenderlift platform": {
       "de": "Tenderlift-Plattform",
@@ -1273,7 +1693,10 @@
       "fr": "Plateforme élévatrice pour annexe",
       "pl": "Podnośnik pontonu",
       "it": "Piattaforma alzatender",
-      "nl": "Tenderlift"
+      "nl": "Tenderlift",
+      "sv": "Lyftplattform för jolle",
+      "no": "Jolleheis-plattform",
+      "da": "Tenderlift-platform"
     },
     "Water maker": {
       "de": "Entsalzungsanlage",
@@ -1282,7 +1705,10 @@
       "fr": "Dessalinisateur",
       "pl": "Odsalarka",
       "it": "Dissalatore",
-      "nl": "Watermaker"
+      "nl": "Watermaker",
+      "sv": "Vattenmakare",
+      "no": "Vannmaker",
+      "da": "Vandmaker"
     },
     "Wi-Fi & Internet": {
       "de": "WLAN und Internet",
@@ -1291,7 +1717,10 @@
       "fr": "Wi-Fi et Internet",
       "pl": "Wi-Fi i internet",
       "it": "Wi-Fi e Internet",
-      "nl": "Wifi en internet"
+      "nl": "Wifi en internet",
+      "sv": "Wi-Fi och internet",
+      "no": "Wi-Fi og internett",
+      "da": "Wi-Fi og internet"
     },
     "DVD player": {
       "de": "DVD-Player",
@@ -1300,7 +1729,10 @@
       "fr": "Lecteur DVD",
       "pl": "Odtwarzacz DVD",
       "it": "Lettore DVD",
-      "nl": "Dvd-speler"
+      "nl": "Dvd-speler",
+      "sv": "DVD-spelare",
+      "no": "DVD-spiller",
+      "da": "DVD-afspiller"
     },
     "Inverter": {
       "de": "Wechselrichter",
@@ -1309,7 +1741,10 @@
       "fr": "Convertisseur",
       "pl": "Przetwornica",
       "it": "Inverter",
-      "nl": "Omvormer"
+      "nl": "Omvormer",
+      "sv": "Växelriktare",
+      "no": "Inverter",
+      "da": "Inverter"
     },
     "Other": {
       "de": "Sonstiges",
@@ -1318,7 +1753,10 @@
       "fr": "Autre",
       "pl": "Inne",
       "it": "Altro",
-      "nl": "Overig"
+      "nl": "Overig",
+      "sv": "Annat",
+      "no": "Annet",
+      "da": "Andet"
     }
   },
   "sail_type": {
@@ -1329,7 +1767,10 @@
       "fr": "classique/standard",
       "pl": "klasyczny/standardowy",
       "it": "classica/standard",
-      "nl": "klassiek/standaard"
+      "nl": "klassiek/standaard",
+      "sv": "klassiskt/standard",
+      "no": "klassisk/standard",
+      "da": "klassisk/standard"
     },
     "full batten": {
       "de": "Durchgelattet",
@@ -1338,7 +1779,10 @@
       "fr": "lattes complètes",
       "pl": "pełnolistwowy",
       "it": "steccata",
-      "nl": "volledig doorgelat"
+      "nl": "volledig doorgelat",
+      "sv": "hellatta",
+      "no": "gjennomgående seilpinner",
+      "da": "gennemgående sejlpinde"
     },
     "half batten": {
       "de": "Halbgelattet",
@@ -1347,7 +1791,10 @@
       "fr": "demi-lattes",
       "pl": "półlistwowy",
       "it": "semisteccata",
-      "nl": "half doorgelat"
+      "nl": "half doorgelat",
+      "sv": "halvlatta",
+      "no": "halve seilpinner",
+      "da": "halve sejlpinde"
     },
     "furling/roll": {
       "de": "Rollgroß",
@@ -1356,7 +1803,10 @@
       "fr": "enrouleur",
       "pl": "rolowany",
       "it": "avvolgibile",
-      "nl": "rolzeil"
+      "nl": "rolzeil",
+      "sv": "rullsegel",
+      "no": "rulleseil",
+      "da": "rullesejl"
     },
     "self tacking jib": {
       "de": "Selbstwendefock",
@@ -1365,7 +1815,10 @@
       "fr": "foc autovireur",
       "pl": "samohalsujący fok",
       "it": "fiocco autovirante",
-      "nl": "zelfslaande fok"
+      "nl": "zelfslaande fok",
+      "sv": "självslående fock",
+      "no": "selvslående fokk",
+      "da": "selvslående fok"
     }
   }
 }

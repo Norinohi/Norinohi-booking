@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { extraLabels } from "./extra-labels";
-import { ukTranslations } from "./uk";
+import { generatedTranslations } from "./generated";
 
 /** Mirrors extraNameKeySql in search/repository.ts and extraNameKey in apply-translations.ts. */
 function nameKey(name: string): string {
@@ -19,7 +19,7 @@ describe("extraLabels", () => {
       expect(
         [
           ["de", "es", "uk"],
-          ["de", "es", "fr", "it", "nl", "pl", "uk"],
+          ["da", "de", "es", "fr", "it", "nl", "no", "pl", "sv", "uk"],
         ],
         name,
       ).toContainEqual(keys);
@@ -64,20 +64,24 @@ describe("extraLabels", () => {
   });
 });
 
-describe("ukTranslations", () => {
+describe("generatedTranslations", () => {
   it("keys facets on values the catalogue can hold", () => {
-    for (const labels of Object.values(ukTranslations.facets)) {
-      for (const value of Object.keys(labels)) {
-        expect(value.trim(), value).toBe(value);
-        expect(value.length).toBeGreaterThan(0);
+    for (const [locale, set] of Object.entries(generatedTranslations)) {
+      for (const labels of Object.values(set.facets)) {
+        for (const value of Object.keys(labels)) {
+          expect(value.trim(), `${locale}: ${value}`).toBe(value);
+          expect(value.length).toBeGreaterThan(0);
+        }
       }
     }
   });
 
   it("keys extras on the provider's own id space", () => {
-    for (const labels of Object.values(ukTranslations.extras)) {
-      for (const key of Object.keys(labels)) {
-        expect(key, key).toMatch(/^(service|equipment):\d+$/);
+    for (const [locale, set] of Object.entries(generatedTranslations)) {
+      for (const labels of Object.values(set.extras)) {
+        for (const key of Object.keys(labels)) {
+          expect(key, `${locale}: ${key}`).toMatch(/^(service|equipment):\d+$/);
+        }
       }
     }
   });

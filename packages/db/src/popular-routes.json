@@ -41,6 +41,18 @@
       "nl": {
         "title": "Midden-Dalmatië",
         "description": "Een populair vaargebied met tientallen eilanden, prachtige baaien en historische stadjes. Een prima keuze voor je eerste charter."
+      },
+      "sv": {
+        "title": "Mellersta Dalmatien",
+        "description": "En populär seglarregion med dussintals öar, vackra vikar och historiska städer. Ett bra val för din första charter."
+      },
+      "no": {
+        "title": "Midt-Dalmatia",
+        "description": "En populær seilregion med dusinvis av øyer, vakre bukter og historiske byer. Et godt valg til ditt første charter."
+      },
+      "da": {
+        "title": "Det centrale Dalmatien",
+        "description": "En populær sejlerregion med snesevis af øer, smukke bugter og historiske byer. Et godt valg til dit første charter."
       }
     },
     "stops": [
@@ -128,6 +140,18 @@
       "nl": {
         "title": "Ionische Eilanden",
         "description": "Kalme zee, schilderachtige eilanden en korte oversteken tussen ankerplekken. Ideaal voor een comfortabele familievakantie."
+      },
+      "sv": {
+        "title": "Joniska öarna",
+        "description": "Lugn sjö, pittoreska öar och korta sträckor mellan ankarvikarna. Perfekt för en bekväm familjesemester."
+      },
+      "no": {
+        "title": "De joniske øyene",
+        "description": "Rolig sjø, maleriske øyer og korte etapper mellom ankringsvikene. Ideelt for en behagelig familieferie."
+      },
+      "da": {
+        "title": "De Joniske Øer",
+        "description": "Rolige farvande, maleriske øer og korte stræk mellem ankerpladserne. Ideelt til en behagelig familietur."
       }
     },
     "stops": [
@@ -215,6 +239,18 @@
       "nl": {
         "title": "Göcek en de Golf van Fethiye",
         "description": "Beschutte baaien, kristalhelder water en weelderig groene kusten. Een ideaal gebied om ontspannen te zeilen en tot rust te komen."
+      },
+      "sv": {
+        "title": "Göcek och Fethiyeviken",
+        "description": "Skyddade vikar, kristallklart vatten och grönskande stränder. En idealisk region för lugn segling och avkoppling."
+      },
+      "no": {
+        "title": "Göcek og Fethiye-gulfen",
+        "description": "Skjermede bukter, krystallklart vann og frodige grønne strender. En ideell region for avslappet seiling og hvile."
+      },
+      "da": {
+        "title": "Göcek og Fethiyebugten",
+        "description": "Beskyttede bugter, krystalklart vand og frodige grønne kyster. En ideel region til afslappet sejlads og ro."
       }
     },
     "stops": [
@@ -292,6 +328,18 @@
       "nl": {
         "title": "Sardinië",
         "description": "Turquoise water, schilderachtige eilanden en prachtige stranden. Een bestemming voor een onvergetelijke vakantie op de Middellandse Zee."
+      },
+      "sv": {
+        "title": "Sardinien",
+        "description": "Turkost vatten, pittoreska öar och vackra stränder. Ett mål för en oförglömlig semester i Medelhavet."
+      },
+      "no": {
+        "title": "Sardinia",
+        "description": "Turkis vann, maleriske øyer og vakre strender. Et reisemål for en uforglemmelig ferie i Middelhavet."
+      },
+      "da": {
+        "title": "Sardinien",
+        "description": "Turkist vand, maleriske øer og smukke strande. Et rejsemål til en uforglemmelig tur i Middelhavet."
       }
     },
     "stops": [
@@ -374,6 +422,18 @@
       "nl": {
         "title": "Ibiza en Formentera",
         "description": "Beroemde stranden en het bruisende nachtleven van Ibiza, gecombineerd met de rustige lagunes van Formentera. De perfecte balans tussen ontspanning en sfeer."
+      },
+      "sv": {
+        "title": "Ibiza och Formentera",
+        "description": "Berömda stränder och Ibizas livliga nattliv i kombination med Formenteras stilla laguner. Den perfekta balansen mellan avkoppling och stämning."
+      },
+      "no": {
+        "title": "Ibiza og Formentera",
+        "description": "Berømte strender og Ibizas pulserende uteliv kombinert med de fredelige lagunene på Formentera. Den perfekte balansen mellom ro og stemning."
+      },
+      "da": {
+        "title": "Ibiza og Formentera",
+        "description": "Berømte strande og Ibizas livlige natteliv kombineret med Formenteras fredelige laguner. Den perfekte balance mellem ro og stemning."
       }
     },
     "stops": [
@@ -461,6 +521,18 @@
       "nl": {
         "title": "Lofoten",
         "description": "Fjorden, majestueuze bergen en arctische landschappen. Een unieke zeilervaring voor natuurliefhebbers."
+      },
+      "sv": {
+        "title": "Lofoten",
+        "description": "Fjordar, mäktiga berg och arktiska landskap. En unik seglarupplevelse för naturälskare."
+      },
+      "no": {
+        "title": "Lofoten",
+        "description": "Fjorder, mektige fjell og arktiske landskap. En helt spesiell seilopplevelse for naturelskere."
+      },
+      "da": {
+        "title": "Lofoten",
+        "description": "Fjorde, majestætiske bjerge og arktiske landskaber. En helt særlig sejleroplevelse for naturelskere."
       }
     },
     "stops": [
@@ -543,6 +615,18 @@
       "nl": {
         "title": "Corsica / Westkust",
         "description": "Rotsachtige kusten, turquoise baaien en schilderachtige kustplaatsjes. Een prachtige bestemming voor een ontspannen vaartocht."
+      },
+      "sv": {
+        "title": "Korsika / västkusten",
+        "description": "Klippiga stränder, turkosa vikar och pittoreska kustsamhällen. Ett härligt mål för en avspänd tur."
+      },
+      "no": {
+        "title": "Korsika / vestkysten",
+        "description": "Klippekyst, turkise bukter og maleriske kystbyer. Et flott reisemål for en avslappet seilferie."
+      },
+      "da": {
+        "title": "Korsika / vestkysten",
+        "description": "Klippekyster, turkise bugter og maleriske kystbyer. Et vidunderligt mål for et afslappet togt."
       }
     },
     "stops": [
@@ -620,6 +704,18 @@
       "nl": {
         "title": "Britse Maagdeneilanden",
         "description": "Warm water, tropische eilanden en korte oversteken tussen ankerplekken. Een van de beste gebieden voor een catamarancharter."
+      },
+      "sv": {
+        "title": "Brittiska Jungfruöarna",
+        "description": "Varmt vatten, tropiska öar och korta sträckor mellan ankarvikarna. En av de bästa regionerna för katamarancharter."
+      },
+      "no": {
+        "title": "De britiske Jomfruøyene",
+        "description": "Varmt vann, tropiske øyer og korte etapper mellom ankringsvikene. En av de beste regionene for et katamarancharter."
+      },
+      "da": {
+        "title": "De Britiske Jomfruøer",
+        "description": "Varmt vand, tropiske øer og korte stræk mellem ankerpladserne. En af de bedste regioner til et katamarancharter."
       }
     },
     "stops": [
@@ -707,6 +803,18 @@
       "nl": {
         "title": "Binnenste Seychellen",
         "description": "Tropische stranden, granieten eilanden en kristalhelder water. De perfecte combinatie van zeilen, snorkelen en ontspannen."
+      },
+      "sv": {
+        "title": "Inre Seychellerna",
+        "description": "Tropiska stränder, granitöar och kristallklart vatten. Den perfekta kombinationen av segling, snorkling och avkoppling."
+      },
+      "no": {
+        "title": "De indre Seychellene",
+        "description": "Tropiske strender, granittøyer og krystallklart vann. Den perfekte kombinasjonen av seiling, snorkling og avslapning."
+      },
+      "da": {
+        "title": "De Indre Seychellerøer",
+        "description": "Tropiske strande, granitøer og krystalklart vand. Den perfekte kombination af sejlads, snorkling og afslapning."
       }
     },
     "stops": [
@@ -789,6 +897,18 @@
       "nl": {
         "title": "Phuket / Andamanse Zee",
         "description": "Exotische eilanden, kalksteenkliffen en verborgen lagunes. Een levendige tropische zeilervaring."
+      },
+      "sv": {
+        "title": "Phuket / Andamansjön",
+        "description": "Exotiska öar, kalkstensklippor och dolda laguner. En livfull tropisk seglarupplevelse."
+      },
+      "no": {
+        "title": "Phuket / Andamanhavet",
+        "description": "Eksotiske øyer, kalksteinsklipper og skjulte laguner. En frodig tropisk seilopplevelse."
+      },
+      "da": {
+        "title": "Phuket / Andamanhavet",
+        "description": "Eksotiske øer, kalkstensklipper og skjulte laguner. En livlig tropisk sejleroplevelse."
       }
     },
     "stops": [
@@ -876,6 +996,18 @@
       "nl": {
         "title": "Baai van Kotor en Adriatische kust",
         "description": "Bergen, historische stadjes en schilderachtige baaien in de Baai van Kotor. Een mix van natuur, geschiedenis en de Adriatische Zee."
+      },
+      "sv": {
+        "title": "Kotorbukten och Adriatiska kusten",
+        "description": "Berg, historiska städer och Kotorbuktens pittoreska vikar. En blandning av natur, historia och Adriatiska havet."
+      },
+      "no": {
+        "title": "Kotorbukta og Adriaterhavskysten",
+        "description": "Fjell, historiske byer og maleriske bukter i Kotorbukta. En blanding av natur, historie og Adriaterhavet."
+      },
+      "da": {
+        "title": "Kotorbugten og Adriaterhavskysten",
+        "description": "Bjerge, historiske byer og maleriske bugter i Kotorbugten. En blanding af natur, historie og Adriaterhavet."
       }
     },
     "stops": [
@@ -964,6 +1096,18 @@
       "nl": {
         "title": "Genootschapseilanden / Benedenwindse Eilanden",
         "description": "Vulkanische eilanden, koraalriffen en turquoise lagunes. Een exotische bestemming voor een onvergetelijke zeiltocht."
+      },
+      "sv": {
+        "title": "Sällskapsöarna / Leewardöarna",
+        "description": "Vulkanöar, korallrev och turkosa laguner. Ett exotiskt mål för en oförglömlig seglarresa."
+      },
+      "no": {
+        "title": "Selskapsøyene / Leeward-øyene",
+        "description": "Vulkanske øyer, korallrev og turkise laguner. Et eksotisk reisemål for en uforglemmelig seilreise."
+      },
+      "da": {
+        "title": "Selskabsøerne / Leeward-øerne",
+        "description": "Vulkanøer, koralrev og turkise laguner. Et eksotisk mål for en uforglemmelig sejlerrejse."
       }
     },
     "stops": [

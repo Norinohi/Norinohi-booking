@@ -43,6 +43,9 @@ export interface ExtraLabel {
   pl?: string;
   it?: string;
   nl?: string;
+  sv?: string;
+  no?: string;
+  da?: string;
 }
 
 /** The curated set itself, keyed by the English name the vendor publishes. */
@@ -61,6 +64,9 @@ export const extraLabels: ExtraLabelSet = z
       pl: z.string().optional(),
       it: z.string().optional(),
       nl: z.string().optional(),
+      sv: z.string().optional(),
+      no: z.string().optional(),
+      da: z.string().optional(),
     }),
   )
   .parse(extraLabelsJson);
