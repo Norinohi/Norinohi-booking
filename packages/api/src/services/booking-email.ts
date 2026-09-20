@@ -5,11 +5,13 @@ import { env } from "@yacht-charter/env/server";
 import { thrownFields } from "@yacht-charter/providers/shared/log-fields";
 import { log, parseError } from "evlog";
 import {
+  type BalanceReminderStage,
   type RefundMethod,
   sendBalanceReminderEmail,
   sendBookingCancelledEmail,
   sendBookingConfirmedEmail,
   sendBookingReceivedEmail,
+  sendHoldExpiringEmail,
   sendInvoiceIssuedEmail,
   sendPaymentReceivedEmail,
   sendRefundIssuedEmail,
@@ -363,6 +365,8 @@ export type BalanceDueEmail = {
   dueAt: Date;
   checkIn: string;
   checkOut: string;
+  /** Which of the three letters this is. Defaults to the first. */
+  stage?: BalanceReminderStage;
 };
 
 export async function notifyBalanceDue(reminder: BalanceDueEmail): Promise<void> {
@@ -375,6 +379,7 @@ export async function notifyBalanceDue(reminder: BalanceDueEmail): Promise<void>
       dueAt: day(reminder.dueAt.toISOString()),
       checkIn: day(reminder.checkIn),
       checkOut: day(reminder.checkOut),
+      stage: reminder.stage,
       payUrl: appUrl(`/bookings/${reminder.bookingId}/pay`),
       supportUrl: appUrl(`/support?booking=${reminder.bookingId}`),
     });
@@ -382,7 +387,49 @@ export async function notifyBalanceDue(reminder: BalanceDueEmail): Promise<void>
     log.error({
       action: "email.failed",
       email: "balance_reminder",
+      stage: reminder.stage ?? "due_soon",
       reference: reminder.reference,
+      ...thrownFields(parseError(cause)),
+    });
+  }
+}
+
+export type HoldExpiringEmail = {
+  to: string;
+  guestName: string;
+  bookingId: string;
+  reference: string;
+  yachtName: string;
+  outstandingMinor: number;
+  currency: string;
+  holdExpiresAt: Date;
+  checkIn: string;
+  checkOut: string;
+};
+
+/**
+ * Sent while an unpaid hold is still standing, so the customer can still act on it. The expiry
+ * sweep that releases it sends nothing, deliberately: by then the yacht is gone and the only
+ * useful mail was the one before.
+ */
+export async function notifyHoldExpiring(hold: HoldExpiringEmail): Promise<void> {
+  try {
+    await sendHoldExpiringEmail(hold.to, {
+      guestName: hold.guestName,
+      reference: hold.reference,
+      yachtName: hold.yachtName,
+      outstanding: money(hold.outstandingMinor, hold.currency),
+      holdExpiresAt: day(hold.holdExpiresAt.toISOString()),
+      checkIn: day(hold.checkIn),
+      checkOut: day(hold.checkOut),
+      payUrl: appUrl(`/bookings/${hold.bookingId}/pay`),
+      supportUrl: appUrl(`/support?booking=${hold.bookingId}`),
+    });
+  } catch (cause) {
+    log.error({
+      action: "email.failed",
+      email: "hold_expiring",
+      reference: hold.reference,
       ...thrownFields(parseError(cause)),
     });
   }

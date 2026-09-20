@@ -233,6 +233,12 @@ export const booking = pgTable(
     crewListMessage: text("crew_list_message"),
     providerStatus: text("provider_status"),
     holdExpiresAt: timestamp("hold_expires_at"),
+    /*
+     * Claimed before the "your hold is running out" letter goes out, the same way the
+     * installment reminders are. Until this existed an unpaid hold was released in silence
+     * by the expiry sweep, and the first the customer heard of it was the yacht being gone.
+     */
+    holdReminderSentAt: timestamp("hold_reminder_sent_at"),
     confirmedAt: timestamp("confirmed_at"),
     cancelledAt: timestamp("cancelled_at"),
     cancelReason: text("cancel_reason"),
@@ -406,8 +412,19 @@ export const paymentSchedule = pgTable(
     currency: text("currency").notNull(),
     dueAt: timestamp("due_at"),
     status: paymentScheduleStatus("status").default("pending").notNull(),
+    /*
+     * One column per letter rather than a stage counter, because each is claimed by the
+     * statement that selects the row and a counter cannot be claimed that way: two
+     * overlapping runs would both read stage 1 and both write stage 2. Nullable and
+     * independent, so a booking that was already reminded when the later letters were added
+     * still gets them, and a letter that was never due stays null forever.
+     */
     // Claimed before the reminder is sent, so two overlapping cron runs cannot both mail it.
     reminderSentAt: timestamp("reminder_sent_at"),
+    /** The second, shorter letter a few days out, for a balance the first one did not settle. */
+    finalReminderSentAt: timestamp("final_reminder_sent_at"),
+    /** Sent once the date has passed, and worded as the problem it now is. */
+    overdueNoticeSentAt: timestamp("overdue_notice_sent_at"),
     ...timestamps,
   },
   (t) => [index("payment_schedule_booking_idx").on(t.bookingId)],

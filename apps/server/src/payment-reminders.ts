@@ -1,12 +1,13 @@
 /**
- * The scheduled balance reminder, run from the deployed container — same pattern as
+ * The scheduled chasing letters — balance due soon, due shortly, overdue, and an unpaid hold
+ * about to be released — run from the deployed container, same pattern as
  * sweep-expiries.ts. Calls the same `sendBalanceReminders` as POST
  * /api/cron/payment-reminders and admin.maintenance.sendPaymentReminders, so the three
  * cannot drift apart. The HTTP route stays as the manual escape hatch for sending the
  * batch after a mailer outage.
  *
- * Safe to repeat and safe to overlap: each installment's `reminder_sent_at` is claimed
- * in the statement that selects it, so a second run finds nothing left to mail.
+ * Safe to repeat and safe to overlap: each letter's own claim column is written by the
+ * statement that selects the row, so a second run finds nothing left to mail.
  *
  * Refuses to start without a mailer configured. The claim is written before the send and
  * the send is best-effort, so an unset RESEND_API_KEY does not fail anything: it marks
@@ -22,7 +23,7 @@ const job = startJob("payment-reminders");
 
 if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
   console.error(
-    "RESEND_API_KEY and EMAIL_FROM are required here: without them every due installment is claimed as reminded and nothing is sent",
+    "RESEND_API_KEY and EMAIL_FROM are required here: without them every row due a letter is claimed as mailed and nothing is sent",
   );
   await job.failed("no mailer configured");
   process.exit(1);
@@ -37,4 +38,10 @@ console.log(JSON.stringify(result, null, 2));
 // still in progress and skips every tick behind it.
 await db.$client.end();
 
-await job.done({ sent: result.sent, skipped: result.skipped });
+await job.done({
+  sent: result.sent,
+  skipped: result.skipped,
+  finalSent: result.finalSent,
+  overdueSent: result.overdueSent,
+  holdSent: result.holdSent,
+});

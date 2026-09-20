@@ -1434,7 +1434,6 @@
   },
   "Settings": {
     "title": "Marktplatz-Einstellungen",
-    "subtitle": "Wie viel eines Charters im Voraus eingezogen wird und über welchen Anbieter wir verkaufen, wenn die Angebote gleich sind.",
     "source": {
       "legend": "Welcher Zahlungsplan gilt",
       "vendor": {

@@ -1434,7 +1434,6 @@
   },
   "Settings": {
     "title": "Marketplace settings",
-    "subtitle": "How much of a charter is collected up front, and which provider we sell through when the offers are equal.",
     "source": {
       "legend": "Which payment plan we use",
       "vendor": {

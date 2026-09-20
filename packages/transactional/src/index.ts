@@ -8,6 +8,7 @@ import { BookingCancelledEmail, type BookingCancelledEmailProps } from "./emails
 import { BookingConfirmedEmail, type BookingConfirmedEmailProps } from "./emails/booking-confirmed";
 import { BookingReceivedEmail, type BookingReceivedEmailProps } from "./emails/booking-received";
 import { EnquiryAnswerEmail, type EnquiryAnswerEmailProps } from "./emails/enquiry-answer";
+import { HoldExpiringEmail, type HoldExpiringEmailProps } from "./emails/hold-expiring";
 import { InvoiceIssuedEmail, type InvoiceIssuedEmailProps } from "./emails/invoice-issued";
 import { LeadFollowUpEmail, type LeadFollowUpEmailProps } from "./emails/lead-follow-up";
 import { PaymentReceivedEmail, type PaymentReceivedEmailProps } from "./emails/payment-received";
@@ -18,6 +19,7 @@ import { StaffAlertEmail, type StaffAlertEmailProps } from "./emails/staff-alert
 import { WelcomeEmail } from "./emails/welcome";
 
 export type { RefundMethod } from "./emails/refund-issued";
+export type { BalanceReminderStage } from "./emails/balance-reminder";
 
 let client: Resend | undefined;
 
@@ -142,7 +144,12 @@ export async function sendBookingCancelledEmail(
   return sendHtml(to, `Booking ${booking.reference} is cancelled`, html);
 }
 
-/** The nudge before a confirmed booking's second installment falls due. */
+/**
+ * The letters a confirmed booking's second installment earns as its date approaches and then
+ * passes. The subject carries the stage as plainly as the body does: a customer scanning an
+ * inbox has to be able to tell the overdue notice from the two that preceded it without
+ * opening anything.
+ */
 export async function sendBalanceReminderEmail(
   to: string,
   reminder: Omit<BalanceReminderEmailProps, "appUrl">,
@@ -150,9 +157,22 @@ export async function sendBalanceReminderEmail(
   const html = await render(
     createElement(BalanceReminderEmail, { ...reminder, appUrl: env.CORS_ORIGIN }),
   );
+  const subject =
+    reminder.stage === "overdue"
+      ? `${reminder.amount} overdue since ${reminder.dueAt} — booking ${reminder.reference}`
+      : `${reminder.amount} due ${reminder.dueAt} — booking ${reminder.reference}`;
+  return sendHtml(to, subject, html);
+}
+
+/** The last word before an unpaid hold is released by the expiry sweep. */
+export async function sendHoldExpiringEmail(
+  to: string,
+  hold: Omit<HoldExpiringEmailProps, "appUrl">,
+) {
+  const html = await render(createElement(HoldExpiringEmail, { ...hold, appUrl: env.CORS_ORIGIN }));
   return sendHtml(
     to,
-    `${reminder.amount} due ${reminder.dueAt} — booking ${reminder.reference}`,
+    `${hold.yachtName} is held until ${hold.holdExpiresAt} — booking ${hold.reference}`,
     html,
   );
 }

@@ -42,14 +42,14 @@ directly.
 
 ## Where the strings live
 
-| Source | What it holds |
-| --- | --- |
-| `apps/web/messages/<locale>/<Namespace>.json` | all UI copy, customer and admin |
-| `packages/db/src/boat-types.json` | boat-type cards on the home page |
-| `packages/db/src/translations/facet-labels.json` | facets no provider translates |
-| `packages/db/src/translations/{uk,da}.json` | generated facet labels for the two locales no provider names |
-| `packages/db/src/translations/extra-labels.json` | priced extras, keyed by the vendor's English |
-| `packages/db/src/{catalogue-routes,popular-routes,site-faq}.json` | editorial route and FAQ copy |
+| Source                                                            | What it holds                                                |
+| ----------------------------------------------------------------- | ------------------------------------------------------------ |
+| `apps/web/messages/<locale>/<Namespace>.json`                     | all UI copy, customer and admin                              |
+| `packages/db/src/boat-types.json`                                 | boat-type cards on the home page                             |
+| `packages/db/src/translations/facet-labels.json`                  | facets no provider translates                                |
+| `packages/db/src/translations/{uk,da}.json`                       | generated facet labels for the two locales no provider names |
+| `packages/db/src/translations/extra-labels.json`                  | priced extras, keyed by the vendor's English                 |
+| `packages/db/src/{catalogue-routes,popular-routes,site-faq}.json` | editorial route and FAQ copy                                 |
 
 Notation used below: **[!]** marks a conflict inside one locale, **[EN]** marks a term left in
 English.
@@ -61,18 +61,18 @@ English.
 The charter type where the customer sails the yacht themselves, no professional aboard. A crew
 option, not a price or a hull type.
 
-| Locale | Term |
-| --- | --- |
-| es | Sin patrón |
-| uk | Без екіпажу |
-| de | Bareboat **[!] [EN]** (also "Ohne Crew") |
-| fr | Sans skipper |
-| pl | Bez załogi |
-| it | Senza skipper |
-| nl | Bareboat **[EN]** |
-| sv | Utan besättning |
-| no | Uten mannskap |
-| da | Uden besætning |
+| Locale | Term                                     |
+| ------ | ---------------------------------------- |
+| es     | Sin patrón                               |
+| uk     | Без екіпажу                              |
+| de     | Bareboat **[!] [EN]** (also "Ohne Crew") |
+| fr     | Sans skipper                             |
+| pl     | Bez załogi                               |
+| it     | Senza skipper                            |
+| nl     | Bareboat **[EN]**                        |
+| sv     | Utan besättning                          |
+| no     | Uten mannskap                            |
+| da     | Uden besætning                           |
 
 Source: `Common|crewTypes.bareboat`, `Common|boatCard.charterTypes.bareboat`,
 `Home|Hero.options.bareboat`, `Layout|Footer.links.bareboat`.
@@ -88,18 +88,18 @@ stays open deliberately. nl leaves it in English everywhere, which for a trade t
 The charter type where a professional skipper sails the yacht and the customer is a guest. Paired
 with bareboat on the same control.
 
-| Locale | Term |
-| --- | --- |
-| es | Con patrón incluido |
-| uk | Зі шкіпером |
-| de | Mit Skipper |
-| fr | Avec skipper |
-| pl | Ze skipperem |
-| it | Con skipper |
-| nl | Met schipper |
-| sv | Med skeppare |
-| no | Med skipper |
-| da | Med skipper |
+| Locale | Term                |
+| ------ | ------------------- |
+| es     | Con patrón incluido |
+| uk     | Зі шкіпером         |
+| de     | Mit Skipper         |
+| fr     | Avec skipper        |
+| pl     | Ze skipperem        |
+| it     | Con skipper         |
+| nl     | Met schipper        |
+| sv     | Med skeppare        |
+| no     | Med skipper         |
+| da     | Med skipper         |
 
 Source: `Home|Hero.options.skippered`, `Layout|Footer.links.skippered`.
 
@@ -110,18 +110,18 @@ Settled: uk said "З капітаном" (captain) here against "Зі шкіпе
 
 The licensed professional who sails the yacht. Also a role on the crew list.
 
-| Locale | Term |
-| --- | --- |
-| es | Patrón **[!]** ("Con patrón" where the value labels the crew option) |
-| uk | Шкіпер |
-| de | Skipper |
-| fr | Skipper |
-| pl | Skipper **[!]** ("Ze skipperem" on `Common|crewTypes.skipper`) |
-| it | Skipper |
-| nl | Schipper |
-| sv | Skeppare |
-| no | Skipper |
-| da | Skipper |
+| Locale | Term                                                                 |
+| ------ | -------------------------------------------------------------------- |
+| es     | Patrón **[!]** ("Con patrón" where the value labels the crew option) |
+| uk     | Шкіпер                                                               |
+| de     | Skipper                                                              |
+| fr     | Skipper                                                              |
+| pl     | Skipper **[!]** ("Ze skipperem" on `Common                           | crewTypes.skipper`) |
+| it     | Skipper                                                              |
+| nl     | Schipper                                                             |
+| sv     | Skeppare                                                             |
+| no     | Skipper                                                              |
+| da     | Skipper                                                              |
 
 Source: `Common|crewTypes.skipper`, `Home|BudgetFinder.labels.skipper`,
 `PlanMyTrip|result.labels.skipper`; extras: `packages/db/src/translations/extra-labels.json` key
@@ -139,18 +139,18 @@ where the other locales carry a bare noun.
 The people aboard other than the guests, and the name of the filter that chooses between bareboat,
 skippered and full crew.
 
-| Locale | Term |
-| --- | --- |
-| es | Tripulación |
-| uk | Екіпаж |
-| de | Crew **[EN]** |
-| fr | Équipage |
-| pl | Załoga |
-| it | Equipaggio |
-| nl | Bemanning |
-| sv | Besättning |
-| no | Mannskap |
-| da | Besætning |
+| Locale | Term          |
+| ------ | ------------- |
+| es     | Tripulación   |
+| uk     | Екіпаж        |
+| de     | Crew **[EN]** |
+| fr     | Équipage      |
+| pl     | Załoga        |
+| it     | Equipaggio    |
+| nl     | Bemanning     |
+| sv     | Besättning    |
+| no     | Mannskap      |
+| da     | Besætning     |
 
 Source: `Filters|labels.crew`, `Booking|review.crew`, `YachtDetail|sidebar.crew`,
 `Admin|Duplicates.detailFields.crewType` (all seven occurrences agree in every locale).
@@ -162,18 +162,18 @@ a note, not a conflict.
 
 The charter type with skipper plus hostess or cook, the top of the three crew options.
 
-| Locale | Term |
-| --- | --- |
-| es | Tripulación completa |
-| uk | Повний екіпаж |
-| de | Volle Crew |
-| fr | Équipage complet |
-| pl | Pełna załoga |
-| it | Equipaggio completo |
-| nl | Volledige bemanning |
-| sv | Full besättning |
-| no | Fullt mannskap |
-| da | Fuld besætning |
+| Locale | Term                 |
+| ------ | -------------------- |
+| es     | Tripulación completa |
+| uk     | Повний екіпаж        |
+| de     | Volle Crew           |
+| fr     | Équipage complet     |
+| pl     | Pełna załoga         |
+| it     | Equipaggio completo  |
+| nl     | Volledige bemanning  |
+| sv     | Full besättning      |
+| no     | Fullt mannskap       |
+| da     | Fuld besætning       |
 
 Source: `Common|crewTypes.full-crew`, `Common|boatCard.crews.fullCrew`. No conflicts.
 
@@ -182,18 +182,18 @@ Source: `Common|crewTypes.full-crew`, `Common|boatCard.crews.fullCrew`. No confl
 The rental itself: one yacht, one date range, one customer. Not the company and not the booking
 record.
 
-| Locale | Term |
-| --- | --- |
-| es | Chárter |
-| uk | Чартер |
-| de | Charter **[EN]** |
-| fr | Location |
-| pl | Czarter |
-| it | Noleggio |
-| nl | Charter **[EN]** |
-| sv | Charter **[EN]** |
-| no | Charter **[EN]** |
-| da | Charter **[EN]** |
+| Locale | Term             |
+| ------ | ---------------- |
+| es     | Chárter          |
+| uk     | Чартер           |
+| de     | Charter **[EN]** |
+| fr     | Location         |
+| pl     | Czarter          |
+| it     | Noleggio         |
+| nl     | Charter **[EN]** |
+| sv     | Charter **[EN]** |
+| no     | Charter **[EN]** |
+| da     | Charter **[EN]** |
 
 Source: `Booking|detail.charterTitle`, `Admin|StaffBooking.fields.charter`,
 `Admin|Payments.refunds.table.charter`. No conflicts.
@@ -208,18 +208,18 @@ The marina where the yacht is handed over and returned, and the operator's staff
 the security deposit and takes the extras paid on arrival. "Home base" is the admin field for the
 same thing.
 
-| Locale | Term (charter base) | Term (home base, admin) |
-| --- | --- | --- |
-| es | Una base de chárter | Base de origen **[!]** (also plain "Base") |
-| uk | Чартерної бази | Домашня база |
-| de | Einer Charterbasis | Heimatbasis |
-| fr | Une base de location | Base |
-| pl | Bazy czarterowej | Baza macierzysta |
-| it | Una base charter | Base |
-| nl | Een charterbasis | Thuishaven |
-| sv | En charterbas | Hemmabas |
-| no | En charterbase | Hjemmebase |
-| da | En charterbase | Hjemmebase |
+| Locale | Term (charter base)  | Term (home base, admin)                    |
+| ------ | -------------------- | ------------------------------------------ |
+| es     | Una base de chárter  | Base de origen **[!]** (also plain "Base") |
+| uk     | Чартерної бази       | Домашня база                               |
+| de     | Einer Charterbasis   | Heimatbasis                                |
+| fr     | Une base de location | Base                                       |
+| pl     | Bazy czarterowej     | Baza macierzysta                           |
+| it     | Una base charter     | Base                                       |
+| nl     | Een charterbasis     | Thuishaven                                 |
+| sv     | En charterbas        | Hemmabas                                   |
+| no     | En charterbase       | Hjemmebase                                 |
+| da     | En charterbase       | Hjemmebase                                 |
 
 Source: `Admin|Routes.target.levelBase`, `Booking|review.depositRefundable`;
 `Admin|Duplicates.fields.base` and `Admin|Listings.sources.fields.home_base` for the admin field.
@@ -239,18 +239,18 @@ identifies the operator's site and not the harbour.
 
 The harbour itself, as a search facet and as a field on a booking.
 
-| Locale | Term |
-| --- | --- |
-| es | Marina |
-| uk | Марина |
-| de | Marina |
-| fr | Marina |
-| pl | Marina |
-| it | Marina |
-| nl | Jachthaven |
-| sv | Marina |
-| no | Marina |
-| da | Marina |
+| Locale | Term       |
+| ------ | ---------- |
+| es     | Marina     |
+| uk     | Марина     |
+| de     | Marina     |
+| fr     | Marina     |
+| pl     | Marina     |
+| it     | Marina     |
+| nl     | Jachthaven |
+| sv     | Marina     |
+| no     | Marina     |
+| da     | Marina     |
 
 Source: `Filters|labels.marina`, `Yachts|searchBar.kinds.base`, `Booking|detail.marina`.
 
@@ -261,18 +261,18 @@ conflicts.
 
 A sleeping place aboard, counted separately from cabins.
 
-| Locale | Term |
-| --- | --- |
-| es | Literas |
-| uk | Спальні місця |
-| de | Kojen |
-| fr | Couchettes |
-| pl | Koje |
-| it | Posti letto |
-| nl | Slaapplaatsen |
-| sv | Kojplatser |
-| no | Køyeplasser |
-| da | Køjepladser |
+| Locale | Term          |
+| ------ | ------------- |
+| es     | Literas       |
+| uk     | Спальні місця |
+| de     | Kojen         |
+| fr     | Couchettes    |
+| pl     | Koje          |
+| it     | Posti letto   |
+| nl     | Slaapplaatsen |
+| sv     | Kojplatser    |
+| no     | Køyeplasser   |
+| da     | Køjepladser   |
 
 Source: `Admin|Duplicates.fields.berths`, `Admin|Duplicates.signalFields.berths`. No conflicts.
 
@@ -280,18 +280,18 @@ Source: `Admin|Duplicates.fields.berths`, `Admin|Duplicates.signalFields.berths`
 
 A sleeping compartment. A headline spec on every yacht card and the detail page.
 
-| Locale | Term |
-| --- | --- |
-| es | Camarotes |
-| uk | Каюти **[!]** ("Кают" on the boat card) |
-| de | Kabinen |
-| fr | Cabines |
-| pl | Kabiny |
-| it | Cabine |
-| nl | Hutten |
-| sv | Hytter |
-| no | Lugarer |
-| da | Kahytter |
+| Locale | Term                                    |
+| ------ | --------------------------------------- |
+| es     | Camarotes                               |
+| uk     | Каюти **[!]** ("Кают" on the boat card) |
+| de     | Kabinen                                 |
+| fr     | Cabines                                 |
+| pl     | Kabiny                                  |
+| it     | Cabine                                  |
+| nl     | Hutten                                  |
+| sv     | Hytter                                  |
+| no     | Lugarer                                 |
+| da     | Kahytter                                |
 
 Source: `Filters|labels.cabins`, `YachtDetail|overview.cabins`, `Common|boatCard.specs.cabins`.
 
@@ -306,18 +306,18 @@ form rather than a flat label.
 
 The people the charter is booked for. Distinct from crew, and distinct from berths.
 
-| Locale | Term |
-| --- | --- |
-| es | Huéspedes |
-| uk | Гості |
-| de | Gäste |
-| fr | Passagers |
-| pl | Goście |
-| it | Ospiti |
-| nl | Gasten |
-| sv | Gäster |
-| no | Gjester |
-| da | Gæster |
+| Locale | Term      |
+| ------ | --------- |
+| es     | Huéspedes |
+| uk     | Гості     |
+| de     | Gäste     |
+| fr     | Passagers |
+| pl     | Goście    |
+| it     | Ospiti    |
+| nl     | Gasten    |
+| sv     | Gäster    |
+| no     | Gjester   |
+| da     | Gæster    |
 
 Source: `Booking|invoice.summary.guests`, `Booking|detail.guestsLabel`.
 
@@ -335,18 +335,18 @@ it as a second word for the same thing.
 Arrival at the base, boarding and handover day. It is a moment in time, and several prices are
 attached to it ("pay at check-in").
 
-| Locale | Term |
-| --- | --- |
-| es | En la llegada **[!]** (also "al llegar") |
-| uk | При заселенні **[!]** (also "при заїзді") |
-| de | Beim Check-in **[EN in part]** |
-| fr | À l'embarquement |
-| pl | Przy zaokrętowaniu |
-| it | Al check-in **[EN in part]** |
-| nl | Bij het inchecken |
-| sv | Vid incheckning |
-| no | Ved innsjekk |
-| da | Ved check-in **[EN in part]** |
+| Locale | Term                                      |
+| ------ | ----------------------------------------- |
+| es     | En la llegada **[!]** (also "al llegar")  |
+| uk     | При заселенні **[!]** (also "при заїзді") |
+| de     | Beim Check-in **[EN in part]**            |
+| fr     | À l'embarquement                          |
+| pl     | Przy zaokrętowaniu                        |
+| it     | Al check-in **[EN in part]**              |
+| nl     | Bij het inchecken                         |
+| sv     | Vid incheckning                           |
+| no     | Ved innsjekk                              |
+| da     | Ved check-in **[EN in part]**             |
 
 Source: `Booking|invoice.payWhen.at_check_in` ("At check-in"), `Common|extras.payAtCheckIn`
 ("Pay at check-in").
@@ -366,18 +366,18 @@ There is no standalone "check-out" string in the product. The return side is
 
 The cruising region a yacht is searched in, one level above the base.
 
-| Locale | Term |
-| --- | --- |
-| es | Zona de navegación |
-| uk | Регіон плавання **[!]** ("Регіон" in the search bar) |
-| de | Segelrevier |
-| fr | Zone de navigation |
-| pl | Akwen |
-| it | Area di navigazione |
-| nl | Vaargebied |
-| sv | Seglingsområde |
-| no | Seilområde |
-| da | Sejlområde |
+| Locale | Term                                                 |
+| ------ | ---------------------------------------------------- |
+| es     | Zona de navegación                                   |
+| uk     | Регіон плавання **[!]** ("Регіон" in the search bar) |
+| de     | Segelrevier                                          |
+| fr     | Zone de navigation                                   |
+| pl     | Akwen                                                |
+| it     | Area di navigazione                                  |
+| nl     | Vaargebied                                           |
+| sv     | Seglingsområde                                       |
+| no     | Seilområde                                           |
+| da     | Sejlområde                                           |
 
 Source: `Filters|labels.sailingArea`, `Yachts|searchBar.kinds.region`.
 
@@ -392,18 +392,18 @@ short form as an accepted abbreviation rather than a second term.
 One yacht as published on this marketplace: the operator's boat plus our pricing, photos and status.
 Not the boat and not the booking.
 
-| Locale | Term |
-| --- | --- |
-| es | Anuncio |
-| uk | Оголошення |
-| de | Inserat |
-| fr | Annonce |
-| pl | Oferta |
-| it | Annuncio |
-| nl | Advertentie |
-| sv | Annons |
-| no | Annonse |
-| da | Annonce |
+| Locale | Term        |
+| ------ | ----------- |
+| es     | Anuncio     |
+| uk     | Оголошення  |
+| de     | Inserat     |
+| fr     | Annonce     |
+| pl     | Oferta      |
+| it     | Annuncio    |
+| nl     | Advertentie |
+| sv     | Annons      |
+| no     | Annonse     |
+| da     | Annonce     |
 
 Source: `Admin|Audit.entity.listing`, `Admin|Listings.table.listing`; plural forms at
 `Admin|Listings.title`, `Layout|Sidebar.listings`, `Seo|Listings.title`. Singular and plural agree
@@ -413,18 +413,18 @@ in every locale. No conflicts.
 
 The business that owns and runs the yacht. The party we hold a commission agreement with.
 
-| Locale | Term |
-| --- | --- |
-| es | Operador |
-| uk | Оператор |
-| de | Vercharterer |
-| fr | Opérateur |
-| pl | Armator |
-| it | Operatore |
-| nl | Operator **[EN]** |
-| sv | Operatör |
-| no | Operatør |
-| da | Udlejer |
+| Locale | Term              |
+| ------ | ----------------- |
+| es     | Operador          |
+| uk     | Оператор          |
+| de     | Vercharterer      |
+| fr     | Opérateur         |
+| pl     | Armator           |
+| it     | Operatore         |
+| nl     | Operator **[EN]** |
+| sv     | Operatör          |
+| no     | Operatør          |
+| da     | Udlejer           |
 
 Source: `Admin|Listings.table.operator`, `Admin|Commissions.table.operator`,
 `Admin|Listings.filters.operator`, `Admin|Duplicates.fields.operator` (twelve occurrences in all).
@@ -442,18 +442,18 @@ and the two under `Admin|Listings.sources` - were swept into "Vercharterer" in t
 The customer-facing name for the operator, shown on the yacht page and as a filter. Same entity as
 "operator", different audience.
 
-| Locale | Term |
-| --- | --- |
-| es | Empresa de chárter |
-| uk | Чартерна компанія |
-| de | Charterunternehmen |
-| fr | Loueur |
-| pl | Firma czarterowa |
-| it | Società di charter |
-| nl | Charterbedrijf |
-| sv | Charterbolag |
-| no | Charterselskap |
-| da | Charterfirma |
+| Locale | Term               |
+| ------ | ------------------ |
+| es     | Empresa de chárter |
+| uk     | Чартерна компанія  |
+| de     | Charterunternehmen |
+| fr     | Loueur             |
+| pl     | Firma czarterowa   |
+| it     | Società di charter |
+| nl     | Charterbedrijf     |
+| sv     | Charterbolag       |
+| no     | Charterselskap     |
+| da     | Charterfirma       |
 
 Source: `Filters|labels.charterCompany`, `YachtDetail|importantInfo.charterCompany`. No conflicts.
 
@@ -461,18 +461,18 @@ Source: `Filters|labels.charterCompany`, `YachtDetail|importantInfo.charterCompa
 
 The inventory system we sync from, NauSYS or Booking Manager. Admin-only. Never the operator.
 
-| Locale | Term |
-| --- | --- |
-| es | Proveedor |
-| uk | Постачальник |
-| de | Anbieter |
-| fr | Fournisseur |
-| pl | Dostawca |
-| it | Fornitore |
-| nl | Provider **[EN]** |
-| sv | Leverantör |
-| no | Leverandør |
-| da | Leverandør |
+| Locale | Term              |
+| ------ | ----------------- |
+| es     | Proveedor         |
+| uk     | Постачальник      |
+| de     | Anbieter          |
+| fr     | Fournisseur       |
+| pl     | Dostawca          |
+| it     | Fornitore         |
+| nl     | Provider **[EN]** |
+| sv     | Leverantör        |
+| no     | Leverandør        |
+| da     | Leverandør        |
 
 Source: `Admin|Sync.table.provider`, `Admin|Commissions.table.provider`,
 `Admin|Audit.entity.provider` (twelve occurrences, internally consistent in every locale).
@@ -485,18 +485,18 @@ two admin columns are distinct in every locale.
 
 The confirmed reservation with money against it, the record a customer opens under "My bookings".
 
-| Locale | Term |
-| --- | --- |
-| es | Reserva |
-| uk | Бронювання |
-| de | Buchung |
-| fr | Réservation |
-| pl | Rezerwacja |
-| it | Prenotazione |
-| nl | Boeking |
-| sv | Bokning |
-| no | Booking **[EN]** |
-| da | Booking **[EN]** |
+| Locale | Term             |
+| ------ | ---------------- |
+| es     | Reserva          |
+| uk     | Бронювання       |
+| de     | Buchung          |
+| fr     | Réservation      |
+| pl     | Rezerwacja       |
+| it     | Prenotazione     |
+| nl     | Boeking          |
+| sv     | Bokning          |
+| no     | Booking **[EN]** |
+| da     | Booking **[EN]** |
 
 Source: `Booking|detail.panels.main`, `Admin|Audit.entity.booking`,
 `Admin|Faq.categories.booking`, `YachtDetail|faqCategories.booking`.
@@ -514,18 +514,18 @@ Recommendation, awaiting a native reviewer: es make the two FAQ-category keys ag
 A temporary reservation of a yacht with the operator before any money moves, which expires by
 itself. Not a discount hold and not a payment hold.
 
-| Locale | Term |
-| --- | --- |
-| es | Opción |
-| uk | Опція |
-| de | Option |
-| fr | Option |
-| pl | Blokada |
-| it | Opzione |
-| nl | Optie |
-| sv | Reservation |
-| no | Reservasjon |
-| da | Reservation |
+| Locale | Term        |
+| ------ | ----------- |
+| es     | Opción      |
+| uk     | Опція       |
+| de     | Option      |
+| fr     | Option      |
+| pl     | Blokada     |
+| it     | Opzione     |
+| nl     | Optie       |
+| sv     | Reservation |
+| no     | Reservasjon |
+| da     | Reservation |
 
 Source: `Admin|Sync.unreleasedOptions.hold`.
 
@@ -539,18 +539,18 @@ term (sv "Bokning", no and da "Booking") stay clearly distinct on the admin sync
 A priced offer for specific dates, valid for a window, before it becomes a booking. Both a customer
 action ("request a quote") and a booking status ("Quoted").
 
-| Locale | Request a quote | Status: Quoted |
-| --- | --- | --- |
-| es | Solicitar presupuesto **[!]** (also "Solicita un presupuesto") | Presupuestada |
-| uk | Запросити пропозицію | Розраховано |
-| de | Angebot anfordern | Angebot erstellt |
-| fr | Demander un devis | Devis établi |
-| pl | Poproś o wycenę | Wyceniona |
-| it | Richiedi preventivo **[!]** (also "Richiedi un preventivo") | Preventivata |
-| nl | Offerte aanvragen | Offerte |
-| sv | Begär offert **[!]** (also "Begär en offert") | Offererad |
-| no | Be om tilbud | Tilbud gitt |
-| da | Bed om et tilbud | Tilbud givet |
+| Locale | Request a quote                                                | Status: Quoted   |
+| ------ | -------------------------------------------------------------- | ---------------- |
+| es     | Solicitar presupuesto **[!]** (also "Solicita un presupuesto") | Presupuestada    |
+| uk     | Запросити пропозицію                                           | Розраховано      |
+| de     | Angebot anfordern                                              | Angebot erstellt |
+| fr     | Demander un devis                                              | Devis établi     |
+| pl     | Poproś o wycenę                                                | Wyceniona        |
+| it     | Richiedi preventivo **[!]** (also "Richiedi un preventivo")    | Preventivata     |
+| nl     | Offerte aanvragen                                              | Offerte          |
+| sv     | Begär offert **[!]** (also "Begär en offert")                  | Offererad        |
+| no     | Be om tilbud                                                   | Tilbud gitt      |
+| da     | Bed om et tilbud                                               | Tilbud givet     |
 
 Source: `YachtDetail|sidebar.requestQuote`, `YachtDetail|quoteDialog.title`;
 `Admin|Bookings.status.QUOTED`, `Booking|detail.status.QUOTED`.
@@ -562,18 +562,18 @@ probably intentional. The noun is stable in every locale; that is what matters f
 
 The refundable sum the charter base holds against damage, taken at the base and not by us.
 
-| Locale | Term |
-| --- | --- |
-| es | Fianza |
-| uk | Застава |
-| de | Kaution |
-| fr | Caution |
-| pl | Kaucja |
-| it | Cauzione |
-| nl | Borg |
-| sv | Deposition |
-| no | Depositum |
-| da | Depositum |
+| Locale | Term       |
+| ------ | ---------- |
+| es     | Fianza     |
+| uk     | Застава    |
+| de     | Kaution    |
+| fr     | Caution    |
+| pl     | Kaucja     |
+| it     | Cauzione   |
+| nl     | Borg       |
+| sv     | Deposition |
+| no     | Depositum  |
+| da     | Depositum  |
 
 Source: `Admin|Duplicates.detailFields.deposit`, `Booking|detail.kind.security_deposit`; the same
 terms appear in `packages/db/src/translations/extra-labels.json` under `"Security Deposit"` for de,
@@ -584,18 +584,18 @@ es and uk. No conflicts.
 The share of the charter price the customer pays us now to confirm the booking. The rest is paid
 later. Never the security deposit.
 
-| Locale | Term |
-| --- | --- |
-| es | Anticipo |
-| uk | Передоплата |
-| de | Anzahlung |
-| fr | Acompte |
-| pl | Przedpłata |
-| it | Acconto |
-| nl | Aanbetaling |
-| sv | Förskottsbetalning |
-| no | Forskudd |
-| da | Forudbetaling |
+| Locale | Term               |
+| ------ | ------------------ |
+| es     | Anticipo           |
+| uk     | Передоплата        |
+| de     | Anzahlung          |
+| fr     | Acompte            |
+| pl     | Przedpłata         |
+| it     | Acconto            |
+| nl     | Aanbetaling        |
+| sv     | Förskottsbetalning |
+| no     | Forskudd           |
+| da     | Forudbetaling      |
 
 Source: `YachtDetail|sidebar.payNow` ("Booking Prepayment (Pay Now)"),
 `Common|boatCard.prepayment`, `Common|extras.dueWithPrepayment`. No conflicts.
@@ -608,18 +608,18 @@ running text; the two must never swap.
 An optional product that replaces most of the security deposit with a premium. Sometimes sold by the
 base as a "damage waiver".
 
-| Locale | Term |
-| --- | --- |
-| es | Seguro de fianza |
-| uk | Страхування застави |
-| de | Kautionsversicherung |
-| fr | Assurance caution |
-| pl | Ubezpieczenie kaucji |
-| it | Assicurazione cauzione |
-| nl | Borgverzekering |
-| sv | Depositionsförsäkring |
-| no | Depositumsforsikring |
-| da | Depositumforsikring |
+| Locale | Term                   |
+| ------ | ---------------------- |
+| es     | Seguro de fianza       |
+| uk     | Страхування застави    |
+| de     | Kautionsversicherung   |
+| fr     | Assurance caution      |
+| pl     | Ubezpieczenie kaucji   |
+| it     | Assicurazione cauzione |
+| nl     | Borgverzekering        |
+| sv     | Depositionsförsäkring  |
+| no     | Depositumsforsikring   |
+| da     | Depositumforsikring    |
 
 Source: `Admin|Duplicates.detailFields.depositInsurance`, `Filters|chips.depositInsurance`. No
 conflicts.
@@ -635,18 +635,18 @@ inventing a second one.
 Priced items added to a charter: outboard, skipper, linen, transfers. Split into mandatory and
 optional.
 
-| Locale | Term |
-| --- | --- |
-| es | Extras |
-| uk | Додатково |
-| de | Extras |
-| fr | Suppléments |
-| pl | Dodatki |
-| it | Extra |
-| nl | Extra's |
-| sv | Tillval |
-| no | Ekstrautstyr |
-| da | Tillæg |
+| Locale | Term         |
+| ------ | ------------ |
+| es     | Extras       |
+| uk     | Додатково    |
+| de     | Extras       |
+| fr     | Suppléments  |
+| pl     | Dodatki      |
+| it     | Extra        |
+| nl     | Extra's      |
+| sv     | Tillval      |
+| no     | Ekstrautstyr |
+| da     | Tillæg       |
 
 Source: `Booking|review.extras`, `Booking|steps.extras`. No conflicts on the bare term.
 
@@ -657,18 +657,18 @@ no "Ekstrautstyr" literally means extra equipment, which is narrower than what t
 
 Extras the base charges whether or not the customer wants them. Included in the quoted total.
 
-| Locale | Term |
-| --- | --- |
-| es | Extras obligatorios |
-| uk | Обов'язкові доплати |
-| de | Obligatorische Extras |
-| fr | Suppléments obligatoires |
-| pl | Obowiązkowe dodatki |
-| it | Extra obbligatori |
-| nl | Verplichte extra's |
-| sv | Obligatoriska tillval |
-| no | Obligatorisk ekstrautstyr |
-| da | Obligatoriske tillæg |
+| Locale | Term                      |
+| ------ | ------------------------- |
+| es     | Extras obligatorios       |
+| uk     | Обов'язкові доплати       |
+| de     | Obligatorische Extras     |
+| fr     | Suppléments obligatoires  |
+| pl     | Obowiązkowe dodatki       |
+| it     | Extra obbligatori         |
+| nl     | Verplichte extra's        |
+| sv     | Obligatoriska tillval     |
+| no     | Obligatorisk ekstrautstyr |
+| da     | Obligatoriske tillæg      |
 
 Source: `YachtDetail|sections.mandatoryExtras`, `YachtDetail|tabs.mandatory-extras`,
 `YachtDetail|sidebar.groups.mandatory`. No conflicts.
@@ -680,18 +680,18 @@ from one root. Flagged for the Ukrainian reviewer.
 
 Extras the customer chooses. Some are paid now, some at the base.
 
-| Locale | Term |
-| --- | --- |
-| es | Extras opcionales |
-| uk | Додаткові опції |
-| de | Optionale Extras |
-| fr | Suppléments facultatifs |
-| pl | Dodatki opcjonalne |
-| it | Extra facoltativi |
-| nl | Optionele extra's |
-| sv | Valfria tillval |
-| no | Valgfritt ekstrautstyr |
-| da | Valgfrie tillæg |
+| Locale | Term                    |
+| ------ | ----------------------- |
+| es     | Extras opcionales       |
+| uk     | Додаткові опції         |
+| de     | Optionale Extras        |
+| fr     | Suppléments facultatifs |
+| pl     | Dodatki opcjonalne      |
+| it     | Extra facoltativi       |
+| nl     | Optionele extra's       |
+| sv     | Valfria tillval         |
+| no     | Valgfritt ekstrautstyr  |
+| da     | Valgfrie tillæg         |
 
 Source: `Booking|extras.optional`, `YachtDetail|tabs.optional-extras`,
 `YachtDetail|sections.optionalExtras`.
@@ -708,18 +708,18 @@ a word order difference only, and now reads "Dodatki opcjonalne" everywhere.
 The end-of-charter cleaning fee. Nearly always a mandatory extra. The vendors write it either
 "Final cleaning" or "End cleaning" and both map to the same term here.
 
-| Locale | Term |
-| --- | --- |
-| es | Limpieza final |
-| uk | Фінальне прибирання |
-| de | Endreinigung |
-| fr | Nettoyage final |
-| pl | Sprzątanie końcowe |
-| it | Pulizia finale |
-| nl | Eindschoonmaak |
-| sv | Slutstädning |
-| no | Sluttvask |
-| da | Slutrengøring |
+| Locale | Term                |
+| ------ | ------------------- |
+| es     | Limpieza final      |
+| uk     | Фінальне прибирання |
+| de     | Endreinigung        |
+| fr     | Nettoyage final     |
+| pl     | Sprzątanie końcowe  |
+| it     | Pulizia finale      |
+| nl     | Eindschoonmaak      |
+| sv     | Slutstädning        |
+| no     | Sluttvask           |
+| da     | Slutrengøring       |
 
 Source: `packages/db/src/translations/extra-labels.json`, keys `"Final cleaning"` and
 `"End cleaning"`, which carry identical values in all ten locales. No conflicts.
@@ -729,18 +729,18 @@ Source: `packages/db/src/translations/extra-labels.json`, keys `"Final cleaning"
 The Croatian port-authority document and fee, bought at the base and usually bundled with cleaning
 and gas. A proper noun of the trade, not a log book.
 
-| Locale | Term |
-| --- | --- |
-| es | Transit log **[EN]** |
-| uk | Транзитний журнал |
-| de | Transitlog |
-| fr | Transit log **[EN]** |
-| pl | Transit log **[EN]** |
-| it | Transit log **[EN]** |
-| nl | Transit log **[EN]** |
-| sv | Transit log **[EN]** |
-| no | Transit log **[EN]** |
-| da | Transit log **[EN]** |
+| Locale | Term                 |
+| ------ | -------------------- |
+| es     | Transit log **[EN]** |
+| uk     | Транзитний журнал    |
+| de     | Transitlog           |
+| fr     | Transit log **[EN]** |
+| pl     | Transit log **[EN]** |
+| it     | Transit log **[EN]** |
+| nl     | Transit log **[EN]** |
+| sv     | Transit log **[EN]** |
+| no     | Transit log **[EN]** |
+| da     | Transit log **[EN]** |
 
 Source: `packages/db/src/translations/extra-labels.json`, key `"Transit log"`.
 
@@ -754,18 +754,18 @@ as well, so uk is inconsistent with itself across the extras file.
 
 The per-person, per-night levy collected at the base.
 
-| Locale | Term |
-| --- | --- |
-| es | Tasa turística |
-| uk | Туристичний збір |
-| de | Kurtaxe |
-| fr | Taxe de séjour |
-| pl | Opłata klimatyczna |
-| it | Tassa di soggiorno |
-| nl | Toeristenbelasting |
-| sv | Turistskatt |
-| no | Turistskatt |
-| da | Turistskat |
+| Locale | Term               |
+| ------ | ------------------ |
+| es     | Tasa turística     |
+| uk     | Туристичний збір   |
+| de     | Kurtaxe            |
+| fr     | Taxe de séjour     |
+| pl     | Opłata klimatyczna |
+| it     | Tassa di soggiorno |
+| nl     | Toeristenbelasting |
+| sv     | Turistskatt        |
+| no     | Turistskatt        |
+| da     | Turistskat         |
 
 Source: `packages/db/src/translations/extra-labels.json`, key `"Tourist tax"`. No conflicts.
 
@@ -773,18 +773,18 @@ Source: `packages/db/src/translations/extra-labels.json`, key `"Tourist tax"`. N
 
 The customer's saved yachts. One list, no folders.
 
-| Locale | Noun | In the add/remove buttons |
-| --- | --- | --- |
-| es | Tus favoritos | favoritos |
-| uk | Ваше обране | обране |
-| de | Ihre Merkliste | Zur Merkliste |
-| fr | Vos favoris | favoris |
-| pl | Twoje ulubione | ulubionych |
-| it | I tuoi preferiti | preferiti |
-| nl | Jouw verlanglijst | verlanglijst |
-| sv | Din önskelista | önskelistan |
-| no | Ønskelisten din | ønskelisten |
-| da | Din ønskeliste | ønskelisten |
+| Locale | Noun              | In the add/remove buttons |
+| ------ | ----------------- | ------------------------- |
+| es     | Tus favoritos     | favoritos                 |
+| uk     | Ваше обране       | обране                    |
+| de     | Ihre Merkliste    | Zur Merkliste             |
+| fr     | Vos favoris       | favoris                   |
+| pl     | Twoje ulubione    | ulubionych                |
+| it     | I tuoi preferiti  | preferiti                 |
+| nl     | Jouw verlanglijst | verlanglijst              |
+| sv     | Din önskelista    | önskelistan               |
+| no     | Ønskelisten din   | ønskelisten               |
+| da     | Din ønskeliste    | ønskelisten               |
 
 Source: `Wishlist|title`, `Seo|Wishlist.title`, `YachtDetail|addToWishlist`,
 `YachtDetail|removeFromWishlist`, `Common|boatCard.save`.
@@ -798,18 +798,18 @@ conflicts.
 
 The scheme where an existing customer invites a friend and both get credit.
 
-| Locale | Term |
-| --- | --- |
-| es | Referidos |
-| uk | Реферали |
-| de | Empfehlungen |
-| fr | Parrainages |
-| pl | Polecenia |
-| it | Inviti |
-| nl | Doorverwijzingen |
-| sv | Värvningar |
-| no | Vervinger |
-| da | Henvisninger |
+| Locale | Term             |
+| ------ | ---------------- |
+| es     | Referidos        |
+| uk     | Реферали         |
+| de     | Empfehlungen     |
+| fr     | Parrainages      |
+| pl     | Polecenia        |
+| it     | Inviti           |
+| nl     | Doorverwijzingen |
+| sv     | Värvningar       |
+| no     | Vervinger        |
+| da     | Henvisninger     |
 
 Source: `Layout|Sidebar.referrals`, `Layout|UserMenu.referrals`; possessive forms at
 `Referrals|title` and `Seo|Referrals.title` ("Your Referrals"). The possessive forms differ only by
@@ -819,18 +819,18 @@ the pronoun in every locale, which is expected, not a conflict.
 
 The balance earned by referring someone, spendable against a charter.
 
-| Locale | Term |
-| --- | --- |
-| es | Crédito por recomendación |
-| uk | Бонус за рекомендацією |
-| de | Empfehlungsguthaben |
-| fr | Crédit de parrainage |
-| pl | Środki z poleceń **[!]** (also "Środki z polecenia") |
-| it | Credito da invito |
-| nl | Verwijstegoed |
-| sv | Värvningstillgodohavande |
-| no | Vervebonus |
-| da | Tilgodehavende fra henvisning |
+| Locale | Term                                                 |
+| ------ | ---------------------------------------------------- |
+| es     | Crédito por recomendación                            |
+| uk     | Бонус за рекомендацією                               |
+| de     | Empfehlungsguthaben                                  |
+| fr     | Crédit de parrainage                                 |
+| pl     | Środki z poleceń **[!]** (also "Środki z polecenia") |
+| it     | Credito da invito                                    |
+| nl     | Verwijstegoed                                        |
+| sv     | Värvningstillgodohavande                             |
+| no     | Vervebonus                                           |
+| da     | Tilgodehavende fra henvisning                        |
 
 Source: `Common|quoteLines.referral-credit`, `Booking|detail.priceLineLabels.referralCredit`,
 `Admin|StaffBooking.priceLines.labels.referralCredit`, `YachtDetail|sidebar.credit.label`.
@@ -848,18 +848,18 @@ is the only one of the three that is internally consistent.
 
 The wallet screen: credit earned and the money available to spend.
 
-| Locale | Term |
-| --- | --- |
-| es | Créditos y saldo |
-| uk | Кредити та баланс |
-| de | Guthaben & Saldo |
-| fr | Crédits et solde |
-| pl | Środki i saldo |
-| it | Crediti e saldo |
-| nl | Tegoed & saldo |
-| sv | Tillgodohavande och saldo |
-| no | Bonus og saldo |
-| da | Tilgodehavende og saldo |
+| Locale | Term                      |
+| ------ | ------------------------- |
+| es     | Créditos y saldo          |
+| uk     | Кредити та баланс         |
+| de     | Guthaben & Saldo          |
+| fr     | Crédits et solde          |
+| pl     | Środki i saldo            |
+| it     | Crediti e saldo           |
+| nl     | Tegoed & saldo            |
+| sv     | Tillgodohavande och saldo |
+| no     | Bonus og saldo            |
+| da     | Tilgodehavende og saldo   |
 
 Source: `Credits|title`, `Layout|Sidebar.credits`, `Layout|UserMenu.credits`, `Seo|Credits.title`.
 All four agree in every locale. No conflicts.
@@ -872,18 +872,18 @@ a word for the first half that the same locale uses elsewhere for the credit its
 
 What is still owed after the prepayment. Distinct from the wallet balance in entry 33.
 
-| Locale | Term |
-| --- | --- |
-| es | Saldo pendiente |
-| uk | Залишок до сплати |
-| de | Restbetrag |
-| fr | Solde restant |
-| pl | Pozostało do zapłaty |
-| it | Saldo residuo |
-| nl | Resterend bedrag |
-| sv | Återstående belopp |
-| no | Restbeløp |
-| da | Resterende beløb |
+| Locale | Term                 |
+| ------ | -------------------- |
+| es     | Saldo pendiente      |
+| uk     | Залишок до сплати    |
+| de     | Restbetrag           |
+| fr     | Solde restant        |
+| pl     | Pozostało do zapłaty |
+| it     | Saldo residuo        |
+| nl     | Resterend bedrag     |
+| sv     | Återstående belopp   |
+| no     | Restbeløp            |
+| da     | Resterende beløb     |
 
 Source: `Booking|invoice.totals.balance`. Compare `Credits|balance.label` ("Available balance") for
 the wallet sense. No conflicts.
@@ -892,18 +892,18 @@ the wallet sense. No conflicts.
 
 A reduction applied to a price, managed by staff and identified by a code.
 
-| Locale | Term |
-| --- | --- |
-| es | Descuentos |
-| uk | Знижки |
-| de | Rabatte |
-| fr | Remises |
-| pl | Rabaty |
-| it | Sconti |
-| nl | Kortingen |
-| sv | Rabatter |
-| no | Rabatter |
-| da | Rabatter |
+| Locale | Term       |
+| ------ | ---------- |
+| es     | Descuentos |
+| uk     | Знижки     |
+| de     | Rabatte    |
+| fr     | Remises    |
+| pl     | Rabaty     |
+| it     | Sconti     |
+| nl     | Kortingen  |
+| sv     | Rabatter   |
+| no     | Rabatter   |
+| da     | Rabatter   |
 
 Source: `Discounts|tabs.discounts`; singular at `Discounts|table.name` ("Discount Name"). No
 conflicts.
@@ -912,18 +912,18 @@ conflicts.
 
 The operator's own price reduction, arriving from the provider on a quote line. Not one of ours.
 
-| Locale | Term |
-| --- | --- |
-| es | Descuento del chárter |
-| uk | Знижка на чартер |
-| de | Charter-Rabatt |
-| fr | Remise sur la location |
-| pl | Rabat na czarter |
-| it | Sconto charter |
-| nl | Charterkorting |
-| sv | Charterrabatt |
-| no | Charterrabatt |
-| da | Charterrabat |
+| Locale | Term                   |
+| ------ | ---------------------- |
+| es     | Descuento del chárter  |
+| uk     | Знижка на чартер       |
+| de     | Charter-Rabatt         |
+| fr     | Remise sur la location |
+| pl     | Rabat na czarter       |
+| it     | Sconto charter         |
+| nl     | Charterkorting         |
+| sv     | Charterrabatt          |
+| no     | Charterrabatt          |
+| da     | Charterrabat           |
 
 Source: `Common|quoteLines.provider-discount`, `Booking|detail.priceLineLabels.charterDiscount`,
 `Admin|StaffBooking.priceLines.labels.charterDiscount`.
@@ -935,18 +935,18 @@ sees in the price breakdown, and now says "Rabat na czarter" on all three keys.
 
 The yard that built the hull: Beneteau, Lagoon, Bavaria. A spec field and a search facet.
 
-| Locale | Term |
-| --- | --- |
-| es | Astillero |
-| uk | Верф |
-| de | Werft |
-| fr | Chantier |
-| pl | Stocznia |
-| it | Cantiere |
-| nl | Werf |
-| sv | Varv |
-| no | Verft |
-| da | Værft |
+| Locale | Term      |
+| ------ | --------- |
+| es     | Astillero |
+| uk     | Верф      |
+| de     | Werft     |
+| fr     | Chantier  |
+| pl     | Stocznia  |
+| it     | Cantiere  |
+| nl     | Werf      |
+| sv     | Varv      |
+| no     | Verft     |
+| da     | Værft     |
 
 Source: `Admin|Duplicates.detailFields.builder`, `Admin|Duplicates.signalFields.builder`,
 `Filters|chips.builder`. No conflicts.
@@ -956,18 +956,18 @@ Source: `Admin|Duplicates.detailFields.builder`, `Admin|Duplicates.signalFields.
 The category a yacht falls in: catamaran, sailing yacht, motor yacht and so on. A top-level filter
 and a home page section.
 
-| Locale | Term |
-| --- | --- |
-| es | Tipo de barco |
-| uk | Тип човна |
-| de | Bootstyp |
-| fr | Type de bateau |
-| pl | Typ jachtu |
-| it | Tipo di barca |
-| nl | Boottype |
-| sv | Båttyp |
-| no | Båttype |
-| da | Bådtype |
+| Locale | Term           |
+| ------ | -------------- |
+| es     | Tipo de barco  |
+| uk     | Тип човна      |
+| de     | Bootstyp       |
+| fr     | Type de bateau |
+| pl     | Typ jachtu     |
+| it     | Tipo di barca  |
+| nl     | Boottype       |
+| sv     | Båttyp         |
+| no     | Båttype        |
+| da     | Bådtype        |
 
 Source: `Filters|labels.boatType`, `YachtDetail|overview.boatType`, `Layout|Nav.boatTypes`.
 
@@ -978,18 +978,18 @@ and now says "Typ jachtu" in both, which agrees with pl's "Jacht" for the yacht 
 
 How the mainsail is rigged: full batten, furling and so on. A spec and a filter.
 
-| Locale | Term |
-| --- | --- |
-| es | Tipo de mayor |
-| uk | Тип грота |
-| de | Großsegeltyp |
-| fr | Type de grand-voile |
-| pl | Typ grota |
-| it | Tipo di randa |
-| nl | Type grootzeil |
-| sv | Storsegelstyp |
-| no | Type storseil |
-| da | Storsejlstype |
+| Locale | Term                |
+| ------ | ------------------- |
+| es     | Tipo de mayor       |
+| uk     | Тип грота           |
+| de     | Großsegeltyp        |
+| fr     | Type de grand-voile |
+| pl     | Typ grota           |
+| it     | Tipo di randa       |
+| nl     | Type grootzeil      |
+| sv     | Storsegelstyp       |
+| no     | Type storseil       |
+| da     | Storsejlstype       |
 
 Source: `Filters|labels.mainsailType`, `Common|boatCard.specs.mainsail`,
 `YachtDetail|overview.mainsail`. The values themselves are in
@@ -1003,18 +1003,18 @@ style of "Båttyp".
 
 Two hulls. The most-booked type on the site.
 
-| Locale | Term |
-| --- | --- |
-| es | Catamarán |
-| uk | Катамаран |
-| de | Katamaran |
-| fr | Catamaran |
-| pl | Katamaran |
-| it | Catamarano |
-| nl | Catamaran |
-| sv | Katamaran |
-| no | Katamaran |
-| da | Katamaran |
+| Locale | Term       |
+| ------ | ---------- |
+| es     | Catamarán  |
+| uk     | Катамаран  |
+| de     | Katamaran  |
+| fr     | Catamaran  |
+| pl     | Katamaran  |
+| it     | Catamarano |
+| nl     | Catamaran  |
+| sv     | Katamaran  |
+| no     | Katamaran  |
+| da     | Katamaran  |
 
 Source: `Home|Hero.options.catamaran`, `Common|boatCard.charterTypes.catamaran`,
 `PlanMyTrip|result.yachtType.catamaran`; database copy in `packages/db/src/boat-types.json` under
@@ -1024,18 +1024,18 @@ Source: `Home|Hero.options.catamaran`, `Common|boatCard.charterTypes.catamaran`,
 
 A monohull under sail. The default hull type.
 
-| Locale | UI | boat-types.json |
-| --- | --- | --- |
-| es | Velero | Velero |
-| uk | Вітрильна яхта | Вітрильна яхта |
-| de | Segelyacht | Segelyacht |
-| fr | Voilier | Voilier |
-| pl | Jacht żaglowy | Jacht żaglowy |
-| it | Yacht a vela **[!]** | Barca a vela |
-| nl | Zeiljacht | Zeiljacht |
-| sv | Segelyacht **[!]** | Segelbåt |
-| no | Seilyacht **[!]** | Seilbåt |
-| da | Sejlyacht **[!]** | Sejlbåd |
+| Locale | UI                   | boat-types.json |
+| ------ | -------------------- | --------------- |
+| es     | Velero               | Velero          |
+| uk     | Вітрильна яхта       | Вітрильна яхта  |
+| de     | Segelyacht           | Segelyacht      |
+| fr     | Voilier              | Voilier         |
+| pl     | Jacht żaglowy        | Jacht żaglowy   |
+| it     | Yacht a vela **[!]** | Barca a vela    |
+| nl     | Zeiljacht            | Zeiljacht       |
+| sv     | Segelyacht **[!]**   | Segelbåt        |
+| no     | Seilyacht **[!]**    | Seilbåt         |
+| da     | Sejlyacht **[!]**    | Sejlbåd         |
 
 Source: `Home|Hero.options.sailingYacht`, `Layout|Footer.links.sailingYacht`,
 `PlanMyTrip|result.yachtType.sailing`; `packages/db/src/boat-types.json`, entry `"Sailing yacht"`.
@@ -1058,18 +1058,18 @@ rather than being applied here.
 
 A powered yacht, as opposed to a motor boat, which is the smaller category.
 
-| Locale | Term |
-| --- | --- |
-| es | Yate a motor |
-| uk | Моторна яхта |
-| de | Motoryacht |
-| fr | Yacht à moteur |
-| pl | Jacht motorowy |
-| it | Yacht a motore |
-| nl | Motorjacht |
-| sv | Motoryacht |
-| no | Motoryacht |
-| da | Motoryacht |
+| Locale | Term           |
+| ------ | -------------- |
+| es     | Yate a motor   |
+| uk     | Моторна яхта   |
+| de     | Motoryacht     |
+| fr     | Yacht à moteur |
+| pl     | Jacht motorowy |
+| it     | Yacht a motore |
+| nl     | Motorjacht     |
+| sv     | Motoryacht     |
+| no     | Motoryacht     |
+| da     | Motoryacht     |
 
 Source: `Home|Hero.options.motorYacht`, `PlanMyTrip|result.yachtType.motor`;
 `packages/db/src/boat-types.json`, entry `"Motor yacht"`. UI and database agree everywhere. No
@@ -1079,18 +1079,18 @@ conflicts.
 
 A traditional wooden Turkish motorsailer, chartered with a full crew.
 
-| Locale | UI | boat-types.json |
-| --- | --- | --- |
-| es | Gulet | Gulet |
-| uk | Гулет | Гулет |
-| de | Gulet | Gulet |
-| fr | Goélette **[!]** | Goélette turque (Gulet) |
-| pl | Gulet | Gulet |
-| it | Caicco **[!]** | Caicco (Gulet) |
-| nl | Gulet | Gulet |
-| sv | Gulet | Gulet |
-| no | Gulet | Gulet |
-| da | Gulet | Gulet |
+| Locale | UI               | boat-types.json         |
+| ------ | ---------------- | ----------------------- |
+| es     | Gulet            | Gulet                   |
+| uk     | Гулет            | Гулет                   |
+| de     | Gulet            | Gulet                   |
+| fr     | Goélette **[!]** | Goélette turque (Gulet) |
+| pl     | Gulet            | Gulet                   |
+| it     | Caicco **[!]**   | Caicco (Gulet)          |
+| nl     | Gulet            | Gulet                   |
+| sv     | Gulet            | Gulet                   |
+| no     | Gulet            | Gulet                   |
+| da     | Gulet            | Gulet                   |
 
 Source: `Home|Hero.options.gulet`, `PlanMyTrip|result.yachtType.gulet`, `Discounts|applies.allGullets`;
 `packages/db/src/boat-types.json`, entry `"Gulet"`; facet values in
@@ -1109,18 +1109,18 @@ confirm rather than flatten.
 
 A floating home rented at a mooring or on inland water. Barely sailed.
 
-| Locale | boat-types.json | facet label |
-| --- | --- | --- |
-| es | Casa flotante | not found |
-| uk | Хаусбот | Хаусбот |
-| de | Hausboot | not found |
-| fr | House-boat **[EN]** | not found |
-| pl | Houseboat **[EN]** | not found |
-| it | Houseboat **[EN]** | not found |
-| nl | Woonboot | not found |
-| sv | Husbåt | not found |
-| no | Husbåt | not found |
-| da | Husbåd | Husbåd |
+| Locale | boat-types.json     | facet label |
+| ------ | ------------------- | ----------- |
+| es     | Casa flotante       | not found   |
+| uk     | Хаусбот             | Хаусбот     |
+| de     | Hausboot            | not found   |
+| fr     | House-boat **[EN]** | not found   |
+| pl     | Houseboat **[EN]**  | not found   |
+| it     | Houseboat **[EN]**  | not found   |
+| nl     | Woonboot            | not found   |
+| sv     | Husbåt              | not found   |
+| no     | Husbåt              | not found   |
+| da     | Husbåd              | Husbåd      |
 
 Source: `packages/db/src/boat-types.json`, entry `"House boat"`;
 `packages/db/src/translations/uk.json` and `packages/db/src/translations/da.json` under
@@ -1137,33 +1137,33 @@ apart.
 
 **Nautical draft**, how deep the hull sits:
 
-| Locale | Term |
-| --- | --- |
-| es | Calado |
-| uk | Осадка |
-| de | Tiefgang |
-| fr | Tirant d'eau |
-| pl | Zanurzenie |
-| it | Pescaggio |
-| nl | Diepgang |
-| sv | Djupgående |
-| no | Dypgang |
-| da | Dybgang |
+| Locale | Term         |
+| ------ | ------------ |
+| es     | Calado       |
+| uk     | Осадка       |
+| de     | Tiefgang     |
+| fr     | Tirant d'eau |
+| pl     | Zanurzenie   |
+| it     | Pescaggio    |
+| nl     | Diepgang     |
+| sv     | Djupgående   |
+| no     | Dypgang      |
+| da     | Dybgang      |
 
 **Draft status**, an unpublished listing, route or booking:
 
-| Locale | Term |
-| --- | --- |
-| es | Borrador |
-| uk | Чернетка |
-| de | Entwurf |
-| fr | Brouillon |
-| pl | Wersja robocza |
-| it | Bozza |
-| nl | Concept |
-| sv | Utkast |
-| no | Utkast |
-| da | Kladde |
+| Locale | Term           |
+| ------ | -------------- |
+| es     | Borrador       |
+| uk     | Чернетка       |
+| de     | Entwurf        |
+| fr     | Brouillon      |
+| pl     | Wersja robocza |
+| it     | Bozza          |
+| nl     | Concept        |
+| sv     | Utkast         |
+| no     | Utkast         |
+| da     | Kladde         |
 
 Source: `Admin|Duplicates.detailFields.draft` for the nautical sense;
 `Admin|Listings.status.draft`, `Admin|Routes.status.draft`, `Admin|Bookings.status.DRAFT`,
@@ -1177,18 +1177,18 @@ read as a sketch.
 
 The hull length, a headline spec and a filter. Note the collision below.
 
-| Locale | Term |
-| --- | --- |
-| es | Eslora **[!]** |
-| uk | Довжина **[!]** |
-| de | Länge **[!]** |
-| fr | Longueur **[!]** |
-| pl | Długość |
-| it | Lunghezza **[!]** |
-| nl | Lengte **[!]** |
-| sv | Längd |
-| no | Lengde |
-| da | Længde |
+| Locale | Term              |
+| ------ | ----------------- |
+| es     | Eslora **[!]**    |
+| uk     | Довжина **[!]**   |
+| de     | Länge **[!]**     |
+| fr     | Longueur **[!]**  |
+| pl     | Długość           |
+| it     | Lunghezza **[!]** |
+| nl     | Lengte **[!]**    |
+| sv     | Längd             |
+| no     | Lengde            |
+| da     | Længde            |
 
 Source: `Filters|labels.length`, `YachtDetail|overview.length`, `Common|boatCard.specs.length`,
 `Admin|Duplicates.fields.length`.
@@ -1212,18 +1212,18 @@ from two directions is how a locale loses keys.
 
 The hull's width at its widest.
 
-| Locale | Term |
-| --- | --- |
-| es | Manga |
-| uk | Ширина |
-| de | Breite |
-| fr | Largeur |
-| pl | Szerokość |
-| it | Larghezza |
-| nl | Breedte |
-| sv | Bredd |
-| no | Bredde |
-| da | Bredde |
+| Locale | Term      |
+| ------ | --------- |
+| es     | Manga     |
+| uk     | Ширина    |
+| de     | Breite    |
+| fr     | Largeur   |
+| pl     | Szerokość |
+| it     | Larghezza |
+| nl     | Breedte   |
+| sv     | Bredd     |
+| no     | Bredde    |
+| da     | Bredde    |
 
 Source: `Admin|Duplicates.detailFields.beam`, `YachtDetail|overview.beam`. No conflicts.
 
@@ -1235,18 +1235,18 @@ is correct Spanish for a boat spec and matches "Eslora" for length.
 A customer's written rating of a charter. Not "to review" and not the admin's duplicate review
 queue.
 
-| Locale | Term |
-| --- | --- |
-| es | Opiniones |
-| uk | Відгуки |
-| de | Bewertungen |
-| fr | Avis |
-| pl | Opinie |
-| it | Recensioni |
-| nl | Reviews **[EN]** |
-| sv | Omdömen |
-| no | Anmeldelser |
-| da | Anmeldelser |
+| Locale | Term             |
+| ------ | ---------------- |
+| es     | Opiniones        |
+| uk     | Відгуки          |
+| de     | Bewertungen      |
+| fr     | Avis             |
+| pl     | Opinie           |
+| it     | Recensioni       |
+| nl     | Reviews **[EN]** |
+| sv     | Omdömen          |
+| no     | Anmeldelser      |
+| da     | Anmeldelser      |
 
 Source: `YachtDetail|tabs.review`, `YachtDetail|sections.review`, `YachtDetail|review.empty`.
 
@@ -1257,18 +1257,18 @@ Careful: `Admin|Duplicates.title` ("Duplicate Review") and `Admin|Duplicates.det
 
 Whether a yacht is free for a date range. Also the name of one of the sync jobs.
 
-| Locale | Term |
-| --- | --- |
-| es | Disponibilidad |
-| uk | Доступність |
-| de | Verfügbarkeit |
-| fr | Disponibilités |
-| pl | Dostępność |
-| it | Disponibilità |
-| nl | Beschikbaarheid |
-| sv | Tillgänglighet |
-| no | Ledighet |
-| da | Ledighed |
+| Locale | Term            |
+| ------ | --------------- |
+| es     | Disponibilidad  |
+| uk     | Доступність     |
+| de     | Verfügbarkeit   |
+| fr     | Disponibilités  |
+| pl     | Dostępność      |
+| it     | Disponibilità   |
+| nl     | Beschikbaarheid |
+| sv     | Tillgänglighet  |
+| no     | Ledighet        |
+| da     | Ledighed        |
 
 Source: `Admin|Sync.kind.availability`; the customer-facing call to action is
 `Booking|balance.notPayable.action` ("Check availability"). No conflicts.
@@ -1277,18 +1277,18 @@ Source: `Admin|Sync.kind.availability`; the customer-facing call to action is
 
 Ending a confirmed booking, and the policy that governs it.
 
-| Locale | Cancellation | Cancellation Policy |
-| --- | --- | --- |
-| es | Cancelación | Política de cancelación |
-| uk | Скасування | Політика скасування |
-| de | Stornierung | Stornierungsbedingungen |
-| fr | Annulation | Conditions d'annulation |
-| pl | Anulowanie | Zasady anulowania |
-| it | Cancellazione | Condizioni di cancellazione |
-| nl | Annulering | Annuleringsbeleid |
-| sv | Avbokning | Avbokningsvillkor |
-| no | Avbestilling | Avbestillingsvilkår |
-| da | Afbestilling | Afbestillingsbetingelser |
+| Locale | Cancellation  | Cancellation Policy         |
+| ------ | ------------- | --------------------------- |
+| es     | Cancelación   | Política de cancelación     |
+| uk     | Скасування    | Політика скасування         |
+| de     | Stornierung   | Stornierungsbedingungen     |
+| fr     | Annulation    | Conditions d'annulation     |
+| pl     | Anulowanie    | Zasady anulowania           |
+| it     | Cancellazione | Condizioni di cancellazione |
+| nl     | Annulering    | Annuleringsbeleid           |
+| sv     | Avbokning     | Avbokningsvillkor           |
+| no     | Avbestilling  | Avbestillingsvilkår         |
+| da     | Afbestilling  | Afbestillingsbetingelser    |
 
 Source: `Admin|Faq.categories.cancellation`, `YachtDetail|faqCategories.cancellation`;
 `Layout|Legal.cancellation`, `Seo|Legal.cancellation.title`.
@@ -1301,18 +1301,18 @@ Settled: fr named the same legal page "Politique d'annulation" in its own title 
 
 The document a business customer requests instead of paying by card, and the page that renders it.
 
-| Locale | Term |
-| --- | --- |
-| es | Factura |
-| uk | Рахунок |
-| de | Rechnung |
-| fr | Facture |
-| pl | Faktura |
-| it | Fattura |
-| nl | Factuur |
-| sv | Faktura |
-| no | Faktura |
-| da | Faktura |
+| Locale | Term     |
+| ------ | -------- |
+| es     | Factura  |
+| uk     | Рахунок  |
+| de     | Rechnung |
+| fr     | Facture  |
+| pl     | Faktura  |
+| it     | Fattura  |
+| nl     | Factuur  |
+| sv     | Faktura  |
+| no     | Faktura  |
+| da     | Faktura  |
 
 Source: `Booking|invoice.title`, `Seo|Invoice.title`, `Admin|Payments.invoices.table.invoice`,
 `Admin|Audit.entity.invoice_request`. All four agree in every locale. No conflicts.
@@ -1322,18 +1322,18 @@ Source: `Booking|invoice.title`, `Seo|Invoice.title`, `Admin|Payments.invoices.t
 Value added tax. Appears as an optional field on the invoice request and as a line on the invoice
 itself.
 
-| Locale | Number field | On the invoice |
-| --- | --- | --- |
-| es | Número de IVA | NIF/IVA **[!]** |
-| uk | Номер ПДВ | ПДВ |
-| de | USt-IdNr. | USt-IdNr. |
-| fr | Numéro de TVA | TVA |
-| pl | Numer VAT | VAT |
-| it | Partita IVA | P. IVA **[!]** |
-| nl | Btw-nummer | Btw |
-| sv | Momsregistreringsnummer | Momsnr **[!]** |
-| no | MVA-nummer | MVA |
-| da | Momsnummer | Momsnr. **[!]** |
+| Locale | Number field            | On the invoice  |
+| ------ | ----------------------- | --------------- |
+| es     | Número de IVA           | NIF/IVA **[!]** |
+| uk     | Номер ПДВ               | ПДВ             |
+| de     | USt-IdNr.               | USt-IdNr.       |
+| fr     | Numéro de TVA           | TVA             |
+| pl     | Numer VAT               | VAT             |
+| it     | Partita IVA             | P. IVA **[!]**  |
+| nl     | Btw-nummer              | Btw             |
+| sv     | Momsregistreringsnummer | Momsnr **[!]**  |
+| no     | MVA-nummer              | MVA             |
+| da     | Momsnummer              | Momsnr. **[!]** |
 
 Source: `Booking|payment.invoice.vat` ("VAT Number (Optional)"), `Booking|invoice.vat`
 ("VAT {value}").
@@ -1348,18 +1348,18 @@ and without a full stop respectively, a detail that should be settled once.
 The boat itself, as a record and as a label on booking documents. The product name for the thing
 being chartered.
 
-| Locale | Term |
-| --- | --- |
-| es | Yate |
-| uk | Яхта |
-| de | Yacht |
-| fr | Yacht |
-| pl | Jacht |
-| it | Yacht |
-| nl | Jacht |
-| sv | Båt |
-| no | Yacht |
-| da | Båd |
+| Locale | Term  |
+| ------ | ----- |
+| es     | Yate  |
+| uk     | Яхта  |
+| de     | Yacht |
+| fr     | Yacht |
+| pl     | Jacht |
+| it     | Yacht |
+| nl     | Jacht |
+| sv     | Båt   |
+| no     | Yacht |
+| da     | Båd   |
 
 Source: `Booking|review.yacht`, `Booking|invoice.summary.yacht`,
 `Booking|confirmation.summary.yacht`, `Admin|Bookings.table.charter`,
@@ -1443,7 +1443,7 @@ below.
    at source, which was not done in this pass with another change in flight in those files.
 2. **skipper** is the bare "Skipper" on `Home|BudgetFinder.labels.skipper` and
    `PlanMyTrip|result.labels.skipper` but "Ze skipperem" on `Common|crewTypes.skipper`, where the
-   other locales use a bare noun. Left because `crewTypes` is the crew *option*, which reads
+   other locales use a bare noun. Left because `crewTypes` is the crew _option_, which reads
    naturally as a prepositional phrase in Polish.
 3. **referral credit** differs only in number, "Środki z poleceń" against "Środki z polecenia". Left
    as the smallest item on the list; a reviewer settles it in passing.

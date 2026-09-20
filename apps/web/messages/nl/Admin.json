@@ -1434,7 +1434,6 @@
   },
   "Settings": {
     "title": "Marktplaatsinstellingen",
-    "subtitle": "Hoeveel van een charter vooraf wordt geïnd en via welke provider we verkopen als de aanbiedingen gelijk zijn.",
     "source": {
       "legend": "Welk betalingsplan we gebruiken",
       "vendor": {

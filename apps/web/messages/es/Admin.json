@@ -1434,7 +1434,6 @@
   },
   "Settings": {
     "title": "Ajustes del marketplace",
-    "subtitle": "Cuánto del chárter se cobra por adelantado y a través de qué proveedor vendemos cuando las ofertas son iguales.",
     "source": {
       "legend": "Qué plan de pago usamos",
       "vendor": {

@@ -1434,7 +1434,6 @@
   },
   "Settings": {
     "title": "Marknadsplatsinställningar",
-    "subtitle": "Hur stor del av en charter som tas in i förskott, och vilken leverantör vi säljer genom när erbjudandena är likvärdiga.",
     "source": {
       "legend": "Vilken betalningsplan vi använder",
       "vendor": {

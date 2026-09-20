@@ -1434,7 +1434,6 @@
   },
   "Settings": {
     "title": "Indstillinger for markedspladsen",
-    "subtitle": "Hvor stor en del af et charter der opkræves på forhånd, og hvilken leverandør vi sælger igennem, når tilbuddene er lige gode.",
     "source": {
       "legend": "Hvilken betalingsplan vi bruger",
       "vendor": {

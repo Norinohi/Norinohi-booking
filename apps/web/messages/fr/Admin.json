@@ -1434,7 +1434,6 @@
   },
   "Settings": {
     "title": "Paramètres de la marketplace",
-    "subtitle": "Quelle part d’une location est encaissée à l’avance, et par quel fournisseur nous vendons lorsque les offres sont équivalentes.",
     "source": {
       "legend": "Plan de paiement utilisé",
       "vendor": {

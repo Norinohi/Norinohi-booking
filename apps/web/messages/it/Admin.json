@@ -1434,7 +1434,6 @@
   },
   "Settings": {
     "title": "Impostazioni del marketplace",
-    "subtitle": "Quanta parte di un noleggio viene incassata in anticipo e tramite quale fornitore vendiamo quando le offerte sono equivalenti.",
     "source": {
       "legend": "Quale piano di pagamento usiamo",
       "vendor": {

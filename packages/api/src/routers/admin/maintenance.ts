@@ -102,9 +102,9 @@ export const maintenanceAdminRouter = {
       method: "POST",
       path: "/admin/maintenance/sendPaymentReminders",
       operationId: "sendPaymentReminders",
-      summary: "Remind customers of a balance falling due",
+      summary: "Remind customers of money falling due",
       description:
-        "Mails every confirmed booking whose balance installment falls due within the next ten days. Normally driven by the scheduled POST /api/cron/payment-reminders; this exists so staff can send the batch after a mailer outage without waiting a day. Each installment is claimed before it is mailed, so running this twice sends nothing the second time.",
+        "Sends the four chasing letters in one pass: the balance reminder ten days out, the second one three days out, the overdue notice once the date has passed, and the warning that an unpaid hold is about to be released. Normally driven by the scheduled POST /api/cron/payment-reminders; this exists so staff can send the batch after a mailer outage without waiting a day. Every letter is claimed on its own row before it is mailed, so running this twice sends nothing the second time.",
       tags: ["Admin"],
       successDescription: "How many reminders went out.",
       spec: withJsonBodyExample({}),

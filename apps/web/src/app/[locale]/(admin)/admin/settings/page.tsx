@@ -16,7 +16,8 @@ export async function generateMetadata() {
   return buildMetadata({
     locale,
     title: t("title"),
-    description: t("subtitle"),
+    /* The screen's own subtitle is gone and the page is noIndex, so the title carries both. */
+    description: t("title"),
     path: "/admin/settings",
     noIndex: true,
   });

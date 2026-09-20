@@ -58,14 +58,14 @@ If the English source gains keys while translators are working (adding a languag
 
 The customer-facing copy lives in checked-in JSON, keyed by locale:
 
-| File | What it holds |
-| --- | --- |
-| `packages/db/src/catalogue-routes.json` | 48 sailing routes: title, description, and a note per stop |
-| `packages/db/src/catalogue-stop-refresh.json` | stop notes for the twelve featured routes |
-| `packages/db/src/popular-routes.json` | the home page's route cards |
-| `packages/db/src/site-faq.json` | the site-wide FAQ |
-| `packages/db/src/boat-types.json` | boat-type cards |
-| `packages/db/src/translations/facet-labels.json` | facets no provider translates |
+| File                                             | What it holds                                              |
+| ------------------------------------------------ | ---------------------------------------------------------- |
+| `packages/db/src/catalogue-routes.json`          | 48 sailing routes: title, description, and a note per stop |
+| `packages/db/src/catalogue-stop-refresh.json`    | stop notes for the twelve featured routes                  |
+| `packages/db/src/popular-routes.json`            | the home page's route cards                                |
+| `packages/db/src/site-faq.json`                  | the site-wide FAQ                                          |
+| `packages/db/src/boat-types.json`                | boat-type cards                                            |
+| `packages/db/src/translations/facet-labels.json` | facets no provider translates                              |
 
 Their Zod schemas demand every locale, so a half-filled file fails on import rather than at a write. `RETURN_NOTE` in `packages/db/src/catalogue-routes-seed.ts` is the one such string that lives in code.
 

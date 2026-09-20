@@ -1434,7 +1434,6 @@
   },
   "Settings": {
     "title": "Innstillinger for markedsplassen",
-    "subtitle": "Hvor mye av et charter som kreves inn på forhånd, og hvilken leverandør vi selger gjennom når tilbudene er like.",
     "source": {
       "legend": "Hvilken betalingsplan vi bruker",
       "vendor": {

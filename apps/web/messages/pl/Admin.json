@@ -1434,7 +1434,6 @@
   },
   "Settings": {
     "title": "Ustawienia marketplace",
-    "subtitle": "Jaka część czarteru jest pobierana z góry i przez którego dostawcę sprzedajemy, gdy oferty są równe.",
     "source": {
       "legend": "Który plan płatności stosujemy",
       "vendor": {
