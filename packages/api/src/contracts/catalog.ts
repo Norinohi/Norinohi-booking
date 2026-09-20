@@ -58,6 +58,8 @@ export { dateStringSchema };
 /** A hand-written itinerary for a charter base or its sailing region. */
 export const suggestedRouteSchema = z.object({
   title: z.string(),
+  /** The route's own page on the routes map, `/routes/<slug>`. */
+  slug: z.string(),
   description: z.string().nullable(),
   stops: z.array(
     z.object({

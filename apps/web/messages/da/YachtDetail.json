@@ -58,7 +58,8 @@
     "finish": "Mål",
     "day": "Dag {day}",
     "stopTitle": "Dag {day} - {place}",
-    "disclaimer": "Vejledende rute. Den endelige rejseplan og overnatningsstederne afhænger af vejret, ledigheden og skipperens beslutning."
+    "disclaimer": "Vejledende rute. Den endelige rejseplan og overnatningsstederne afhænger af vejret, ledigheden og skipperens beslutning.",
+    "openOnMap": "Se ruten på kortet"
   },
   "review": {
     "count": "({count, plural, one {# anmeldelse} other {# anmeldelser}})",

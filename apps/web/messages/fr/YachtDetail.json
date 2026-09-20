@@ -58,7 +58,8 @@
     "finish": "Arrivée",
     "day": "Jour {day}",
     "stopTitle": "Jour {day} - {place}",
-    "disclaimer": "Itinéraire indicatif. L’itinéraire final et les escales de nuit dépendent de la météo, des disponibilités et de la décision du skipper."
+    "disclaimer": "Itinéraire indicatif. L’itinéraire final et les escales de nuit dépendent de la météo, des disponibilités et de la décision du skipper.",
+    "openOnMap": "Voir cet itinéraire sur la carte"
   },
   "review": {
     "count": "({count, plural, one {# avis} other {# avis}})",

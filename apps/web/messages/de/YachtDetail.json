@@ -58,7 +58,8 @@
     "finish": "Ziel",
     "day": "Tag {day}",
     "stopTitle": "Tag {day} - {place}",
-    "disclaimer": "Richtwert-Route. Der endgültige Törnplan und die Übernachtungsplätze hängen von Wetter, Verfügbarkeit und der Entscheidung des Skippers ab."
+    "disclaimer": "Richtwert-Route. Der endgültige Törnplan und die Übernachtungsplätze hängen von Wetter, Verfügbarkeit und der Entscheidung des Skippers ab.",
+    "openOnMap": "Diese Route auf der Karte ansehen"
   },
   "review": {
     "count": "({count, plural, one {# Bewertung} other {# Bewertungen}})",

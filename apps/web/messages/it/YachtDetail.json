@@ -58,7 +58,8 @@
     "finish": "Arrivo",
     "day": "Giorno {day}",
     "stopTitle": "Giorno {day} - {place}",
-    "disclaimer": "Itinerario indicativo. L’itinerario definitivo e le soste notturne dipendono dal meteo, dalla disponibilità e dalla decisione dello skipper."
+    "disclaimer": "Itinerario indicativo. L’itinerario definitivo e le soste notturne dipendono dal meteo, dalla disponibilità e dalla decisione dello skipper.",
+    "openOnMap": "Vedi questo itinerario sulla mappa"
   },
   "review": {
     "count": "({count, plural, one {# recensione} other {# recensioni}})",
