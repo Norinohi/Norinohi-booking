@@ -899,3 +899,71 @@ export const invoiceCancelInputSchema = z.object({
   id: z.string().min(1),
   reason: z.string().trim().max(500).optional(),
 });
+
+/* --------------------------------------------------- payment administration */
+
+/*
+ * Every payment, as a list.
+ *
+ * The other two admin queues are work to do; this one is a record. Staff could see a
+ * bank transfer waiting to be settled and money owed back, but a card payment that
+ * simply worked — the deposit, the balance, the full amount — appeared nowhere, so
+ * "did this customer pay?" could only be answered by opening their booking.
+ */
+export const paymentAdminListInputSchema = z
+  .object({
+    status: z.array(paymentStatusSchema).min(1).optional(),
+    kind: z.array(paymentScheduleKindSchema).min(1).optional(),
+    method: z.enum(["card", "transfer"]).optional(),
+    /** Matches a booking reference, a customer name or their email. */
+    query: z.string().trim().max(200).optional(),
+    /** Bring back the payments on bookings marked as not real business. */
+    includeExcluded: z.boolean().default(false),
+    ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: 20 }),
+  })
+  .default({ ...paginationInputDefault(20), includeExcluded: false });
+
+export const paymentAdminRowSchema = z.object({
+  id: z.string(),
+  bookingId: z.string(),
+  reference: z.string(),
+  bookingStatus: bookingStatusSchema,
+  customerName: z.string().nullable(),
+  customerEmail: z.string(),
+  listingTitle: z.string(),
+  kind: paymentScheduleKindSchema,
+  amount: moneySchema,
+  status: paymentStatusSchema,
+  /** Derived the same way the customer-facing row derives it: an intent means a card. */
+  method: z.enum(["card", "transfer"]),
+  /** What has already gone back out of this payment; zero on most rows. */
+  refunded: moneySchema,
+  /** Set once a chargeback opens — contested money, not refunded money. */
+  disputedAt: z.string().nullable(),
+  disputeStatus: z.string().nullable(),
+  failureReason: z.string().nullable(),
+  authorizedAt: z.string().nullable(),
+  paidAt: z.string().nullable(),
+  refundedAt: z.string().nullable(),
+  /** When the payment was started, which is the only date every row has. */
+  createdAt: z.string(),
+  /** Null on an ordinary booking; set when someone marked it as not real business. */
+  excludedAt: z.string().nullable(),
+});
+
+export const paymentAdminListSchema = paginatedSchema(paymentAdminRowSchema).extend({
+  /*
+   * Totals over the whole filter rather than the page, because the question this
+   * screen is opened with is "how much came in", and a sum of twenty rows answers
+   * a different one. Mixed currencies are kept apart instead of added up.
+   */
+  totals: z.array(
+    z.object({
+      currency: z.string(),
+      /** Money that actually landed: succeeded payments only. */
+      collectedMinor: z.number().int(),
+      refundedMinor: z.number().int(),
+      count: z.number().int(),
+    }),
+  ),
+});

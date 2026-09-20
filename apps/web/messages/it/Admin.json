@@ -930,10 +930,11 @@
   },
   "Payments": {
     "title": "Pagamenti",
-    "subtitle": "Bonifici in attesa di registrazione e somme da restituire ai clienti.",
+    "subtitle": "Tutti i pagamenti incassati, i bonifici in attesa di riconciliazione e il denaro da restituire ai clienti.",
     "tabs": {
       "invoices": "Richieste di fattura",
-      "refunds": "Rimborsi dovuti"
+      "refunds": "Rimborsi dovuti",
+      "ledger": "Tutti i pagamenti"
     },
     "invoices": {
       "filters": {
@@ -982,6 +983,54 @@
       },
       "empty": "Al momento non c’è nulla da restituire.",
       "error": "Impossibile caricare la coda dei rimborsi."
+    },
+    "ledger": {
+      "filters": {
+        "search": "Cerca per riferimento, nome o email",
+        "status": "Filtra per stato",
+        "allStatuses": "Tutti gli stati",
+        "kind": "Filtra per tipo",
+        "allKinds": "Tutti i tipi",
+        "method": "Filtra per metodo",
+        "allMethods": "Tutti i metodi"
+      },
+      "table": {
+        "date": "Data",
+        "booking": "Prenotazione",
+        "customer": "Cliente",
+        "kind": "Tipo",
+        "method": "Metodo",
+        "amount": "Importo",
+        "status": "Stato"
+      },
+      "status": {
+        "requires_payment": "Non pagato",
+        "processing": "In elaborazione",
+        "authorized": "Bloccato sulla carta",
+        "succeeded": "Pagato",
+        "failed": "Fallito",
+        "refunded": "Rimborsato"
+      },
+      "kind": {
+        "deposit": "Acconto",
+        "balance": "Saldo",
+        "full": "Pagamento intero",
+        "checkin_extras": "Extra al check-in",
+        "security_deposit": "Cauzione"
+      },
+      "method": {
+        "card": "Carta",
+        "transfer": "Bonifico"
+      },
+      "totals": {
+        "collected": "Incassato da {count, plural, one {# pagamento} other {# pagamenti}}",
+        "refunded": "{amount} restituito"
+      },
+      "startedAt": "Avviato, non pagato",
+      "returned": "{amount} restituito",
+      "disputed": "Contestato",
+      "empty": "Nessun pagamento con questi filtri.",
+      "error": "Impossibile caricare i pagamenti."
     },
     "settle": {
       "title": "Registra un bonifico ricevuto",

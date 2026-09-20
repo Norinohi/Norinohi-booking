@@ -1,6 +1,12 @@
 import { orpc } from "@/utils/orpc";
 
-import type { BookingStatus, InvoiceStatus } from "../types";
+import type {
+  BookingStatus,
+  InvoiceStatus,
+  PaymentKind,
+  PaymentMethod,
+  PaymentStatus,
+} from "../types";
 
 /*
  * Isomorphic query option factories - used by both the server prefetch helpers
@@ -46,6 +52,30 @@ export const bookingQueueQueryOptions = (input: {
       pageSize: input.pageSize ?? PAYMENTS_PAGE_SIZE,
     },
     staleTime: 15_000,
+  });
+
+/**
+ * Every payment, not a queue. Longer staleTime than the two queues beside it: nothing on this
+ * tab is acted on, so a colleague settling a transfer cannot make what is shown here wrong in
+ * the way it makes the invoice list wrong — and it is the tab most likely to be paged through.
+ */
+export const paymentListQueryOptions = (input: {
+  status?: readonly PaymentStatus[];
+  kind?: readonly PaymentKind[];
+  method?: PaymentMethod;
+  query?: string;
+  page: number;
+  pageSize?: number;
+}) =>
+  orpc.admin.payment.list.queryOptions({
+    input: {
+      ...input,
+      status: input.status ? [...input.status] : undefined,
+      kind: input.kind ? [...input.kind] : undefined,
+      includeExcluded: false,
+      pageSize: input.pageSize ?? PAYMENTS_PAGE_SIZE,
+    },
+    staleTime: 30_000,
   });
 
 /**

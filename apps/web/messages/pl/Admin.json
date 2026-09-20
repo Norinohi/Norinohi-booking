@@ -930,10 +930,11 @@
   },
   "Payments": {
     "title": "Płatności",
-    "subtitle": "Przelewy bankowe oczekujące na rozliczenie oraz kwoty do zwrotu klientom.",
+    "subtitle": "Wszystkie otrzymane płatności, przelewy czekające na rozliczenie i pieniądze do zwrotu klientom.",
     "tabs": {
       "invoices": "Prośby o fakturę",
-      "refunds": "Zwroty do wykonania"
+      "refunds": "Zwroty do wykonania",
+      "ledger": "Wszystkie płatności"
     },
     "invoices": {
       "filters": {
@@ -982,6 +983,54 @@
       },
       "empty": "Obecnie nie ma nic do zwrotu.",
       "error": "Nie udało się wczytać kolejki zwrotów."
+    },
+    "ledger": {
+      "filters": {
+        "search": "Szukaj po numerze, nazwisku lub e-mailu",
+        "status": "Filtruj po statusie",
+        "allStatuses": "Wszystkie statusy",
+        "kind": "Filtruj po rodzaju",
+        "allKinds": "Wszystkie rodzaje",
+        "method": "Filtruj po metodzie",
+        "allMethods": "Wszystkie metody"
+      },
+      "table": {
+        "date": "Data",
+        "booking": "Rezerwacja",
+        "customer": "Klient",
+        "kind": "Rodzaj",
+        "method": "Metoda",
+        "amount": "Kwota",
+        "status": "Status"
+      },
+      "status": {
+        "requires_payment": "Nieopłacone",
+        "processing": "W trakcie",
+        "authorized": "Zablokowane na karcie",
+        "succeeded": "Opłacone",
+        "failed": "Nieudane",
+        "refunded": "Zwrócone"
+      },
+      "kind": {
+        "deposit": "Zaliczka",
+        "balance": "Dopłata",
+        "full": "Pełna płatność",
+        "checkin_extras": "Dodatki przy zaokrętowaniu",
+        "security_deposit": "Kaucja"
+      },
+      "method": {
+        "card": "Karta",
+        "transfer": "Przelew"
+      },
+      "totals": {
+        "collected": "Wpłynęło z {count, plural, one {# płatności} few {# płatności} many {# płatności} other {# płatności}}",
+        "refunded": "Zwrócono {amount}"
+      },
+      "startedAt": "Rozpoczęte, nieopłacone",
+      "returned": "Zwrócono {amount}",
+      "disputed": "Zakwestionowane",
+      "empty": "Brak płatności dla tych filtrów.",
+      "error": "Nie udało się wczytać płatności."
     },
     "settle": {
       "title": "Zarejestruj otrzymany przelew",

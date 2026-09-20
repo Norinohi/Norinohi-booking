@@ -930,10 +930,11 @@
   },
   "Payments": {
     "title": "Betalingen",
-    "subtitle": "Bankoverschrijvingen die nog moeten worden verwerkt en geld dat klanten terug moeten krijgen.",
+    "subtitle": "Alle ontvangen betalingen, de bankoverschrijvingen die nog verwerkt moeten worden en het geld dat klanten terugkrijgen.",
     "tabs": {
       "invoices": "Factuuraanvragen",
-      "refunds": "Terug te betalen"
+      "refunds": "Terug te betalen",
+      "ledger": "Alle betalingen"
     },
     "invoices": {
       "filters": {
@@ -982,6 +983,54 @@
       },
       "empty": "Er hoeft op dit moment niets te worden terugbetaald.",
       "error": "De wachtrij met terugbetalingen kon niet worden geladen."
+    },
+    "ledger": {
+      "filters": {
+        "search": "Zoek op referentie, naam of e-mail",
+        "status": "Filter op status",
+        "allStatuses": "Alle statussen",
+        "kind": "Filter op soort",
+        "allKinds": "Alle soorten",
+        "method": "Filter op methode",
+        "allMethods": "Alle methodes"
+      },
+      "table": {
+        "date": "Datum",
+        "booking": "Boeking",
+        "customer": "Klant",
+        "kind": "Soort",
+        "method": "Methode",
+        "amount": "Bedrag",
+        "status": "Status"
+      },
+      "status": {
+        "requires_payment": "Niet betaald",
+        "processing": "In verwerking",
+        "authorized": "Gereserveerd op kaart",
+        "succeeded": "Betaald",
+        "failed": "Mislukt",
+        "refunded": "Terugbetaald"
+      },
+      "kind": {
+        "deposit": "Aanbetaling",
+        "balance": "Restbedrag",
+        "full": "Volledige betaling",
+        "checkin_extras": "Extra's bij check-in",
+        "security_deposit": "Borg"
+      },
+      "method": {
+        "card": "Kaart",
+        "transfer": "Overschrijving"
+      },
+      "totals": {
+        "collected": "Ontvangen uit {count, plural, one {# betaling} other {# betalingen}}",
+        "refunded": "{amount} terugbetaald"
+      },
+      "startedAt": "Gestart, niet betaald",
+      "returned": "{amount} terugbetaald",
+      "disputed": "Betwist",
+      "empty": "Geen betalingen met deze filters.",
+      "error": "Kan de betalingen niet laden."
     },
     "settle": {
       "title": "Ontvangen overschrijving vastleggen",

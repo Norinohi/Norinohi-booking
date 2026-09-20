@@ -930,10 +930,11 @@
   },
   "Payments": {
     "title": "Betalningar",
-    "subtitle": "Banköverföringar som väntar på att regleras, och pengar som ska tillbaka till kunder.",
+    "subtitle": "Alla mottagna betalningar, banköverföringarna som väntar på att regleras och pengar som ska tillbaka till kunderna.",
     "tabs": {
       "invoices": "Fakturaförfrågningar",
-      "refunds": "Återbetalningar att göra"
+      "refunds": "Återbetalningar att göra",
+      "ledger": "Alla betalningar"
     },
     "invoices": {
       "filters": {
@@ -982,6 +983,54 @@
       },
       "empty": "Inget ska betalas tillbaka just nu.",
       "error": "Det gick inte att ladda återbetalningskön."
+    },
+    "ledger": {
+      "filters": {
+        "search": "Sök på referens, namn eller e-post",
+        "status": "Filtrera efter status",
+        "allStatuses": "Alla statusar",
+        "kind": "Filtrera efter typ",
+        "allKinds": "Alla typer",
+        "method": "Filtrera efter metod",
+        "allMethods": "Alla metoder"
+      },
+      "table": {
+        "date": "Datum",
+        "booking": "Bokning",
+        "customer": "Kund",
+        "kind": "Typ",
+        "method": "Metod",
+        "amount": "Belopp",
+        "status": "Status"
+      },
+      "status": {
+        "requires_payment": "Ej betald",
+        "processing": "Behandlas",
+        "authorized": "Reserverad på kortet",
+        "succeeded": "Betald",
+        "failed": "Misslyckades",
+        "refunded": "Återbetald"
+      },
+      "kind": {
+        "deposit": "Handpenning",
+        "balance": "Slutbetalning",
+        "full": "Full betalning",
+        "checkin_extras": "Tillval vid incheckning",
+        "security_deposit": "Depositionsavgift"
+      },
+      "method": {
+        "card": "Kort",
+        "transfer": "Överföring"
+      },
+      "totals": {
+        "collected": "Mottaget från {count, plural, one {# betalning} other {# betalningar}}",
+        "refunded": "{amount} återbetalt"
+      },
+      "startedAt": "Påbörjad, ej betald",
+      "returned": "{amount} återbetalt",
+      "disputed": "Bestridd",
+      "empty": "Inga betalningar med dessa filter.",
+      "error": "Det gick inte att ladda betalningarna."
     },
     "settle": {
       "title": "Registrera en mottagen överföring",

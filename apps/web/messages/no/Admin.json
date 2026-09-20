@@ -930,10 +930,11 @@
   },
   "Payments": {
     "title": "Betalinger",
-    "subtitle": "Bankoverføringer som venter på å bli gjort opp, og penger som skal tilbake til kunder.",
+    "subtitle": "Alle mottatte betalinger, bankoverføringene som venter på å bli gjort opp, og penger som skal tilbake til kundene.",
     "tabs": {
       "invoices": "Fakturaforespørsler",
-      "refunds": "Refusjoner som forfaller"
+      "refunds": "Refusjoner som forfaller",
+      "ledger": "Alle betalinger"
     },
     "invoices": {
       "filters": {
@@ -982,6 +983,54 @@
       },
       "empty": "Ingenting skal tilbakebetales akkurat nå.",
       "error": "Kunne ikke laste refusjonskøen."
+    },
+    "ledger": {
+      "filters": {
+        "search": "Søk på referanse, navn eller e-post",
+        "status": "Filtrer etter status",
+        "allStatuses": "Alle statuser",
+        "kind": "Filtrer etter type",
+        "allKinds": "Alle typer",
+        "method": "Filtrer etter metode",
+        "allMethods": "Alle metoder"
+      },
+      "table": {
+        "date": "Dato",
+        "booking": "Booking",
+        "customer": "Kunde",
+        "kind": "Type",
+        "method": "Metode",
+        "amount": "Beløp",
+        "status": "Status"
+      },
+      "status": {
+        "requires_payment": "Ikke betalt",
+        "processing": "Behandles",
+        "authorized": "Reservert på kortet",
+        "succeeded": "Betalt",
+        "failed": "Mislyktes",
+        "refunded": "Refundert"
+      },
+      "kind": {
+        "deposit": "Depositum",
+        "balance": "Restbeløp",
+        "full": "Full betaling",
+        "checkin_extras": "Tillegg ved ankomst",
+        "security_deposit": "Sikkerhetsdepositum"
+      },
+      "method": {
+        "card": "Kort",
+        "transfer": "Overføring"
+      },
+      "totals": {
+        "collected": "Mottatt fra {count, plural, one {# betaling} other {# betalinger}}",
+        "refunded": "{amount} returnert"
+      },
+      "startedAt": "Startet, ikke betalt",
+      "returned": "{amount} returnert",
+      "disputed": "Omtvistet",
+      "empty": "Ingen betalinger med disse filtrene.",
+      "error": "Kunne ikke laste betalingene."
     },
     "settle": {
       "title": "Registrer en mottatt overføring",

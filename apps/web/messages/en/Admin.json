@@ -930,10 +930,11 @@
   },
   "Payments": {
     "title": "Payments",
-    "subtitle": "Bank transfers waiting to be settled, and money owed back to customers.",
+    "subtitle": "Every payment taken, the bank transfers waiting to be settled, and money owed back to customers.",
     "tabs": {
       "invoices": "Invoice requests",
-      "refunds": "Refunds due"
+      "refunds": "Refunds due",
+      "ledger": "All payments"
     },
     "invoices": {
       "filters": {
@@ -982,6 +983,54 @@
       },
       "empty": "Nothing is owed back right now.",
       "error": "Could not load the refund queue."
+    },
+    "ledger": {
+      "filters": {
+        "search": "Search by reference, name or email",
+        "status": "Filter by status",
+        "allStatuses": "All statuses",
+        "kind": "Filter by type",
+        "allKinds": "All types",
+        "method": "Filter by method",
+        "allMethods": "All methods"
+      },
+      "table": {
+        "date": "Date",
+        "booking": "Booking",
+        "customer": "Customer",
+        "kind": "Type",
+        "method": "Method",
+        "amount": "Amount",
+        "status": "Status"
+      },
+      "status": {
+        "requires_payment": "Not paid",
+        "processing": "Processing",
+        "authorized": "Held on card",
+        "succeeded": "Paid",
+        "failed": "Failed",
+        "refunded": "Refunded"
+      },
+      "kind": {
+        "deposit": "Deposit",
+        "balance": "Balance",
+        "full": "Full payment",
+        "checkin_extras": "Extras at check-in",
+        "security_deposit": "Security deposit"
+      },
+      "method": {
+        "card": "Card",
+        "transfer": "Transfer"
+      },
+      "totals": {
+        "collected": "Collected from {count, plural, one {# payment} other {# payments}}",
+        "refunded": "{amount} returned"
+      },
+      "startedAt": "Started, not paid",
+      "returned": "{amount} returned",
+      "disputed": "Disputed",
+      "empty": "No payments match these filters.",
+      "error": "Could not load the payments."
     },
     "settle": {
       "title": "Record a received transfer",

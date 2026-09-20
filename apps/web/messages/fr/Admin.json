@@ -930,10 +930,11 @@
   },
   "Payments": {
     "title": "Paiements",
-    "subtitle": "Virements bancaires en attente de règlement et sommes à rembourser aux clients.",
+    "subtitle": "Tous les paiements encaissés, les virements en attente de rapprochement et l'argent à rembourser aux clients.",
     "tabs": {
       "invoices": "Demandes de facture",
-      "refunds": "Remboursements dus"
+      "refunds": "Remboursements dus",
+      "ledger": "Tous les paiements"
     },
     "invoices": {
       "filters": {
@@ -982,6 +983,54 @@
       },
       "empty": "Aucun remboursement dû pour le moment.",
       "error": "Impossible de charger la file des remboursements."
+    },
+    "ledger": {
+      "filters": {
+        "search": "Rechercher par référence, nom ou e-mail",
+        "status": "Filtrer par statut",
+        "allStatuses": "Tous les statuts",
+        "kind": "Filtrer par type",
+        "allKinds": "Tous les types",
+        "method": "Filtrer par moyen",
+        "allMethods": "Tous les moyens"
+      },
+      "table": {
+        "date": "Date",
+        "booking": "Réservation",
+        "customer": "Client",
+        "kind": "Type",
+        "method": "Moyen",
+        "amount": "Montant",
+        "status": "Statut"
+      },
+      "status": {
+        "requires_payment": "Non payé",
+        "processing": "En cours",
+        "authorized": "Bloqué sur la carte",
+        "succeeded": "Payé",
+        "failed": "Échoué",
+        "refunded": "Remboursé"
+      },
+      "kind": {
+        "deposit": "Acompte",
+        "balance": "Solde",
+        "full": "Paiement intégral",
+        "checkin_extras": "Options à l'arrivée",
+        "security_deposit": "Caution"
+      },
+      "method": {
+        "card": "Carte",
+        "transfer": "Virement"
+      },
+      "totals": {
+        "collected": "Encaissé sur {count, plural, one {# paiement} other {# paiements}}",
+        "refunded": "{amount} remboursé"
+      },
+      "startedAt": "Commencé, non payé",
+      "returned": "{amount} remboursé",
+      "disputed": "Contesté",
+      "empty": "Aucun paiement pour ces filtres.",
+      "error": "Impossible de charger les paiements."
     },
     "settle": {
       "title": "Enregistrer un virement reçu",

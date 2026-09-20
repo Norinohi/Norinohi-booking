@@ -930,10 +930,11 @@
   },
   "Payments": {
     "title": "Zahlungen",
-    "subtitle": "Überweisungen, die noch zu verbuchen sind, und Beträge, die Kunden zurückgezahlt werden müssen.",
+    "subtitle": "Alle eingegangenen Zahlungen, die offenen Banküberweisungen und das Geld, das Kunden zurückerhalten.",
     "tabs": {
       "invoices": "Rechnungsanforderungen",
-      "refunds": "Fällige Erstattungen"
+      "refunds": "Fällige Erstattungen",
+      "ledger": "Alle Zahlungen"
     },
     "invoices": {
       "filters": {
@@ -982,6 +983,54 @@
       },
       "empty": "Derzeit sind keine Rückzahlungen offen.",
       "error": "Die Erstattungs-Warteschlange konnte nicht geladen werden."
+    },
+    "ledger": {
+      "filters": {
+        "search": "Nach Referenz, Name oder E-Mail suchen",
+        "status": "Nach Status filtern",
+        "allStatuses": "Alle Status",
+        "kind": "Nach Art filtern",
+        "allKinds": "Alle Arten",
+        "method": "Nach Zahlungsweg filtern",
+        "allMethods": "Alle Zahlungswege"
+      },
+      "table": {
+        "date": "Datum",
+        "booking": "Buchung",
+        "customer": "Kunde",
+        "kind": "Art",
+        "method": "Zahlungsweg",
+        "amount": "Betrag",
+        "status": "Status"
+      },
+      "status": {
+        "requires_payment": "Nicht bezahlt",
+        "processing": "In Bearbeitung",
+        "authorized": "Auf Karte reserviert",
+        "succeeded": "Bezahlt",
+        "failed": "Fehlgeschlagen",
+        "refunded": "Erstattet"
+      },
+      "kind": {
+        "deposit": "Anzahlung",
+        "balance": "Restbetrag",
+        "full": "Vollzahlung",
+        "checkin_extras": "Extras bei Check-in",
+        "security_deposit": "Kaution"
+      },
+      "method": {
+        "card": "Karte",
+        "transfer": "Überweisung"
+      },
+      "totals": {
+        "collected": "Eingegangen aus {count, plural, one {# Zahlung} other {# Zahlungen}}",
+        "refunded": "{amount} erstattet"
+      },
+      "startedAt": "Begonnen, nicht bezahlt",
+      "returned": "{amount} erstattet",
+      "disputed": "Angefochten",
+      "empty": "Keine Zahlungen zu diesen Filtern.",
+      "error": "Zahlungen konnten nicht geladen werden."
     },
     "settle": {
       "title": "Eingegangene Überweisung erfassen",

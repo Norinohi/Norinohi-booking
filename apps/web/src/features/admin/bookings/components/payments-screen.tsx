@@ -10,18 +10,23 @@ import { authClient } from "@/lib/auth-client";
 import { useRouter } from "@/i18n/navigation";
 
 import InvoiceRequestsTable from "./invoice-requests-table";
+import PaymentLedgerTable from "./payment-ledger-table";
 import RefundQueueTable from "./refund-queue-table";
 
 /*
  * PaymentsScreen — /payments: the money that needs a human, in the same shell as the Inbox.
  *
- * Two queues rather than one, because they are opposite halves of the same problem: an invoice
+ * Two queues and a ledger. The queues are opposite halves of the same problem: an invoice
  * request is money that has not arrived and is holding a yacht, a refund is money that has to
  * go back. They share a screen because both are settled by the same person doing the same daily
  * pass, and neither is visible anywhere else in the app.
+ *
+ * The ledger is not work; it is the record the queues are exceptions to, and the card payments
+ * on it - deposit, balance, the full amount - were the ones this screen could not show at all.
+ * It opens last because the queues are what the daily pass is for.
  */
 
-const TABS = ["invoices", "refunds"] as const;
+const TABS = ["invoices", "refunds", "ledger"] as const;
 
 type Tab = (typeof TABS)[number];
 
@@ -73,6 +78,9 @@ export default function PaymentsScreen({ user }: { user: { name: string; email: 
               </TabsPanel>
               <TabsPanel value="refunds" className="p-4 md:p-5">
                 {tab === "refunds" ? <RefundQueueTable /> : null}
+              </TabsPanel>
+              <TabsPanel value="ledger" className="p-4 md:p-5">
+                {tab === "ledger" ? <PaymentLedgerTable /> : null}
               </TabsPanel>
             </Tabs>
           </section>

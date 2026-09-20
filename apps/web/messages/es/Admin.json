@@ -930,10 +930,11 @@
   },
   "Payments": {
     "title": "Pagos",
-    "subtitle": "Transferencias pendientes de conciliar y dinero que debe devolverse.",
+    "subtitle": "Todos los pagos recibidos, las transferencias bancarias pendientes de conciliar y el dinero que hay que devolver a los clientes.",
     "tabs": {
       "invoices": "Solicitudes de factura",
-      "refunds": "Reembolsos pendientes"
+      "refunds": "Reembolsos pendientes",
+      "ledger": "Todos los pagos"
     },
     "invoices": {
       "filters": {
@@ -982,6 +983,54 @@
       },
       "empty": "Ahora mismo no se debe nada.",
       "error": "No se pudo cargar la cola de reembolsos."
+    },
+    "ledger": {
+      "filters": {
+        "search": "Buscar por referencia, nombre o correo",
+        "status": "Filtrar por estado",
+        "allStatuses": "Todos los estados",
+        "kind": "Filtrar por tipo",
+        "allKinds": "Todos los tipos",
+        "method": "Filtrar por método",
+        "allMethods": "Todos los métodos"
+      },
+      "table": {
+        "date": "Fecha",
+        "booking": "Reserva",
+        "customer": "Cliente",
+        "kind": "Tipo",
+        "method": "Método",
+        "amount": "Importe",
+        "status": "Estado"
+      },
+      "status": {
+        "requires_payment": "Sin pagar",
+        "processing": "Procesando",
+        "authorized": "Retenido en la tarjeta",
+        "succeeded": "Pagado",
+        "failed": "Fallido",
+        "refunded": "Reembolsado"
+      },
+      "kind": {
+        "deposit": "Depósito",
+        "balance": "Saldo",
+        "full": "Pago completo",
+        "checkin_extras": "Extras en la llegada",
+        "security_deposit": "Fianza"
+      },
+      "method": {
+        "card": "Tarjeta",
+        "transfer": "Transferencia"
+      },
+      "totals": {
+        "collected": "Cobrado de {count, plural, one {# pago} other {# pagos}}",
+        "refunded": "{amount} devuelto"
+      },
+      "startedAt": "Iniciado, sin pagar",
+      "returned": "{amount} devuelto",
+      "disputed": "En disputa",
+      "empty": "No hay pagos con estos filtros.",
+      "error": "No se han podido cargar los pagos."
     },
     "settle": {
       "title": "Registrar una transferencia recibida",
