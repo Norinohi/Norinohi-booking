@@ -1,0 +1,124 @@
+{
+  "Footer": {
+    "tagline": "Upptäck världen med båt.",
+    "description": "Över 30 000 båtar världen över, redo för din nästa resa.",
+    "columns": {
+      "destinations": "Destinationer",
+      "charterTypes": "Chartertyper",
+      "explore": "Utforska"
+    },
+    "links": {
+      "croatia": "Kroatien",
+      "greece": "Grekland",
+      "italy": "Italien",
+      "turkey": "Turkiet",
+      "caribbean": "Karibien",
+      "thailand": "Thailand",
+      "catamaran": "Katamaran",
+      "sailingYacht": "Segelyacht",
+      "motorYacht": "Motoryacht",
+      "bareboat": "Utan besättning",
+      "skippered": "Med skeppare",
+      "planTrip": "Hjälp mig planera min resa",
+      "popularYachts": "Populära båtar",
+      "customerReviews": "Vad våra kunder säger",
+      "howItWorks": "Så fungerar det",
+      "contact": "Kontakta oss"
+    },
+    "privacy": "Integritetspolicy",
+    "terms": "Användarvillkor",
+    "copyright": "© {year} YachtSkanner Platform. Med ensamrätt."
+  },
+  "Nav": {
+    "boatTypes": "Båttyper",
+    "closeMenu": "Stäng menyn",
+    "destinations": "Destinationer",
+    "findByBudget": "Sök efter budget",
+    "findYacht": "Hitta båt",
+    "helpPlan": "Hjälp mig planera min resa",
+    "language": "Språk",
+    "openMenu": "Öppna menyn",
+    "popularRoutes": "Populära rutter",
+    "saved": "Sparade",
+    "tryIt": "Testa"
+  },
+  "Sidebar": {
+    "menu": "Kontomeny",
+    "trigger": "Meny",
+    "greeting": "Hej {name}!",
+    "profile": "Min profil",
+    "bookings": "Mina bokningar",
+    "referrals": "Värvningar",
+    "credits": "Tillgodohavande och saldo",
+    "discount": "Rabatthanterare",
+    "logout": "Logga ut",
+    "commission": "Provisionssatser",
+    "duplicates": "Granskning av dubbletter",
+    "sync": "Synkhistorik",
+    "audit": "Granskningslogg",
+    "inbox": "Inkorg",
+    "staffBookings": "Bokningar",
+    "users": "Användare",
+    "payments": "Betalningar",
+    "listings": "Annonser",
+    "routes": "Föreslagna rutter",
+    "sections": {
+      "account": "Konto",
+      "admin": "Admin"
+    },
+    "faq": "Vanliga frågor",
+    "groups": {
+      "fleet": "Båtar",
+      "content": "Webbplatsinnehåll"
+    },
+    "settings": "Marknadsplatsinställningar",
+    "popular": "Populära val",
+    "popularYachts": "Populära båtar"
+  },
+  "UserMenu": {
+    "account": "Konto",
+    "signIn": "Logga in",
+    "signOut": "Logga ut",
+    "profile": "Min profil",
+    "bookings": "Mina bokningar",
+    "referrals": "Värvningar",
+    "credits": "Tillgodohavande och saldo"
+  },
+  "description": "Hyr båtar och katamaraner över hela världen. Jämför båtar, datum och priser och boka din nästa seglingsresa på några minuter.",
+  "title": "YachtSkanner - båt- och katamaranuthyrning över hela världen",
+  "CookieConsent": {
+    "title": "Cookies",
+    "description": "Vi använder analyscookies för att se hur sajten används, så att vi kan göra den bättre. Ingenting mäts förrän du godkänner.",
+    "manage": "Hantera inställningar",
+    "accept": "Godkänn",
+    "decline": "Neka",
+    "footerLink": "Cookies",
+    "dialog": {
+      "title": "Din integritet",
+      "description": "Välj vilka cookies den här sajten får använda. Ditt val sparas på den här enheten och du kan ändra det när som helst i sidfoten.",
+      "close": "Stäng",
+      "alwaysActive": "Alltid aktiva",
+      "necessary": {
+        "title": "Nödvändiga",
+        "description": "Håller dig inloggad, skyddar betalningar mot bedrägeri och kommer ihåg ditt cookieval. Sajten fungerar inte utan dem."
+      },
+      "functional": {
+        "title": "Funktionella",
+        "description": "Kommer ihåg båtarna du sparat och räknar ett återbesök på en annons bara en gång. Lagras i din webbläsare och delas aldrig."
+      },
+      "analytics": {
+        "title": "Analys",
+        "description": "Google Analytics, så att vi kan se vilka sidor folk använder och var de kör fast. Ingen annonsering och ingen profilering."
+      },
+      "save": "Spara mitt val",
+      "acceptAll": "Godkänn alla"
+    }
+  },
+  "Legal": {
+    "terms": "Allmänna villkor",
+    "privacy": "Integritetspolicy",
+    "cancellation": "Avbokningsvillkor",
+    "pending": "Det här dokumentet håller på att tas fram och publiceras här snart. Om du har en fråga om det under tiden hjälper vår support dig gärna.",
+    "contact": "Kontakta supporten"
+  }
+}

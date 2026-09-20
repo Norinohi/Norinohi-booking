@@ -1,0 +1,12 @@
+{
+  "title": "Din önskelista",
+  "back": "Tillbaka",
+  "saved": "Sparad till din önskelista.",
+  "removed": "Borttagen från din önskelista.",
+  "emptyTitle": "Inga sparade båtar än",
+  "emptyDescription": "Börja utforska och spara dina favoriter till senare",
+  "someUnavailable": "Några av dina sparade båtar är inte längre tillgängliga.",
+  "toggleFailed": "Vi kunde inte uppdatera din önskelista. Försök igen.",
+  "merged": "{count, plural, one {# sparad båt} other {# sparade båtar}} har lagts till på ditt konto.",
+  "paginationSummary": "Visar {from}-{to} av {total}"
+}

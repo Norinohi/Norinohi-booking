@@ -1,0 +1,184 @@
+{
+  "BoatTypes": {
+    "heading": "Välj din båttyp",
+    "previous": "Föregående båttyper",
+    "next": "Nästa båttyper"
+  },
+  "BudgetFinder": {
+    "heading": "Hitta båtar efter din budget",
+    "viewResults": "Visa resultat",
+    "labels": {
+      "budget": "Budget per person",
+      "people": "Personer",
+      "skipper": "Skeppare",
+      "destinations": "Destinationer (valfritt)"
+    },
+    "options": {
+      "any": "Alla",
+      "budgetFrom": "{from}+",
+      "peopleNotSure": "Vet inte",
+      "skipperYes": "Ja",
+      "skipperNo": "Nej",
+      "destinationsAll": "Alla destinationer"
+    }
+  },
+  "EarnCta": {
+    "heading": "Tjäna pengar på din båt",
+    "description": "Lägg upp din båt på vår plattform och börja ta emot bokningar från resenärer över hela världen. Vi sköter synlighet, efterfrågan och verktyg: du har kvar kontrollen över schema och priser.",
+    "cta": "Lägg upp din båt",
+    "dialog": {
+      "title": "Skicka en förfrågan",
+      "description": "Lämna dina uppgifter så hör vårt team av sig om att lägga upp din båt.",
+      "submit": "Skicka förfrågan",
+      "success": "Tack! Vi hör av oss inom kort."
+    }
+  },
+  "Hero": {
+    "tagline": "Över 30 000 båtar på 1 200 destinationer. Charter från 120 €/dag",
+    "heading": "Upptäck världen med båt",
+    "wherePlaceholder": "Vart vill du?",
+    "datesPlaceholder": "Alla datum",
+    "clearDates": "Rensa datum",
+    "boatPlaceholder": "Alla båtar",
+    "captainPlaceholder": "Med kapten",
+    "search": "Sök",
+    "dontKnow": "Vet du inte hur du ska välja?",
+    "helpPlan": "Hjälp mig planera min resa",
+    "options": {
+      "croatia": "Kroatien",
+      "greece": "Grekland",
+      "italy": "Italien",
+      "turkey": "Turkiet",
+      "caribbean": "Karibien",
+      "thailand": "Thailand",
+      "catamaran": "Katamaran",
+      "sailingYacht": "Segelyacht",
+      "motorYacht": "Motoryacht",
+      "gulet": "Gulet",
+      "luxuryYacht": "Lyxyacht",
+      "withCaptain": "Med kapten",
+      "bareboat": "Utan besättning",
+      "skippered": "Med skeppare"
+    },
+    "stats": {
+      "yachts": {
+        "label": "båtar"
+      },
+      "destinations": {
+        "label": "destinationer"
+      },
+      "travelers": {
+        "label": "nöjda resenärer"
+      },
+      "rating": {
+        "label": "snittbetyg"
+      }
+    }
+  },
+  "HowItWorks": {
+    "heading": "Så fungerar det",
+    "intro": "Att boka en båt är enklare än du tror.",
+    "introSecondLine": "Vi guidar dig från valet av destination till att du kliver ombord: ingen erfarenhet krävs.",
+    "cta": "Hitta båtar",
+    "steps": {
+      "destination": {
+        "title": "Välj destination",
+        "description": "Utforska över 1 200 seglingsdestinationer världen över. Från Kroatien till Karibien: välj platsen som passar din resa."
+      },
+      "yacht": {
+        "title": "Välj din båt",
+        "description": "Bläddra bland båtar utifrån gruppens storlek, budget och önskemål. Jämför alternativ och hitta den som passar er resa bäst."
+      },
+      "book": {
+        "title": "Boka din resa",
+        "description": "Bekräfta dina datum, lägg till tillval om du vill och säkra din bokning online. Nu är du redo att segla."
+      }
+    }
+  },
+  "PlanTrip": {
+    "heading": "Osäker på vad du ska välja? Planera din perfekta båtresa på 30 sekunder",
+    "cta": "Hjälp mig planera min resa",
+    "checklist": {
+      "questions": "Svara på några enkla frågor",
+      "recommendation": "Få en personlig rekommendation",
+      "explore": "Utforska de bästa båtarna för din resa"
+    },
+    "steps": {
+      "preferences": {
+        "title": "Välj önskemål",
+        "description": "Ange dina drömdestinationer, från Palawans turkosa kuster till Vallettas historiska hamnar."
+      },
+      "recommendation": {
+        "title": "Få en rekommendation",
+        "description": "Vi föreslår båtar utifrån gruppens behov. Gå igenom våra rekommendationer och välj den perfekta båten."
+      },
+      "yachts": {
+        "title": "Visa båtar",
+        "description": "Slutför detaljerna, lägg till eventuella tillval och boka. Nu kan du se fram emot ditt oförglömliga båtäventyr."
+      }
+    }
+  },
+  "PopularDestinations": {
+    "heading": "Populära destinationer",
+    "previous": "Föregående destinationer",
+    "next": "Nästa destinationer",
+    "seeAll": "Visa alla populära",
+    "showLess": "Visa färre",
+    "perPersonWeek": "Från {price} per person/vecka",
+    "yachtCount": "{count, plural, one {# båt} other {# båtar}}"
+  },
+  "PopularYachts": {
+    "heading": "Populära båtar",
+    "previous": "Föregående båtar",
+    "next": "Nästa båtar",
+    "seeAll": "Visa alla båtar",
+    "from": "Från",
+    "viewDetails": "Visa detaljer",
+    "perDay": "/ per dag"
+  },
+  "SailingRoutes": {
+    "heading": "Populära seglingsrutter",
+    "previous": "Föregående rutter",
+    "next": "Nästa rutter",
+    "seeAll": "Visa alla populära",
+    "showLess": "Visa färre",
+    "exploreRoute": "Utforska rutten",
+    "days": "{count, plural, one {# dag} other {# dagar}}",
+    "levels": {
+      "easy": "Lätt",
+      "moderate": "Medel",
+      "advanced": "Avancerad"
+    }
+  },
+  "Testimonials": {
+    "heading": "Vad våra kunder säger",
+    "allReviews": "Alla omdömen",
+    "comingSoon": "Kommer snart",
+    "items": {
+      "weber": {
+        "quote": "Vi bokade en båt i Kroatien för första gången och allt bara fungerade. Processen var enkel och båten var precis som vi förväntade oss.",
+        "location": "Tyskland"
+      },
+      "martin": {
+        "quote": "Jag hade ingen seglingserfarenhet, men plattformen gjorde det enkelt att hitta en skeppare och planera hela resan. Det kändes som en vanlig semester, fast bättre.",
+        "location": "Frankrike"
+      },
+      "carter": {
+        "quote": "Pristransparensen var den största överraskningen. Vi kunde se hela kostnaden direkt och dela den mellan vänner: superenkelt.",
+        "location": "Storbritannien"
+      },
+      "rossi": {
+        "quote": "Vi jämförde några båtar och hittade den perfekta för vårt sällskap. Ruttförslagen var verkligen hjälpsamma: vi behövde inte planera någonting.",
+        "location": "Italien"
+      },
+      "kowalska": {
+        "quote": "Bra urval av båtar och väldigt tydliga filter. Vi hittade precis vad vi behövde på bara några minuter.",
+        "location": "Polen"
+      },
+      "jensen": {
+        "quote": "Allt från bokning till ombordstigning kändes smidigt. Tydlig kommunikation, inga dolda avgifter och en båt som var ännu snyggare i verkligheten.",
+        "location": "Danmark"
+      }
+    }
+  }
+}

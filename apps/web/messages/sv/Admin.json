@@ -1,0 +1,1445 @@
+{
+  "Commissions": {
+    "title": "Provisionssatser",
+    "subtitle": "Vad {brand} tjänar via varje leverantör, och från när.",
+    "add": "Lägg till sats",
+    "edit": "Redigera",
+    "switchOff": "Stäng av",
+    "switchOn": "Slå på",
+    "switchedOff": "Satsen är avstängd",
+    "switchedOn": "Satsen är påslagen",
+    "created": "Satsen har lagts till",
+    "updated": "Satsen har sparats",
+    "error": "Det gick inte att ladda provisionssatserna",
+    "empty": "Inga satser än. Tills en är angiven spelar provisionen ingen roll för vilket erbjudande en besökare ser.",
+    "emptyFiltered": "Inga satser matchar dessa filter.",
+    "allOperators": "Alla operatörer",
+    "openEnded": "Inget slutdatum",
+    "fromDate": "Från {date}",
+    "untilDate": "Till {date}",
+    "note": "En sats avgör bara mellan två erbjudanden som redan är lika på pris och obligatoriska tillval. Den kan aldrig vara skälet till att en besökare visas en dyrare båt. Inget i försäljningen läser de här satserna än.",
+    "filters": {
+      "provider": "Leverantör",
+      "anyProvider": "Alla leverantörer",
+      "status": "Status",
+      "anyStatus": "Alla statusar"
+    },
+    "status": {
+      "active": "Aktiv",
+      "scheduled": "Schemalagd",
+      "expired": "Utgången",
+      "inactive": "Avstängd"
+    },
+    "table": {
+      "provider": "Leverantör",
+      "operator": "Operatör",
+      "rate": "Sats",
+      "window": "Gäller",
+      "status": "Status",
+      "added": "Tillagd",
+      "actions": "Åtgärder"
+    },
+    "dialog": {
+      "createTitle": "Lägg till en provisionssats",
+      "editTitle": "Redigera provisionssats",
+      "description": "Vad vi tjänar på en försäljning via den här leverantören. Lämna operatören tom för att täcka alla charterbolag hos den här leverantören.",
+      "provider": "Leverantör",
+      "operator": "Operatör",
+      "operatorSearch": "Sök operatörer",
+      "allOperators": "Alla operatörer hos den här leverantören",
+      "ratePct": "Sats (%)",
+      "startsAt": "Börjar",
+      "endsAt": "Slutar",
+      "windowHint": "Båda datumen är valfria och inklusive. Lämna dem tomma för ett avtal som löper tills det omförhandlas.",
+      "cancel": "Avbryt",
+      "save": "Spara",
+      "saving": "Sparar…",
+      "errors": {
+        "rateRequired": "Ange en sats",
+        "rateRange": "Använd ett tal mellan 0 och 100",
+        "endsBeforeStarts": "Slutdatumet kan inte vara före startdatumet"
+      }
+    }
+  },
+  "Bookings": {
+    "title": "Bokningar",
+    "subtitle": "Alla bokningar på plattformen, nyaste först. Öppna en för att reglera den.",
+    "createdAt": "Skapad {at}",
+    "excluded": "Inte riktig affär",
+    "empty": "Ingen bokning matchar dessa filter.",
+    "error": "Bokningarna kunde inte laddas.",
+    "filters": {
+      "search": "Sök på referens, namn eller e-post",
+      "status": "Status",
+      "allStatuses": "Alla statusar",
+      "includeExcluded": "Inkludera bokningar märkta som test"
+    },
+    "table": {
+      "reference": "Referens",
+      "customer": "Kund",
+      "charter": "Båt",
+      "dates": "Datum",
+      "total": "Totalt",
+      "collected": "Inbetalt",
+      "status": "Status"
+    },
+    "status": {
+      "DRAFT": "Utkast",
+      "QUOTED": "Offererad",
+      "OPTION_PENDING": "Reserverar",
+      "OPTION_HELD": "Reserverad",
+      "OPTION_EXPIRED": "Reservationen utgången",
+      "QUOTE_EXPIRED": "Offerten utgången",
+      "PAYMENT_PENDING": "Väntar på betalning",
+      "PAYMENT_FAILED": "Betalningen misslyckades",
+      "CONFIRMING": "Bekräftar",
+      "CONFIRMED": "Bekräftad",
+      "PROVIDER_REJECTED": "Leverantören nekade",
+      "CANCELLED": "Avbokad",
+      "REFUND_PENDING": "Återbetalning väntar",
+      "REFUNDED": "Återbetald"
+    }
+  },
+  "Users": {
+    "title": "Användare",
+    "subtitle": "Alla konton med kontaktuppgifter och hur mycket de har bokat.",
+    "createdAt": "Gick med {at}",
+    "unverified": "E-posten är inte verifierad",
+    "confirmed": "{count, plural, =0 {inga bekräftade} one {# bekräftad} other {# bekräftade}}",
+    "total": "{count, plural, one {# användare} other {# användare}}",
+    "empty": "Ingen användare matchar dessa filter.",
+    "error": "Användarna kunde inte laddas.",
+    "filters": {
+      "search": "Sök på namn, e-post eller telefon",
+      "role": "Roll",
+      "allRoles": "Alla roller",
+      "status": "Status",
+      "allStatuses": "Alla statusar",
+      "bookings": "Bokningar",
+      "anyBookings": "Med eller utan bokningar",
+      "withBookings": "Har bokningar",
+      "withoutBookings": "Inga bokningar",
+      "sort": "Sortera"
+    },
+    "sort": {
+      "newest": "Nyaste först",
+      "mostBookings": "Flest bokningar",
+      "name": "Namn A-Ö"
+    },
+    "table": {
+      "user": "Användare",
+      "email": "E-post",
+      "phone": "Telefon",
+      "bookings": "Bokningar",
+      "lastBooking": "Senaste bokning",
+      "status": "Status"
+    },
+    "role": {
+      "customer": "Kund",
+      "staff": "Personal",
+      "admin": "Admin"
+    },
+    "status": {
+      "active": "Aktiv",
+      "guest": "Gäst, ej anspråkstaget",
+      "deactivated": "Inaktiverad"
+    }
+  },
+  "Duplicates": {
+    "title": "Granskning av dubbletter",
+    "subtitle": "Slå ihop de snarlika annonser som två leverantörer skickat för samma båt.",
+    "metrics": {
+      "title": "Matchningens träffsäkerhet",
+      "subtitle": "Hur ofta varje regel har haft rätt hittills.",
+      "decided": "{count, plural, =0 {Inga granskade par än} one {# granskat par bakom dessa siffror} other {# granskade par bakom dessa siffror}}",
+      "error": "Det gick inte att ladda träffsäkerhetssiffrorna",
+      "empty": "Inget har föreslagits än.",
+      "noSample": "För få beslut",
+      "note": "Precision är bekräftade par delat med bekräftade och avvisade tillsammans. Sammanslagningar som senare delats upp räknas mot regeln. Par som lagts åt sidan utelämnas: ingen kunde avgöra dem, och att räkna dem som misslyckanden skulle underskatta en regel som klarar de par den faktiskt avgör.",
+      "table": {
+        "rule": "Regel",
+        "band": "Säkerhet",
+        "proposed": "Föreslagna",
+        "confirmed": "Sammanslagna",
+        "rejected": "Inte dubbletter",
+        "undone": "Ångrade",
+        "precision": "Precision"
+      }
+    },
+    "filter": {
+      "label": "Beslut",
+      "pending": "Väntar",
+      "confirmed": "Sammanslagna dubbletter",
+      "rejected": "Inte dubbletter",
+      "deferred": "Ej avgjorda"
+    },
+    "empty": {
+      "pending": "Inget att granska. Alla dubblettkandidater är avgjorda.",
+      "confirmed": "Inga par har slagits ihop än.",
+      "rejected": "Inga par har markerats som olika båtar än.",
+      "deferred": "Inget har lagts åt sidan än.",
+      "filtered": "Inga par matchar dessa filter. Vidga filtret för säkerhet eller regel för att se resten."
+    },
+    "error": "Det gick inte att ladda dubblettkön",
+    "confidence": "{value} % matchning",
+    "confidenceUnknown": "Okänd säkerhet",
+    "proposed": "Föreslaget {date}",
+    "reviewed": "Granskat {date}",
+    "undone": "Ångrat",
+    "signals": "Matchade på {signals}",
+    "sideA": "Sida A",
+    "sideB": "Sida B",
+    "keep": "Behåll den här annonsen",
+    "keeping": "Slår ihop…",
+    "reject": "Inte en dubblett",
+    "reopen": "Tillbaka till kön",
+    "differs": "skiljer sig",
+    "differsLegend": "Markerade värden skiljer sig mellan de två sidorna.",
+    "noImage": "Ingen bild",
+    "unavailable": {
+      "title": "Annonsen är inte tillgänglig",
+      "description": "Den här annonsen togs bort efter att paret föreslogs."
+    },
+    "fields": {
+      "provider": "Leverantör",
+      "externalId": "Leverantörs-ID",
+      "status": "Annonsstatus",
+      "matchStatus": "Matchningsstatus",
+      "operator": "Operatör",
+      "model": "Modell",
+      "year": "Byggår",
+      "length": "Längd",
+      "cabins": "Hytter",
+      "berths": "Kojplatser",
+      "base": "Hemmabas",
+      "location": "Plats"
+    },
+    "lengthValue": "{value} m",
+    "listingStatus": {
+      "draft": "Utkast",
+      "published": "Publicerad",
+      "hidden": "Dold"
+    },
+    "matchStatus": {
+      "unmatched": "Omatchad",
+      "auto": "Automatiskt matchad",
+      "confirmed": "Bekräftad",
+      "rejected": "Avvisad"
+    },
+    "showDetail": "Granska alla detaljer",
+    "showSources": "Källor",
+    "detailTitle": "Fullständig jämförelse",
+    "detailSubtitle": "Alla bilder och specifikationer som båda leverantörerna skickat för det här paret.",
+    "detailError": "Det gick inte att ladda den fullständiga jämförelsen",
+    "photoPosition": "{index} / {total}",
+    "openPhoto": "Öppna bild {index}",
+    "amenitiesTitle": "Utrustning ({count})",
+    "noAmenities": "Ingen utrustning registrerad",
+    "descriptionTitle": "Leverantörens beskrivning",
+    "noDescription": "Ingen beskrivning från leverantören",
+    "yes": "Ja",
+    "no": "Nej",
+    "litresValue": "{value} l",
+    "detailFields": {
+      "category": "Kategori",
+      "builder": "Varv",
+      "crewType": "Besättning",
+      "beam": "Bredd",
+      "draft": "Djupgående",
+      "heads": "Toaletter",
+      "showers": "Duschar",
+      "engines": "Motorer",
+      "enginePower": "Motoreffekt",
+      "fuelType": "Bränsletyp",
+      "fuelCapacity": "Bränslekapacitet",
+      "waterCapacity": "Vattenkapacitet",
+      "propulsion": "Framdrivning",
+      "steering": "Styrning",
+      "sail": "Rigg",
+      "deposit": "Deposition",
+      "depositInsurance": "Depositionsförsäkring",
+      "pets": "Husdjur tillåtna",
+      "currency": "Valuta",
+      "rating": "Leverantörens betyg",
+      "reviews": "Leverantörens omdömen",
+      "freshness": "Senast synkad",
+      "updated": "Senast uppdaterad"
+    },
+    "summary": "{pairs, plural, =0 {Inga par} one {# par} other {# par}} · {yachts, plural, =0 {inga båtar} one {# båt} other {# båtar}}",
+    "sortNote": "högsta säkerhet först",
+    "sortNoteReviewed": "senast avgjorda först",
+    "optionCount": "{label} ({count})",
+    "filters": {
+      "confidence": "Matchningssäkerhet",
+      "anyConfidence": "Alla säkerhetsnivåer",
+      "matchType": "Matchade på",
+      "anyMatchType": "Alla regler",
+      "any": "Alla",
+      "confidenceValue": "Säkerhet: {value}",
+      "matchTypeValue": "Regel: {value}"
+    },
+    "confidenceBand": {
+      "high": "Hög (90 %+)",
+      "medium": "Medel (70-89 %)",
+      "low": "Låg (under 70 %)",
+      "unknown": "Ej poängsatt"
+    },
+    "matchType": {
+      "name+model+year": "Namn + modell + år",
+      "base+model+year": "Bas + modell + år",
+      "model+year": "Endast modell + år",
+      "model+yearBuilt": "Modell + byggår",
+      "name+base": "Namn + kojplats"
+    },
+    "signalFields": {
+      "name": "Namn",
+      "base": "Bas",
+      "area": "Område",
+      "length": "Längd",
+      "cabins": "Hytter",
+      "berths": "Kojplatser",
+      "heads": "Toaletter",
+      "builder": "Varv",
+      "operator": "Operatör",
+      "model": "Modell",
+      "year": "Byggår"
+    },
+    "toast": {
+      "confirmed": "Sammanslagen. {count} leverantörskällor pekar nu på den behållna annonsen.",
+      "confirmedWithClosed": "Sammanslagen. {count} leverantörskällor pekar nu på den behållna annonsen, och {closed} ytterligare par stängdes med den.",
+      "rejected": "Registrerat som två olika båtar.",
+      "conflict": "Någon annan har redan granskat det här paret. Laddar om kön.",
+      "error": "Något gick fel. Försök igen.",
+      "deferred": "Lagt åt sidan till senare. Det räknas varken för eller emot matchningen.",
+      "reopened": "Tillbaka i kön, väntar på att avgöras igen."
+    },
+    "defer": "Lägg åt sidan",
+    "notePlaceholder": "Varför? (valfritt)",
+    "noteLabel": "Granskarens anteckning",
+    "noteWas": "Anteckning: {note}"
+  },
+  "Sync": {
+    "reliability": {
+      "title": "Leverantörernas tillförlitlighet",
+      "subtitle": "Hur ofta varje leverantör svarade när en besökare stod i kassan.",
+      "window": "Mätperiod",
+      "windowValue": "Senaste {days} dagarna",
+      "error": "Det gick inte att ladda tillförlitlighetssiffrorna",
+      "empty": "Ingen leverantör har fått en offertförfrågan under den här perioden.",
+      "noSample": "Inget underlag",
+      "milliseconds": "{value} ms",
+      "note": "Ett nej räknas som ett svar: leverantören nåddes och sa att perioden är borta, vilket är ett faktum om båten snarare än en trasig koppling. Bara ett fel eller en timeout räknas emot en leverantör. Förfrågningar som vår egen cachade kalender nekade innan någon leverantör kontaktades utelämnas helt ur siffran. Inget i försäljningen läser de här talen än.",
+      "table": {
+        "provider": "Leverantör",
+        "asked": "Tillfrågade",
+        "answered": "Svarade",
+        "failed": "Inget svar",
+        "successRatio": "Svarade",
+        "latency": "Mediansvar"
+      }
+    },
+    "title": "Synkhistorik",
+    "subtitle": "Alla katalog- och tillgänglighetskörningar, nyaste först.",
+    "controls": {
+      "provider": "Leverantör att synka",
+      "allProviders": "Alla leverantörer",
+      "startCatalogue": "Synka katalogen",
+      "startAvailability": "Synka tillgängligheten",
+      "started": "{count, plural, one {# körning startad} other {# körningar startade}}",
+      "skipped": "{count, plural, one {# leverantör importerar redan} other {# leverantörer importerar redan}}",
+      "noProviders": "Ingen koppling är aktiverad.",
+      "capabilities": "Aktiv koppling: {provider}",
+      "capability": {
+        "supportsLiveQuote": "Livepris",
+        "supportsOptions": "Reservationer",
+        "supportsExtrasMutation": "Redigerbara tillval",
+        "supportsWebhooks": "Webhookar"
+      },
+      "hint": "En körning öppnas direkt och fortsätter även efter att den här sidan stängts. Resultatet visas i tabellen nedan."
+    },
+    "maintenance": {
+      "sweep": "Låt gamla reservationer gå ut",
+      "remind": "Skicka påminnelser om restbelopp",
+      "swept": "{count, plural, one {# bokning gick ut} other {# bokningar gick ut}}, {reaped, plural, one {# synkkörning rensad} other {# synkkörningar rensade}}.",
+      "staleConfirmations": "{count, plural, one {# bokning har fastnat i bekräftelse} other {# bokningar har fastnat i bekräftelse}}. Fråga leverantören om reservationen finns.",
+      "releaseFailures": "{count, plural, one {# leverantörsplats kunde inte frigöras} other {# leverantörsplatser kunde inte frigöras}}.",
+      "reminded": "{count, plural, one {# påminnelse skickad} other {# påminnelser skickade}}.",
+      "remindSkipped": "{count, plural, one {# bokning saknar e-postadress att skicka till} other {# bokningar saknar e-postadress att skicka till}}.",
+      "hint": "Båda körs redan enligt ett schema. Att köra en för hand är ofarligt: utgångar sker med compare-and-set, och varje delbetalning påminns bara en gång."
+    },
+    "filters": {
+      "provider": "Leverantör",
+      "kind": "Typ",
+      "status": "Status",
+      "allProviders": "Alla leverantörer",
+      "allKinds": "Alla typer",
+      "allStatuses": "Alla statusar"
+    },
+    "table": {
+      "provider": "Leverantör",
+      "kind": "Typ",
+      "status": "Status",
+      "results": "Resultat",
+      "errors": "Fel",
+      "started": "Startad",
+      "finished": "Avslutad",
+      "details": "Detaljer"
+    },
+    "kind": {
+      "catalogue": "Katalog",
+      "availability": "Tillgänglighet",
+      "pricing": "Prissättning",
+      "media": "Media"
+    },
+    "status": {
+      "pending": "Väntar",
+      "running": "Pågår",
+      "success": "Lyckades",
+      "failed": "Misslyckades",
+      "partial": "Delvis"
+    },
+    "counts": {
+      "created": "{count, plural, one {# skapad} other {# skapade}}",
+      "updated": "{count, plural, one {# uppdaterad} other {# uppdaterade}}",
+      "skipped": "{count, plural, one {# överhoppad} other {# överhoppade}}",
+      "failed": "{count, plural, one {# misslyckad} other {# misslyckade}}"
+    },
+    "empty": "Inga synkkörningar än",
+    "error": "Det gick inte att ladda synkkörningarna",
+    "pending": "Inte startad",
+    "details": {
+      "show": "Visa fel",
+      "hide": "Dölj fel",
+      "title": "Fel från den här körningen",
+      "empty": "Den här körningen registrerade inga fel.",
+      "error": "Det gick inte att ladda den här körningen",
+      "unavailable": "Feldetaljer är inte tillgängliga för den här leverantören."
+    },
+    "errorType": {
+      "rate_limited": "Hastighetsbegränsad",
+      "transient": "Tillfälligt",
+      "auth": "Autentisering",
+      "not_found": "Hittades inte",
+      "contract": "Kontrakt"
+    },
+    "unreleasedOptions": {
+      "title": "Platser som en leverantör fortfarande håller",
+      "subtitle": "Avbokade här, men operatören vägrade ta tillbaka veckan. Den säljs till ingen förrän den frigörs eller leverantörens egen reservation löper ut.",
+      "empty": "Inget hålls emot oss.",
+      "reference": "Bokning",
+      "yacht": "Båt",
+      "dates": "Datum",
+      "period": "{from} till {to}",
+      "provider": "Leverantör",
+      "optionId": "Options-id",
+      "hold": "Reservation",
+      "refusedAt": "Nekades",
+      "reason": "Vad leverantören sa",
+      "retry": "Fråga igen",
+      "holdUnknown": "Ej publicerad",
+      "lapsed": "Utlöpt",
+      "holdsUntil": "Reserverad till {when}",
+      "released": "{reference}: leverantören släppte platsen.",
+      "refusedAgain": "{reference}: leverantören nekade igen.",
+      "retryFailed": "{reference}: det gick inte att nå leverantören."
+    }
+  },
+  "Audit": {
+    "title": "Granskningslogg",
+    "subtitle": "Varje personalåtgärd och varje registrerat fel, nyaste först. Poster skrivs en gång och redigeras aldrig.",
+    "filters": {
+      "entityType": "Entitetstyp",
+      "allEntities": "Alla entiteter",
+      "action": "Åtgärd",
+      "allActions": "Alla åtgärder",
+      "entityId": "Entitets-id",
+      "entityIdPlaceholder": "Klistra in ett fullständigt id",
+      "source": "Källa",
+      "allSources": "Alla källor"
+    },
+    "table": {
+      "when": "När",
+      "actor": "Vem",
+      "action": "Åtgärd",
+      "entity": "Entitet",
+      "entityId": "Id",
+      "details": "Detaljer"
+    },
+    "action": {
+      "create": "Skapad",
+      "update": "Uppdaterad",
+      "delete": "Raderad",
+      "sync": "Synkad",
+      "merge": "Sammanslagen",
+      "price_adjustment": "Prisändring",
+      "error": "Fel"
+    },
+    "entity": {
+      "booking": "Bokning",
+      "booking_enquiry": "Bokningsfråga",
+      "discount": "Kampanjkod",
+      "invoice_request": "Faktura",
+      "lead": "Förfrågan",
+      "listing": "Annons",
+      "listing_duplicate_candidate": "Dubblett",
+      "maintenance": "Underhållsjobb",
+      "facet_media": "Facettbild",
+      "facet_media_rank": "Ordning för facettbilder",
+      "faq": "Vanlig fråga",
+      "marketplace_settings": "Marknadsplatsinställningar",
+      "popular_yachts_config": "Populära båtar",
+      "provider_commission": "Leverantörsprovision",
+      "suggested_route": "Föreslagen rutt",
+      "suggested_route_featured": "Utvald rutt",
+      "suggested_route_stop": "Ruttstopp",
+      "procedure": "API-operation",
+      "job": "Schemalagt jobb",
+      "stripe_event": "Stripe-händelse",
+      "outbox_message": "Utkorgsmeddelande",
+      "provider": "Leverantör"
+    },
+    "details": {
+      "show": "Visa",
+      "hide": "Dölj",
+      "before": "Före",
+      "after": "Efter",
+      "metadata": "Sammanhang"
+    },
+    "source": {
+      "admin_action": "Personalåtgärd",
+      "server": "Server",
+      "provider": "Leverantör",
+      "stripe_webhook": "Stripe-webhook",
+      "job": "Schemalagt jobb"
+    },
+    "errorDetails": {
+      "title": "Vad som misslyckades",
+      "operation": "Operation",
+      "source": "Källa",
+      "code": "Kod",
+      "status": "Status",
+      "message": "Meddelande",
+      "causes": "Orsakat av",
+      "vendor": "Leverantör",
+      "context": "Sammanhang"
+    },
+    "actorGone": "Raderat konto",
+    "actorSystem": "System",
+    "empty": "Inget registrerat än.",
+    "error": "Granskningsloggen kunde inte laddas."
+  },
+  "Inbox": {
+    "title": "Inkorg",
+    "subtitle": "Frågor om befintliga bokningar och förfrågningar från dem som fortfarande väljer.",
+    "tabs": {
+      "enquiries": "Bokningsfrågor",
+      "leads": "Förfrågningar"
+    },
+    "enquiries": {
+      "filters": {
+        "status": "Status",
+        "allStatuses": "Alla statusar",
+        "search": "Sök på e-post eller bokningsreferens"
+      },
+      "status": {
+        "open": "Öppen",
+        "answered": "Besvarad",
+        "closed": "Stängd"
+      },
+      "table": {
+        "received": "Mottagen",
+        "customer": "Kund",
+        "question": "Fråga",
+        "status": "Status",
+        "booking": "Bokning",
+        "actions": "Åtgärder"
+      },
+      "actions": {
+        "reply": "Svara",
+        "replyAgain": "Svara igen",
+        "close": "Stäng",
+        "reopen": "Öppna igen"
+      },
+      "answered": "Besvarad: {answer}",
+      "empty": "Inget här: inga frågor matchar dessa filter.",
+      "error": "Vi kunde inte ladda frågorna."
+    },
+    "leads": {
+      "filters": {
+        "status": "Status",
+        "allStatuses": "Alla statusar",
+        "kind": "Typ",
+        "allKinds": "Alla typer",
+        "search": "Sök på namn eller e-post"
+      },
+      "status": {
+        "new": "Ny",
+        "contacted": "Kontaktad",
+        "closed": "Stängd"
+      },
+      "kind": {
+        "quote_request": "Offertförfrågan",
+        "booking_request": "Bokningsförfrågan",
+        "charter_expert": "Charterexpert",
+        "consultation": "Rådgivning"
+      },
+      "table": {
+        "received": "Mottagen",
+        "from": "Från",
+        "kind": "Typ",
+        "message": "Meddelande",
+        "status": "Status",
+        "actions": "Åtgärder"
+      },
+      "actions": {
+        "reply": "Svara",
+        "replyAgain": "Svara igen",
+        "contacted": "Markera som kontaktad",
+        "close": "Stäng",
+        "reopen": "Öppna igen"
+      },
+      "empty": "Inget här: inga förfrågningar matchar dessa filter.",
+      "error": "Vi kunde inte ladda förfrågningarna.",
+      "answered": "Besvarad: {answer}"
+    },
+    "answer": {
+      "title": "Svara på den här frågan",
+      "description": "Bokning {reference}. Ditt svar mejlas till kunden.",
+      "label": "Ditt svar",
+      "placeholder": "Besvara frågan fullständigt: det här är vad kunden får.",
+      "close": "Stäng den här frågan efter att svaret skickats",
+      "cancel": "Avbryt",
+      "send": "Skicka svar",
+      "sent": "Svaret är skickat",
+      "failed": "Vi kunde inte skicka svaret. Försök igen."
+    },
+    "leadAnswer": {
+      "title": "Svara på den här förfrågan",
+      "description": "Ditt svar mejlas till {name}.",
+      "noMessage": "De lämnade inget meddelande.",
+      "label": "Ditt svar",
+      "placeholder": "Besvara förfrågan fullständigt: det här är vad de får.",
+      "close": "Stäng den här förfrågan efter att svaret skickats",
+      "cancel": "Avbryt",
+      "send": "Skicka svar",
+      "sent": "Svaret är skickat",
+      "failed": "Vi kunde inte skicka svaret. Försök igen."
+    }
+  },
+  "Listings": {
+    "title": "Annonser",
+    "subtitle": "Alla annonser som personalen kan agera på, inklusive utkast. Importerat utbud förblir utkast tills det publiceras här.",
+    "filters": {
+      "provider": "Leverantör",
+      "status": "Status",
+      "allProviders": "Alla leverantörer",
+      "operator": "Operatör",
+      "allOperators": "Alla operatörer",
+      "allStatuses": "Alla statusar",
+      "search": "Sök på titel eller slug"
+    },
+    "table": {
+      "listing": "Annons",
+      "provider": "Leverantör",
+      "operator": "Operatör",
+      "model": "Modell och år",
+      "place": "Bas och plats",
+      "price": "Från",
+      "status": "Status",
+      "actions": "Åtgärder"
+    },
+    "status": {
+      "draft": "Utkast",
+      "published": "Publicerad",
+      "hidden": "Dold",
+      "merged": "Sammanslagen"
+    },
+    "actions": {
+      "publish": "Publicera",
+      "unpublish": "Avpublicera",
+      "draft": "Tillbaka till utkast",
+      "sources": "Källor"
+    },
+    "moved": "{title} är nu {status}.",
+    "noProvider": "Ingen leverantör",
+    "noPrice": "Inte prissatt än",
+    "notSet": "Ej angivet",
+    "noImage": "Ingen bild",
+    "empty": "Inga annonser matchar dessa filter",
+    "error": "Det gick inte att ladda annonserna",
+    "publishDrafts": {
+      "providerLabel": "Leverantör att publicera",
+      "choose": "Välj en leverantör",
+      "action": "Publicera alla utkast",
+      "hint": "Publicerar alla utkast som tillhör den valda leverantören. En leverantör måste anges: den här skärmen publicerar aldrig hela katalogen på en gång.",
+      "confirmTitle": "Publicera alla utkast?",
+      "confirmBody": "Alla utkast som importerats från {provider} blir omedelbart synliga för kunderna. Utkast från andra leverantörer rörs inte.",
+      "cancel": "Avbryt",
+      "confirm": "Publicera utkast",
+      "publishing": "Publicerar…",
+      "published": "{count, plural, =0 {Inga utkast kvar att publicera för {provider}.} one {# utkast publicerat för {provider}.} other {# utkast publicerade för {provider}.}}",
+      "failed": "Det gick inte att publicera utkasten"
+    },
+    "unpriced": "{count, plural, one {# annons har datum men inget publicerat pris} other {# annonser har datum men inget publicerat pris}}: de visas som ”På förfrågan” med tom kalender.",
+    "sources": {
+      "subtitle": "Vilken leverantör varje del av den här annonsen hämtas från. En fastnålad grupp rörs inte av nattsynkningen.",
+      "error": "Det gick inte att ladda den här annonsens leverantörer",
+      "field": "Del av annonsen",
+      "takenFrom": "Hämtad från",
+      "locked": "Fastnålad",
+      "automatic": "Automatisk",
+      "release": "Släpp",
+      "pinned": "Fastnålad till den leverantören. Synkningen rör den inte.",
+      "released": "Tillbaka till automatiskt. Synkningen avgör den igen.",
+      "model": "Modell",
+      "year": "År",
+      "base": "Bas",
+      "operator": "Operatör",
+      "photos": "Bilder",
+      "descriptions": "Beskrivningar",
+      "fields": {
+        "media": "Bilder",
+        "title": "Namn",
+        "spec": "Specifikation",
+        "description": "Beskrivning",
+        "taxonomy": "Varv, modell, typ",
+        "operator": "Operatör",
+        "home_base": "Hemmabas",
+        "pets": "Husdjur tillåtna"
+      },
+      "takeOut": "Ta ut ur den här annonsen",
+      "splitRestored": "Uttagen och återlämnad till annonsen den kom från.",
+      "splitNew": "Uttagen till en egen annons.",
+      "confirmSplitBody": "Erbjudandet från {provider} går tillbaka till sin egen annons, och den här annonsen slutar bära båda leverantörerna. Du kan slå ihop paret igen från fliken Sammanslagna dubbletter i Granskning av dubbletter.",
+      "confirmSplitAction": "Ta ut den",
+      "confirmSplitBusy": "Tar ut…",
+      "confirmSplitCancel": "Avbryt"
+    }
+  },
+  "Routes": {
+    "title": "Föreslagna rutter",
+    "subtitle": "Handskrivna resplaner. En rutt hör till en charterbas eller en seglingsregion, och en annonssida visar den bara där någon har skrivit en: inget här genereras.",
+    "filters": {
+      "country": "Land",
+      "allCountries": "Alla länder",
+      "kind": "Typ",
+      "allKinds": "Alla typer",
+      "status": "Status",
+      "allStatuses": "Alla statusar",
+      "search": "Sök på titel"
+    },
+    "table": {
+      "title": "Rutt",
+      "target": "Bas eller region",
+      "kind": "Typ",
+      "nights": "Nätter",
+      "stops": "Stopp",
+      "status": "Status",
+      "actions": "Åtgärder"
+    },
+    "kinds": {
+      "seven_days": "7 dagar",
+      "fourteen_days": "14 dagar",
+      "family": "Familj",
+      "first_time_sailors": "Förstagångsseglare",
+      "active_sailing": "Aktiv segling"
+    },
+    "status": {
+      "live": "Live",
+      "draft": "Utkast"
+    },
+    "actions": {
+      "create": "Ny rutt",
+      "stops": "Stopp",
+      "preview": "Förhandsgranska",
+      "edit": "Redigera",
+      "publish": "Publicera",
+      "unpublish": "Avpublicera",
+      "delete": "Radera",
+      "featured": "Startsidan"
+    },
+    "stopCount": "{count, plural, =0 {Inga stopp} one {# stopp} other {# stopp}}",
+    "published": "{title} är live.",
+    "unpublished": "{title} är tillbaka som utkast.",
+    "deleted": "{title} raderades.",
+    "empty": "Inga rutter matchar dessa filter",
+    "error": "Det gick inte att ladda rutterna",
+    "target": {
+      "country": "Land",
+      "allCountries": "Alla länder",
+      "level": "Koppla till",
+      "levelBase": "En charterbas",
+      "levelRegion": "En seglingsregion",
+      "base": "Bas",
+      "region": "Region",
+      "searchBase": "Sök en marina eller ort",
+      "searchRegion": "Sök en region",
+      "chooseBase": "Välj en bas",
+      "chooseRegion": "Välj en region",
+      "baseOption": "{base} · {place} ({count, plural, =0 {inga båtar} one {# båt} other {# båtar}})",
+      "regionOption": "{region} · {country} ({count, plural, =0 {inga båtar} one {# båt} other {# båtar}})",
+      "noMatches": "Inget matchar den sökningen",
+      "hint": "En rutt kopplas till en bas eller en region, aldrig till båda. En basrutt går före en regionrutt på varje båt som ligger där. Båda listorna sorteras efter hur många publicerade båtar som finns bakom varje post."
+    },
+    "dialog": {
+      "createTitle": "Ny rutt",
+      "editTitle": "Redigera rutt",
+      "description": "Ruttens egna uppgifter. Dess stopp ritas ut på en karta på nästa skärm.",
+      "fields": {
+        "title": "Titel",
+        "titlePlaceholder": "Split till Vis och tillbaka",
+        "kind": "Typ",
+        "nights": "Nätter",
+        "sortOrder": "Ordning",
+        "sortOrderHint": "Lägst först när en bas har flera rutter",
+        "description": "Beskrivning",
+        "descriptionPlaceholder": "Hur den här resplanen är att segla, i en mening eller två.",
+        "defaultHint": "Visas på alla språk som saknar översättning nedan.",
+        "difficulty": "Svårighetsgrad",
+        "imageUrl": "Bild-URL",
+        "imageUrlHint": "Visas på ruttens kort, på ruttkartan och i länkförhandsvisningar.",
+        "translations": "Översättningar",
+        "translationsHint": "Titel och beskrivning per språk. Ett tomt språk faller tillbaka på standardtexten ovan.",
+        "slug": "Sidadress",
+        "slugPlaceholder": "skapas av titeln",
+        "slugHint": "Ruttens publika sida. Små bokstäver, siffror och bindestreck.",
+        "slugCreateHint": "Lämna tomt för att skapa den av titeln. Små bokstäver, siffror och bindestreck.",
+        "slugMoved": "Om du ändrar den flyttas sidan: länkar till {previous} slutar fungera.",
+        "imageHint": "Visas på ruttens kort, på ruttkartan och i länkförhandsvisningar. Ladda upp en bild eller klistra in dess URL.",
+        "upload": "Ladda upp bild",
+        "uploading": "Laddar upp…"
+      },
+      "errors": {
+        "target": "Välj en bas eller en region för den här rutten",
+        "nights": "Mellan 1 och 28 nätter",
+        "failed": "Det gick inte att spara rutten",
+        "slug": "Använd små bokstäver, siffror och enkla bindestreck, till exempel split-till-vis.",
+        "upload": "Det gick inte att ladda upp bilden."
+      },
+      "cancel": "Avbryt",
+      "create": "Skapa rutt",
+      "save": "Spara ändringar",
+      "created": "{title} skapades. Lägg till dess stopp härnäst.",
+      "updated": "{title} sparades.",
+      "difficulty": {
+        "none": "Ej angiven",
+        "easy": "Lätt",
+        "moderate": "Medel",
+        "advanced": "Avancerad"
+      },
+      "locales": {
+        "en": "Engelska",
+        "uk": "Ukrainska",
+        "de": "Tyska",
+        "es": "Spanska",
+        "fr": "Franska",
+        "pl": "Polska",
+        "it": "Italienska",
+        "nl": "Nederländska",
+        "sv": "Svenska",
+        "no": "Norska",
+        "da": "Danska"
+      }
+    },
+    "stops": {
+      "subtitle": "{target} · {nights} nätter",
+      "listTitle": "Resplan ({count})",
+      "add": "Lägg till stopp",
+      "day": "Dag {day}",
+      "moveUp": "Flytta tidigare",
+      "moveDown": "Flytta senare",
+      "edit": "Redigera",
+      "remove": "Ta bort stopp",
+      "empty": {
+        "title": "Inga stopp än",
+        "body": "Rutten finns men har inget att rita ut, så den kan inte publiceras och ingen annonssida visar den. Sök efter en hamn till höger, eller tryck på kartan, och namnge sedan stoppet och lägg till det."
+      },
+      "form": {
+        "addTitle": "Lägg till ett stopp",
+        "editTitle": "Redigera det här stoppet",
+        "name": "Stoppets namn",
+        "namePlaceholder": "Vis stad",
+        "note": "Anteckning",
+        "noteHint": "Engelska är det som ett språk utan egen anteckning faller tillbaka på.",
+        "noteFor": "Anteckning ({locale})",
+        "notePlaceholder": "Vad som händer här: ankarplatsen, promenaden, restaurangen.",
+        "placed": "Nål vid {lat}, {lng}. Dra den för att flytta stoppet.",
+        "unplaced": "Ingen position än. Sök efter en plats eller tryck på kartan för att placera nålen.",
+        "save": "Spara stopp",
+        "append": "Lägg till i resplanen",
+        "cancelEdit": "Avbryt"
+      },
+      "search": {
+        "label": "Hitta en plats",
+        "placeholder": "Vis, Hvar, Bol…",
+        "hint": "Lyfter nålen och placerar den på träffen. Dra den efteråt om ankarplatsen inte är orten.",
+        "searching": "Söker…"
+      },
+      "preview": "Förhandsgranska",
+      "close": "Stäng",
+      "saved": "{name} sparades.",
+      "added": "{name} lades till.",
+      "removed": "{name} togs bort.",
+      "failed": "Det gick inte att spara stoppet",
+      "missingNotes": "Ingen anteckning på: {locales}",
+      "deleteDialog": {
+        "title": "Ta bort det här stoppet?",
+        "description": "”{name}” (dag {day}) tas bort från ”{title}”, och varje senare stopp flyttas en dag tidigare. Det går inte att ångra.",
+        "cancel": "Avbryt",
+        "confirm": "Ta bort stopp",
+        "deleting": "Tar bort…"
+      }
+    },
+    "previewDialog": {
+      "title": "Förhandsgranskning av rutten",
+      "subtitle": "Precis som den visas på en båt vid {target}.",
+      "empty": "Lägg till ett stopp innan du förhandsgranskar: det finns inget att rita ut än."
+    },
+    "featured": {
+      "title": "Rutter på startsidan",
+      "description": "Listan med populära rutter, i den ordning sajten visar den. De första sex fyller karusellen, resten öppnas under ”Visa alla populära”.",
+      "chosen": "Valda ({count})",
+      "add": "Lägg till en rutt",
+      "addAction": "Lägg till",
+      "remove": "Ta bort",
+      "search": "Sök publicerade rutter",
+      "noCandidates": "Inget kvar att lägga till från den här sökningen",
+      "moveUp": "Flytta upp",
+      "moveDown": "Flytta ner",
+      "cancel": "Avbryt",
+      "save": "Spara ordningen",
+      "saved": "Startsidan visar nu {count, plural, =0 {inga rutter} one {# rutt} other {# rutter}}.",
+      "failed": "Det gick inte att spara ordningen",
+      "placement": {
+        "slider": "I karusellen",
+        "grid": "Under Visa alla",
+        "hidden": "Visas inte"
+      },
+      "empty": {
+        "title": "Inga rutter valda",
+        "body": "Avsnittet på startsidan förblir tomt tills en rutt läggs till här. Välj bland de publicerade rutterna till höger."
+      }
+    },
+    "deleteDialog": {
+      "title": "Radera den här rutten?",
+      "description": "”{title}” raderas tillsammans med sina {stops, plural, one {# stopp} other {# stopp}}. Det går inte att ångra. För att ta bort den från sajten men behålla den, använd Avpublicera i stället.",
+      "cancel": "Avbryt",
+      "confirm": "Radera rutt",
+      "deleting": "Raderar…"
+    }
+  },
+  "Payments": {
+    "title": "Betalningar",
+    "subtitle": "Banköverföringar som väntar på att regleras, och pengar som ska tillbaka till kunder.",
+    "tabs": {
+      "invoices": "Fakturaförfrågningar",
+      "refunds": "Återbetalningar att göra"
+    },
+    "invoices": {
+      "filters": {
+        "status": "Filtrera på status",
+        "allStatuses": "Alla statusar"
+      },
+      "table": {
+        "issued": "Utfärdad",
+        "invoice": "Faktura",
+        "customer": "Kund",
+        "booking": "Bokning",
+        "amount": "Belopp",
+        "status": "Status",
+        "actions": "Åtgärder"
+      },
+      "status": {
+        "pending": "Väntar",
+        "sent": "Skickad",
+        "paid": "Betald",
+        "cancelled": "Återkallad"
+      },
+      "due": "Förfaller {date}",
+      "settledAt": "Reglerad {date}",
+      "actions": {
+        "settle": "Överföring mottagen",
+        "withdraw": "Återkalla"
+      },
+      "empty": "Inga fakturaförfrågningar här.",
+      "error": "Det gick inte att ladda fakturaförfrågningarna."
+    },
+    "refunds": {
+      "filters": {
+        "search": "Sök på referens, namn eller e-post"
+      },
+      "table": {
+        "cancelled": "Avbokad",
+        "customer": "Kund",
+        "booking": "Bokning",
+        "charter": "Charter",
+        "collected": "Inbetalt",
+        "actions": "Åtgärder"
+      },
+      "ofTotal": "av {total}",
+      "actions": {
+        "refund": "Betala tillbaka pengarna"
+      },
+      "empty": "Inget ska betalas tillbaka just nu.",
+      "error": "Det gick inte att ladda återbetalningskön."
+    },
+    "settle": {
+      "title": "Registrera en mottagen överföring",
+      "description": "Bokning {reference} läggs in hos operatören när det här har registrerats.",
+      "invoiced": "Faktura {number} · {amount} fakturerat",
+      "amountLabel": "Mottaget belopp ({currency})",
+      "amountHint": "Ändra det här om bankavgifter gjort att ett annat belopp kom in.",
+      "noteLabel": "Anteckning",
+      "notePlaceholder": "Referens på överföringen, vem som bekräftade den…",
+      "cancel": "Avbryt",
+      "confirm": "Registrera överföring",
+      "settling": "Registrerar…",
+      "settled": "Överföringen är registrerad: bokning {reference} är bekräftad.",
+      "rejected": "Överföringen är registrerad, men operatören nekade: {reason}. Bokningen har nu en återbetalning att göra.",
+      "failed": "Det gick inte att registrera överföringen."
+    },
+    "withdraw": {
+      "title": "Återkalla den här fakturaförfrågan",
+      "description": "Bokning {reference} avbokas och operatörens option frigörs.",
+      "reasonLabel": "Anledning",
+      "reasonPlaceholder": "Inget svar efter tre påminnelser…",
+      "cancel": "Behåll den",
+      "confirm": "Återkalla och avboka",
+      "withdrawing": "Återkallar…",
+      "withdrawn": "Fakturan är återkallad och bokning {reference} avbokad.",
+      "failed": "Det gick inte att återkalla fakturan."
+    },
+    "refund": {
+      "title": "Betala tillbaka pengarna",
+      "description": "Betalar tillbaka pengar som tagits in på bokning {reference}.",
+      "collected": "{amount} inbetalt",
+      "cancelReason": "Avbokad: {reason}",
+      "amountLabel": "Belopp att betala tillbaka",
+      "amountPlaceholder": "Allt ({amount})",
+      "amountHint": "Lämna tomt för att betala tillbaka allt. Ange mindre för att behålla det avbokningsvillkoren tillåter.",
+      "amountInvalid": "Ange ett belopp mellan 0 och det som tagits in.",
+      "reasonLabel": "Anledning",
+      "reasonPlaceholder": "Operatören drog tillbaka båten…",
+      "manualLabel": "Jag har skickat tillbaka banköverföringen",
+      "manualHint": "Kryssa bara i det här när pengarna faktiskt har lämnat kontot. Kortbetalningar går tillbaka via Stripe automatiskt.",
+      "cancel": "Avbryt",
+      "confirm": "Återbetala",
+      "refunding": "Återbetalar…",
+      "refunded": "{amount} återbetalt.",
+      "partial": "{amount} återbetalt. {outstanding} kvar att betala tillbaka.",
+      "manualPending": "Kortbetalningarna är återbetalda. {count, plural, one {# banköverföring måste} other {# banköverföringar måste}} skickas för hand.",
+      "failed": "Det gick inte att genomföra återbetalningen."
+    }
+  },
+  "StaffBooking": {
+    "back": "Bokningar",
+    "staffOnly": "Personalvy: det här är en kunds bokning. Dela inte den här sidan.",
+    "error": "Det gick inte att ladda den här bokningen.",
+    "guestAccount": "Gästkonto",
+    "guests": "{count, plural, one {# gäst} other {# gäster}}",
+    "noReservationId": "Inget reservations-id än",
+    "outstanding": "{amount} utestående",
+    "dueAtCheckIn": "{amount} betalas i marinan",
+    "createdAt": "Skapad {at}",
+    "holdExpiresAt": "Reservationen går ut {at}",
+    "confirmedAt": "Bekräftad {at}",
+    "cancelledAt": "Avbokad {at}",
+    "cancelReason": "Avbokningsorsak: {reason}",
+    "fields": {
+      "customer": "Kund",
+      "charter": "Charter",
+      "provider": "Leverantör",
+      "total": "Totalt",
+      "collected": "Inbetalt",
+      "timeline": "Tidslinje"
+    },
+    "invoice": {
+      "title": "Fakturaförfrågan",
+      "number": "Nummer",
+      "amount": "Belopp",
+      "status": "Status",
+      "billedTo": "Faktureras till",
+      "issued": "Utfärdad",
+      "due": "Förfaller"
+    },
+    "payments": {
+      "title": "Betalningar",
+      "kind": "Delbetalning",
+      "amount": "Belopp",
+      "method": "Metod",
+      "status": "Status",
+      "paidAt": "Betald",
+      "empty": "Inget har tagits in än.",
+      "disputed": "Bestridd: {state}",
+      "methods": {
+        "card": "Kort",
+        "transfer": "Banköverföring"
+      },
+      "disputeStatus": {
+        "open": "öppen"
+      }
+    },
+    "schedule": {
+      "title": "Betalningsplan",
+      "kind": "Delbetalning",
+      "amount": "Belopp",
+      "dueAt": "Förfaller",
+      "status": "Status",
+      "empty": "Ingen betalningsplan på den här bokningen.",
+      "statuses": {
+        "pending": "Väntar",
+        "paid": "Betald",
+        "cancelled": "Avbruten",
+        "refunded": "Återbetald"
+      }
+    },
+    "priceLines": {
+      "title": "Prisuppdelning",
+      "labels": {
+        "charterPrice": "Charterpris",
+        "charterExtra": "Chartertillval",
+        "charterDiscount": "Charterrabatt",
+        "referralWelcome": "Välkomstrabatt för värvning",
+        "referralCredit": "Värvningstillgodohavande"
+      }
+    },
+    "excluded": {
+      "chip": "Inte riktig affär",
+      "exclude": "Markera som testbokning",
+      "restore": "Återställ till köerna",
+      "excludedAt": "Utesluten från köerna och totalsummorna {at}",
+      "help": "En utesluten bokning behåller sin status, sina betalningar och sin reservation hos leverantören. Den slutar bara räknas i personalens köer och i penningsummorna."
+    },
+    "cancel": {
+      "action": "Avboka",
+      "title": "Vill du avboka den här bokningen?",
+      "description": "{reference} för {customer}",
+      "confirmedWarning": "Den här bokningen är bekräftad. Om du avbokar flyttas den till återbetalningskön; pengarna betalas inte tillbaka förrän någon återbetalar dem där.",
+      "reasonLabel": "Anledning (valfritt)",
+      "reasonPlaceholder": "Operatören drog tillbaka båten",
+      "keep": "Behåll den",
+      "confirm": "Avboka",
+      "success": "Bokningen är avbokad.",
+      "successRefund": "Bokningen är avbokad och flyttad till återbetalningskön.",
+      "providerHeld": "Avbokad här, men {provider} behöll reservationen: {error}",
+      "providerHeldUnknown": "leverantören angav ingen anledning",
+      "error": "Det gick inte att avboka den här bokningen."
+    },
+    "providerHold": {
+      "title": "{provider} håller fortfarande den här reservationen",
+      "body": "Vi avbokade på vår sida och leverantören släppte inte. Chartern står kvar hos operatören, så reglera den med dem innan någon återbetalning görs, annars går pengarna tillbaka på en vecka som vi fortfarande faktureras för."
+    }
+  },
+  "providers": {
+    "mock": "Mock",
+    "booking_manager": "Booking Manager",
+    "nausys": "NauSYS"
+  },
+  "Faq": {
+    "title": "Vanliga frågor",
+    "subtitle": "Alla frågor på sajten, med alla fyra språken på en rad. En fråga når en sida bara på de språk som har ett svar.",
+    "scope": {
+      "site": "Hela sajten",
+      "listing": "En båt"
+    },
+    "categories": {
+      "booking": "Bokning",
+      "payment": "Betalning",
+      "prices": "Priser",
+      "licences": "Intyg",
+      "travel": "Resa",
+      "cancellation": "Avbokning"
+    },
+    "locales": {
+      "en": "Engelska",
+      "de": "Tyska",
+      "es": "Spanska",
+      "uk": "Ukrainska",
+      "fr": "Franska",
+      "pl": "Polska",
+      "it": "Italienska",
+      "nl": "Nederländska",
+      "sv": "Svenska",
+      "no": "Norska",
+      "da": "Danska"
+    },
+    "localeCodes": {
+      "en": "EN",
+      "de": "DE",
+      "es": "ES",
+      "uk": "UK",
+      "fr": "FR",
+      "pl": "PL",
+      "it": "IT",
+      "nl": "NL",
+      "sv": "SV",
+      "no": "NO",
+      "da": "DA"
+    },
+    "state": {
+      "answered": "Besvarad: syns på den publika sidan",
+      "unanswered": "Inget svar än: dold från sidan",
+      "missing": "Ingen översättning"
+    },
+    "gaps": {
+      "missing_answer": "Saknar ett svar",
+      "missing_locale": "Saknar en översättning"
+    },
+    "filters": {
+      "scope": "Omfattning",
+      "category": "Kategori",
+      "locale": "Språk att kontrollera",
+      "gap": "Vad som ska visas",
+      "allCategories": "Alla kategorier",
+      "anyLocale": "Alla språk",
+      "allEntries": "Alla poster",
+      "search": "Sök frågor och svar",
+      "listing": "Båt",
+      "listingSearch": "Sök båtar på namn"
+    },
+    "legend": {
+      "title": "Språkstatus:"
+    },
+    "table": {
+      "order": "Ordning",
+      "question": "Fråga",
+      "locales": "Språk",
+      "category": "Kategori",
+      "actions": "Åtgärder"
+    },
+    "actions": {
+      "create": "Ny post",
+      "edit": "Redigera",
+      "delete": "Radera",
+      "moveUp": "Flytta upp",
+      "moveDown": "Flytta ner"
+    },
+    "reorderDisabled": "Välj en kategori och ett språk, och rensa sökningen och filtren, för att ändra ordningen.",
+    "reordered": "Ordningen är sparad, på alla språk.",
+    "deleted": "{count, plural, one {# översättning raderad.} other {# översättningar raderade.}}",
+    "deleteDialog": {
+      "title": "Radera den här frågan?",
+      "description": "”{question}” raderas på alla språk den finns på ({locales}). Det går inte att ångra. För att ta bort bara ett språk, öppna Redigera och använd Ta bort den här översättningen.",
+      "cancel": "Avbryt",
+      "confirm": "Radera på alla språk",
+      "deleting": "Raderar…"
+    },
+    "unpublished": "På ingen sida än",
+    "noCategory": "Ingen kategori",
+    "noQuestion": "Utan titel",
+    "chooseListing": "Välj en båt för att se dess egna poster",
+    "empty": "Inga poster matchar dessa filter",
+    "error": "Det gick inte att ladda de vanliga frågorna",
+    "summary": {
+      "missingAnswer": "{count} av {total} poster saknar svar än, så den publika sidan utelämnar dem. Kontrollerar: {locale}.",
+      "missingLocale": "{count} av {total} poster saknar en översättning. Kontrollerar: {locale}."
+    },
+    "dialog": {
+      "createTitle": "Ny post i vanliga frågor",
+      "editTitle": "Redigera post i vanliga frågor",
+      "description": "En fråga, alla fyra språken. Ett språk som lämnas tomt behåller det det redan hade: använd Ta bort den här översättningen för att ta bort ett från sajten.",
+      "scope": {
+        "label": "Var den visas"
+      },
+      "category": {
+        "label": "Kategori",
+        "placeholder": "Välj en kategori"
+      },
+      "listing": {
+        "label": "Båt",
+        "search": "Sök båtar på namn",
+        "clear": "Rensa den valda båten",
+        "noResults": "Inga båtar matchar det namnet"
+      },
+      "question": {
+        "label": "Fråga",
+        "placeholder": "Skriv frågan på det här språket"
+      },
+      "answer": {
+        "label": "Svar",
+        "placeholder": "Lämna tomt tills svaret är skrivet",
+        "hint": "Utan ett svar stannar frågan här och når aldrig den publika sidan."
+      },
+      "removeTranslation": "Ta bort den här översättningen",
+      "translationRemoved": "Översättningen till {locale} togs bort.",
+      "cancel": "Avbryt",
+      "save": "Spara",
+      "create": "Skapa",
+      "created": "Posten är skapad.",
+      "saved": "Posten är sparad.",
+      "failed": "Det gick inte att spara posten",
+      "cacheRefreshing": "Den publika sidan är cachad, så ge den en stund att hinna med.",
+      "cacheStale": "Sparad, men den publika sidans cache kunde inte rensas: den kan visa den gamla texten ett tag.",
+      "errors": {
+        "listingRequired": "Välj en båt för den här posten",
+        "categoryRequired": "En post för hela sajten behöver en kategori: den har ingen båtsida att sitta på",
+        "questionRequired": "Skriv frågan på minst ett språk",
+        "answerWithoutQuestion": "Det här språket har ett svar men ingen fråga",
+        "questionTooLong": "Håll frågan under 500 tecken",
+        "answerTooLong": "Håll svaret under 8000 tecken"
+      }
+    }
+  },
+  "Popular": {
+    "title": "Populära val",
+    "subtitle": "Vilka värden som toppar ett filters lista, och vilka som leder startsidan.",
+    "kinds": {
+      "country": "Länder",
+      "category": "Båttyper",
+      "equipment": "Utrustning",
+      "region": "Seglingsområden",
+      "marina": "Marinor",
+      "model": "Modeller",
+      "location": "Platser",
+      "crew": "Besättningstyper",
+      "sail_type": "Storsegelstyper"
+    },
+    "surfaces": {
+      "popular": "Filternålar",
+      "featured": "Startsidan",
+      "filter": "Filterlista"
+    },
+    "surfaceHint": {
+      "popular": "Visas som en grupp ”Populära” högst upp i sökfiltren.",
+      "featured": "Ordningen som startsidans karuseller och rutnät använder.",
+      "filter": "De enda värden sökfiltret erbjuder. Tomt erbjuder det alla värden katalogen innehåller."
+    },
+    "filters": {
+      "kind": "Facett",
+      "surface": "Var det visas",
+      "search": "Sök värden"
+    },
+    "table": {
+      "order": "Ordning",
+      "value": "Värde",
+      "count": "Båtar",
+      "actions": "Åtgärder"
+    },
+    "actions": {
+      "moveUp": "Flytta upp",
+      "moveDown": "Flytta ner",
+      "remove": "Ta bort",
+      "edit": "Redigera bild och text"
+    },
+    "empty": "Inget kurerat än. Välj värden ovan för att nåla fast dem.",
+    "emptyFilter": "Inget valt, så filtret erbjuder alla värden. Välj värden ovan för att korta listan.",
+    "error": "Det gick inte att spara ordningen.",
+    "saved": "Ordningen är sparad.",
+    "cacheWarning": "Sparad, men sajtens cachade sidor kunde inte uppdateras än.",
+    "noListings": "Inga båtar",
+    "media": {
+      "title": "Redigera {name}",
+      "description": "Bilden och texten som det här värdets kort på startsidan visar. Sparad text skrivs aldrig över av en leverantörssynkning.",
+      "imageUrl": "Bild-URL",
+      "imageHint": "Ladda upp en fil eller klistra in en URL. JPEG, PNG, WebP eller AVIF, upp till 10 MB.",
+      "imageHintNoUpload": "Klistra in en URL. Filuppladdning är inte konfigurerad i den här miljön.",
+      "hoverImageUrl": "Bild vid hovring",
+      "hoverImageHint": "Visas på startsidans utvalda rutor när muspekaren är över kortet, t.ex. platsen ovanifrån. Lämna tomt för att behålla en bild.",
+      "gridUsesHoverImage": "Använd hovringsbilden i rutnätet ”Visa alla populära”",
+      "gridUsesHoverImageHint": "Rutnätet har ingen hovring, så det visar en bild. Ikryssat är det hovringsbilden, okryssat huvudbilden.",
+      "upload": "Ladda upp bild",
+      "uploading": "Laddar upp…",
+      "uploadFailed": "Det gick inte att ladda upp bilden.",
+      "label": "Namn",
+      "labelHint": "Lämna tomt för att använda katalognamnet, {name}, eller leverantörens översättning.",
+      "descriptionField": "Beskrivning",
+      "descriptionHintEn": "Visas också på alla språk som saknar en egen beskrivning.",
+      "descriptionHint": "Lämna tomt för att visa den engelska beskrivningen.",
+      "cancel": "Avbryt",
+      "save": "Spara",
+      "saving": "Sparar…",
+      "saved": "Sparat.",
+      "saveFailed": "Det gick inte att spara.",
+      "cacheWarning": "Sparad, men sajtens cachade sidor kunde inte uppdateras än.",
+      "locales": {
+        "en": "Engelska",
+        "uk": "Ukrainska",
+        "de": "Tyska",
+        "es": "Spanska",
+        "fr": "Franska",
+        "pl": "Polska",
+        "it": "Italienska",
+        "nl": "Nederländska",
+        "sv": "Svenska",
+        "no": "Norska",
+        "da": "Danska"
+      }
+    }
+  },
+  "PopularYachts": {
+    "title": "Karusell med populära båtar",
+    "subtitle": "Hur startsidans karusell med populära båtar sätts samman. Typfördelningen är ett mål: när gränserna gör att en typ blir underrepresenterad går de återstående platserna till de näst bästa båtarna.",
+    "limit": "Antal båtar som visas",
+    "maxAgeYears": "Högsta ålder (år)",
+    "maxPerCountry": "Högst per land",
+    "maxPerBase": "Högst per bas",
+    "mix": "Båtar per typ",
+    "mixHint": "Endast destinationerna nedan används. En typ satt till noll utelämnas.",
+    "destinations": "Destinationer",
+    "destinationsHint": "Ett land per rad, i prioritetsordning: \"Kroatien: Split / Trogir; Zadar / Sukošan\". Platser separeras med \";\", och \"/\" separerar stavningar av en och samma plats, som matchas mot båtens marina, plats och region. Varje plats räknas som en bas. Ett land utan platser hämtar från hela landet; en tom lista faller tillbaka på de kurerade populära länderna.",
+    "save": "Spara ändringar",
+    "saving": "Sparar…",
+    "saved": "Karusellen är sparad.",
+    "saveFailed": "Det gick inte att spara karusellen.",
+    "cacheWarning": "Sparad, men sajtens cachade sidor kunde inte uppdateras än."
+  },
+  "Settings": {
+    "title": "Marknadsplatsinställningar",
+    "subtitle": "Hur stor del av en charter som tas in i förskott, och vilken leverantör vi säljer genom när erbjudandena är likvärdiga.",
+    "source": {
+      "legend": "Vilken betalningsplan vi använder",
+      "vendor": {
+        "title": "Leverantörens egen plan",
+        "hint": "Varje offert följer de delbetalningar leverantören returnerade för den båten och de datumen, inklusive dess eget förfallodatum för restbeloppet. Leverantörer skiljer sig åt, så procentsatsen varierar från bokning till bokning."
+      },
+      "marketplace": {
+        "title": "Vår egen policy",
+        "hint": "Varje offert använder procentsatsen nedan och leverantörens plan ignoreras helt, inklusive dess förfallodatum."
+      }
+    },
+    "ourPolicy": {
+      "deposit": "Ta en handpenning",
+      "full": "Ta hela betalningen",
+      "percentLabel": "Handpenning i procent",
+      "percentError": "Ange en procentsats mellan 1 och 100."
+    },
+    "leadTime": {
+      "legend": "Full betalning nära avresan",
+      "toggle": "Kräv full betalning för charter som startar snart",
+      "hint": "En undre gräns för den plan som valts ovan, aldrig en egen tredje plan. Avstängt står en leverantörs 30 % kvar även på en charter som avgår i morgon.",
+      "daysLabel": "Dagar före incheckning",
+      "daysError": "Ange ett helt antal dagar mellan 0 och 365."
+    },
+    "preference": {
+      "legend": "Föredragen leverantör",
+      "hint": "Vilken leverantör som vinner när tillgänglighet, pris och obligatoriska avgifter är lika. Den åsidosätter aldrig ett billigare erbjudande: den avgör bara oavgjort.",
+      "rebuildNote": "Gäller nya offerter och tillgänglighetskalendern omedelbart. Katalogkort byggs om i bakgrunden direkt efter sparandet, vilket tar långt under en minut."
+    },
+    "currency": {
+      "legend": "Visningsvaluta",
+      "toggle": "Visa priser i besökarens egen valuta",
+      "hint": "Endast visning. En bokning regleras i den valuta den prissattes i, och betalningsskärmen anger beloppet som faktiskt kommer att debiteras när de två skiljer sig åt. Omräknade siffror markeras som ungefärliga: referenskurser är inte vad ett kortnätverk tillämpar. Priserna stannar i leverantörens valuta så snart kurserna har blivit inaktuella.",
+      "fallback": "När landet är okänt"
+    },
+    "ranking": {
+      "reliabilityToggle": "Avgör oavgjort utifrån hur ofta en leverantör svarar",
+      "reliabilityHint": "Endast där pris, obligatoriska tillval och provision är lika. Hoppas över för par där någon av leverantörerna har för få förfrågningar i perioden för att kunna mätas, så en nyansluten leverantör rankas aldrig ner för sin tystnad. Siffrorna finns på sidan Synkhistorik.",
+      "windowDays": "Mätt över de senaste (dagarna)",
+      "catalogueToggle": "Visa charterpriset på korten",
+      "catalogueHint": "Avstängt visar ett kort totalsumman inklusive allt. Påslaget visar det charterpriset med de obligatoriska tillvalen namngivna under, och sorteringen, prisfiltret och reglaget följer alla samma siffra. Oberoende av reglaget ovan: vad ett kort annonserar och vilken leverantör vi säljer genom är separata beslut.",
+      "legend": "Rangordning av erbjudanden",
+      "toggle": "Rangordna på charterpriset",
+      "hint": "Avstängt vinner den leverantör vars totalsumma inklusive allt är lägre, vilket är vad gästen faktiskt betalar. Påslaget avgör charterpriset och de obligatoriska tillvalen avgör bara oavgjort på det. Att rangordna på priset kan välja den charter som kostar gästen mer totalt."
+    },
+    "nameSearch": {
+      "legend": "Fritextsökning",
+      "toggle": "Visa fritextfältet i sökfältet",
+      "hint": "Ett testhjälpmedel snarare än en del av designen. Påslaget får båtsökfältet ett fält som matchar en båts namn, modell, varv, charterbolag eller bas, ord för ord och i valfri ordning."
+    },
+    "save": "Spara ändringar",
+    "saving": "Sparar…",
+    "saved": "Inställningarna är sparade.",
+    "saveFailed": "Det gick inte att spara inställningarna.",
+    "appliesNext": "Gäller nya offerter. En offert som en kund redan håller behåller den policy den prissattes under."
+  }
+}

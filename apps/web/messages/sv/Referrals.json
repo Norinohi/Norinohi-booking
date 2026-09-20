@@ -1,0 +1,62 @@
+{
+  "title": "Dina värvningar",
+  "invite": {
+    "heading": "Bjud in vänner. Tjäna seglingskredit.",
+    "description": "Ge 100 € till dina vänner för deras första bokning och få 100 € i tillgodohavande själv när de seglar.",
+    "copy": "Kopiera värvningslänk",
+    "copied": "Länken har kopierats",
+    "generate": "Skapa ny kod",
+    "generated": "Ny värvningskod skapad",
+    "generateFailed": "Det gick inte att skapa en ny kod. Försök igen.",
+    "information": "Information",
+    "rules": {
+      "minBooking": "Tillgodohavandet kan användas för alla båtbokningar över 1 000 €.",
+      "expiry": "Värvningskrediter löper ut 12 månader efter att de tjänats in.",
+      "cash": "Tillgodohavandet kan inte tas ut i kontanter.",
+      "firstTime": "Gäller endast inbjudna vänners första bokning."
+    },
+    "stats": {
+      "invited": "Inbjudna användare",
+      "completed": "Genomförda bokningar",
+      "earned": "Totalt intjänat",
+      "balance": "Tillgängligt saldo"
+    }
+  },
+  "how": {
+    "title": "Så fungerar det",
+    "steps": {
+      "share": {
+        "title": "Dela länken",
+        "description": "Skicka din unika värvningslänk till vänner som älskar att resa"
+      },
+      "book": {
+        "title": "Vännen bokar",
+        "description": "De får 100 € rabatt på sin första båtbokning över 1 000 €"
+      },
+      "credit": {
+        "title": "Du får tillgodohavande",
+        "description": "När de har genomfört sin resa får du 100 € i tillgodohavande"
+      }
+    },
+    "level": {
+      "title": "Din nivå",
+      "current": "Nuvarande:",
+      "next": "Nästa: {level}",
+      "left": "{count, plural, one {# bokning} other {# bokningar}} kvar till nästa nivå",
+      "perks": {
+        "extra": "5 % extra tillgodohavande på alla värvningar",
+        "early": "Tidig tillgång till lyxerbjudanden",
+        "concierge": "Personlig conciergeservice"
+      }
+    }
+  },
+  "history": {
+    "title": "Värvningshistorik",
+    "today": "I dag",
+    "daysAgo": "{count, plural, one {# dag sedan} other {# dagar sedan}}",
+    "credited": "Genomförd",
+    "pending": "Väntar",
+    "void": "Avbruten",
+    "empty": "Inga värvningar än. Dela din länk för att komma igång."
+  }
+}

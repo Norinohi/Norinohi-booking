@@ -1,0 +1,22 @@
+{
+  "title": "Mina bokningar",
+  "history": "Historik",
+  "anyDates": "Alla datum",
+  "clearDates": "Rensa datum",
+  "emptyTitle": "Inga båtar än",
+  "emptyDescription": "Börja utforska båtar och planera din första resa: dina bokningar dyker upp här.",
+  "cancel": {
+    "action": "Avboka",
+    "title": "Vill du avboka den här bokningen?",
+    "description": "Det går inte att ångra, och charterbolaget meddelas.",
+    "reasonLabel": "Anledning (valfritt)",
+    "reasonPlaceholder": "Berätta varför du avbokar",
+    "confirm": "Avboka",
+    "keep": "Behåll bokningen",
+    "success": "Din bokning har avbokats.",
+    "error": "Vi kunde inte avboka din bokning. Försök igen."
+  },
+  "statusCancelled": "Avbokad",
+  "payBalance": "Betala {amount}",
+  "completePayment": "Slutför betalning {amount}"
+}
