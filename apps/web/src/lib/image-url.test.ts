@@ -20,10 +20,10 @@ describe("srcsetSafeUrl", () => {
     );
   });
 
-  it("escapes a comma, which would otherwise end the candidate", () => {
-    expect(srcsetSafeUrl("https://example.com/boat,1.jpg")).toBe(
-      "https://example.com/boat%2C1.jpg",
-    );
+  it("keeps the commas Mapbox reads as coordinates", () => {
+    const url =
+      "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/16.24825,43.51373,9/500x236@2x?access_token=pk.test";
+    expect(srcsetSafeUrl(url)).toBe(url);
   });
 
   it("keeps the query a CDN reads", () => {
