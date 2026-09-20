@@ -1515,6 +1515,15 @@
       "toggle": "Nach Charterpreis vergleichen",
       "hint": "Aus gewinnt der Anbieter mit dem niedrigeren Gesamtpreis, also mit dem Betrag, den der Gast tatsächlich zahlt. An entscheidet der reine Charterpreis, und die Pflichtzuschläge lösen nur einen Gleichstand auf. Der Vergleich nach Charterpreis kann den Törn wählen, der den Gast insgesamt mehr kostet."
     },
+    "referral": {
+      "legend": "Empfehlungsprogramm",
+      "hint": "Was eine Empfehlung zahlt, in Euro. Die Zahlen auf der Empfehlungsseite kommen von hier.",
+      "reward": "Empfehlender erhält",
+      "inviteeDiscount": "Rabatt für den Freund",
+      "minBooking": "Mindestbuchung",
+      "ttlMonths": "Guthaben gültig (Monate)",
+      "appliesNext": "Gilt für ab jetzt gutgeschriebene Empfehlungen. Bereits gewährtes Guthaben behält Betrag und Ablauf."
+    },
     "nameSearch": {
       "legend": "Freitextsuche",
       "toggle": "Freitextfeld in der Suchleiste anzeigen",

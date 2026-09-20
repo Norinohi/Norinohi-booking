@@ -3,6 +3,7 @@ import { creditLedger, loyaltyPerk, loyaltyTier } from "@yacht-charter/db/schema
 import { and, asc, count, eq, gt, isNull, or, sql, sum } from "drizzle-orm";
 
 import type { Database, DatabaseExecutor } from "../context";
+import { getMarketplaceSettings } from "./marketplace-settings";
 import {
   bonusPctFor,
   MIN_BOOKING_FOR_CREDIT_MINOR,
@@ -19,15 +20,19 @@ export type { TierProgress };
 /*
  * Referral rewards and the loyalty ladder.
  *
- * The rules come from the copy on the Referrals screen:
- *   "€100 credit for yourself when they sail"
- *   "Once they complete their trip, you receive €100 credits"
- *   "Referral credits expire 12 months after being earned"
- *   "5% extra credit on all referrals" (a Navigator perk)
+ * The rules started as the copy on the Referrals screen -- euro100 when your friend sails, off a
+ * booking over euro1,000, credit good for twelve months, plus a tier bonus on top. They are now
+ * `marketplace_setting`, editable on the admin screen, because they are a commercial offer the
+ * client changes without a release; the copy reads the same figures back so the promise and
+ * the behaviour cannot drift apart.
+ *
+ * `DEFAULT_REFERRAL_SETTINGS` restates the launch terms, so a database whose settings row has
+ * never been written runs the programme exactly as these constants did.
+ *
+ * Changing a term moves the next referral and no existing balance: a granted credit carries
+ * its own amount and expiry in `credit_ledger`, and rewriting those retroactively would edit
+ * money people have already been told they have.
  */
-
-const BASE_REWARD_MINOR = 10_000;
-const CREDIT_TTL_MONTHS = 12;
 
 /*
  * The currency credit is minted in, and the only one it can be spent in.
@@ -163,10 +168,11 @@ export async function awardReferralCredit(
 
   // Read at award time, after the claim above has been counted.
   const bonusPct = await referralBonusPctFor(tx, owner.userId);
-  const amountMinor = rewardMinor(BASE_REWARD_MINOR, bonusPct);
+  const { referral: terms } = await getMarketplaceSettings(tx);
+  const amountMinor = rewardMinor(terms.rewardMinor, bonusPct);
 
   const expiresAt = new Date();
-  expiresAt.setMonth(expiresAt.getMonth() + CREDIT_TTL_MONTHS);
+  expiresAt.setMonth(expiresAt.getMonth() + terms.creditTtlMonths);
 
   await tx.insert(creditLedger).values({
     userId: owner.userId,
@@ -190,8 +196,11 @@ export async function awardReferralCredit(
  * then.
  */
 export async function projectedRewardMinor(db: Database, userId: string): Promise<number> {
-  const bonusPct = await referralBonusPctFor(db, userId);
-  return rewardMinor(BASE_REWARD_MINOR, bonusPct);
+  const [bonusPct, settings] = await Promise.all([
+    referralBonusPctFor(db, userId),
+    getMarketplaceSettings(db),
+  ]);
+  return rewardMinor(settings.referral.rewardMinor, bonusPct);
 }
 
 /**
@@ -223,17 +232,16 @@ export async function invitedCount(db: Database, userId: string): Promise<number
 }
 
 /*
- * The invitee's half of the referral: "They get €100 off their first yacht
- * booking over €1000". Same headline figure as the referrer's reward, but a
- * different rule — no tier bonus applies, since levelling up is the referrer's
- * perk and the invitee has no tier yet.
+ * The invitee's half of the referral: "They get euro100 off their first yacht booking over
+ * euro1,000". The same headline figure as the referrer's reward and deliberately its own
+ * setting, because they are different promises to different people -- and a different rule
+ * either way: no tier bonus applies, since levelling up is the referrer's perk and the
+ * invitee has no tier yet.
  *
- * Both figures, and `MIN_BOOKING_FOR_CREDIT_MINOR` with them, are amounts in
- * `CREDIT_CURRENCY`. The copy on the Referrals screen states them with a euro sign, so
- * they are a promise in one currency rather than a bare number to be re-read as whatever
- * the quote happens to be priced in.
+ * Every figure here, the minimum-booking threshold included, is an amount in
+ * `CREDIT_CURRENCY`. The copy states them with a euro sign, so they are a promise in one
+ * currency rather than a bare number to be re-read as whatever the quote is priced in.
  */
-const INVITEE_WELCOME_MINOR = 10_000;
 
 /**
  * What the invitee comes off this quote, resolved at pricing time rather than
@@ -260,7 +268,9 @@ export async function welcomeDiscountMinor(
 ): Promise<number> {
   if (!userId) return 0;
   if (currency !== CREDIT_CURRENCY) return 0;
-  if (bookingTotalMinor < MIN_BOOKING_FOR_CREDIT_MINOR) return 0;
+
+  const { referral: terms } = await getMarketplaceSettings(db);
+  if (bookingTotalMinor < terms.creditMinBookingMinor) return 0;
 
   const [pending] = await db
     .select({ id: referralRedemption.id })
@@ -272,7 +282,7 @@ export async function welcomeDiscountMinor(
 
   if (!pending) return 0;
 
-  return Math.max(Math.min(INVITEE_WELCOME_MINOR, payableNowMinor), 0);
+  return Math.max(Math.min(terms.inviteeDiscountMinor, payableNowMinor), 0);
 }
 
 /**
@@ -291,12 +301,15 @@ export async function spendableCreditMinor(
 ): Promise<number> {
   if (!userId) return 0;
   if (currency !== CREDIT_CURRENCY) return 0;
-  if (bookingTotalMinor < MIN_BOOKING_FOR_CREDIT_MINOR) return 0;
+
+  const { referral: terms } = await getMarketplaceSettings(db);
+  if (bookingTotalMinor < terms.creditMinBookingMinor) return 0;
 
   return spendableFrom(
     await creditBalanceMinor(db, userId, currency),
     bookingTotalMinor,
     payableNowMinor,
+    terms.creditMinBookingMinor,
   );
 }
 

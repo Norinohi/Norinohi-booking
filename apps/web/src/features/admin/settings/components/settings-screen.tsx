@@ -44,6 +44,15 @@ interface FormState {
   displayCurrencyEnabled: boolean;
   displayCurrencyDefault: DisplayCurrency;
   nameSearchEnabled: boolean;
+  /*
+   * The referral terms as an operator types them: whole euro, not minor units. Kept as strings
+   * for the same reason the percentage above is - a half-typed number is a valid thing to have
+   * on screen and not a valid number - and converted at the edges only.
+   */
+  referralReward: string;
+  referralInviteeDiscount: string;
+  referralMinBooking: string;
+  referralTtlMonths: string;
 }
 
 const PRESET_PERCENTS = ["30", "50", "100"] as const;
@@ -128,6 +137,10 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
       displayCurrencyEnabled: data.displayCurrencyEnabled,
       displayCurrencyDefault: data.displayCurrencyDefault,
       nameSearchEnabled: data.nameSearchEnabled,
+      referralReward: String(data.referral.rewardMinor / 100),
+      referralInviteeDiscount: String(data.referral.inviteeDiscountMinor / 100),
+      referralMinBooking: String(data.referral.creditMinBookingMinor / 100),
+      referralTtlMonths: String(data.referral.creditTtlMonths),
     });
   }, [data?.updatedAt, data]);
 
@@ -140,6 +153,21 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
      past a year is a claim about connectors that have since been rewritten. */
   const reliabilityDaysValid =
     Number.isInteger(reliabilityDays) && reliabilityDays >= 1 && reliabilityDays <= 365;
+  /*
+   * Whole euro in, minor units out. Bounded as the contract is, so a slipped decimal is
+   * refused at the form rather than granted: a reward is money we pay on every referral.
+   */
+  const euros = (typed: string | undefined) => Number(typed);
+  const reward = euros(form?.referralReward);
+  const inviteeDiscount = euros(form?.referralInviteeDiscount);
+  const minBooking = euros(form?.referralMinBooking);
+  const ttlMonths = Number(form?.referralTtlMonths);
+  const amountValid = (value: number, max: number) =>
+    Number.isInteger(value) && value >= 0 && value <= max;
+  const rewardValid = amountValid(reward, 10_000);
+  const inviteeDiscountValid = amountValid(inviteeDiscount, 10_000);
+  const minBookingValid = amountValid(minBooking, 100_000);
+  const ttlMonthsValid = Number.isInteger(ttlMonths) && ttlMonths >= 1 && ttlMonths <= 120;
   const percentValid = Number.isFinite(percent) && percent >= 1 && percent <= 100;
   const daysValid = Number.isInteger(days) && days >= 0 && days <= 365;
   /* A percentage only has to be valid when it is the one in force; an unused field left blank
@@ -148,6 +176,10 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
     form !== null &&
     daysValid &&
     reliabilityDaysValid &&
+    rewardValid &&
+    inviteeDiscountValid &&
+    minBookingValid &&
+    ttlMonthsValid &&
     (form.source === "vendor" || form.mode === "full" || percentValid) &&
     !update.isPending;
 
@@ -173,6 +205,12 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
            payload would clear it. Sent back exactly as it was read. */
         displayCurrencyByCountry: data?.displayCurrencyByCountry ?? {},
         nameSearchEnabled: form.nameSearchEnabled,
+        referral: {
+          rewardMinor: reward * 100,
+          inviteeDiscountMinor: inviteeDiscount * 100,
+          creditMinBookingMinor: minBooking * 100,
+          creditTtlMonths: ttlMonths,
+        },
       },
       {
         onSuccess: () => toast.success(t("saved")),
@@ -509,6 +547,80 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
                       ))}
                     </RadioGroup>
                   </div>
+                </fieldset>
+
+                <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">
+                  <legend className="px-1 text-sm leading-4.5 font-bold text-foreground">
+                    {t("referral.legend")}
+                  </legend>
+
+                  <p className="text-xs leading-4 font-medium text-natural-500">
+                    {t("referral.hint")}
+                  </p>
+
+                  <div className="flex flex-wrap gap-4">
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="referral-reward">{t("referral.reward")}</Label>
+                      <Input
+                        id="referral-reward"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={10000}
+                        value={form.referralReward}
+                        onChange={(event) => set({ referralReward: event.target.value })}
+                        className="w-28"
+                        aria-invalid={!rewardValid}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="referral-invitee">{t("referral.inviteeDiscount")}</Label>
+                      <Input
+                        id="referral-invitee"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={10000}
+                        value={form.referralInviteeDiscount}
+                        onChange={(event) => set({ referralInviteeDiscount: event.target.value })}
+                        className="w-28"
+                        aria-invalid={!inviteeDiscountValid}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="referral-min-booking">{t("referral.minBooking")}</Label>
+                      <Input
+                        id="referral-min-booking"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={100000}
+                        value={form.referralMinBooking}
+                        onChange={(event) => set({ referralMinBooking: event.target.value })}
+                        className="w-32"
+                        aria-invalid={!minBookingValid}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="referral-ttl">{t("referral.ttlMonths")}</Label>
+                      <Input
+                        id="referral-ttl"
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={120}
+                        value={form.referralTtlMonths}
+                        onChange={(event) => set({ referralTtlMonths: event.target.value })}
+                        className="w-28"
+                        aria-invalid={!ttlMonthsValid}
+                      />
+                    </div>
+                  </div>
+
+                  {/* The one thing about this section that is not obvious from the fields. */}
+                  <p className="text-xs leading-4 font-medium text-natural-500">
+                    {t("referral.appliesNext")}
+                  </p>
                 </fieldset>
 
                 <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">

@@ -1515,6 +1515,15 @@
       "toggle": "Rangér på charterprisen",
       "hint": "Slået fra vinder den leverandør, hvis samlede pris med alt inkluderet er lavest, hvilket er det, gæsten reelt betaler. Slået til afgør charterprisen, og de obligatoriske tillæg afgør kun et dødt løb på den. Rangering på prisen kan vælge det charter, der samlet koster gæsten mere."
     },
+    "referral": {
+      "legend": "Henvisningsprogram",
+      "hint": "Hvad en henvisning giver, i euro. Tallene på Henvisninger-siden kommer herfra.",
+      "reward": "Henviseren tjener",
+      "inviteeDiscount": "Rabat til vennen",
+      "minBooking": "Minimumsbooking",
+      "ttlMonths": "Tilgodehavende gyldigt (måneder)",
+      "appliesNext": "Gælder henvisninger, der krediteres fra nu af. Allerede tildelt tilgodehavende beholder beløb og udløb."
+    },
     "nameSearch": {
       "legend": "Fritekstsøgning",
       "toggle": "Vis fritekstfeltet i søgefeltet",

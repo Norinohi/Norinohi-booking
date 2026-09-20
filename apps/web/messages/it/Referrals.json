@@ -2,7 +2,7 @@
   "title": "I tuoi inviti",
   "invite": {
     "heading": "Invita gli amici. Guadagna credito per navigare.",
-    "description": "Regala €100 ai tuoi amici per la loro prima prenotazione e ricevi €100 di credito quando salpano.",
+    "description": "Regala {discount} ai tuoi amici per la loro prima prenotazione e ricevi {reward} di credito quando salpano.",
     "copy": "Copia link di invito",
     "copied": "Link copiato",
     "generate": "Genera nuovo codice",
@@ -10,8 +10,8 @@
     "generateFailed": "Impossibile generare un nuovo codice. Riprova.",
     "information": "Informazioni",
     "rules": {
-      "minBooking": "I crediti sono utilizzabili per qualsiasi prenotazione di yacht superiore a €1000.",
-      "expiry": "I crediti da invito scadono 12 mesi dopo essere stati guadagnati.",
+      "minBooking": "I crediti sono utilizzabili per qualsiasi prenotazione di yacht superiore a {minBooking}.",
+      "expiry": "I crediti da invito scadono {months, plural, one {# mese} other {# mesi}} dopo essere stati guadagnati.",
       "cash": "I crediti non possono essere prelevati in contanti.",
       "firstTime": "Valido solo per la prima prenotazione degli amici invitati."
     },
@@ -31,11 +31,11 @@
       },
       "book": {
         "title": "L’amico prenota",
-        "description": "Ricevono €100 di sconto sulla prima prenotazione di yacht superiore a €1000"
+        "description": "Ricevono {discount} di sconto sulla prima prenotazione di yacht superiore a {minBooking}"
       },
       "credit": {
         "title": "Ricevi il credito",
-        "description": "Quando completano il viaggio, ricevi €100 di crediti"
+        "description": "Quando completano il viaggio, ricevi {reward} di crediti"
       }
     },
     "level": {

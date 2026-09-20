@@ -58,6 +58,23 @@ export const referralSummarySchema = z.object({
       unlocked: z.boolean(),
     }),
   ),
+  /**
+   * The programme's terms as they stand, so the screen states the offer it is actually
+   * running rather than a figure frozen in the copy.
+   *
+   * Sent with the summary rather than read from a public settings endpoint because every
+   * sentence that quotes them is on this screen, and a page that renders the headline before
+   * the terms arrive would flash the wrong promise.
+   *
+   * `reward` is what the referrer earns before any tier bonus; the ladder card beside it
+   * already shows what their own tier pays.
+   */
+  terms: z.object({
+    reward: moneySchema,
+    inviteeDiscount: moneySchema,
+    minBooking: moneySchema,
+    creditTtlMonths: z.number().int(),
+  }),
 });
 
 const DEFAULT_PAGE_SIZE = 10;

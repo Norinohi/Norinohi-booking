@@ -7,6 +7,7 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { useTranslations } from "next-intl";
 
 import { useReferralSummary } from "../hooks/use-referrals";
+import { useReferralTerms } from "../lib/referral-terms";
 
 /** Step keys under `Referrals.how.steps`, in timeline order. */
 const STEPS = ["share", "book", "credit"] as const;
@@ -34,6 +35,7 @@ function isTranslatedPerk(code: string): code is (typeof PERK_KEYS)[number] {
 export default function ReferralsHowItWorks() {
   const t = useTranslations("Referrals");
   const { data: summary } = useReferralSummary();
+  const terms = useReferralTerms(summary);
 
   return (
     <div className="grid items-start gap-8 xl:grid-cols-2">
@@ -56,7 +58,13 @@ export default function ReferralsHowItWorks() {
               />
               <div className="flex min-w-0 flex-col gap-1.5">
                 <h4 className="text-h6 text-foreground">{t(`how.steps.${step}.title`)}</h4>
-                <p className="text-body-m text-foreground">{t(`how.steps.${step}.description`)}</p>
+                <p className="text-body-m text-foreground">
+                  {terms ? (
+                    t(`how.steps.${step}.description`, terms)
+                  ) : (
+                    <Skeleton className="h-5 w-56 rounded-md" />
+                  )}
+                </p>
               </div>
             </div>
           ))}

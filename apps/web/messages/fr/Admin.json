@@ -1515,6 +1515,15 @@
       "toggle": "Classer selon le tarif de location",
       "hint": "Désactivé, le fournisseur dont le total tout compris est le plus bas l’emporte, ce qui correspond à ce que paie réellement le client. Activé, le tarif de location décide et les suppléments obligatoires ne font que départager une égalité. Classer selon le tarif peut retenir la location qui coûte globalement plus cher au client."
     },
+    "referral": {
+      "legend": "Programme de parrainage",
+      "hint": "Ce que rapporte un parrainage, en euros. Les chiffres de la page Parrainage viennent d'ici.",
+      "reward": "Le parrain gagne",
+      "inviteeDiscount": "Réduction pour l'ami",
+      "minBooking": "Réservation minimale",
+      "ttlMonths": "Crédit valable (mois)",
+      "appliesNext": "S'applique aux parrainages crédités à partir de maintenant. Un crédit déjà accordé garde son montant et son échéance."
+    },
     "nameSearch": {
       "legend": "Recherche libre",
       "toggle": "Afficher le champ de recherche libre dans la barre de recherche",

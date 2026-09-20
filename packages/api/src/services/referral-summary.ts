@@ -5,6 +5,7 @@ import { and, count, desc, eq, gt, isNotNull, lte, sum } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database } from "../context";
+import { getMarketplaceSettings } from "./marketplace-settings";
 import type {
   creditBalanceSchema,
   creditLedgerInputSchema,
@@ -35,12 +36,13 @@ const EXPIRING_SOON_DAYS = 30;
 
 /** One call for the whole Referrals screen above the history table. */
 export async function referralSummary(db: Database, userId: string): Promise<Summary> {
-  const [code, invited, earned, balance, progress] = await Promise.all([
+  const [code, invited, earned, balance, progress, settings] = await Promise.all([
     getOrCreateReferralCode(db, userId),
     invitedCount(db, userId),
     totalEarnedMinor(db, userId, CREDIT_CURRENCY),
     creditBalanceMinor(db, userId, CREDIT_CURRENCY),
     tierProgress(db, userId),
+    getMarketplaceSettings(db),
   ]);
 
   return {
@@ -55,6 +57,18 @@ export async function referralSummary(db: Database, userId: string): Promise<Sum
     remainingToNext: progress.remainingToNext,
     progressPct: progress.progressPct,
     perks: progress.perks,
+    terms: {
+      reward: { amountMinor: settings.referral.rewardMinor, currency: CREDIT_CURRENCY },
+      inviteeDiscount: {
+        amountMinor: settings.referral.inviteeDiscountMinor,
+        currency: CREDIT_CURRENCY,
+      },
+      minBooking: {
+        amountMinor: settings.referral.creditMinBookingMinor,
+        currency: CREDIT_CURRENCY,
+      },
+      creditTtlMonths: settings.referral.creditTtlMonths,
+    },
   };
 }
 

@@ -2,7 +2,7 @@
   "title": "Jouw doorverwijzingen",
   "invite": {
     "heading": "Nodig vrienden uit. Verdien zeiltegoed.",
-    "description": "Geef je vrienden €100 voor hun eerste boeking en ontvang zelf €100 tegoed zodra ze gaan zeilen.",
+    "description": "Geef je vrienden {discount} voor hun eerste boeking en ontvang zelf {reward} tegoed zodra ze gaan zeilen.",
     "copy": "Verwijslink kopiëren",
     "copied": "Link gekopieerd",
     "generate": "Nieuwe code genereren",
@@ -10,8 +10,8 @@
     "generateFailed": "Er kon geen nieuwe code worden gegenereerd. Probeer het opnieuw.",
     "information": "Informatie",
     "rules": {
-      "minBooking": "Tegoed is te gebruiken voor elke jachtboeking boven €1000.",
-      "expiry": "Verwijstegoed vervalt 12 maanden nadat het is verdiend.",
+      "minBooking": "Tegoed is te gebruiken voor elke jachtboeking boven {minBooking}.",
+      "expiry": "Verwijstegoed vervalt {months, plural, one {# maand} other {# maanden}} nadat het is verdiend.",
       "cash": "Tegoed kan niet als contant geld worden opgenomen.",
       "firstTime": "Alleen geldig voor de eerste boeking van uitgenodigde vrienden."
     },
@@ -31,11 +31,11 @@
       },
       "book": {
         "title": "Je vriend boekt",
-        "description": "Ze krijgen €100 korting op hun eerste jachtboeking boven €1000"
+        "description": "Ze krijgen {discount} korting op hun eerste jachtboeking boven {minBooking}"
       },
       "credit": {
         "title": "Jij krijgt tegoed",
-        "description": "Zodra ze hun trip hebben gemaakt, ontvang je €100 tegoed"
+        "description": "Zodra ze hun trip hebben gemaakt, ontvang je {reward} tegoed"
       }
     },
     "level": {

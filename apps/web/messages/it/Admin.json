@@ -1515,6 +1515,15 @@
       "toggle": "Classifica in base alla tariffa di noleggio",
       "hint": "Se disattivato, vince il fornitore con il totale tutto compreso più basso, cioè quanto paga effettivamente l’ospite. Se attivato, decide la tariffa di noleggio e gli extra obbligatori servono solo a risolvere una parità. Classificare in base alla tariffa può scegliere il noleggio che nel complesso costa di più all’ospite."
     },
+    "referral": {
+      "legend": "Programma inviti",
+      "hint": "Quanto paga un invito, in euro. Le cifre sulla pagina Inviti arrivano da qui.",
+      "reward": "Chi invita guadagna",
+      "inviteeDiscount": "Sconto per l'amico",
+      "minBooking": "Prenotazione minima",
+      "ttlMonths": "Credito valido (mesi)",
+      "appliesNext": "Vale per gli inviti accreditati da ora. Il credito già concesso mantiene importo e scadenza."
+    },
     "nameSearch": {
       "legend": "Ricerca libera",
       "toggle": "Mostra il campo di ricerca libera nella barra di ricerca",

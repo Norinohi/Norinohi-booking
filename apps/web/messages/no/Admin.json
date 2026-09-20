@@ -1515,6 +1515,15 @@
       "toggle": "Rangér på charterprisen",
       "hint": "Er den av, vinner leverandøren med lavest totalpris, som er det gjesten faktisk betaler. Er den på, avgjør charterprisen, og det obligatoriske ekstrautstyret avgjør bare uavgjort. Å rangere på prisen kan velge charteret som koster gjesten mest totalt."
     },
+    "referral": {
+      "legend": "Verveprogram",
+      "hint": "Hva en verving gir, i euro. Tallene på Verving-siden kommer herfra.",
+      "reward": "Ververen tjener",
+      "inviteeDiscount": "Rabatt til vennen",
+      "minBooking": "Minste booking",
+      "ttlMonths": "Bonus gyldig (måneder)",
+      "appliesNext": "Gjelder vervinger som krediteres fra nå av. Allerede tildelt bonus beholder beløp og utløp."
+    },
     "nameSearch": {
       "legend": "Fritekstsøk",
       "toggle": "Vis fritekstfeltet i søkefeltet",

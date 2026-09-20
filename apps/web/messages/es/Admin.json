@@ -1515,6 +1515,15 @@
       "toggle": "Comparar por el precio del chárter",
       "hint": "Desactivado gana el proveedor con el total más bajo, que es lo que el cliente paga de verdad. Activado decide el precio del chárter y los suplementos obligatorios solo desempatan. Comparar por el precio del chárter puede elegir la reserva que en total le cuesta más al cliente."
     },
+    "referral": {
+      "legend": "Programa de referidos",
+      "hint": "Lo que paga un referido, en euros. Las cifras de la página de Referidos salen de aquí.",
+      "reward": "El referente gana",
+      "inviteeDiscount": "Descuento del amigo",
+      "minBooking": "Reserva mínima",
+      "ttlMonths": "Crédito válido (meses)",
+      "appliesNext": "Se aplica a los referidos acreditados desde ahora. El crédito ya concedido mantiene su importe y caducidad."
+    },
     "nameSearch": {
       "legend": "Búsqueda por texto libre",
       "toggle": "Mostrar el campo de texto libre en la barra de búsqueda",

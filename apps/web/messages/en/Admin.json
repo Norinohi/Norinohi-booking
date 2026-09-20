@@ -1515,6 +1515,15 @@
       "toggle": "Rank on the charter rate",
       "hint": "Off, the vendor whose all-in total is lower wins, which is what the guest actually pays. On, the charter rate decides and the obligatory extras only settle a tie on it. Ranking on the rate can pick the charter that costs the guest more overall."
     },
+    "referral": {
+      "legend": "Referral programme",
+      "hint": "What a referral pays, in euro. The figures the Referrals page quotes come from here.",
+      "reward": "Referrer earns",
+      "inviteeDiscount": "Friend gets off",
+      "minBooking": "Minimum booking",
+      "ttlMonths": "Credit valid (months)",
+      "appliesNext": "Applies to referrals credited from now on. Credit already granted keeps the amount and expiry it was given."
+    },
     "nameSearch": {
       "legend": "Free-text search",
       "toggle": "Show the free-text field in the search bar",

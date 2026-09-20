@@ -1515,6 +1515,15 @@
       "toggle": "Rangschikken op het chartertarief",
       "hint": "Uit wint de leverancier met het laagste totaalbedrag, wat de gast daadwerkelijk betaalt. Aan beslist het chartertarief en bepalen de verplichte extra's alleen een gelijkspel daarop. Rangschikken op het tarief kan de charter kiezen die de gast in totaal meer kost."
     },
+    "referral": {
+      "legend": "Verwijsprogramma",
+      "hint": "Wat een verwijzing oplevert, in euro. De bedragen op de Verwijzingen-pagina komen hiervandaan.",
+      "reward": "Verwijzer verdient",
+      "inviteeDiscount": "Korting voor de vriend",
+      "minBooking": "Minimale boeking",
+      "ttlMonths": "Tegoed geldig (maanden)",
+      "appliesNext": "Geldt voor verwijzingen die vanaf nu worden bijgeschreven. Al toegekend tegoed houdt zijn bedrag en vervaldatum."
+    },
     "nameSearch": {
       "legend": "Vrij zoeken op tekst",
       "toggle": "Het vrije tekstveld in de zoekbalk tonen",

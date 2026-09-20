@@ -1515,6 +1515,15 @@
       "toggle": "Rangordna på charterpriset",
       "hint": "Avstängt vinner den leverantör vars totalsumma inklusive allt är lägre, vilket är vad gästen faktiskt betalar. Påslaget avgör charterpriset och de obligatoriska tillvalen avgör bara oavgjort på det. Att rangordna på priset kan välja den charter som kostar gästen mer totalt."
     },
+    "referral": {
+      "legend": "Värvningsprogram",
+      "hint": "Vad en värvning ger, i euro. Siffrorna på Värvningar-sidan kommer härifrån.",
+      "reward": "Värvaren tjänar",
+      "inviteeDiscount": "Rabatt till vännen",
+      "minBooking": "Minsta bokning",
+      "ttlMonths": "Tillgodohavande giltigt (månader)",
+      "appliesNext": "Gäller värvningar som krediteras från och med nu. Redan tilldelat tillgodohavande behåller sitt belopp och utgångsdatum."
+    },
     "nameSearch": {
       "legend": "Fritextsökning",
       "toggle": "Visa fritextfältet i sökfältet",

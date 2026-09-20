@@ -1515,6 +1515,15 @@
       "toggle": "Szereguj według stawki czarterowej",
       "hint": "Po wyłączeniu wygrywa dostawca z niższą łączną kwotą, czyli tym, co gość faktycznie płaci. Po włączeniu decyduje stawka czarterowa, a obowiązkowe dodatki rozstrzygają jedynie remis. Szeregowanie według stawki może wybrać czarter, który łącznie kosztuje gościa więcej."
     },
+    "referral": {
+      "legend": "Program poleceń",
+      "hint": "Ile płaci polecenie, w euro. Kwoty na stronie Polecenia pochodzą stąd.",
+      "reward": "Polecający zarabia",
+      "inviteeDiscount": "Zniżka dla znajomego",
+      "minBooking": "Minimalna rezerwacja",
+      "ttlMonths": "Środki ważne (miesięcy)",
+      "appliesNext": "Dotyczy poleceń zaksięgowanych od teraz. Już przyznane środki zachowują swoją kwotę i termin ważności."
+    },
     "nameSearch": {
       "legend": "Wyszukiwanie tekstowe",
       "toggle": "Pokazuj pole tekstowe w pasku wyszukiwania",

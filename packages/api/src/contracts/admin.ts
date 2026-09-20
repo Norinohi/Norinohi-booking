@@ -1201,6 +1201,22 @@ export const popularYachtsConfigSchema = z.object({
   destinations: popularDestinationsSchema,
 });
 
+/*
+ * The referral programme's terms.
+ *
+ * Bounded rather than free: a reward of nothing is the programme switched off and belongs in a
+ * decision somebody makes deliberately, and an unbounded one is a typo away from paying out a
+ * fortune. The ceilings are generous enough never to be reached by an honest change and low
+ * enough that a slipped decimal is refused at the form rather than granted.
+ */
+export const referralSettingsSchema = z.object({
+  /** Minor units, in the credit currency. 10000 is the euro100 the programme launched with. */
+  rewardMinor: z.number().int().min(0).max(1_000_000),
+  inviteeDiscountMinor: z.number().int().min(0).max(1_000_000),
+  creditMinBookingMinor: z.number().int().min(0).max(10_000_000),
+  creditTtlMonths: z.number().int().min(1).max(120),
+});
+
 export const marketplaceSettingsSchema = z.object({
   payment: marketplacePaymentSettingsSchema,
   transactingPreference: transactingPreferenceSchema,
@@ -1212,6 +1228,7 @@ export const marketplaceSettingsSchema = z.object({
   displayCurrencyDefault: displayCurrencyDefaultSchema,
   displayCurrencyByCountry: displayCurrencyByCountrySchema,
   nameSearchEnabled: nameSearchEnabledSchema,
+  referral: referralSettingsSchema,
   updatedAt: z.string().nullable(),
   updatedByUserId: z.string().nullable(),
 });
@@ -1227,6 +1244,7 @@ export const marketplaceSettingsUpdateInputSchema = z.object({
   displayCurrencyDefault: displayCurrencyDefaultSchema,
   displayCurrencyByCountry: displayCurrencyByCountrySchema,
   nameSearchEnabled: nameSearchEnabledSchema,
+  referral: referralSettingsSchema,
 });
 
 /** The slice of the settings a public page is allowed to read. */

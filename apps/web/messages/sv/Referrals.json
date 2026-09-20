@@ -2,7 +2,7 @@
   "title": "Dina värvningar",
   "invite": {
     "heading": "Bjud in vänner. Tjäna seglingskredit.",
-    "description": "Ge 100 € till dina vänner för deras första bokning och få 100 € i tillgodohavande själv när de seglar.",
+    "description": "Ge {discount} till dina vänner för deras första bokning och få {reward} i tillgodohavande själv när de seglar.",
     "copy": "Kopiera värvningslänk",
     "copied": "Länken har kopierats",
     "generate": "Skapa ny kod",
@@ -10,8 +10,8 @@
     "generateFailed": "Det gick inte att skapa en ny kod. Försök igen.",
     "information": "Information",
     "rules": {
-      "minBooking": "Tillgodohavandet kan användas för alla båtbokningar över 1 000 €.",
-      "expiry": "Värvningskrediter löper ut 12 månader efter att de tjänats in.",
+      "minBooking": "Tillgodohavandet kan användas för alla båtbokningar över {minBooking}.",
+      "expiry": "Värvningskrediter löper ut {months, plural, one {# månad} other {# månader}} efter att de tjänats in.",
       "cash": "Tillgodohavandet kan inte tas ut i kontanter.",
       "firstTime": "Gäller endast inbjudna vänners första bokning."
     },
@@ -31,11 +31,11 @@
       },
       "book": {
         "title": "Vännen bokar",
-        "description": "De får 100 € rabatt på sin första båtbokning över 1 000 €"
+        "description": "De får {discount} rabatt på sin första båtbokning över {minBooking}"
       },
       "credit": {
         "title": "Du får tillgodohavande",
-        "description": "När de har genomfört sin resa får du 100 € i tillgodohavande"
+        "description": "När de har genomfört sin resa får du {reward} i tillgodohavande"
       }
     },
     "level": {
