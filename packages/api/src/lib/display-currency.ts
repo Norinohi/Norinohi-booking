@@ -18,7 +18,7 @@
 export const BASE_CURRENCY = "EUR";
 
 /** The currencies the client named, plus the base. Anything else is not offered. */
-export const DISPLAY_CURRENCIES = ["EUR", "USD", "GBP", "PLN", "UAH"] as const;
+export const DISPLAY_CURRENCIES = ["EUR", "USD", "GBP", "PLN", "UAH", "NOK", "DKK", "SEK"] as const;
 export type DisplayCurrency = (typeof DISPLAY_CURRENCIES)[number];
 
 /**
@@ -56,6 +56,9 @@ const COUNTRY_CURRENCY = new Map<string, DisplayCurrency>([
   ["GB", "GBP"],
   ["PL", "PLN"],
   ["UA", "UAH"],
+  ["NO", "NOK"],
+  ["DK", "DKK"],
+  ["SE", "SEK"],
   ...EUROZONE.map((country) => [country, "EUR"] as const),
 ]);
 
