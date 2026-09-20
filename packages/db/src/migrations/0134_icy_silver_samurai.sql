@@ -1,0 +1,1 @@
+CREATE INDEX "listing_free_period_dates_idx" ON "listing_free_period" USING btree ("start_date","end_date");

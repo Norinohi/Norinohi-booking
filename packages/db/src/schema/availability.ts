@@ -183,6 +183,12 @@ export const listingFreePeriod = pgTable(
      * size where this stops being an index probe over a handful of rows per listing.
      */
     index("listing_free_period_lookup_idx").on(t.listingId, t.startDate, t.endDate),
+    /*
+     * The dated search's free-period tests read the dates alone: Postgres de-correlates those
+     * EXISTS branches into hashed subplans, which drops the listing prefix the lookup index
+     * leads with and left a scan of the whole table per request.
+     */
+    index("listing_free_period_dates_idx").on(t.startDate, t.endDate),
   ],
 );
 

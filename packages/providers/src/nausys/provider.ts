@@ -491,6 +491,42 @@ function parseResume(value: JsonField): NausysCatalogueCursor | null {
  * still wins where it has one -- prices and conditions are per listing even where names are
  * not.
  */
+/*
+ * The vendor-wide half of the labels, held for a few minutes.
+ *
+ * It is the same 654 rows for every quote, and reading it per quote scanned the whole
+ * 316k-row table each time. The catalogue behind it is rewritten once a night, so a stale
+ * minute costs at most a name the previous sync already gave.
+ */
+const VENDOR_LABELS_TTL_MS = 5 * 60 * 1000;
+let vendorLabels: { readonly at: number; readonly labels: Promise<Map<string, string>> } | null =
+  null;
+
+function loadNausysVendorLabels(db: Database): Promise<Map<string, string>> {
+  const now = Date.now();
+  if (vendorLabels && now - vendorLabels.at < VENDOR_LABELS_TTL_MS) return vendorLabels.labels;
+
+  const labels = db
+    .selectDistinct({
+      kind: providerExtraCatalogue.kind,
+      externalId: providerExtraCatalogue.externalId,
+      name: providerExtraCatalogue.name,
+    })
+    .from(providerExtraCatalogue)
+    .where(eq(providerExtraCatalogue.source, "nausys"))
+    .then(
+      (rows) =>
+        new Map(rows.map((row) => [formatExtraCode(row.kind, row.externalId), row.name] as const)),
+    );
+
+  // Dropped on failure so the next quote retries rather than inheriting the rejection.
+  labels.catch(() => {
+    if (vendorLabels?.labels === labels) vendorLabels = null;
+  });
+  vendorLabels = { at: now, labels };
+  return labels;
+}
+
 async function loadNausysExtraLabels(
   db: Database,
   listingId: string,
@@ -509,19 +545,10 @@ async function loadNausysExtraLabels(
           eq(providerExtraCatalogue.source, "nausys"),
         ),
       ),
-    db
-      .selectDistinct({
-        kind: providerExtraCatalogue.kind,
-        externalId: providerExtraCatalogue.externalId,
-        name: providerExtraCatalogue.name,
-      })
-      .from(providerExtraCatalogue)
-      .where(eq(providerExtraCatalogue.source, "nausys")),
+    loadNausysVendorLabels(db),
   ]);
 
-  const labels = new Map(
-    catalogue.map((row) => [formatExtraCode(row.kind, row.externalId), row.name]),
-  );
+  const labels = new Map(catalogue);
   for (const row of rows) labels.set(formatExtraCode(row.kind, row.externalId), row.name);
 
   return labels;

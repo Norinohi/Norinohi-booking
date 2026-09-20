@@ -60,9 +60,16 @@ export async function adoptNearestPricedWeek(
     set ${sql.join(assignments, sql`, `)}, updated_at = now()
     from (
       select distinct on (listing_id) *
-      from listing_period_price
-      where ${listingScope(sql`listing_id`, listingIds)}
-      order by listing_id, (end_date - start_date) <> 7, start_date, end_date
+      from listing_period_price pp
+      where ${listingScope(sql`pp.listing_id`, listingIds)}
+        /* Only a seasonal-minimum card adopts a week, and they are a few percent of the fleet;
+           without this the pick runs over every priced charter in the table. */
+        and exists (
+          select 1
+          from listing_search_doc seasonal
+          where seasonal.listing_id = pp.listing_id and seasonal.price_is_from
+        )
+      order by pp.listing_id, (pp.end_date - pp.start_date) <> 7, pp.start_date, pp.end_date
     ) pp
     where pp.listing_id = doc.listing_id
       and doc.price_is_from
@@ -79,6 +86,12 @@ export async function adoptNearestPricedWeek(
  * charter on the document's order, since two vendors selling one hull can each win a different
  * week.
  *
+ * The table is rewritten for every listing a sync touches, so the rebuild diffs rather than
+ * deleting and re-inserting: at 1.2M rows and dozens of runs a day the delete alone dominated
+ * WAL and left the table mostly dead tuples. One statement upserts the computed rows, skipping
+ * an update whose values are unchanged, and deletes only the in-scope keys the computation no
+ * longer produces.
+ *
  * Fees and crew depend on the offer and the charter length alone, not on which week it is, so
  * they are resolved once per offer and length: the fleet holds about 390,000 priced weeks and
  * a handful of lengths, and running both laterals per week is what made this slow.
@@ -87,25 +100,29 @@ export async function rebuildListingPeriodPrices(
   db: NodePgDatabase<typeof schema>,
   listingIds: readonly string[] | undefined,
 ) {
+  const valueColumns = [
+    "offer_id",
+    "currency",
+    "all_in_minor",
+    "all_in_minor_eur",
+    "base_minor",
+    "base_minor_eur",
+    "list_all_in_minor",
+  ];
+  const assignments = valueColumns.map(
+    (name) => sql`${sql.identifier(name)} = excluded.${sql.identifier(name)}`,
+  );
+  const currentValues = sql.join(
+    valueColumns.map((name) => sql`listing_period_price.${sql.identifier(name)}`),
+    sql`, `,
+  );
+  const incomingValues = sql.join(
+    valueColumns.map((name) => sql`excluded.${sql.identifier(name)}`),
+    sql`, `,
+  );
+
   await db.transaction(async (tx) => {
     await tx.execute(sql`
-      delete from listing_period_price pp
-      where ${listingScope(sql`pp.listing_id`, listingIds)}
-    `);
-
-    await tx.execute(sql`
-      insert into listing_period_price (
-        listing_id,
-        start_date,
-        end_date,
-        offer_id,
-        currency,
-        all_in_minor,
-        all_in_minor_eur,
-        base_minor,
-        base_minor_eur,
-        list_all_in_minor
-      )
       with sellable_slot as (
         select
           o.listing_id,
@@ -165,31 +182,61 @@ export async function rebuildListingPeriodPrices(
           select s.currency as price_currency, s.price_minor as base_minor, false as price_is_from
         ) chosen
         ${pricedMoney()}
+      ),
+      computed as (
+        select distinct on (listing_id, start_date, end_date)
+          listing_id,
+          start_date,
+          end_date,
+          offer_id,
+          price_currency,
+          all_in_minor,
+          all_in_minor_eur,
+          base_minor,
+          base_minor_eur,
+          list_all_in_minor
+        from priced
+        where all_in_minor is not null and price_currency is not null
+        /* The document's own order between offers; see \`best\` above. */
+        order by
+          listing_id,
+          start_date,
+          end_date,
+          operator_confirms,
+          base_minor_eur asc nulls last,
+          (all_in_minor_eur - base_minor_eur) asc nulls last,
+          all_in_minor asc nulls last,
+          provider_rank,
+          offer_id
+      ),
+      upserted as (
+        insert into listing_period_price (
+          listing_id,
+          start_date,
+          end_date,
+          offer_id,
+          currency,
+          all_in_minor,
+          all_in_minor_eur,
+          base_minor,
+          base_minor_eur,
+          list_all_in_minor
+        )
+        select * from computed
+        on conflict (listing_id, start_date, end_date) do update
+          set ${sql.join(assignments, sql`, `)}
+          where (${currentValues}) is distinct from (${incomingValues})
+        returning 1
       )
-      select distinct on (listing_id, start_date, end_date)
-        listing_id,
-        start_date,
-        end_date,
-        offer_id,
-        price_currency,
-        all_in_minor,
-        all_in_minor_eur,
-        base_minor,
-        base_minor_eur,
-        list_all_in_minor
-      from priced
-      where all_in_minor is not null and price_currency is not null
-      /* The document's own order between offers; see \`best\` above. */
-      order by
-        listing_id,
-        start_date,
-        end_date,
-        operator_confirms,
-        base_minor_eur asc nulls last,
-        (all_in_minor_eur - base_minor_eur) asc nulls last,
-        all_in_minor asc nulls last,
-        provider_rank,
-        offer_id
+      delete from listing_period_price pp
+      where ${listingScope(sql`pp.listing_id`, listingIds)}
+        and not exists (
+          select 1
+          from computed c
+          where c.listing_id = pp.listing_id
+            and c.start_date = pp.start_date
+            and c.end_date = pp.end_date
+        )
     `);
   });
 }
