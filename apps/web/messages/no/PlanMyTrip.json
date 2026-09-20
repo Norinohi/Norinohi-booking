@@ -1,0 +1,224 @@
+{
+  "title": "Hjelp meg å planlegge turen",
+  "close": "Lukk planleggeren",
+  "progress": "Trinn {current} av {total}",
+  "stepHeading": "Trinn {current}",
+  "placeholder": "Spørsmålet og alternativene kommer hit i neste trinn.",
+  "back": "Tilbake",
+  "next": "Neste",
+  "steps": {
+    "destination": {
+      "question": "Hvor har du lyst til å seile?",
+      "subtitle": "Velg en destinasjon, eller la oss foreslå det beste alternativet for deg",
+      "options": {
+        "croatia": {
+          "label": "Kroatia",
+          "description": "Best for øyhopping og seiling for første gang. Rolig sjø, korte avstander mellom øyene og et stort utvalg ruter - perfekt for nybegynnere og avslappede turer."
+        },
+        "greece": {
+          "label": "Hellas",
+          "description": "Best for naturskjønne ruter og kulturmiks. Seil mellom ikoniske øyer med krystallklart vann, historiske byer og en fin balanse mellom eventyr og komfort."
+        },
+        "italy": {
+          "label": "Italia",
+          "description": "Best for eksklusive opplevelser og kystutsikt. Vakre kystruter, eksklusive marinaer og uforglemmelige destinasjoner som Amalfi - ideelt for en litt mer luksuriøs tur."
+        },
+        "spain": {
+          "label": "Spania",
+          "description": "Best for livsstil og sosial stemning. Flott vær, livlig atmosfære og destinasjoner som Ibiza og Mallorca - perfekt for moro, grupper og aktive turer."
+        },
+        "notSure": {
+          "label": "Vet ikke"
+        }
+      }
+    },
+    "groupSize": {
+      "question": "Hvor mange blir dere?",
+      "subtitle": "Gruppestørrelsen påvirker yachttype, plass og totalpris per person",
+      "options": {
+        "twoToFour": {
+          "label": "2-4 personer",
+          "description": "Mer privatliv, høyere pris per person"
+        },
+        "fiveToEight": {
+          "label": "5-8 personer",
+          "description": "Den beste balansen mellom komfort og pris"
+        },
+        "ninePlus": {
+          "label": "9+ personer",
+          "description": "Krever større yachter eller flere båter"
+        },
+        "notSure": {
+          "label": "Vet ikke"
+        }
+      }
+    },
+    "experience": {
+      "question": "Har du seilerfaring?",
+      "subtitle": "Skipper kan legges til uansett nivå - dette avgjør bare hvem som styrer.",
+      "options": {
+        "none": {
+          "label": "Ingen erfaring",
+          "description": "Jeg trenger en skipper til å seile båten"
+        },
+        "some": {
+          "label": "Litt erfaring",
+          "description": "Jeg har seilt før, men trenger en skipper"
+        },
+        "licensed": {
+          "label": "Har båtførerbevis",
+          "description": "Jeg har gyldig sertifikat og seiler selv"
+        }
+      }
+    },
+    "tripVibe": {
+      "question": "Hva slags tur ser du etter?",
+      "subtitle": "Det du vil ha ut av uken, avgjør båten, ruten og tempoet.",
+      "options": {
+        "adventure": {
+          "label": "Eventyr",
+          "description": "Aktiv seiling og utforsking. Mer bevegelse, lengre ruter og seiling der du er med på alt"
+        },
+        "relax": {
+          "label": "Avslapping",
+          "description": "Rolig tempo, natur og stille bukter. Perfekt for rolig seiling, bading og å koble av."
+        },
+        "family": {
+          "label": "Familie",
+          "description": "Trygt, komfortabelt og romslig. Ideelt for barn, stabilitet og enkle ruter."
+        },
+        "luxury": {
+          "label": "Luksus",
+          "description": "Eksklusive yachter og full service. Mannskap, komfort og eksklusive destinasjoner."
+        },
+        "party": {
+          "label": "Fest",
+          "description": "Musikk, uteliv og sosial stemning. Best for ruter i Ibiza-stil og god gruppeenergi."
+        }
+      }
+    },
+    "duration": {
+      "question": "Hvor lenge vil du at turen skal vare?",
+      "subtitle": "Velg varigheten som passer planene dine best. Det hjelper oss å foreslå riktige yachter, ruter og opplevelser.",
+      "options": {
+        "week": {
+          "label": "7 dager"
+        },
+        "twoWeeks": {
+          "label": "14 dager"
+        },
+        "threeWeeks": {
+          "label": "21 dager"
+        },
+        "more": {
+          "label": "21+ dager"
+        }
+      }
+    },
+    "budget": {
+      "question": "Hvilket budsjett føles behagelig?",
+      "subtitle": "Per person for en uke om bord, så du kan sammenligne med en ferie du kjenner.",
+      "perPersonWeek": "per person/uke",
+      "options": {
+        "low": {
+          "label": "300-600 €"
+        },
+        "mid": {
+          "label": "600-1000 €"
+        },
+        "high": {
+          "label": "1000-1200 €"
+        },
+        "upper": {
+          "label": "1200-2000 €"
+        },
+        "premium": {
+          "label": "2000+ €"
+        }
+      }
+    }
+  },
+  "result": {
+    "title": "Din perfekte yachttur",
+    "subtitle": "Basert på preferansene dine er dette hva vi anbefaler.",
+    "labels": {
+      "yachtType": "Yachttype",
+      "skipper": "Skipper",
+      "style": "Stil",
+      "duration": "Varighet"
+    },
+    "yachtType": {
+      "sailing": "Seilyacht",
+      "catamaran": "Katamaran",
+      "gulet": "Gulet",
+      "motor": "Motoryacht",
+      "luxury": "Luksusyacht"
+    },
+    "skipper": {
+      "yes": "Ja",
+      "no": "Nei"
+    },
+    "difficulty": {
+      "easy": "Enkel",
+      "moderate": "Middels",
+      "advanced": "Avansert"
+    },
+    "getConsultation": "Få rådgivning",
+    "viewDetails": "Se detaljer",
+    "seeAllMatches": "Se alle treff",
+    "durationDays": "{days, plural, one {# dag} other {# dager}}",
+    "price": {
+      "perPerson": "≈ {price} per person",
+      "similar": "Lignende yachter",
+      "perPersonWeek": "≈ {range} per person per uke",
+      "estimate": "Estimert pris",
+      "perPersonDays": "≈ {price} per person for {days, plural, one {# dag} other {# dager}}"
+    },
+    "noMatch": {
+      "title": "Ingen eksakt treff ennå",
+      "description": "Vi fant ingen yacht som passer alle svarene dine, men dette er hva vi ville lett etter.",
+      "seeAllMatches": "Se alle yachter"
+    },
+    "error": {
+      "title": "Noe gikk galt",
+      "description": "Vi klarte ikke å laste anbefalingen din. Prøv igjen.",
+      "retry": "Prøv igjen"
+    },
+    "consultationDialog": {
+      "title": "Få gratis rådgivning",
+      "description": "Fortell oss hvordan vi kan nå deg, så tar en av våre chartereksperter kontakt med skreddersydde forslag.",
+      "submit": "Send forespørsel",
+      "cancel": "Avbryt",
+      "success": "Takk! Vi tar kontakt med deg snart."
+    }
+  },
+  "consultation": {
+    "close": "Lukk",
+    "title": "Ta kontakt",
+    "subtitle": "Book en samtale eller send oss en melding, det som passer deg best.",
+    "options": {
+      "call": {
+        "title": "Book en kort samtale",
+        "description": "Velg et tidspunkt som passer deg - en kort prat med en charterekspert."
+      },
+      "message": {
+        "title": "Send en melding",
+        "description": "Fortell oss om turen din, så svarer vi deg på e-post."
+      }
+    },
+    "placeholder": {
+      "title": "Booking kommer snart",
+      "description": "Booking på nett er ikke klar ennå. Send oss en melding, så finner vi et tidspunkt som passer deg.",
+      "cta": "Send en melding i stedet"
+    },
+    "submitted": {
+      "title": "Takk - vi tar kontakt",
+      "description": "En av våre chartereksperter tar kontakt med deg snart."
+    },
+    "error": {
+      "title": "Noe gikk galt",
+      "description": "Vi klarte ikke å laste turdetaljene dine. Prøv igjen.",
+      "retry": "Prøv igjen"
+    }
+  }
+}

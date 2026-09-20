@@ -1,0 +1,20 @@
+{
+  "title": "Bonus og saldo",
+  "balance": {
+    "label": "Tilgjengelig saldo",
+    "expiringSoon": "{amount} utløper innen 30 dager",
+    "hint": "Bonusen kan brukes på alle yachtbookinger over 1000 €, og trekkes fra det du betaler i dag."
+  },
+  "ledger": {
+    "title": "Bonushistorikk",
+    "expires": "Utløper {date}",
+    "emptyTitle": "Ingen bonus ennå",
+    "emptyDescription": "Inviter en venn - du får bonus så snart vennen har fullført turen sin.",
+    "kind": {
+      "referral_reward": "Vervebonus",
+      "booking_redemption": "Brukt på booking",
+      "expiry": "Utløpt",
+      "adjustment": "Justering"
+    }
+  }
+}

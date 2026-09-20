@@ -1,0 +1,14 @@
+{
+  "loading": "Laster yachter…",
+  "noResults": "Ingen yachter passer med disse filtrene. Prøv å endre dem.",
+  "title": "Yachter på kartet",
+  "backToSearch": "Tilbake til søket",
+  "viewInCatalogue": "Se i katalogen",
+  "showAllList": "Vis hele listen",
+  "closeList": "Lukk listen",
+  "marker": "Marina {name}",
+  "clusterCount": "{count, plural, one {# yacht} other {# yachter}}",
+  "previousBoat": "Forrige yacht",
+  "nextBoat": "Neste yacht",
+  "allInCatalogue": "{count, plural, one {# yacht i katalogen} other {Alle # yachter i katalogen}}"
+}

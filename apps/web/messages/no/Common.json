@@ -1,0 +1,302 @@
+{
+  "crewTypes": {
+    "bareboat": "Uten mannskap",
+    "skipper": "Skipper",
+    "full-crew": "Fullt mannskap"
+  },
+  "extras": {
+    "payAtCheckIn": "Betales ved innsjekk",
+    "dueWithPrepayment": "Betales sammen med forskuddet",
+    "payNow": "Inkludert i forskuddet",
+    "includedInPrice": "Inkludert i prisen",
+    "priceOnRequest": "Pris på forespørsel",
+    "confirmWithBase": "Prisen er ikke publisert, bekreft med basen",
+    "percentageOfCharter": "{percent} % av charterprisen",
+    "oneWayOnly": "Kun envegscharter",
+    "measure": {
+      "booking": "{price} per booking",
+      "day": "{price} per dag",
+      "night": "{price} per natt",
+      "week": "{price} per uke",
+      "person": "{price} per person",
+      "nightPerson": "{price} per person / natt",
+      "dayWithFood": "{price} per dag inkl. mat",
+      "oneWayPerson": "{price} envegs per person",
+      "set": "{price} per sett",
+      "service": "{price} per tjeneste",
+      "piece": "{price} per stk.",
+      "weekStarted": "{price} per påbegynt uke",
+      "oneWay": "{price} envegs",
+      "weekPerson": "{price} per person / uke",
+      "weekFood": "{price} per uke inkl. mat",
+      "dayPerson": "{price} per person / dag",
+      "bookingPerson": "{price} per person per booking",
+      "pet": "{price} per kjæledyr",
+      "cabin": "{price} per lugar",
+      "twoWeeks": "{price} per 2 uker",
+      "hour": "{price} per time",
+      "engineHour": "{price} per motortime",
+      "halfHour": "{price} per halvtime",
+      "crewChange": "{price} per mannskapsbytte",
+      "personCourse": "{price} per person per kurs",
+      "boat": "{price} per båt",
+      "pack": "{price} per pakke",
+      "bottle": "{price} per flaske",
+      "licence": "{price} per sertifikat",
+      "meal": "{price} per måltid",
+      "nauticalMile": "{price} per nautisk mil",
+      "roundTrip": "{price} tur-retur",
+      "litre": "{price} per liter",
+      "weekStartedPerson": "{price} per person per påbegynt uke"
+    }
+  },
+  "resultsCount": "{count, plural, one {# yacht funnet} other {# yachter funnet}}",
+  "removeFilter": "Fjern filteret {label}",
+  "passwordToggle": {
+    "show": "Vis passord",
+    "hide": "Skjul passord"
+  },
+  "sorting": {
+    "label": "Sorter etter: {value}",
+    "recommended": "Anbefalt",
+    "price-asc": "Pris: lav til høy",
+    "price-desc": "Pris: høy til lav",
+    "rating": "Gjestevurdering",
+    "newest": "Nyeste først"
+  },
+  "priceBasis": {
+    "label": "Pris: {value}",
+    "aria": "Hvilken pris som skal vises",
+    "boat": "Kun båten",
+    "charter": "Hele charteret",
+    "hintLabel": "Hva prisene inkluderer",
+    "boatHint": "båtens egen leiepris, tallet andre chartersider sammenligner. Obligatorisk ekstrautstyr som charterpakke eller sluttvask legges til ved booking.",
+    "charterHint": "båten pluss alt obligatorisk ekstrautstyr (charterpakke, vask og andre obligatoriske gebyrer): det charteret faktisk koster."
+  },
+  "boatCard": {
+    "save": "Lagre i ønskelisten",
+    "remove": "Fjern fra ønskelisten",
+    "viewDetails": "Se detaljer",
+    "imageAlt": "{name} fortøyd i {marina}",
+    "openGallery": "Åpne bildegalleriet",
+    "priceHintLabel": "Om denne prisen",
+    "priceFor": "Charterpris · {days, plural, one {# dag} other {# dager}}",
+    "priceIndicative": "Charterpris · grunnpris, tilleggsgebyrer kan komme",
+    "boatPriceFor": "Båtpris · {days, plural, one {# dag} other {# dager}}",
+    "boatPriceIndicative": "Båtpris · grunnpris, tilleggsgebyrer kan komme",
+    "priceListRate": "Charterpris · listepris før rabatter, tilleggsgebyrer kan komme",
+    "boatPriceListRate": "Båtpris · listepris før rabatter, tilleggsgebyrer kan komme",
+    "priceForPeriod": "Charterpris · for {from, date, dayCompact} - {to, date, dayCompact}",
+    "boatPriceForPeriod": "Båtpris · for {from, date, dayCompact} - {to, date, dayCompact}",
+    "priceListRateForPeriod": "Charterpris · listepris for {from, date, dayCompact} - {to, date, dayCompact} før rabatter, tilleggsgebyrer kan komme",
+    "boatPriceListRateForPeriod": "Båtpris · listepris for {from, date, dayCompact} - {to, date, dayCompact} før rabatter, tilleggsgebyrer kan komme",
+    "priceListEstimate": "Estimert charterpris · fra operatørens prisliste for {nights, plural, one {# natt} other {# netter}}, før rabatter, endelig pris kan avvike",
+    "boatPriceListEstimate": "Estimert båtpris · fra operatørens prisliste for {nights, plural, one {# natt} other {# netter}}, før rabatter, endelig pris kan avvike",
+    "priceListEstimateForPeriod": "Estimert charterpris · fra operatørens prisliste for {from, date, dayCompact} - {to, date, dayCompact}, før rabatter, endelig pris kan avvike",
+    "boatPriceListEstimateForPeriod": "Estimert båtpris · fra operatørens prisliste for {from, date, dayCompact} - {to, date, dayCompact}, før rabatter, endelig pris kan avvike",
+    "priceListRateMayBeLower": "Charterpris · listepris før rabatter, endelig pris kan bli lavere, tilleggsgebyrer kan komme",
+    "boatPriceListRateMayBeLower": "Båtpris · listepris før rabatter, endelig pris kan bli lavere, tilleggsgebyrer kan komme",
+    "priceListRateMayBeLowerForPeriod": "Charterpris · listepris for {from, date, dayCompact} - {to, date, dayCompact} før rabatter, endelig pris kan bli lavere, tilleggsgebyrer kan komme",
+    "boatPriceListRateMayBeLowerForPeriod": "Båtpris · listepris for {from, date, dayCompact} - {to, date, dayCompact} før rabatter, endelig pris kan bli lavere, tilleggsgebyrer kan komme",
+    "priceListEstimateFrom": "Estimert charterpris fra · operatørens prisliste for {nights, plural, one {# natt} other {# netter}}, før rabatter, endelig pris kan avvike",
+    "boatPriceListEstimateFrom": "Estimert båtpris fra · operatørens prisliste for {nights, plural, one {# natt} other {# netter}}, før rabatter, endelig pris kan avvike",
+    "priceListEstimateFromForPeriod": "Estimert charterpris fra · operatørens prisliste for {from, date, dayCompact} - {to, date, dayCompact}, før rabatter, endelig pris kan avvike",
+    "boatPriceListEstimateFromForPeriod": "Estimert båtpris fra · operatørens prisliste for {from, date, dayCompact} - {to, date, dayCompact}, før rabatter, endelig pris kan avvike",
+    "priceListEstimateMayBeLower": "Estimert charterpris · fra operatørens prisliste for {nights, plural, one {# natt} other {# netter}}, før rabatter, endelig pris kan bli lavere",
+    "boatPriceListEstimateMayBeLower": "Estimert båtpris · fra operatørens prisliste for {nights, plural, one {# natt} other {# netter}}, før rabatter, endelig pris kan bli lavere",
+    "priceListEstimateMayBeLowerForPeriod": "Estimert charterpris · fra operatørens prisliste for {from, date, dayCompact} - {to, date, dayCompact}, før rabatter, endelig pris kan bli lavere",
+    "boatPriceListEstimateMayBeLowerForPeriod": "Estimert båtpris · fra operatørens prisliste for {from, date, dayCompact} - {to, date, dayCompact}, før rabatter, endelig pris kan bli lavere",
+    "priceFromLabel": "Fra",
+    "plusObligatory": "pluss {amount} i obligatorisk ekstrautstyr",
+    "approximatePrice": "ca.",
+    "chargedIn": "Belastes i {currency}: {amount}",
+    "currencyLabel": "Valuta",
+    "priceOnRequest": "På forespørsel",
+    "getPrice": "Få prisen",
+    "weeklyPriceFrom": "En uke fra {price}",
+    "priceForDatesOnPage": "Se prisen for dine datoer på yachtsiden",
+    "priceUnavailable": "Ikke tilgjengelig",
+    "perPerson": "{price} per person",
+    "perPersonApprox": "~ {price} per person",
+    "perBerth": "{price} per person på {berths} køyeplasser",
+    "perNight": "{price} per natt",
+    "perNightWithEquivalent": "{price} per natt (≈ {equivalent})",
+    "datesAlternative": "Denne båten selges ikke på dine datoer. Nærmeste charter:",
+    "prepayment": "Forskudd ved booking: {amount}",
+    "prepaymentInfo": "Dette er den delen av charterprisen som betales på forhånd for å sikre bookingen. Den teller med i totalen, og resten forfaller før innsjekk.",
+    "securityDeposit": "Refunderbart depositum: {amount}",
+    "securityDepositInfo": "Et refunderbart depositum som charterbasen holder tilbake mot skader under turen din. Det kreves inn ved innsjekk, er ikke en del av prisen, og betales tilbake etter utsjekk hvis alt er i orden.",
+    "specs": {
+      "year": "År",
+      "people": "Personer",
+      "toilets": "Toaletter",
+      "showers": "Dusjer",
+      "mainsail": "Type storseil",
+      "cabins": "Lugarer",
+      "length": "Lengde",
+      "lengthValue": "{length, number} m"
+    },
+    "battenMainsail": "Storseil med seilpinner",
+    "badges": {
+      "available": "Ledig",
+      "temporarilyHeld": "Midlertidig reservert",
+      "onRequest": "På forespørsel",
+      "unavailable": "Ikke tilgjengelig",
+      "bestForFamilies": "Best for familier",
+      "bestValue": "Beste verdi",
+      "new": "Ny",
+      "discount": "{percent} % AVSLAG",
+      "petsAllowed": "Kjæledyr tillatt",
+      "depositInsurance": "Depositumsforsikring inkludert",
+      "topRated": "Toppvurdert"
+    },
+    "stats": {
+      "booked": "{count, plural, one {# booket denne måneden} other {# booket denne måneden}}",
+      "viewed": "{count, plural, one {# person så på den i dag} other {# personer så på den i dag}}"
+    },
+    "amenities": {
+      "wifi": "Gratis wi-fi",
+      "solar": "3 solcellepaneler",
+      "paddle": "Gratis SUP-brett",
+      "air": "Klimaanlegg",
+      "waterToys": "Vannleker",
+      "galley": "Fullt utstyrt bysse",
+      "fridge": "Kjøleskap og fryser",
+      "tender": "Jolle med påhengsmotor"
+    },
+    "charterTypes": {
+      "bareboat": "Uten mannskap",
+      "bareboatSailingYacht": "Seilyacht uten mannskap",
+      "catamaran": "Katamaran"
+    },
+    "crews": {
+      "fullCrew": "Fullt mannskap",
+      "skipperOptional": "Skipper valgfritt"
+    },
+    "moreAmenities": "{count, plural, one {Vis # utstyr til} other {Vis # utstyr til}}",
+    "moreAmenitiesShort": "+{count}",
+    "holdEndsIn": "Reservasjonen utløper om {time}",
+    "holdEnding": "Reservasjonen er i ferd med å utløpe, sjekk igjen snart",
+    "holdNoDeadline": "Reservert til den andre kunden bekrefter"
+  },
+  "gallery": {
+    "close": "Lukk",
+    "previous": "Forrige",
+    "next": "Neste",
+    "zoomIn": "Zoom inn",
+    "zoomOut": "Zoom ut",
+    "slideCounter": "{index} av {total}",
+    "slide": "Bilde",
+    "carousel": "Karusell",
+    "photoGallery": "Bildegalleri",
+    "lightbox": "Bildevisning",
+    "thumbnails": "Miniatyrbilder"
+  },
+  "marina": {
+    "viewDetails": "Se detaljer"
+  },
+  "map": {
+    "open": "Åpne kartet over {place}",
+    "satellite": "Satellitt",
+    "streets": "Kart",
+    "zoomIn": "Zoom inn",
+    "zoomOut": "Zoom ut",
+    "locate": "Vis posisjonen min",
+    "locateUnavailable": "Posisjon er ikke tilgjengelig"
+  },
+  "leadForm": {
+    "fields": {
+      "name": {
+        "label": "Fullt navn",
+        "placeholder": "Kari Nordmann"
+      },
+      "email": {
+        "label": "E-post",
+        "placeholder": "kari@eksempel.no"
+      },
+      "phone": {
+        "label": "Telefon (valgfritt)",
+        "placeholder": "+47 123 45 678"
+      },
+      "country": {
+        "label": "Land",
+        "placeholder": "Velg landet ditt"
+      },
+      "message": {
+        "label": "Melding (valgfritt)",
+        "placeholder": "Er det noe mer vi bør vite om turen din?"
+      }
+    },
+    "errors": {
+      "nameRequired": "Skriv inn navnet ditt",
+      "emailInvalid": "Skriv inn en gyldig e-postadresse",
+      "submitFailed": "Vi klarte ikke å sende forespørselen din. Prøv igjen."
+    }
+  },
+  "charterPeriod": {
+    "day": {
+      "booked": "Booket",
+      "held": "Reservert, kan bli ledig"
+    },
+    "or": ", eller ",
+    "daysAndNights": "{days}, {nights}",
+    "weekdayRange": "{from} til {to}",
+    "wholeWeeksAnyDay": "Valgfri startdag, i hele uker",
+    "wholeWeeksFromDays": "Starter {days}, i hele uker",
+    "weekdaysToDay": "Starter {days}, slutter {to}",
+    "weekdayStart": "Starter på {day}",
+    "weekdayEnd": "Slutter på {day}",
+    "nightsExact": "{count, plural, one {# natt} other {# netter}}",
+    "nightsFrom": "fra {count, plural, one {# natt} other {# netter}}",
+    "nightsUpTo": "opptil {count, plural, one {# natt} other {# netter}}",
+    "nightsRange": "{min} til {max} netter",
+    "label": "Charterperiode",
+    "rulesMore": "Vis alle charterregler",
+    "rulesLess": "Vis mindre"
+  },
+  "countryPicker": {
+    "search": "Søk etter land",
+    "loading": "Laster land…",
+    "empty": "Ingen land passer med det"
+  },
+  "errors": {
+    "requestFailed": "Noe gikk galt",
+    "retry": "Prøv på nytt"
+  },
+  "notFound": {
+    "title": "Siden ble ikke funnet",
+    "description": "Siden du leter etter, finnes ikke eller er flyttet.",
+    "home": "Tilbake til forsiden",
+    "browse": "Bla gjennom yachter"
+  },
+  "error": {
+    "title": "Noe gikk galt",
+    "description": "Vi klarte ikke å laste denne siden. Prøv igjen, eller kom tilbake om et øyeblikk.",
+    "retry": "Prøv igjen",
+    "home": "Tilbake til forsiden"
+  },
+  "ui": {
+    "close": "Lukk",
+    "previousPage": "Gå til forrige side",
+    "nextPage": "Gå til neste side",
+    "pagination": "Sidenavigering",
+    "breadcrumb": "Brødsmulesti",
+    "previousPhoto": "Forrige bilde",
+    "nextPhoto": "Neste bilde",
+    "goToPhoto": "Gå til bilde {index} av {total}",
+    "showPhoto": "Vis bilde {index}",
+    "clear": "Fjern {label}",
+    "noOptions": "Ingen alternativer",
+    "noMatches": "Ingen treff",
+    "showPassword": "Vis passord",
+    "hidePassword": "Skjul passord",
+    "previousMonth": "Forrige måned",
+    "nextMonth": "Neste måned",
+    "rating": "Vurdering {rating} av {max}"
+  },
+  "quoteLines": {
+    "referral-welcome": "Velkomstrabatt for verving",
+    "referral-credit": "Vervebonus",
+    "provider-discount": "Charterrabatt"
+  }
+}

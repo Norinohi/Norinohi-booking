@@ -1,0 +1,207 @@
+{
+  "backToSearch": "Tilbake til søket",
+  "breadcrumbSearch": "Søk",
+  "share": "Del",
+  "linkCopied": "Lenken er kopiert",
+  "seeOnMap": "Se på kartet",
+  "addToWishlist": "Legg til i ønskelisten",
+  "removeFromWishlist": "Fjern fra ønskelisten",
+  "included": "Inkludert",
+  "amenities": {
+    "groups": {
+      "navigation-and-safety": "Navigasjon og sikkerhet",
+      "deck-and-cockpit": "Dekk og cockpit",
+      "interior-and-cabins": "Interiør og lugarer",
+      "galley": "Bysse",
+      "entertainment-and-water-toys": "Underholdning og vannleker",
+      "systems-and-power": "Systemer og strøm",
+      "other": "Annet utstyr"
+    },
+    "itemCount": "{count, plural, one {# element} other {# elementer}}",
+    "allIncluded": "Alt utstyret i listen er inkludert i charterprisen.",
+    "dismissNote": "Lukk"
+  },
+  "importantInfo": {
+    "charterCompany": "Charterselskap",
+    "pickUpAddress": "Adresse for henting av yachten",
+    "pickUp": "Henting av yachten",
+    "dropOff": "Levering av yachten",
+    "policies": "Avbestillings- og betalingsvilkår",
+    "securityDeposit": "Refunderbart depositum",
+    "securityDepositNote": "Holdes av charterbasen ved innsjekk og betales tilbake etter en skadefri tilbakelevering.",
+    "securityDepositInsured": "Reduseres til {amount} hvis du tegner basens depositumsforsikring.",
+    "license": "Båtførerbevis",
+    "pets": "Kjæledyr",
+    "paymentMethods": "Betalingsmåter charterselskapet godtar",
+    "marinaInfo": "Informasjon om marinaen",
+    "policiesVariesBySelection": "Avbestillings- og forskuddsvilkår varierer etter hva du velger. Betalingsvilkårene bekreftes under tilbud og booking.",
+    "licenseRequired": "Gyldig båtførerbevis eller tilsvarende lokalt sertifikat kreves.",
+    "licenseNotRequired": "Du trenger ikke sertifikat når du booker med mannskap eller skipper.",
+    "petsAllowedWithConfirmation": "Kjæledyr er tillatt på denne yachten når charterselskapet har bekreftet det.",
+    "petsAskBase": "Reglene for kjæledyr settes av charterbasen - spør før du booker.",
+    "marinaInfoText": "{marina} ligger i {location}, {country}. Tidspunkter for innsjekk og utsjekk oppgis av charterbasen.",
+    "paymentMethod": {
+      "card": "Kort",
+      "bank_transfer": "Bankoverføring",
+      "cash": "Kontant"
+    }
+  },
+  "popular": {
+    "from": "Fra",
+    "perPeriod": "/ {days, plural, one {# dag} other {# dager}}",
+    "seeAll": "Se alle yachter",
+    "previous": "Forrige yachter",
+    "next": "Neste yachter"
+  },
+  "route": {
+    "start": "Start",
+    "finish": "Mål",
+    "day": "Dag {day}",
+    "stopTitle": "Dag {day} - {place}",
+    "disclaimer": "Veiledende rute. Den endelige reiseruten og overnattingsstedene avhenger av været, ledighet og skipperens vurdering."
+  },
+  "review": {
+    "count": "({count, plural, one {# anmeldelse} other {# anmeldelser}})",
+    "summary": "Viser {shown} av {total}",
+    "empty": "Ingen skriftlige anmeldelser ennå",
+    "operatorRated": "Poengsummen kommer fra {count, plural, one {# gjestevurdering} other {# gjestevurderinger}} samlet inn av charteroperatøren."
+  },
+  "sidebar": {
+    "crew": "Mannskap",
+    "people": "Personer",
+    "datesPlaceholder": "Velg datoer",
+    "selectDates": "Velg datoer for å se prisen",
+    "unavailable": "Denne yachten har ingen ledige datoer",
+    "unavailableHint": "Spør oss om andre datoer eller en lignende yacht.",
+    "slotRefused": "Disse datoene kan ikke bookes. Velg en annen periode.",
+    "searchedPeriodRefused": "{from} til {to} er ikke ledig for denne yachten. Velg en annen periode, eller bruk datoene som vises.",
+    "loadFailed": "Vi klarte ikke å laste prisen for denne bookingen.",
+    "loadRetry": "Prøv igjen",
+    "pricingUnavailable": "Vi får ikke hentet en pris for disse datoene fra yachtens leverandør akkurat nå. Dette er vanligvis midlertidig.",
+    "prepayment": "{percent} % forskudd ved booking",
+    "boatPrice": "Båtpris",
+    "boatPriceHint": "Full leiepris",
+    "deposit": "Refunderbart depositum",
+    "howItWorks": "Se hvordan det fungerer",
+    "scheduleDetails": "Dette dekker betalingen",
+    "scheduleIncludes": "Inkluderer",
+    "scheduleSplit": "Fordelt på begge betalingene",
+    "groups": {
+      "mandatory": "Obligatorisk ekstrautstyr",
+      "selectedExtras": "Valgt ekstrautstyr",
+      "crew": "Mannskap"
+    },
+    "payNow": "Forskudd ved booking (betal nå)",
+    "payAt": "Betales: {date}",
+    "payAtCheckIn": "Betales ved innsjekk: {date}",
+    "firstPayment": "{amount} (1. betaling)",
+    "fullPayment": "{amount} (full betaling)",
+    "secondPayment": "{amount} (2. betaling)",
+    "extrasPayment": "{amount} (ekstrautstyr)",
+    "depositNote": "+ {amount} (refunderbart depositum)",
+    "totalPrice": "Totalpris",
+    "discountsHeading": "Inkludert i leieprisen over",
+    "dueNow": "Å betale nå",
+    "payNowCta": "Betal {amount} nå",
+    "requestBookingCta": "Send bookingforespørsel",
+    "requestBookingHint": "Operatøren av denne yachten bekrefter hver booking personlig. Vi spør dem om datoene dine og kommer tilbake til deg. Ingenting belastes nå.",
+    "requestQuote": "Be om tilbud",
+    "promo": {
+      "label": "Kampanjekode",
+      "placeholder": "Skriv inn kode",
+      "apply": "Bruk",
+      "remove": "Fjern",
+      "applied": "{amount} i avslag",
+      "rejected": {
+        "unknown_code": "Vi kjenner ikke igjen den koden.",
+        "inactive": "Den koden er ikke aktiv lenger.",
+        "not_started": "Den koden er ikke gyldig ennå.",
+        "expired": "Den koden har utløpt.",
+        "usage_limit_reached": "Den koden er allerede brukt opp.",
+        "not_applicable": "Den koden gjelder ikke for denne yachten."
+      }
+    },
+    "credit": {
+      "label": "Vervebonus",
+      "available": "{amount} tilgjengelig på denne bookingen",
+      "applied": "{amount} brukt",
+      "apply": "Bruk",
+      "remove": "Fjern"
+    },
+    "onRequest": "Prisen på denne yachten gis på forespørsel",
+    "onRequestHint": "Vi har ledige datoer for den, men ingen publisert pris dekker dem. Fortell oss når du vil seile, så kommer vi tilbake med en pris.",
+    "dropOff": "Marina for levering",
+    "pickUp": "Henting: {marina}",
+    "boatPriceHintDiscounted": "Leiepris etter rabatt",
+    "depositWhenInsured": "eller {amount} med skadeforsikring"
+  },
+  "panels": {
+    "details": "Yachtdetaljer",
+    "booking": "Bookingoversikt"
+  },
+  "tabs": {
+    "overview": "Oversikt",
+    "amenities": "Utstyr",
+    "mandatory-extras": "Obligatorisk ekstrautstyr",
+    "optional-extras": "Valgfritt ekstrautstyr",
+    "description": "Beskrivelse",
+    "important-info": "Viktig informasjon",
+    "suggested-route": "Foreslått rute",
+    "review": "Anmeldelser",
+    "faq": "Ofte stilte spørsmål",
+    "popular-yachts": "Populære yachter"
+  },
+  "sections": {
+    "overview": "Oversikt",
+    "amenities": "Utstyr",
+    "mandatoryExtras": "Obligatorisk ekstrautstyr",
+    "optionalExtras": "Valgfritt ekstrautstyr",
+    "description": "Beskrivelse",
+    "media": "Video og omvisning",
+    "importantInfo": "Viktig informasjon",
+    "suggestedRoute": "Foreslått rute",
+    "review": "Anmeldelser",
+    "faq": "Ofte stilte spørsmål",
+    "popularYachts": "Andre populære yachter"
+  },
+  "faqCategories": {
+    "booking": "Booking",
+    "payment": "Betaling",
+    "prices": "Priser",
+    "licences": "Sertifikater",
+    "travel": "Reise",
+    "cancellation": "Avbestilling"
+  },
+  "overview": {
+    "location": "Sted",
+    "mainsail": "Type storseil",
+    "year": "År",
+    "draught": "Dypgang",
+    "boatType": "Båttype",
+    "beam": "Bredde",
+    "cabins": "Lugarer",
+    "fuelTank": "Drivstofftank",
+    "bathrooms": "Bad",
+    "waterTank": "Vanntank",
+    "length": "Lengde",
+    "engine": "Motor",
+    "showers": "Dusjer",
+    "notSpecified": "Ikke oppgitt"
+  },
+  "bookingRequestDialog": {
+    "title": "Be om denne bookingen",
+    "description": "Operatøren bekrefter hvert charter av denne yachten personlig. Legg igjen kontaktopplysningene dine, så bekrefter en charterekspert disse datoene med dem og kommer tilbake til deg innen én virkedag.",
+    "submit": "Send bookingforespørsel",
+    "success": "Takk! Vi har sendt forespørselen din og tar kontakt snart."
+  },
+  "quoteDialog": {
+    "title": "Be om tilbud",
+    "description": "Legg igjen kontaktopplysningene dine, så sender en charterekspert deg et skreddersydd tilbud for disse datoene.",
+    "submit": "Send forespørsel",
+    "success": "Takk! Vi tar kontakt med deg snart."
+  },
+  "media": {
+    "video": "Se videoen",
+    "tour": "360°-omvisning"
+  }
+}
