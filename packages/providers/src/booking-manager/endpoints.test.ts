@@ -4,10 +4,18 @@ vi.hoisted(() => {
   process.env.SKIP_ENV_VALIDATION = "1";
 });
 
+import { readFileSync } from "node:fs";
+
 import type { z } from "zod";
 
 import { parseExactJson } from "../shared/exact-json";
-import { restIdListSchema, restYachtSchema } from "./endpoints";
+import {
+  restCompanySchema,
+  restIdListSchema,
+  restPriceListSchema,
+  restReservationSchema,
+  restYachtSchema,
+} from "./endpoints";
 
 /** Overrides typed from the schema itself, so a fixture cannot drift from its input. */
 type YachtInput = z.input<typeof restYachtSchema>;
@@ -92,5 +100,119 @@ describe("restIdListSchema", () => {
     const rows = parseExactJson('[{"id":6614004890000100225,"junk":{"nested":true}}]');
 
     expect(restIdListSchema.parse(rows)[0]?.id).toBe("6614004890000100225");
+  });
+});
+
+/*
+ * Everything below is what company 225 actually sent on 2026-09-21, read through the same exact
+ * parser the client uses. These are the keys the v2.2.2 changelog added and the ones the live
+ * feed carries without any spec mentioning them; the schemas are loose, so a key they do not
+ * declare is kept but unvalidated, and one they spell differently is silently lost.
+ */
+describe("the v2.2.2 contract against live payloads", () => {
+  const westWind = restYachtSchema.parse(
+    parseExactJson(
+      readFileSync(new URL("fixtures/yacht-225-west-wind.json", import.meta.url), "utf8"),
+    ),
+  );
+  const charterPack = westWind.products
+    ?.flatMap((product) => product.extras ?? [])
+    .find((extra) => extra.name === "Charter Pack");
+
+  it("keeps modelConfigurationId as text, leading zeros and all", () => {
+    expect(westWind.modelConfigurationId).toBe("12882280000100000");
+    expect(
+      restYachtSchema.parse(yacht({ modelConfigurationId: "03221" })).modelConfigurationId,
+    ).toBe("03221");
+  });
+
+  it("reads the yacht's undocumented note fields", () => {
+    const parsed = restYachtSchema.parse(yacht({ comment: "Pets not allowed", yearNote: "" }));
+
+    expect(parsed).toMatchObject({ comment: "Pets not allowed", yearNote: "" });
+  });
+
+  it("keeps an image's 19-digit id exact", () => {
+    expect(westWind.images?.[0]?.id).toMatch(/^\d{19}$/);
+  });
+
+  it("reads a bundle's included extras as exact ids", () => {
+    expect(charterPack?.includedExtras).toEqual(["1488975580000100225", "26877460000100225"]);
+  });
+
+  it("reads the quantity fields and the live spelling of the waiver flag", () => {
+    expect(charterPack).toMatchObject({
+      quantityLimit: -1,
+      quantityIsSelectable: false,
+      includesDepositWaiver: false,
+    });
+  });
+
+  it("reads a description's documents under the key the vendor actually sends", () => {
+    const parsed = restYachtSchema.parse(
+      yacht({
+        descriptions: [
+          {
+            category: "general",
+            text: "",
+            documents: [
+              {
+                id: "4469909500000100797",
+                name: "deck-plan.jpg",
+                url: "https://www.booking-manager.com/cbm/documents/4469910710000100797_deck-plan.jpg",
+                sortOrder: 0,
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    expect(parsed.descriptions?.[0]?.documents?.[0]?.id).toBe("4469909500000100797");
+  });
+
+  it("reads a company's rating and second mobile", () => {
+    const company = restCompanySchema.parse(
+      parseExactJson(
+        '{"id":225,"name":"Demo version","mobile":"","mobile2":"","maxDiscountFromCommissionPercentage":10.0,' +
+          '"rating":{"average":0.0,"reviews":0}}',
+      ),
+    );
+
+    expect(company).toMatchObject({ mobile2: "", rating: { average: 0, reviews: 0 } });
+  });
+
+  it("reads a reservation's internal remarks", () => {
+    const reservation = restReservationSchema.parse(
+      parseExactJson(
+        '{"id":8295147120000107113,"charterReservationId":8295147330000100225,"status":2,' +
+          '"productName":"Bareboat","baseFromId":127,"baseToId":127,"remarks":"","internalRemarks":""}',
+      ),
+    );
+
+    expect(reservation).toMatchObject({
+      id: "8295147120000107113",
+      charterReservationId: "8295147330000100225",
+      baseFromId: "127",
+      internalRemarks: "",
+    });
+  });
+
+  it("reads a price's base pair, base 0 included", () => {
+    const [rumba, jack] = restPriceListSchema.parse(
+      parseExactJson(
+        '[{"yachtId":123325530000100225,"startBaseId":0,"endBaseId":0,"dateFrom":"2027-06-05 17:00:00",' +
+          '"dateTo":"2027-06-12 09:00:00","product":"Bareboat","price":4600.0,"currency":"EUR"},' +
+          '{"yachtId":26876440000100225,"startBaseId":120,"endBaseId":120,"dateFrom":"2027-06-05 17:00:00",' +
+          '"dateTo":"2027-06-12 09:00:00","product":"Bareboat","price":5152.0,"currency":"EUR"}]',
+      ),
+    );
+
+    expect(rumba).toMatchObject({
+      yachtId: "123325530000100225",
+      startBaseId: "0",
+      endBaseId: "0",
+    });
+    expect(jack).toMatchObject({ startBaseId: "120", endBaseId: "120" });
   });
 });
