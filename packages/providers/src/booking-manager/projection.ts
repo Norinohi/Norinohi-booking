@@ -472,6 +472,8 @@ function projectYacht(
       draftM: numberOf(yacht.draught),
       cabins: intOf(yacht.cabins) ?? 0,
       berths: intOf(yacht.berths) ?? 0,
+      // Stated on about half the account's yachts, below the berths on 215 of them.
+      maxPersons: positiveInt(yacht.maxPeopleOnBoard),
       heads: intOf(yacht.wc) ?? 0,
       // The vendor publishes `wc` and nothing about showers, so the count stays unknown.
       yearBuilt: intOf(yacht.year) ?? 0,
@@ -616,6 +618,7 @@ function textKindOf(category: string | undefined): TextKind {
  */
 function checkinRulesOf(yacht: RestYacht) {
   const minNights = positiveInt(yacht.minimumCharterDuration);
+  const maxNights = maxNightsOf(yacht, minNights);
 
   const days = Array.isArray(yacht.allCheckInDays)
     ? yacht.allCheckInDays.map(weekdayOf).filter((day): day is number => day !== undefined)
@@ -625,10 +628,8 @@ function checkinRulesOf(yacht: RestYacht) {
   ].filter((day): day is number => day !== undefined);
 
   if (offered.length === 7 || offered.length === 0) {
-    if (offered.length === 0 && minNights === undefined) return [];
-    return [
-      { checkinWeekday: undefined, checkoutWeekday: undefined, minNights, maxNights: undefined },
-    ];
+    if (offered.length === 0 && minNights === undefined && maxNights === undefined) return [];
+    return [{ checkinWeekday: undefined, checkoutWeekday: undefined, minNights, maxNights }];
   }
 
   return offered.flatMap((checkin) =>
@@ -636,9 +637,25 @@ function checkinRulesOf(yacht: RestYacht) {
       checkinWeekday: checkin,
       checkoutWeekday: checkout,
       minNights,
-      maxNights: undefined,
+      maxNights,
     })),
   );
+}
+
+/**
+ * `maximumCharterDuration`, in the same nights as the minimum beside it. Checked against the
+ * confirming `/offers` sweep: of every priced charter stored for the yachts stating a limit under
+ * 60, none ran longer than it. 90 is the fleet default and caps nothing a week search asks.
+ *
+ * A limit below the minimum contradicts it, and no charter at all was priced on those yachts,
+ * so the minimum is kept alone rather than publishing a rule nothing can satisfy.
+ */
+function maxNightsOf(yacht: RestYacht, minNights: number | undefined): number | undefined {
+  const maxNights = positiveInt(yacht.maximumCharterDuration);
+  if (maxNights === undefined || (minNights !== undefined && maxNights < minNights)) {
+    return undefined;
+  }
+  return maxNights;
 }
 
 /**

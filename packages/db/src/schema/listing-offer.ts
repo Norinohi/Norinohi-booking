@@ -107,11 +107,11 @@ export const listingOffer = pgTable(
     /**
      * The smallest party this offer has been refused for, learned from live quotes.
      *
-     * Booking Manager's offers engine caps a product below the boat's berth count and publishes
-     * the cap nowhere: `maxPeopleOnBoard` exists in its schema and is null on all 12,813
-     * products we hold, and neither the offer nor its product carries a capacity. One hull
-     * advertised with 9 berths sells to 8, and the only way to find out is to ask for nine and
-     * be told nothing.
+     * Booking Manager's offers engine can cap a product below the boat's berth count. The yacht's
+     * `maxPeopleOnBoard` states the cap on about half the fleet and is read into `max_persons`;
+     * on the rest neither the yacht, the offer nor its product carries one. One hull advertised
+     * with 9 berths sells to 8, and the only way to find out is to ask for nine and be told
+     * nothing.
      *
      * So it is recorded when that happens: the search filter matches on berths, and a party
      * this offer has already refused should stop being sent to it.

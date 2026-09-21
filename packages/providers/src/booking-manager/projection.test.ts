@@ -501,6 +501,57 @@ describe("check-in rules", () => {
       { checkinWeekday: undefined, checkoutWeekday: undefined, minNights: 5, maxNights: undefined },
     ]);
   });
+
+  it("caps the stay at the maximum duration on every rule", () => {
+    const rules = rulesOf({
+      allCheckInDays: [7, 1],
+      minimumCharterDuration: 7,
+      maximumCharterDuration: 14,
+    });
+
+    expect(rules).toHaveLength(4);
+    expect(rules?.every((rule) => rule.minNights === 7 && rule.maxNights === 14)).toBe(true);
+  });
+
+  it("keeps a maximum on a yacht that states no weekday and no minimum", () => {
+    expect(rulesOf({ defaultCheckInDay: -1, maximumCharterDuration: 1 })).toEqual([
+      { checkinWeekday: undefined, checkoutWeekday: undefined, minNights: undefined, maxNights: 1 },
+    ]);
+  });
+
+  it("drops a maximum below the minimum rather than publish a rule nothing satisfies", () => {
+    expect(
+      rulesOf({ defaultCheckInDay: -1, minimumCharterDuration: 7, maximumCharterDuration: 2 }),
+    ).toEqual([
+      { checkinWeekday: undefined, checkoutWeekday: undefined, minNights: 7, maxNights: undefined },
+    ]);
+  });
+});
+
+describe("the legal limit on board", () => {
+  const specOf = (over: Record<string, JsonValue>) =>
+    projectBookingManagerCatalogue(
+      new Map([
+        [
+          "yacht" as const,
+          [
+            {
+              externalId: "5001",
+              payload: { id: 5001, companyId: 42, homeBaseId: 7, berths: 10, ...over },
+            },
+          ],
+        ],
+      ]),
+    ).listings[0]?.spec;
+
+  it("reads maxPeopleOnBoard as the most people the boat may carry", () => {
+    expect(specOf({ maxPeopleOnBoard: 8 })).toMatchObject({ berths: 10, maxPersons: 8 });
+  });
+
+  it("leaves it unknown where the vendor sends nothing or zero", () => {
+    expect(specOf({})?.maxPersons).toBeUndefined();
+    expect(specOf({ maxPeopleOnBoard: 0 })?.maxPersons).toBeUndefined();
+  });
 });
 
 type Payload = { id: number } & Record<string, JsonValue>;
@@ -809,6 +860,12 @@ describe("live company 225 yachts: crew, rig and pictures", () => {
   it("sells a yacht whose default product is Crewed as full crew", () => {
     expect(listingNamed("Virgin Mary - Crewed")?.crewType).toBe("full-crew");
     expect(listingNamed("Artic fun")?.crewType).toBe("full-crew");
+  });
+
+  it("caps the stay at the 90 nights every yacht of the fleet states", () => {
+    for (const listing of listings) {
+      expect(listing.checkinRules.every((rule) => rule.maxNights === 90)).toBe(true);
+    }
   });
 
   it("reads the default product, not a Crewed one the yacht also sells", () => {
