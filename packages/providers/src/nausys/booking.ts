@@ -694,11 +694,19 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
       // agree or the reservation contradicts the invoice built from the quote.
       /* The reservation's own charter price is what a percentage line is a share of. */
       amount: {
-        amountMinor: extraLineMinor(extra, currency, { clientMinor: baseMinor }),
+        amountMinor: extraLineMinor(extra, currency, {
+          clientMinor: baseMinor,
+          days: Math.round(
+            (Date.parse(`${checkOut}T00:00:00Z`) - Date.parse(`${checkIn}T00:00:00Z`)) / 86_400_000,
+          ),
+        }),
         currency,
       },
+      /* As the quote reads it: an absent calculationType is billed at the base, never "now". */
       payWhen:
-        extra.calculationType === "SEPARATE_PAYMENT" ? ("at_check_in" as const) : ("now" as const),
+        extra.calculationType === "SEPARATE_PAYMENT" || extra.calculationType === undefined
+          ? ("at_check_in" as const)
+          : ("now" as const),
       kind: "extra" as const,
     }));
 

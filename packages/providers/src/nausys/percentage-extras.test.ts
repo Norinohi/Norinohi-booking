@@ -95,3 +95,37 @@ describe("yacht 75193633, a mandatory 35% service charge", () => {
     );
   });
 });
+
+/* Without a vendor total, a rate is valued against the basis the PDF names for it. */
+describe("percentage bases a rate can be stated against", () => {
+  const row = (percentageCalculationType: string) => ({
+    serviceId: 1,
+    amount: "0.1000",
+    currency: "EUR",
+    amountIsPercentage: true,
+    percentageCalculationType,
+  });
+  const basis = { listMinor: 700_000, clientMinor: 560_000, days: 7 };
+
+  it("takes a daily rate against the list price per day", () => {
+    // 10% of 7,000.00 / 7 days.
+    expect(extraLineMinor(row("DAILY_PRICE"), "EUR", basis)).toBe(10_000);
+  });
+
+  it("takes the final client price and a custom basis as the client price", () => {
+    expect(extraLineMinor(row("FINAL_CLIENT_PRICE"), "EUR", basis)).toBe(56_000);
+    expect(extraLineMinor(row("DEFINED_IN_CUSTOM"), "EUR", basis)).toBe(56_000);
+  });
+
+  it("charges nothing against a basis it cannot value, rather than the list price", () => {
+    for (const type of [
+      "PRICELIST_PRICE_WITHOUT_VAT",
+      "CLIENT_PRICE_WITHOUT_VAT",
+      "CLIENT_PRICE_WITH_EXTRAS_ADVANCE_PAYMENT",
+      "AGENCY_PRICE",
+      "SOMETHING_NEW",
+    ]) {
+      expect(extraLineMinor(row(type), "EUR", basis)).toBe(0);
+    }
+  });
+});

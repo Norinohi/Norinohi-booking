@@ -459,7 +459,11 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
   const clientPriceMinor = decimalStringToMinor(yacht.price.clientPrice, currency);
 
   /* What a percentage extra is a percentage of; see `PercentageBasis`. */
-  const basis = { listMinor: listPriceMinor, clientMinor: clientPriceMinor };
+  const basis = {
+    listMinor: listPriceMinor,
+    clientMinor: clientPriceMinor,
+    days: daysBetweenIso(input.checkIn, input.checkOut),
+  };
 
   const charterLines = buildCharterLines(yacht, currency, listPriceMinor, clientPriceMinor, input);
   const obligatory = yacht.obligatoryExtras ?? [];
@@ -595,6 +599,11 @@ function routeOf(
       },
     ],
   };
+}
+
+/** Whole days from one ISO date to another. */
+function daysBetweenIso(from: string, to: string): number {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
 }
 
 /** What a `createInfo` proposal says about the money; see `getExactDiscountCap`. */

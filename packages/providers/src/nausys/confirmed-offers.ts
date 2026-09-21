@@ -300,6 +300,7 @@ function obligatoryExtrasTotal(yacht: RestFreeYacht, currency: string): number |
   const basis = {
     listMinor: minorOrUndefined(yacht.price.priceListPrice, currency),
     clientMinor: minorOrUndefined(yacht.price.clientPrice, currency),
+    days: daysOf(yacht.periodFrom, yacht.periodTo),
   };
 
   return extras.reduce((total, extra) => total + extraLineMinor(extra, currency, basis), 0);
@@ -347,4 +348,15 @@ function commissionPctOf(
   if (commissionMinor === undefined || priceMinor <= 0) return undefined;
   const pct = Math.round((commissionMinor / priceMinor) * 1_000_000) / 10_000;
   return pct >= 0 && pct <= 100 ? pct : undefined;
+}
+
+/** The charter's length in days from the vendor's own period, or undefined if unreadable. */
+function daysOf(periodFrom: string, periodTo: string): number | undefined {
+  try {
+    const from = Date.parse(`${parseNausysDate(periodFrom.split(" ")[0] ?? periodFrom)}T00:00:00Z`);
+    const to = Date.parse(`${parseNausysDate(periodTo.split(" ")[0] ?? periodTo)}T00:00:00Z`);
+    return Math.round((to - from) / 86_400_000);
+  } catch {
+    return undefined;
+  }
 }
