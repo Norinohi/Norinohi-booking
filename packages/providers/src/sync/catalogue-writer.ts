@@ -1445,6 +1445,7 @@ async function writeListingChildren(
         oneWayOnly: extra.oneWayOnly ?? false,
         validForBaseIds: extra.validForBaseIds ?? null,
         validRoutes: extra.validRoutes?.map((route) => `${route.from}>${route.to}`) ?? null,
+        includedExternalIds: extra.includedExternalIds ?? null,
         minimumPriceMinor: extra.minimumPriceMinor ?? null,
         onRequestOnly: extra.onRequestOnly,
         note: extra.note ?? null,

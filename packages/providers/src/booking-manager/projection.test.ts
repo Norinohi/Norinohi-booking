@@ -666,6 +666,15 @@ describe("a live company 225 yacht", () => {
     }
   });
 
+  it("carries the extras the Charter Pack bundles, the obligatory Cleaning among them", () => {
+    const pack = listing?.extras.find((extra) => extra.name === "Charter Pack");
+    const cleaning = listing?.extras.find((extra) => extra.name === "Cleaning");
+
+    expect(pack?.includedExternalIds).toEqual(["1488975580000100225", "26877460000100225"]);
+    expect(cleaning).toMatchObject({ externalId: "26877460000100225", obligatory: true });
+    expect(cleaning?.includedExternalIds).toBeUndefined();
+  });
+
   it("reads no waiver where the fleet configures none", () => {
     expect(listing?.securityDepositMinor).toBe(200_000);
     expect(listing?.securityDepositWhenInsuredMinor).toBeUndefined();

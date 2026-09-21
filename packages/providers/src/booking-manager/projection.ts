@@ -739,6 +739,7 @@ function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] 
       validNightsFrom: positiveInt(item.validDaysFrom),
       validNightsTo: positiveInt(item.validDaysTo),
       ...routeScopeOf(item),
+      ...includedIdsOf(item, externalId),
       onRequestOnly: false,
       ...((item.includesDepositWaiver ?? item.includedDepositWaiver) === true
         ? { depositInsurance: true }
@@ -781,6 +782,15 @@ function routeScopeOf(item: RestExtras): ExtraRouteScope {
   if (base != null && base !== "-1") scope.validForBaseIds = [base];
 
   return scope;
+}
+
+/** Undocumented; see `includedExtras` on `restExtrasSchema`. An extra never bundles itself. */
+function includedIdsOf(
+  item: RestExtras,
+  externalId: string,
+): Pick<CanonicalExtra, "includedExternalIds"> {
+  const ids = [...new Set(item.includedExtras ?? [])].filter((id) => id !== externalId);
+  return ids.length > 0 ? { includedExternalIds: ids } : {};
 }
 
 /**

@@ -869,6 +869,12 @@ export const canonicalExtraSchema = z.object({
    */
   validRoutes: z.array(z.object({ from: z.string(), to: z.string() })).optional(),
   /**
+   * The provider's ids, in this extra's own id space, of the extras this one bundles. Company
+   * 225's optional Charter Pack (250 EUR) contains Bed linen and Cleaning while Cleaning is also
+   * obligatory on its own, so a customer who adds the pack has already paid for part of it.
+   */
+  includedExternalIds: z.array(z.string()).optional(),
+  /**
    * A floor the provider sets under a computed total, in minor units. Only meaningful beside a
    * percentage: a 3% fee with a 50 EUR minimum is 50 EUR on a small charter, not 30.
    */

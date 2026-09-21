@@ -1,0 +1,1 @@
+ALTER TABLE "provider_extra_catalogue" ADD COLUMN "included_external_ids" text[];

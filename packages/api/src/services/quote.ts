@@ -41,6 +41,7 @@ import { and, asc, eq, gt, inArray, isNull, or } from "drizzle-orm";
 
 import { daysBetween } from "../lib/dates";
 import { classifyRefusal } from "../lib/refusal-report";
+import { netOfBundles } from "../lib/bundled-extras";
 import { requestedExtraAmountMinor } from "../lib/requested-extra-amount";
 import { saysSlotIsGone } from "../lib/provider-failure";
 import { onlyVendorFailures } from "../lib/vendor-outage";
@@ -1334,7 +1335,8 @@ async function persistPricedQuote(
  * arrival, so they are `at_check_in`: counted in the total, never in what is charged here. Their
  * own group keeps them apart from the extras the offer priced, which the booking flow reads back
  * as the customer's purchasable selection. An extra whose catalogue rate cannot be counted for
- * this charter gets no line and stays a request the base prices.
+ * this charter gets no line and stays a request the base prices. A pack adds only what the quote
+ * does not bill already; see `netOfBundles`.
  */
 async function requestedExtraLines(
   db: DatabaseExecutor,
@@ -1351,7 +1353,7 @@ async function requestedExtraLines(
     baseMinor: priced.lines.find((line) => line.kind === "base")?.amount.amountMinor ?? 0,
   };
 
-  return [...new Set(requestedExtras)].flatMap((code): QuoteLine[] => {
+  const counted = [...new Set(requestedExtras)].flatMap((code) => {
     const rate = catalogue.get(code);
     // A catalogue row in another currency cannot be summed into this quote's total.
     if (!rate || (rate.priceCurrency !== null && rate.priceCurrency !== priced.currency)) return [];
@@ -1359,10 +1361,25 @@ async function requestedExtraLines(
     const amountMinor = requestedExtraAmountMinor(rate, basis);
     if (amountMinor === null) return [];
 
+    return [{ code, name: rate.name, amountMinor, bundles: rate.bundles }];
+  });
+
+  const chargedElsewhere = new Map<string, number>();
+  for (const line of priced.lines) {
+    if (line.kind !== "extra" && line.kind !== "fee") continue;
+    const code = baseExtraCode(line.code);
+    chargedElsewhere.set(code, (chargedElsewhere.get(code) ?? 0) + line.amount.amountMinor);
+  }
+  const net = netOfBundles(counted, chargedElsewhere);
+
+  return counted.flatMap((line): QuoteLine[] => {
+    const amountMinor = net.get(line.code);
+    if (amountMinor == null) return [];
+
     return [
       {
-        code,
-        label: rate.name,
+        code: line.code,
+        label: line.name,
         amountMinor,
         currency: priced.currency,
         payWhen: "at_check_in",

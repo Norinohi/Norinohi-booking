@@ -9,6 +9,7 @@ import {
   seedSearchWorld,
   shiftIso,
 } from "../test-support/search-fixture";
+import { listRequestableExtraPrices } from "./extras";
 import { getListingDetailByIdOrSlug } from "./listing-detail";
 import { rebuildListingSearchDocs } from "./read-model";
 import { searchListings } from "./repository";
@@ -19,7 +20,8 @@ import type { ListingSearchInput } from "./types";
  * `HOME`, the way the projection files them. `OTHER` is another base of the same fleet.
  *
  *   routed    a return-only APA the card must count, a one-way fee it must not, a charter pack
- *             for a return from another base and a fee sold only at another base
+ *             for a return from another base, a fee sold only at another base, and an optional
+ *             pack bundling the APA
  *   skippered an obligatory skipper for a return from home: a skippered charter
  *   elsewhere an obligatory skipper for a return from another base: still bareboat
  */
@@ -87,6 +89,11 @@ beforeAll(async () => {
       priceMinor: 40_000,
       validForBaseIds: [OTHER],
     }),
+    fee(routed.listingId, routed.offerId, "Charter Pack", {
+      obligatory: false,
+      priceMinor: 25_000,
+      includedExternalIds: ["Bed linen", "APA"],
+    }),
     fee(skippered.listingId, skippered.offerId, "Skipper", {
       crewRole: "skipper",
       priceMinor: 150_000,
@@ -135,6 +142,17 @@ describe("route and base conditions on a fee", () => {
     ).toEqual([
       { label: "APA", oneWayOnly: false },
       { label: "One Way Fee", oneWayOnly: true },
+    ]);
+  });
+});
+
+describe("a pack that bundles other extras", () => {
+  it("names what it bundles, in the codes a quote line carries", async () => {
+    const prices = await listRequestableExtraPrices(test.db, "lst_routed", "off_routed");
+
+    expect(prices.get("service:Charter Pack")?.bundles).toEqual([
+      "service:Bed linen",
+      "service:APA",
     ]);
   });
 });

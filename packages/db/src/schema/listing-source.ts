@@ -138,6 +138,12 @@ export const providerExtraCatalogue = pgTable(
      */
     validRoutes: text("valid_routes").array(),
     /**
+     * The extras this one bundles, by `external_id` in the same `kind`. Booking Manager's
+     * `includedExtras`, which no spec documents: an optional charter pack that contains a
+     * cleaning fee the charter already pays, so the pack only adds what is not paid already.
+     */
+    includedExternalIds: text("included_external_ids").array(),
+    /**
      * A floor under a computed total, in minor units. Only meaningful beside `percentage`: a
      * 3% fee with a 50 EUR minimum is 50 EUR on a small charter, not 30.
      *

@@ -48,6 +48,8 @@ export type RequestableExtraPrice = {
   percentage: number | null;
   /** INCLUDED_IN_PRICE is covered by the charter and charged nowhere. */
   included: boolean;
+  /** The codes of the extras this one bundles; see `included_external_ids`. */
+  bundles: string[];
 };
 
 /**
@@ -71,10 +73,12 @@ export async function listRequestableExtraPrices(
     priceMeasure: string | null;
     calculationType: string | null;
     percentage: string | null;
+    includedExternalIds: string[] | null;
   }>(sql`
     select source, kind, external_id as "externalId", name,
       price_minor as "priceMinor", price_currency as "priceCurrency",
-      price_measure as "priceMeasure", calculation_type as "calculationType", percentage
+      price_measure as "priceMeasure", calculation_type as "calculationType", percentage,
+      included_external_ids as "includedExternalIds"
     from provider_extra_catalogue
     where obligatory = false
       and ${listingOfferId ? sql`listing_offer_id = ${listingOfferId}` : sql`listing_id = ${listingId}`}
@@ -92,6 +96,7 @@ export async function listRequestableExtraPrices(
           priceMeasure: row.priceMeasure,
           percentage: row.percentage === null ? null : Number(row.percentage),
           included: row.calculationType === "INCLUDED_IN_PRICE",
+          bundles: (row.includedExternalIds ?? []).map((id) => `${row.kind}:${id}`),
         },
       ]),
   );
