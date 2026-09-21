@@ -20,6 +20,7 @@ import {
   restCountriesResponseSchema,
   restFreeYachtsResponseSchema,
   restOccupancyResponseSchema,
+  restStatusSchema,
   restYachtReservationResponseSchema,
 } from "./endpoints";
 import { providerRejection } from "../testing/contracts";
@@ -319,5 +320,41 @@ describe("NauSYS fixture round trip", () => {
     await expect(
       client.catalogueCall(nausysEndpoints.catalogue.countries, restCountriesResponseSchema),
     ).rejects.toBeInstanceOf(ContractError);
+  });
+});
+
+describe("NauSYS retries on reservation writes", () => {
+  function withRetries() {
+    const transport = new FakeNausysTransport();
+    const client = new NausysClient({
+      config,
+      fetchImpl: transport.fetch,
+      queue: new SequentialQueue(),
+      retry: { maxAttempts: 3, baseDelayMs: 0, maxDelayMs: 0 },
+    });
+    return { client, transport };
+  }
+
+  /*
+   * UNKNOWN_ERROR is transient, so a read tries again. A write may already have happened, and a
+   * second createBooking carrying the rotated-away uuid got a fixed booking recorded as refused.
+   */
+  it("tries a booking write once, even on a transient failure", async () => {
+    const { client, transport } = withRetries();
+    transport.failOnceWith("createBooking", "error-999");
+
+    await expect(
+      client.bookingCall(nausysEndpoints.booking.createBooking, restStatusSchema, { id: 1 }),
+    ).rejects.toThrow();
+    expect(transport.callCount("createBooking")).toBe(1);
+  });
+
+  it("still retries a read", async () => {
+    const { client, transport } = withRetries();
+    transport.failOnceWith("freeYachts", "error-999");
+    transport.respondWith("freeYachts", { status: "OK", freeYachts: [] });
+
+    await client.bookingCall(nausysEndpoints.availability.freeYachts, restStatusSchema, {});
+    expect(transport.callCount("freeYachts")).toBe(2);
   });
 });

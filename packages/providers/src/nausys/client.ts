@@ -19,7 +19,24 @@ import type { JsonObject, JsonValue } from "../shared/json";
 import { queueForInterval, SequentialQueue } from "../shared/queue";
 import type { RetryPolicy } from "../shared/retry";
 import type { NausysConfig } from "./config";
-import { NAUSYS_STATUS_CODES, NAUSYS_STATUS_NAMES, restStatusSchema } from "./endpoints";
+import {
+  NAUSYS_STATUS_CODES,
+  NAUSYS_STATUS_NAMES,
+  nausysEndpoints,
+  restStatusSchema,
+} from "./endpoints";
+
+/**
+ * Every call that changes a reservation, attempted once.
+ *
+ * The retry policy treats a timeout, a 5xx page and UNKNOWN_ERROR as transient, which is right
+ * for a read and wrong here: the vendor may have applied the write before the answer was lost.
+ * A retried createBooking then carries a uuid the first attempt already rotated, is refused, and
+ * the booking the operator just fixed is recorded as rejected and refunded. Booking Manager's
+ * client opts its creates out the same way. The failure surfaces once, for the caller and
+ * reservation-reconcile to settle against the vendor's own record.
+ */
+const NON_IDEMPOTENT_ENDPOINTS = new Set<string>(Object.values(nausysEndpoints.booking));
 
 type ErrorFactory = (
   message: string,
@@ -267,6 +284,7 @@ export class NausysClient {
   ): Promise<TOut> {
     const response = await this.http.post(endpoint, body, {
       queueKey: this.queueKeyFor(lane),
+      ...(NON_IDEMPOTENT_ENDPOINTS.has(endpoint) ? { retry: { maxAttempts: 1 } } : null),
     });
     const parsed = schema.safeParse(response.body);
     if (!parsed.success) {

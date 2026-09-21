@@ -6,6 +6,7 @@ import {
 import { booking, payment, providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import { quote } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider } from "@yacht-charter/providers";
+import { TransientError } from "@yacht-charter/providers/shared/errors";
 import { and, eq } from "drizzle-orm";
 import { parseError } from "evlog";
 
@@ -22,7 +23,9 @@ type ConfirmRequest = Parameters<InventoryProvider["confirmBooking"]>[0];
 export type ConfirmOutcome =
   | { outcome: "confirmed"; providerReservationId: string | null }
   | { outcome: "rejected"; message: string }
-  | { outcome: "skipped"; reason: string };
+  | { outcome: "skipped"; reason: string }
+  /** The provider may or may not have committed it; see the catch in `confirmBookingWithProvider`. */
+  | { outcome: "indeterminate"; reason: string };
 
 /**
  * Commits a paid booking with the provider.
@@ -112,6 +115,33 @@ export async function confirmBookingWithProvider(
       providerReservationId: reservation.providerReservationId ?? null,
     };
   } catch (error) {
+    /*
+     * A timeout, a 5xx page or the vendor's own UNKNOWN_ERROR is not a refusal: the booking may
+     * have been committed before the answer was lost. Treating it as one refunded a charter the
+     * operator had already fixed and took its week off the card. The booking stays in
+     * CONFIRMING, where the stale-confirming sweep flags it for a person after fifteen minutes
+     * and reservation-reconcile reads the vendor's record for it; the money is neither
+     * refunded nor captured until one of them decides.
+     */
+    if (error instanceof TransientError) {
+      reportProviderRefusal("confirm", error, { bookingId, provider: row.provider });
+      await recordProviderFailure(db, "confirm", parseError(error), {
+        bookingId,
+        provider: row.provider,
+      });
+      await db.insert(providerReservationEvent).values({
+        bookingId,
+        kind: "confirm_failed",
+        provider: row.provider,
+        providerReference: row.providerReservationId,
+        payload: {
+          indeterminate: true,
+          note: "No answer from the provider; ask it whether the reservation exists before refunding.",
+        },
+      });
+      return { outcome: "indeterminate", reason: "The provider did not answer the confirmation" };
+    }
+
     // Two messages, not one: the vendor's text goes to the event log, and the
     // customer-facing wording is what the invoice screen and the confirmation
     // poll are allowed to print.

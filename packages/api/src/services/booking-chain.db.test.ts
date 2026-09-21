@@ -1,7 +1,7 @@
 import "../test-support/checkout-env";
 
 import { createTestDatabase, type TestDatabase } from "@yacht-charter/db/test-support/database";
-import { SlotUnavailableError } from "@yacht-charter/providers/shared/errors";
+import { SlotUnavailableError, TransientError } from "@yacht-charter/providers/shared/errors";
 import type { MockInventoryProvider } from "@yacht-charter/providers/mock/provider";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -433,6 +433,38 @@ describe("provider refuses after the card was authorized", () => {
 
     expect((await bookingState(db, hold.bookingId)).booking.status).toBe("REFUNDED");
     expect(await weekOnSale(db, listingId)).toBe(true);
+  });
+});
+
+/*
+ * A timeout on the confirmation says nothing about whether the charter exists: the vendor may
+ * have fixed it before the answer was lost. Refunding it, as a refusal is, gave the money back
+ * on a charter the operator was holding.
+ */
+describe("provider does not answer the confirmation", () => {
+  it("neither captures nor releases, and leaves the booking for reconcile", async () => {
+    const { db } = test;
+    const { listingId, hold, pi } = await checkoutOn("silent");
+    vi.spyOn(inventory, "confirmBooking").mockRejectedValueOnce(
+      new TransientError("NauSYS createBooking timed out"),
+    );
+    stripe.capture.mockClear();
+    stripe.cancel.mockClear();
+
+    await deliver(
+      db,
+      inventory,
+      stripe,
+      eventBody("payment_intent.amount_capturable_updated", stripe.settle(pi, "requires_capture")),
+    );
+
+    expect(stripe.capture).not.toHaveBeenCalled();
+    expect(stripe.cancel).not.toHaveBeenCalled();
+
+    const pending = await bookingState(db, hold.bookingId);
+    expect(pending.booking.status).toBe("CONFIRMING");
+    expect(pending.events.map((event) => event.kind)).toEqual(["option_created", "confirm_failed"]);
+    expect(await weekOnSale(db, listingId)).toBe(false);
   });
 });
 
