@@ -477,10 +477,10 @@ function projectYacht(
       heads: intOf(yacht.wc) ?? 0,
       // The vendor publishes `wc` and nothing about showers, so the count stays unknown.
       yearBuilt: intOf(yacht.year) ?? 0,
-      // `engine` is a free-text description ("2 x 75hp Volvo"), never a count.
-      engines: undefined,
+      ...engineOf(text(yacht.engine)),
       fuelCapacity: capacityOf(yacht.fuelCapacity),
       waterCapacity: capacityOf(yacht.waterCapacity),
+      sailType: sailTypeOf(text(yacht.mainsailType)),
     },
     crewType: crewTypeOf(soldProductOf(yacht)),
     media: mediaOf(yacht),
@@ -675,6 +675,55 @@ function weekdayOf(value: JsonField): number | undefined {
   const parsed = intOf(value);
   if (parsed === undefined || parsed < 1 || parsed > 7) return undefined;
   return parsed - 1;
+}
+
+/**
+ * The mainsail in the vocabulary NauSYS resolves its `sailTypes` to, so one Mainsail filter
+ * finds both fleets and the curated `sail_type` labels translate it.
+ *
+ * The vendor's list is closed: every yacht on the account sends one of these three or "None".
+ * "Semi full batten" is NauSYS's half batten, battens run full length only part-way down.
+ * "None" (German "Keine") is how the vendor writes a boat with no mainsail, not a rig called
+ * None, and anything outside the list is left unset rather than published as a new facet.
+ * `genoaType` has nowhere to go: the spec block and the filters know the mainsail only.
+ */
+const SAIL_TYPES = new Map([
+  ["full batten", "full batten"],
+  ["semi full batten", "half batten"],
+  ["furling", "furling/roll"],
+]);
+
+function sailTypeOf(value: string | undefined): string | undefined {
+  return value === undefined ? undefined : SAIL_TYPES.get(value.toLowerCase());
+}
+
+/**
+ * `engine` is the operator's own line ("2 x 38 HP", "Volvo 40 h.p.", "Yanmar Diesel"), so the
+ * power is read where it carries a unit and the count only where it is written as a multiple.
+ * A bare figure ("78", "27.3") could be either unit and is left unread, as is a brand alone.
+ * Metric horsepower (PS, CV, KS) is written as hp, the unit the rest of the catalogue prints;
+ * the two differ by 1.4%.
+ */
+const ENGINE_POWER = /(\d+(?:[.,]\d+)?)\s*(b?hp|h\.\s?p\.?|ps|cv|ks|kw)(?![a-z])/i;
+const ENGINE_COUNT = /(?<![\d.,])([1-4])\s*[x\u00d7]/i;
+
+type EngineSpec = { engines?: number; enginePower?: string };
+
+function engineOf(value: string | undefined): EngineSpec {
+  const engine: EngineSpec = {};
+  if (value === undefined) return engine;
+
+  const count = ENGINE_COUNT.exec(value)?.[1];
+  if (count !== undefined) engine.engines = Number(count);
+
+  const power = ENGINE_POWER.exec(value);
+  const figure = power?.[1]?.replace(",", ".");
+  if (power !== null && figure !== undefined && Number(figure) > 0) {
+    const unit = power[2]?.toLowerCase() === "kw" ? "kW" : "hp";
+    engine.enginePower = `${Number(figure)} ${unit}`;
+  }
+
+  return engine;
 }
 
 /* ----------------------------------------------------------------- helpers */

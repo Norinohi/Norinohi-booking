@@ -528,6 +528,52 @@ describe("check-in rules", () => {
   });
 });
 
+describe("rig and engine", () => {
+  const specOf = (over: Record<string, JsonValue>) =>
+    projectBookingManagerCatalogue(
+      new Map([
+        [
+          "yacht" as const,
+          [{ externalId: "5001", payload: { id: 5001, companyId: 42, homeBaseId: 7, ...over } }],
+        ],
+      ]),
+    ).listings[0]?.spec;
+
+  it("files the mainsail under the words NauSYS uses, so one filter finds both", () => {
+    expect(specOf({ mainsailType: "Full batten" })?.sailType).toBe("full batten");
+    expect(specOf({ mainsailType: "Furling" })?.sailType).toBe("furling/roll");
+    expect(specOf({ mainsailType: "Semi full batten" })?.sailType).toBe("half batten");
+  });
+
+  it("reads None, in either language, as no mainsail", () => {
+    expect(specOf({ mainsailType: "None" })?.sailType).toBeUndefined();
+    expect(specOf({ mainsailType: "Keine" })?.sailType).toBeUndefined();
+    expect(specOf({})?.sailType).toBeUndefined();
+  });
+
+  it.each([
+    ["2 x 38 HP", 2, "38 hp"],
+    ["2x57 hp", 2, "57 hp"],
+    ["2xYanmar 320 HP", 2, "320 hp"],
+    ["Volvo 40 h.p.", undefined, "40 hp"],
+    ["Volvo Saildrive 20 hp", undefined, "20 hp"],
+    ["75 PS", undefined, "75 hp"],
+    ["27,3 hp", undefined, "27.3 hp"],
+    ["110 kW", undefined, "110 kW"],
+  ])("reads %s", (engine, engines, enginePower) => {
+    const spec = specOf({ engine });
+    expect(spec?.engines).toBe(engines);
+    expect(spec?.enginePower).toBe(enginePower);
+  });
+
+  it.each(["", "Yanmar Diesel", "78 ", "Volvo MD 2030 21/29 (kW/PS)"])(
+    "leaves %j unread rather than guess its unit",
+    (engine) => {
+      expect(specOf({ engine })?.enginePower).toBeUndefined();
+    },
+  );
+});
+
 describe("the legal limit on board", () => {
   const specOf = (over: Record<string, JsonValue>) =>
     projectBookingManagerCatalogue(
@@ -866,6 +912,12 @@ describe("live company 225 yachts: crew, rig and pictures", () => {
     for (const listing of listings) {
       expect(listing.checkinRules.every((rule) => rule.maxNights === 90)).toBe(true);
     }
+  });
+
+  it("carries the rig and engine the fleet states", () => {
+    expect(listingNamed("Queen II")?.spec).toMatchObject({ sailType: "full batten" });
+    expect(listingNamed("Whisper")?.spec).toMatchObject({ engines: 2, enginePower: "38 hp" });
+    expect(listingNamed("Whisper")?.spec.sailType).toBeUndefined();
   });
 
   it("reads the default product, not a Crewed one the yacht also sells", () => {
