@@ -1016,6 +1016,13 @@
       "when": 1790029740935,
       "tag": "0144_yummy_gorgon",
       "breakpoints": true
+    },
+    {
+      "idx": 145,
+      "version": "7",
+      "when": 1790030491344,
+      "tag": "0145_glossy_grey_gargoyle",
+      "breakpoints": true
     }
   ]
 }

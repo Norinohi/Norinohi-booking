@@ -154,8 +154,9 @@ export async function rebuildListingSearchDocs(
       bs.email,
       bs.phone,
       bs.website,
-      bs.check_in_time,
-      bs.check_out_time,
+      /* The boat's own handover first: the base row is shared by every operator at the marina. */
+      coalesce(l.check_in_time, bs.check_in_time),
+      coalesce(l.check_out_time, bs.check_out_time),
       spec.length_m,
       spec.cabins,
       spec.berths,

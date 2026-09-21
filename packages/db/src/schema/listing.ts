@@ -115,6 +115,9 @@ export const listing = pgTable(
     /** A walkthrough the operator filmed, and a 360 tour of the same boat. */
     videoUrl: text("video_url"),
     tourUrl: text("tour_url"),
+    /* This boat's own handover, `HH:mm`; the shared base row's times are only a fallback. */
+    checkInTime: text("check_in_time"),
+    checkOutTime: text("check_out_time"),
     securityDepositMinor: integer("security_deposit_minor"),
     /**
      * What the deposit falls to when the charter carries deposit insurance, where the operator

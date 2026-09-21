@@ -991,6 +991,13 @@ const canonicalListingSchema = z.object({
   /** A walkthrough the operator filmed, and a 360 tour of the same boat. Both are links. */
   videoUrl: z.url().optional(),
   tourUrl: z.url().optional(),
+  /**
+   * This boat's own handover, `HH:mm`. Not the base's: a base row is shared by every operator
+   * at the marina and keeps whichever wrote last, which put another operator's times on 3,158
+   * NauSYS listings.
+   */
+  checkInTime: z.string().optional(),
+  checkOutTime: z.string().optional(),
   securityDepositMinor: z.number().int().optional(),
   /**
    * What the deposit falls to when the charter carries deposit insurance. Absent unless the

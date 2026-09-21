@@ -416,3 +416,32 @@ describe("placeholder shipyards", () => {
     expect(catalogue.models.map((item) => item.externalBuilderId)).toEqual([undefined, "2"]);
   });
 });
+
+describe("handover times", () => {
+  it("keeps each boat's own, which the vendor states on the boat", () => {
+    const records: ProviderRecordSet = new Map([
+      [
+        "yacht" as const,
+        [
+          {
+            externalId: "5001",
+            payload: {
+              id: 5001,
+              companyId: 42,
+              homeBaseId: 7,
+              name: "Aurora",
+              currency: "EUR",
+              defaultCheckInTime: "17:00:00",
+              defaultCheckOutTime: "08:30:00",
+            },
+          },
+        ],
+      ],
+    ]);
+
+    expect(projectBookingManagerCatalogue(records).listings[0]).toMatchObject({
+      checkInTime: "17:00",
+      checkOutTime: "08:30",
+    });
+  });
+});

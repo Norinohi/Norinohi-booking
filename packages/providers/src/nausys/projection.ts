@@ -5,6 +5,7 @@ import { stripHtml } from "../shared/html-text";
 import { CONTENT_LOCALES } from "@yacht-charter/db/search/localize";
 
 import { toLocaleMap } from "../shared/international-text";
+import { wallClockTime } from "../shared/wall-clock";
 import { decimalStringToMinor } from "../shared/money";
 import { isPlaceholderBuilder } from "../shared/placeholder-builders";
 import { mergeYachtTitle } from "../shared/yacht-title";
@@ -186,6 +187,15 @@ export function projectNausysCatalogue(
     (item) => fleetBaseIds.has(String(item.id)) || !isClosedBase(item, options.today),
   );
   const returnNotesByBaseId = new Map(bases.map((item) => [String(item.id), returnNotesOf(item)]));
+  const handoverByBaseId = new Map(
+    bases.map((item) => [
+      String(item.id),
+      {
+        checkInTime: wallClockTime(item.checkInTime),
+        checkOutTime: wallClockTime(item.checkOutTime),
+      },
+    ]),
+  );
 
   const projectedBases = liveBases.map((item) => {
     const locationId = String(item.locationId);
@@ -237,6 +247,7 @@ export function projectNausysCatalogue(
         serviceTranslationsById,
         priceMeasureById,
         returnNotesByBaseId,
+        handoverByBaseId,
       }),
     )
     .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -355,6 +366,11 @@ function projectYacht(
     offlineCompanyIds?: ReadonlySet<string>;
     /** The home base's return-to-base notes, by base id; see `returnNotesOf`. */
     returnNotesByBaseId?: ReadonlyMap<string, ReturnNote[]>;
+    /** The home base's handover, by base id, for a yacht that states none of its own. */
+    handoverByBaseId?: ReadonlyMap<
+      string,
+      { checkInTime: string | undefined; checkOutTime: string | undefined }
+    >;
   } & ExtraNaming,
 ) {
   // The vendor's own withdrawals. `disabled` is a boat taken out of service and
@@ -444,6 +460,12 @@ function projectYacht(
     ...(context.offlineCompanyIds?.has(String(yacht.companyId))
       ? { optionApprovalRequired: true }
       : null),
+    checkInTime:
+      wallClockTime(yacht.checkInTime) ??
+      context.handoverByBaseId?.get(String(yacht.baseId))?.checkInTime,
+    checkOutTime:
+      wallClockTime(yacht.checkOutTime) ??
+      context.handoverByBaseId?.get(String(yacht.baseId))?.checkOutTime,
     securityDepositMinor: minorOf(yacht.deposit, depositCurrency),
     securityDepositWhenInsuredMinor: reducedDepositOf(yacht, depositCurrency),
     securityDepositCurrency: depositCurrency,

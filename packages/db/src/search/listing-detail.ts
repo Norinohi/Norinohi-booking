@@ -252,8 +252,10 @@ export async function getListingDetailByIdOrSlug(
         spec.engine_power as "enginePower",
         spec.fuel_capacity as "fuelCapacity",
         spec.water_capacity as "waterCapacity",
-        bs.check_in_time as "checkInTime",
-        bs.check_out_time as "checkOutTime",
+        /* The priced offer's handover, then the listing's, then the shared base row's, which
+           keeps whichever operator at the marina was written last. */
+        coalesce(o.check_in_time, l.check_in_time, bs.check_in_time) as "checkInTime",
+        coalesce(o.check_out_time, l.check_out_time, bs.check_out_time) as "checkOutTime",
         /* Read from the offer the card is priced from, like the extras: two vendors selling
            one hull can film it separately, and the page shows one of them. */
         coalesce(o.video_url, l.video_url) as "videoUrl",
