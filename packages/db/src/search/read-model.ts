@@ -165,9 +165,10 @@ export async function rebuildListingSearchDocs(
        * Berths are what it sleeps; a vendor's offers engine may sell fewer and say so nowhere
        * -- Booking Manager's maxPeopleOnBoard is null on all 12,813 products we hold. What we
        * have instead is what it has already refused, learned at quote time, and one below that
-       * is the most we know it will take.
+       * is the most we know it will take. NauSYS does state its legal limit, max_persons,
+       * which is below the berths on 297 of its hulls. least() skips a null.
        */
-      least(spec.berths, best.guests_refused_from - 1) as max_guests,
+      least(spec.berths, spec.max_persons, best.guests_refused_from - 1) as max_guests,
       spec.heads,
       spec.showers,
       spec.year_built,

@@ -485,6 +485,10 @@ export const restYachtSchema = looseJsonObject({
   draft: z.number().optional(),
   engines: z.number().int().optional(),
   enginePower: z.number().optional(),
+  /** DIESEL, PETROL, ELECTRIC or HYBRID. */
+  fuelType: z.string().optional(),
+  /** SAILDRIVE, SHAFT, ZDRIVE, IPS, OUTBOARD, SURFACE or JET. */
+  propulsionType: z.string().optional(),
   engineBuilderId: z.number().int().optional(),
   fuelTank: z.number().optional(),
   waterTank: z.number().optional(),

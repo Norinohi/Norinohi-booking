@@ -298,6 +298,30 @@ describe("projectNausysCatalogue", () => {
       });
     });
 
+    it("keeps the legal limit on board and the engine apart from the berths", () => {
+      const yacht = maria();
+      yacht.berthsTotal = 13;
+      yacht.maxPersons = 12;
+      yacht.enginePower = 45;
+      yacht.fuelType = "DIESEL";
+      yacht.propulsionType = "SAILDRIVE";
+
+      expect(listingOf(yacht)?.spec).toMatchObject({
+        berths: 13,
+        maxPersons: 12,
+        enginePower: "45 hp",
+        fuelType: "diesel",
+        propulsionType: "saildrive",
+      });
+    });
+
+    it("reads a zero limit on board as unstated", () => {
+      const yacht = maria();
+      yacht.maxPersons = 0;
+
+      expect(listingOf(yacht)?.spec.maxPersons).toBeUndefined();
+    });
+
     it("projects the shower count the vendor states, separately from the heads", () => {
       expect(listingOf(kraken())?.spec).toMatchObject({ heads: 4, showers: 4 });
     });

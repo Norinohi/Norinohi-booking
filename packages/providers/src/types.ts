@@ -883,8 +883,18 @@ const canonicalListingSchema = z.object({
      * than none.
      */
     showers: z.number().int().optional(),
+    /**
+     * The most people the boat may legally carry, where the vendor states it. Not `berths`:
+     * NauSYS registers 297 hulls for fewer people than they sleep (13 berths, 12 persons), and
+     * selling one to a party of 13 is a request the operator cannot accept.
+     */
+    maxPersons: z.number().int().positive().optional(),
     yearBuilt: z.number().int(),
     engines: z.number().int().optional(),
+    /** Per engine, with its unit: "45 hp". */
+    enginePower: z.string().optional(),
+    fuelType: z.string().optional(),
+    propulsionType: z.string().optional(),
     fuelCapacity: z.number().int().optional(),
     waterCapacity: z.number().int().optional(),
     /** Rig, resolved against the provider's own reference list rather than left as an id. */

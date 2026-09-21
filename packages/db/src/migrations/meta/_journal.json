@@ -988,6 +988,13 @@
       "when": 1790026571342,
       "tag": "0140_illegal_groot",
       "breakpoints": true
+    },
+    {
+      "idx": 141,
+      "version": "7",
+      "when": 1790027791091,
+      "tag": "0141_abnormal_lady_vermin",
+      "breakpoints": true
     }
   ]
 }

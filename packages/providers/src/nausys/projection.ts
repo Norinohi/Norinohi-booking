@@ -380,8 +380,17 @@ function projectYacht(
       berths: yacht.berthsTotal ?? 0,
       heads: yacht.wc ?? 0,
       showers: capacityOf(yacht.showers),
+      maxPersons:
+        yacht.maxPersons !== undefined && yacht.maxPersons > 0 ? yacht.maxPersons : undefined,
       yearBuilt: yacht.buildYear ?? 0,
       engines: intOf(yacht.engines),
+      /* The vendor states no unit; its own yacht pages print the figure as horsepower. */
+      enginePower:
+        yacht.enginePower !== undefined && yacht.enginePower > 0
+          ? `${yacht.enginePower} hp`
+          : undefined,
+      fuelType: yacht.fuelType?.toLowerCase(),
+      propulsionType: yacht.propulsionType?.toLowerCase(),
       fuelCapacity: capacityOf(yacht.fuelTank, model?.fuelTank),
       waterCapacity: capacityOf(yacht.waterTank, model?.waterTank),
       // The vendor names the rig in its own `sailTypes` reference, so an id we cannot

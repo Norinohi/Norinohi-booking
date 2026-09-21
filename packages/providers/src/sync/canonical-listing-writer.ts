@@ -65,6 +65,7 @@ type SpecRow = {
   yearBuilt: number | null;
   cabins: number | null;
   berths: number | null;
+  maxPersons: number | null;
   heads: number | null;
   showers: number | null;
   engines: number | null;
@@ -84,6 +85,7 @@ const SPEC_COLUMNS: readonly (keyof SpecRow)[] = [
   "yearBuilt",
   "cabins",
   "berths",
+  "maxPersons",
   "heads",
   "showers",
   "engines",
@@ -232,6 +234,7 @@ async function loadOffers(db: Database, listingIds: readonly string[]): Promise<
         yearBuilt: listingOfferSpecification.yearBuilt,
         cabins: listingOfferSpecification.cabins,
         berths: listingOfferSpecification.berths,
+        maxPersons: listingOfferSpecification.maxPersons,
         heads: listingOfferSpecification.heads,
         showers: listingOfferSpecification.showers,
         engines: listingOfferSpecification.engines,

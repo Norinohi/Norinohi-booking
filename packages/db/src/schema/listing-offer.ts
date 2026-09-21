@@ -208,6 +208,8 @@ export const listingOfferSpecification = pgTable("listing_offer_specification", 
   yearBuilt: integer("year_built"),
   cabins: integer("cabins"),
   berths: integer("berths"),
+  /* The legal limit on board where the vendor states one; see `max_guests` in the read model. */
+  maxPersons: integer("max_persons"),
   heads: integer("heads"),
   showers: integer("showers"),
   engines: integer("engines"),
