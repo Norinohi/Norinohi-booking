@@ -68,6 +68,8 @@ export interface BookingSummaryProps {
   crewType: CrewType | undefined;
   crewOptions: readonly CrewType[];
   onCrewChange: (next: CrewType) => void;
+  /** Picks one of a crew role's variants; absent where the summary is read-only. */
+  onCrewVariantChange?: (code: string) => void;
   /** Null clears a one-way, returning the yacht to the base it left from. */
   onDropOffChange?: (endBaseId: string | null) => void;
   guests: number;
@@ -132,6 +134,7 @@ export default function BookingSummary({
   crewType,
   crewOptions,
   onCrewChange,
+  onCrewVariantChange,
   onDropOffChange,
   guests,
   onGuestsChange,
@@ -199,6 +202,7 @@ export default function BookingSummary({
             crewType={crewType}
             crewOptions={crewOptions}
             onCrewChange={onCrewChange}
+            onCrewVariantChange={onCrewVariantChange}
             onDropOffChange={onDropOffChange}
             guests={guests}
             onGuestsChange={onGuestsChange}

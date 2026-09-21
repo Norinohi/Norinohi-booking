@@ -13,6 +13,8 @@
     "confirmWithBase": "Prisen er ikke publisert, bekreft med basen",
     "percentageOfCharter": "{percent} % av charterprisen",
     "oneWayOnly": "Kun envegscharter",
+    "chooseVariants": "Velg alternativene du trenger",
+    "fromPrice": "fra {price}",
     "measure": {
       "booking": "{price} per booking",
       "day": "{price} per dag",

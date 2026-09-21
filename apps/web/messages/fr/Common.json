@@ -13,6 +13,8 @@
     "confirmWithBase": "Prix non publié, à confirmer auprès de la base",
     "percentageOfCharter": "{percent} % du prix de la location",
     "oneWayOnly": "Locations aller simple uniquement",
+    "chooseVariants": "Choisissez les options dont vous avez besoin",
+    "fromPrice": "à partir de {price}",
     "measure": {
       "booking": "{price} par réservation",
       "day": "{price} par jour",

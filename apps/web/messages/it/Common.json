@@ -13,6 +13,8 @@
     "confirmWithBase": "Prezzo non pubblicato, da confermare con la base",
     "percentageOfCharter": "{percent}% del prezzo del noleggio",
     "oneWayOnly": "Solo noleggi di sola andata",
+    "chooseVariants": "Scegli le opzioni che ti servono",
+    "fromPrice": "da {price}",
     "measure": {
       "booking": "{price} a prenotazione",
       "day": "{price} al giorno",

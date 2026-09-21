@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { baseExtraCode, isVariantCode } from "@/lib/extra-code";
+
 import type { Quote } from "../api/queries";
 import type { CrewType, ListingDetail } from "../types";
 import type { useQuote } from "./use-quote";
@@ -92,6 +94,27 @@ export function useQuoteSelection(
    */
   const extrasDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  /*
+   * The crew variants the customer picked, off the quote's own list: a crew line reads the same
+   * whether it was picked or chosen by the adapter, and only a pick should outlive a change of
+   * party size. Sent beside every extras edit, since `extras` is one list on the wire.
+   */
+  const crewPicks = () => {
+    if (!quote) return [];
+    const aboard = new Set(
+      quote.lines.filter((line) => line.group === "crew").map((line) => baseExtraCode(line.code)),
+    );
+    return quote.extras.filter((code) => isVariantCode(code) && aboard.has(baseExtraCode(code)));
+  };
+
+  /** One crew role's variant, replacing whatever was picked for that role before. */
+  function selectCrewVariant(code: string) {
+    if (!quote) return;
+    const role = baseExtraCode(code);
+    const picks = crewPicks().filter((pick) => baseExtraCode(pick) !== role);
+    void repriceWith({ extras: [...extras, ...picks, code] });
+  }
+
   /** What the live quote actually priced, which is what a reprice would have to change. */
   const pricedExtras = () =>
     quote?.lines.filter((line) => line.group === "optional").map((line) => line.code) ?? [];
@@ -117,7 +140,7 @@ export function useQuoteSelection(
   /** One reprice for one edit, and the edit stops being pending once that reprice has answered. */
   async function commitExtras(next: readonly string[]) {
     try {
-      await repriceWith({ extras: [...next] });
+      await repriceWith({ extras: [...next, ...crewPicks()] });
     } finally {
       if (pendingExtrasRef.current === next) pendingExtrasRef.current = null;
     }
@@ -206,6 +229,7 @@ export function useQuoteSelection(
     extras,
     requestedExtras,
     setCrew,
+    selectCrewVariant,
     setDropOff,
     setGuests,
     selectExtras,

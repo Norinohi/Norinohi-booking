@@ -13,6 +13,8 @@
     "confirmWithBase": "Ціну не вказано, уточніть на базі",
     "percentageOfCharter": "{percent}% від вартості чартеру",
     "oneWayOnly": "Лише для рейсів в один бік",
+    "chooseVariants": "Оберіть потрібні варіанти",
+    "fromPrice": "від {price}",
     "measure": {
       "booking": "{price} за бронювання",
       "day": "{price} за день",

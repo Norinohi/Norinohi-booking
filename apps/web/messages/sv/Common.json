@@ -13,6 +13,8 @@
     "confirmWithBase": "Priset är inte publicerat, bekräfta med basen",
     "percentageOfCharter": "{percent} % av charterpriset",
     "oneWayOnly": "Endast enkelriktad charter",
+    "chooseVariants": "Välj de alternativ du behöver",
+    "fromPrice": "från {price}",
     "measure": {
       "booking": "{price} per bokning",
       "day": "{price} per dag",

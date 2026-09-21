@@ -60,7 +60,7 @@ export function PriceGroup({ labelKey, lines, catalogue }: PriceGroupProps) {
         <AccordionContent>
           <div className="flex flex-col pt-3">
             {lines.map((line, index) => (
-              <div key={line.code} className="flex flex-col">
+              <div key={`${line.code}-${index}`} className="flex flex-col">
                 {index > 0 ? (
                   <span aria-hidden className="mt-3 mb-2.75 h-px w-full bg-border" />
                 ) : null}

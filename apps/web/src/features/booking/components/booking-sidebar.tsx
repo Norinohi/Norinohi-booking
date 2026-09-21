@@ -39,6 +39,7 @@ export default function BookingSidebar({
     retryPricing,
     selectPeriod,
     setCrew,
+    selectCrewVariant,
     setDropOff,
     setGuests,
     applyPromo,
@@ -91,6 +92,7 @@ export default function BookingSidebar({
         crewType={crewType}
         crewOptions={crewOptions}
         onCrewChange={setCrew}
+        onCrewVariantChange={selectCrewVariant}
         onDropOffChange={actions ? setDropOff : undefined}
         guests={guests}
         onGuestsChange={setGuests}

@@ -13,6 +13,8 @@
     "confirmWithBase": "Price not published, confirm with the base",
     "percentageOfCharter": "{percent}% of the charter price",
     "oneWayOnly": "One-way charters only",
+    "chooseVariants": "Choose the options you need",
+    "fromPrice": "from {price}",
     "measure": {
       "booking": "{price} per booking",
       "day": "{price} per day",

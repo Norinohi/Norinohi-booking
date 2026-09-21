@@ -13,6 +13,8 @@
     "confirmWithBase": "Cena nieopublikowana, potwierdź ją w bazie czarterowej",
     "percentageOfCharter": "{percent}% ceny czarteru",
     "oneWayOnly": "Tylko czartery w jedną stronę",
+    "chooseVariants": "Wybierz potrzebne warianty",
+    "fromPrice": "od {price}",
     "measure": {
       "booking": "{price} za rezerwację",
       "day": "{price} za dzień",

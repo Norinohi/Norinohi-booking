@@ -6,7 +6,10 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 
+import { ExtraNote } from "@/components/shared/extra-note";
+import { ExtraVariantGroup } from "@/components/shared/extra-variant-group";
 import { useExtraPrice } from "@/hooks/use-extra-price";
+import { notBilledAsMandatory } from "@/lib/extra-code";
 import { extraPriceKind } from "@/lib/extra-price-kind";
 import { useExactMoney } from "@/hooks/use-money";
 
@@ -74,6 +77,7 @@ function ExtraRow({
         {caption === null ? null : (
           <span className="text-xs leading-[1.3] font-semibold text-natural-300">{caption}</span>
         )}
+        <ExtraNote note={offered?.note} />
       </span>
       <span className="shrink-0 text-base leading-[1.4] font-bold text-foreground">
         {kind === "percentage" && item.percentage !== null
@@ -109,7 +113,7 @@ export default function ExtrasStep() {
    * Amenities on the yacht page, which already lists it.
    */
   const mandatory = (quote?.lines ?? []).filter((line) => line.group === "mandatory");
-  const optional = listing?.optionalExtras ?? [];
+  const optional = (listing?.optionalExtras ?? []).filter(notBilledAsMandatory(quote?.lines));
   /* Null until a quote exists, and for a provider whose offer does not report it —
      neither is grounds for greying anything out. */
   const offered = quote?.offeredExtras
@@ -147,6 +151,7 @@ export default function ExtrasStep() {
                           : tExtras("dueWithPrepayment")}
                       </span>
                     )}
+                    <ExtraNote note={line.note} />
                   </span>
                   <span className="flex shrink-0 items-center gap-2 py-1">
                     {line.amount.amountMinor === 0 ? (
@@ -179,27 +184,42 @@ export default function ExtrasStep() {
           name="extras.optional"
           render={({ field }) => (
             <div className="flex flex-col">
-              {selectable.map((item) => (
-                <label
-                  key={item.code}
-                  className="flex cursor-pointer items-start gap-2 border-b border-dashed border-border py-3"
-                >
-                  <Checkbox
-                    checked={field.value.includes(item.code)}
-                    onCheckedChange={(checked) => {
-                      const next = checked
-                        ? [...field.value, item.code]
-                        : field.value.filter((code) => code !== item.code);
+              {selectable.map((item) => {
+                const variants = offered?.get(item.code)?.variants;
+                return variants && variants.length > 0 ? (
+                  <ExtraVariantGroup
+                    key={item.code}
+                    label={item.label}
+                    variants={variants}
+                    selected={field.value}
+                    onChange={(next) => {
                       field.onChange(next);
-                      /* The sidebar beside this step shows the same quote, so it moves with
-                         the box rather than waiting for Continue to commit the step. */
                       selectExtras(next);
                     }}
-                    onBlur={field.onBlur}
+                    exact
                   />
-                  <ExtraRow item={item} offered={offered?.get(item.code)} />
-                </label>
-              ))}
+                ) : (
+                  <label
+                    key={item.code}
+                    className="flex cursor-pointer items-start gap-2 border-b border-dashed border-border py-3"
+                  >
+                    <Checkbox
+                      checked={field.value.includes(item.code)}
+                      onCheckedChange={(checked) => {
+                        const next = checked
+                          ? [...field.value, item.code]
+                          : field.value.filter((code) => code !== item.code);
+                        field.onChange(next);
+                        /* The sidebar beside this step shows the same quote, so it moves with
+                         the box rather than waiting for Continue to commit the step. */
+                        selectExtras(next);
+                      }}
+                      onBlur={field.onBlur}
+                    />
+                    <ExtraRow item={item} offered={offered?.get(item.code)} />
+                  </label>
+                );
+              })}
 
               {/*
                 Shown and tickable, but asked for rather than bought: the vendor will not book

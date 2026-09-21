@@ -12,6 +12,8 @@
     "priceOnRequest": "Preis auf Anfrage",
     "confirmWithBase": "Kein Preis angegeben, bei der Basis erfragen",
     "percentageOfCharter": "{percent}% des Charterpreises",
+    "chooseVariants": "Wählen Sie die gewünschten Varianten",
+    "fromPrice": "ab {price}",
     "measure": {
       "booking": "{price} pro Buchung",
       "day": "{price} pro Tag",

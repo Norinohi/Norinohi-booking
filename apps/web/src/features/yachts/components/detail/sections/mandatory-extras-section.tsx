@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 
+import { ExtraNote } from "@/components/shared/extra-note";
 import { useBooking } from "@/features/booking";
 import { useExtraPrice } from "@/hooks/use-extra-price";
 
@@ -25,6 +26,8 @@ export default function MandatoryExtrasSection() {
    * "pay at check-in".
    */
   const offeredPayWhen = new Map(quote?.lines.map((line) => [line.code, line.payWhen]));
+  /* And the operator's terms for it, which only the offer carries. */
+  const offeredNote = new Map(quote?.lines.map((line) => [line.code, line.note]));
 
   return (
     <DetailSection id="mandatory-extras" title={t("sections.mandatoryExtras")}>
@@ -66,6 +69,7 @@ export default function MandatoryExtrasSection() {
                       : tExtras(payableInBase ? "payAtCheckIn" : "dueWithPrepayment")}
                   </p>
                 )}
+                <ExtraNote note={offeredNote.get(item.code)} />
               </div>
               {/* The operator's own measure, where it gave one: a per-person extra quoted
                   as "per booking" understates what the charter will be billed. */}
