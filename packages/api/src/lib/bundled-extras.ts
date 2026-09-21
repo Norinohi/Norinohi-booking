@@ -10,6 +10,11 @@
  * So a pack adds only what is not paid for yet, and an extra a requested pack contains adds
  * nothing of its own. A pack whose contents are billed at or above its own price is kept whole:
  * that reads as the operator listing the wrong ids, and the pack is what the base will charge.
+ *
+ * The netting is our reading, not the vendor's: whether a base charges a pack net of contents the
+ * guest already paid is open with Booking Manager (Q21). Should the base charge the pack whole,
+ * the at-check-in estimate is low by what `chargedElsewhere` holds for its contents (100 EUR on
+ * the 225 Charter Pack), and the fix is to stop subtracting `paidMinor` below.
  */
 
 export type RequestedLine = {
