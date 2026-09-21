@@ -161,7 +161,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
       // that moved between quote and checkout is refused rather than held at a
       // price the vendor will not honour.
       verifyPrice: async (draft) => {
-        const quote = await this.quotes.getNausysQuote({
+        const { quote, billedRows } = await this.quotes.getNausysQuoteWithRows({
           listingId: draft.listingId,
           checkIn: draft.checkIn,
           checkOut: draft.checkOut,
@@ -172,8 +172,17 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
              observes a different price and fails the comparison it exists to make. */
           currency: draft.currency ?? this.currency,
         });
-        return quote.priceSourceHash;
+        return { hash: quote.priceSourceHash, billedRows };
       },
+      /* The same re-price, for an extras edit on a reservation that already exists. */
+      billedRowsFor: async (request) =>
+        (
+          await this.quotes.getNausysQuoteWithRows({
+            ...request,
+            currency: request.currency ?? this.currency,
+          })
+        ).billedRows,
+      loadExtraLabels: (listingId) => loadNausysExtraLabels(this.db, listingId),
       recordEvent: createReservationEventRecorder(this.db, "nausys"),
       persistSecurityToken: createSecurityTokenSink(this.db),
     });

@@ -55,8 +55,6 @@ export interface CatalogueResolver {
    */
   toExternalYachtIds(listingIds: readonly string[]): Promise<Map<string, string>>;
   toListingId(externalYachtId: string): Promise<string | null>;
-  /** Maps our amenity codes to the provider's service/equipment ids for extras. */
-  toExternalAmenityIds(amenityCodes: string[]): Promise<string[]>;
   /**
    * Maps an ISO 3166-1 alpha-2 code to the provider's own country id, which is
    * what a booking's client payload carries. Null when the provider's catalogue
@@ -219,24 +217,6 @@ export function createCatalogueResolver(db: Database, providerKey: ProviderKey):
         .limit(1);
 
       return row?.listingId ?? null;
-    },
-
-    async toExternalAmenityIds(amenityCodes) {
-      if (amenityCodes.length === 0) return [];
-
-      const rows = await db
-        .select({ code: amenity.code })
-        .from(amenity)
-        .where(inArray(amenity.code, amenityCodes));
-
-      // Amenity codes are stored provider-prefixed ("nausys:3"); the vendor id is
-      // the suffix. A code with no prefix belongs to another provider and is skipped
-      // rather than passed through, which would send a foreign id to the vendor.
-      const prefix = `${providerKey}:`;
-      return rows
-        .map((row) => row.code)
-        .filter((code): code is string => Boolean(code?.startsWith(prefix)))
-        .map((code) => code.slice(prefix.length));
     },
 
     async toExternalCountryId(isoCode) {

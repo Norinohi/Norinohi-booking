@@ -77,7 +77,6 @@ function fakeResolver(): CatalogueResolver {
       }),
     toExternalYachtIds: () => Promise.resolve(new Map<string, string>()),
     toListingId: () => Promise.resolve("ylst_adriatic_1"),
-    toExternalAmenityIds: (codes) => Promise.resolve(codes.map((code) => code.split(":")[1] ?? "")),
     /* The vendor's real Croatia id, so a mapped payload is recognisable. */
     toExternalCountryId: (isoCode) => Promise.resolve(isoCode.toUpperCase() === "HR" ? "1" : null),
     loadListingSummary: () => Promise.resolve(null),
@@ -123,6 +122,30 @@ function fakeDb() {
   return { db, inserted, updated };
 }
 
+const charter = {
+  listingId: "ylst_adriatic_1",
+  checkIn: "2026-07-04",
+  checkOut: "2026-07-11",
+  guests: 6,
+};
+
+/** Season price row ids sit in another range than catalogue ids, as they do live. */
+const ROW_OFFSET = 60_000_000;
+
+/** The re-price, standing in: each `service:<id>` code is one row with no condition. */
+async function rowsForCodes(request: { extras?: readonly string[] | undefined }) {
+  return (request.extras ?? []).map((code) => {
+    const externalId = code.slice("service:".length);
+    return {
+      kind: "service" as const,
+      rowId: ROW_OFFSET + Number(externalId),
+      code,
+      externalId,
+      condition: null,
+    };
+  });
+}
+
 function build(overrides: Partial<NausysBookingServiceDeps> = {}) {
   const transport = new FakeNausysTransport();
   const client = new NausysClient({
@@ -142,7 +165,8 @@ function build(overrides: Partial<NausysBookingServiceDeps> = {}) {
     resolver: fakeResolver(),
     config,
     db,
-    verifyPrice: () => Promise.resolve(PRICE_HASH),
+    verifyPrice: () => Promise.resolve({ hash: PRICE_HASH, billedRows: [] }),
+    billedRowsFor: rowsForCodes,
     recordEvent: (event) => {
       events.push(event);
       return Promise.resolve();
@@ -342,16 +366,17 @@ describe("the uuid funnel", () => {
     transport.respondWith("addExtras", fixture("createOption", { uuid: rotated }));
 
     await service.addOrUpdateExtras({
+      charter,
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
-      extras: ["nausys:8001"],
+      extras: ["service:8001"],
     });
 
     // A reservation with no extras yet: everything desired is an addition, and
-    // `addExtras` is keyed by the catalogue service id.
+    // `addExtras` is keyed by the season price row the re-price named.
     expect(transport.lastBody("addExtras")).toMatchObject({
       id: 55901234,
       uuid: OPTION_UUID,
-      services: [{ serviceId: 8001, quantity: 1 }],
+      services: [{ serviceId: ROW_OFFSET + 8001, quantity: 1 }],
     });
     expect(rotations).toEqual([{ providerReservationId: RESERVATION_ID, securityToken: rotated }]);
   });
@@ -375,8 +400,9 @@ describe("the uuid funnel", () => {
     transport.respondWith("updateExtras", fixture("createOption"));
 
     await service.addOrUpdateExtras({
+      charter,
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
-      extras: ["nausys:8001"],
+      extras: ["service:8001"],
     });
 
     expect(transport.lastBody("listExtras")).toMatchObject({ id: 55901234, uuid: OPTION_UUID });
@@ -396,6 +422,7 @@ describe("the uuid funnel", () => {
     transport.respondWith("updateExtras", fixture("createOption"));
 
     await service.addOrUpdateExtras({
+      charter,
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
       extras: [],
     });
@@ -415,12 +442,13 @@ describe("the uuid funnel", () => {
     transport.respondWith("addExtras", fixture("createOption"));
 
     await service.addOrUpdateExtras({
+      charter,
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
-      extras: ["nausys:8001", "nausys:8002"],
+      extras: ["service:8001", "service:8002"],
     });
 
     expect(transport.lastBody("addExtras")).toMatchObject({
-      services: [{ serviceId: 8002, quantity: 1 }],
+      services: [{ serviceId: ROW_OFFSET + 8002, quantity: 1 }],
     });
   });
 
@@ -436,6 +464,7 @@ describe("the uuid funnel", () => {
     transport.respondWith("updateExtras", fixture("createOption"));
 
     await service.addOrUpdateExtras({
+      charter,
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
       extras: [],
     });
@@ -458,8 +487,9 @@ describe("the uuid funnel", () => {
     transport.respondWith("addExtras", fixture("createOption"));
 
     await service.addOrUpdateExtras({
+      charter,
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
-      extras: ["nausys:8002"],
+      extras: ["service:8002"],
     });
 
     expect(transport.callSequence()).toEqual(["updateExtras", "addExtras"]);
@@ -475,6 +505,7 @@ describe("the uuid funnel", () => {
 
     await expect(
       service.addOrUpdateExtras({
+        charter,
         ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
         extras: [],
       }),
@@ -493,8 +524,9 @@ describe("the uuid funnel", () => {
     transport.respondWith("updateExtras", fixture("createOption"));
 
     await service.addOrUpdateExtras({
+      charter,
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
-      extras: ["nausys:8001"],
+      extras: ["service:8001"],
     });
 
     expect(transport.lastBody("updateExtras")).toMatchObject({
@@ -587,7 +619,7 @@ describe("option expiry", () => {
 describe("price revalidation before the hold", () => {
   it("refuses to hold when the price source hash moved, without calling the vendor", async () => {
     const { service, transport, events } = build({
-      verifyPrice: () => Promise.resolve("a-different-hash"),
+      verifyPrice: () => Promise.resolve({ hash: "a-different-hash", billedRows: [] }),
     });
 
     await expect(service.createOption(draft)).rejects.toThrow(/PRICE_CHANGED/);
@@ -606,7 +638,7 @@ describe("price revalidation before the hold", () => {
     const { service } = build({
       verifyPrice: (draftSeen) => {
         asked.push(draftSeen.currency);
-        return Promise.resolve(PRICE_HASH);
+        return Promise.resolve({ hash: PRICE_HASH, billedRows: [] });
       },
     });
 
@@ -620,7 +652,7 @@ describe("price revalidation before the hold", () => {
     const { service } = build({
       verifyPrice: (draftSeen) => {
         asked.push(draftSeen.currency);
-        return Promise.resolve(PRICE_HASH);
+        return Promise.resolve({ hash: PRICE_HASH, billedRows: [] });
       },
     });
 
@@ -729,7 +761,7 @@ describe("reservation events", () => {
       resolver: fakeResolver(),
       config,
       db,
-      verifyPrice: () => Promise.resolve(PRICE_HASH),
+      verifyPrice: () => Promise.resolve({ hash: PRICE_HASH, billedRows: [] }),
       persistSecurityToken: () => Promise.resolve(),
     });
 
@@ -760,8 +792,9 @@ describe("agencyPrice never leaves the adapter", () => {
       securityToken: BOOKING_UUID,
     });
     const repriced = await service.addOrUpdateExtras({
+      charter,
       ref: { providerReservationId: RESERVATION_ID, securityToken: STORNO_UUID },
-      extras: ["nausys:8001"],
+      extras: ["service:8001"],
     });
 
     const serialized = JSON.stringify({ held, confirmed, cancelled, repriced, events });
@@ -779,8 +812,9 @@ describe("extras mutation pricing", () => {
     transport.respondWith("addExtras", fixture("createOption"));
 
     const quote = await service.addOrUpdateExtras({
+      charter,
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
-      extras: ["nausys:8001"],
+      extras: ["service:8001"],
     });
 
     expect(quote.currency).toBe("EUR");
@@ -789,7 +823,7 @@ describe("extras mutation pricing", () => {
       amount: { amountMinor: 334_000, currency: "EUR" },
     });
     expect(quote.lines[1]).toMatchObject({
-      code: "nausys:8001",
+      code: "service:8001",
       payWhen: "at_check_in",
       amount: { amountMinor: 15_000, currency: "EUR" },
     });
@@ -830,12 +864,13 @@ describe("extras mutation pricing", () => {
     );
 
     const quote = await service.addOrUpdateExtras({
+      charter,
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
-      extras: ["nausys:8001"],
+      extras: ["service:8001"],
     });
 
     expect(quote.lines[1]).toMatchObject({
-      code: "nausys:8001",
+      code: "service:8001",
       amount: { amountMinor: 10_000, currency: "EUR" },
     });
     expect(quote.total.amountMinor).toBe(344_000);
@@ -862,8 +897,9 @@ describe("extras mutation pricing", () => {
     );
 
     const quote = await service.addOrUpdateExtras({
+      charter,
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
-      extras: ["nausys:8001"],
+      extras: ["service:8001"],
     });
 
     expect(quote.lines[1]?.amount.amountMinor).toBe(10_000);
@@ -874,22 +910,25 @@ describe("extras mutation pricing", () => {
     transport.respondWith("listExtras", { status: "OK", addedServices: [] });
     transport.respondWith("addExtras", fixture("createOption"));
     const first = await service.addOrUpdateExtras({
+      charter,
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
-      extras: ["nausys:8001"],
+      extras: ["service:8001"],
     });
 
     transport.respondWith("addExtras", fixture("createOption", { uuid: "a-new-token" }));
     const second = await service.addOrUpdateExtras({
+      charter,
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
-      extras: ["nausys:8001"],
+      extras: ["service:8001"],
     });
 
     expect(second.priceSourceHash).toBe(first.priceSourceHash);
 
     transport.respondWith("addExtras", fixture("createOption", { clientPrice: "3540.00" }));
     const third = await service.addOrUpdateExtras({
+      charter,
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
-      extras: ["nausys:8001"],
+      extras: ["service:8001"],
     });
 
     expect(third.priceSourceHash).not.toBe(first.priceSourceHash);
@@ -1032,5 +1071,203 @@ describe("blank client fields on a reservation response", () => {
     expect(() =>
       restYachtReservationResponseSchema.parse({ ...reservation, client: { surname: true } }),
     ).toThrow();
+  });
+});
+
+/*
+ * `createInfo` takes no extras, so the option opened as a bare charter while the customer paid
+ * for a skipper and a transfer. The hold now puts the billed rows on it before answering.
+ */
+describe("billed extras on the hold", () => {
+  const billedRows = [
+    {
+      kind: "service" as const,
+      rowId: 59802921,
+      code: "service:1@59802921",
+      externalId: "1",
+      condition: "skipper per day",
+    },
+    {
+      kind: "service" as const,
+      rowId: 66279573,
+      code: "service:100511@66279573",
+      externalId: "100511",
+      condition: "Athens Airport - Lavrion base; minivan up to 8 pax",
+    },
+    {
+      kind: "equipment" as const,
+      rowId: 51085903,
+      code: "equipment:14",
+      externalId: "14",
+      condition: null,
+    },
+  ];
+  const withRows = () => build({ verifyPrice: async () => ({ hash: PRICE_HASH, billedRows }) });
+
+  it("adds each billed row by its season price row id, after the option", async () => {
+    const { service, transport } = withRows();
+    transport.respondWith("addExtras", fixture("createOption", { uuid: "rotated-by-extras" }));
+
+    const held = await service.createOption(draft);
+
+    expect(transport.callSequence()).toEqual(["createInfo", "createOption", "addExtras"]);
+    expect(transport.lastBody("addExtras")).toMatchObject({
+      services: [
+        { serviceId: 59802921, quantity: 1 },
+        { serviceId: 66279573, quantity: 1 },
+      ],
+      equipments: [{ equipmentId: 51085903, quantity: 1 }],
+    });
+    expect(held.securityToken).toBe("rotated-by-extras");
+  });
+
+  it("calls nothing more when the charter bills no extras", async () => {
+    const { service, transport } = build();
+
+    await service.createOption(draft);
+
+    expect(transport.callCount("addExtras")).toBe(0);
+  });
+
+  it("releases the option and fails the hold when the vendor refuses the extras", async () => {
+    const { service, transport } = withRows();
+    transport.failWith("addExtras", "error-999");
+
+    await expect(service.createOption(draft)).rejects.toThrow(/refused the extras/);
+    expect(transport.callSequence()).toEqual([
+      "createInfo",
+      "createOption",
+      "addExtras",
+      "stornoOption",
+    ]);
+  });
+});
+
+describe("extras edits on an existing reservation", () => {
+  const ref = { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID };
+  const transferRow = (rowId: number, condition: string) => ({
+    kind: "service" as const,
+    rowId,
+    code: `service:100511@${rowId}`,
+    externalId: "100511",
+    condition,
+  });
+
+  it("swaps one transfer route for another by the line's condition", async () => {
+    const { service, transport } = build({
+      billedRowsFor: async () => [transferRow(66279573, "minivan up to 8 pax")],
+      loadReservationExtras: async () => [
+        {
+          yachtReservationServiceId: 991,
+          serviceId: 100511,
+          quantity: 1,
+          editable: true,
+          condition: "taxi 1 - 3 pax",
+        },
+      ],
+    });
+    transport.respondWith("updateExtras", fixture("createOption"));
+    transport.respondWith("addExtras", fixture("createOption"));
+
+    await service.addOrUpdateExtras({ ref, charter, extras: ["service:100511@66279573"] });
+
+    expect(transport.lastBody("updateExtras")).toMatchObject({
+      services: [{ yachtReservationServiceId: 991, quantity: 0 }],
+    });
+    expect(transport.lastBody("addExtras")).toMatchObject({
+      services: [{ serviceId: 66279573, quantity: 1 }],
+    });
+  });
+
+  it("keeps the route that is already on the reservation", async () => {
+    const { service, transport } = build({
+      billedRowsFor: async () => [transferRow(66279573, "minivan up to 8 pax")],
+      loadReservationExtras: async () => [
+        {
+          yachtReservationServiceId: 991,
+          serviceId: 100511,
+          quantity: 1,
+          editable: true,
+          condition: "minivan up to 8 pax",
+        },
+      ],
+    });
+    transport.respondWith("updateExtras", fixture("createOption"));
+
+    await service.addOrUpdateExtras({ ref, charter, extras: ["service:100511@66279573"] });
+
+    expect(transport.callCount("addExtras")).toBe(0);
+    expect(transport.lastBody("updateExtras")).toMatchObject({
+      services: [{ yachtReservationServiceId: 991, quantity: 1 }],
+    });
+  });
+
+  /* The cleaning fee is on every charter; deselecting everything must not take it off. */
+  it("never removes an obligatory line", async () => {
+    const { service, transport } = build({
+      loadReservationExtras: async () => [
+        {
+          yachtReservationServiceId: 990,
+          serviceId: 52,
+          quantity: 1,
+          editable: true,
+          obligatory: true,
+        },
+        { yachtReservationServiceId: 991, serviceId: 8001, quantity: 1, editable: true },
+      ],
+    });
+    transport.respondWith("updateExtras", fixture("createOption"));
+
+    await service.addOrUpdateExtras({ ref, charter, extras: [] });
+
+    expect(transport.lastBody("updateExtras")).toEqual(
+      expect.objectContaining({ services: [{ yachtReservationServiceId: 991, quantity: 0 }] }),
+    );
+  });
+
+  it("removes equipment by its own reservation line key", async () => {
+    const { service, transport } = build({
+      loadReservationExtras: async () => [
+        {
+          yachtReservationServiceId: 323413,
+          serviceId: 123,
+          quantity: 1,
+          editable: true,
+          kind: "equipment",
+        },
+      ],
+    });
+    transport.respondWith("updateExtras", fixture("createOption"));
+
+    await service.addOrUpdateExtras({ ref, charter, extras: [] });
+
+    expect(transport.lastBody("updateExtras")).toMatchObject({
+      equipments: [{ yachtReservationEquipmentId: 323413, quantity: 0 }],
+    });
+  });
+
+  it("reads equipment lines off listExtras", async () => {
+    const { service, transport } = build();
+    transport.respondWith("listExtras", {
+      status: "OK",
+      addedServices: [],
+      addedEquipment: [{ id: 323413, equipmentId: 123, quantity: "1.00", editable: true }],
+    });
+    transport.respondWith("updateExtras", fixture("createOption"));
+
+    await service.addOrUpdateExtras({ ref, charter, extras: [] });
+
+    expect(transport.lastBody("updateExtras")).toMatchObject({
+      equipments: [{ yachtReservationEquipmentId: 323413, quantity: 0 }],
+    });
+  });
+
+  it("refuses a mutation that does not say which charter it is for", async () => {
+    const { service, transport } = build();
+
+    await expect(service.addOrUpdateExtras({ ref, extras: ["service:8001"] })).rejects.toThrow(
+      /re-pricing the charter/,
+    );
+    expect(transport.calls).toHaveLength(0);
   });
 });

@@ -85,7 +85,6 @@ function fakeResolver(): CatalogueResolver {
       }),
     toExternalYachtIds: () => Promise.resolve(new Map<string, string>()),
     toListingId: () => Promise.resolve("ylst_bm_1"),
-    toExternalAmenityIds: (codes) => Promise.resolve(codes.map((code) => code.split(":")[1] ?? "")),
     toExternalCountryId: () => Promise.resolve(null),
     // The confirm path never reaches these. Rejecting rather than returning an
     // empty answer keeps a future caller from reading "no companies" as data.

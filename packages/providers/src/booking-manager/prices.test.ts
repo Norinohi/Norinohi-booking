@@ -70,7 +70,6 @@ function fakeResolver(
     toExternalListing: () => Promise.reject(new Error("the price sweep must not ask per listing")),
     toExternalYachtIds,
     toListingId: () => Promise.resolve(null),
-    toExternalAmenityIds: () => Promise.resolve([]),
     toExternalCountryId: () => Promise.resolve(null),
     loadListingSummary: () => Promise.resolve(null),
     listExternalCompanyIds: () => Promise.resolve([]),

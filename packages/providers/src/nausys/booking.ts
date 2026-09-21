@@ -8,6 +8,8 @@ import type { Database } from "../registry";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { formatNausysDate, parseNausysDate, parseNausysDateTime } from "../shared/dates";
 import { ContractError } from "../shared/errors";
+import { formatExtraCode, type ExtraKind } from "../shared/extra-code";
+import { DEFAULT_LINE_LABELS } from "../shared/generic-labels";
 import { decimalStringToMinor } from "../shared/money";
 import { stableSourceHash } from "../shared/raw-retention";
 import {
@@ -26,10 +28,12 @@ import {
   type ProviderQuote,
   type ProviderReservation,
   type ProviderReservationRef,
+  type QuoteRequest,
 } from "../types";
 import { type NausysClient, reservationLane } from "./client";
 import type { NausysConfig } from "./config";
-import { extraLineMinor } from "./extras";
+import { extraLineMinor, internationalText } from "./extras";
+import type { BilledExtraRow } from "./quote";
 import {
   crewListLinkOf,
   nausysEndpoints,
@@ -43,11 +47,21 @@ const PROVIDER = "nausys" as const;
 
 /**
  * Re-prices the draft against the provider and returns the price source hash of
- * what is on offer right now. Injected rather than imported so this file stays
- * independent of the quote module, and so the refusal path is testable without a
- * second endpoint in play.
+ * what is on offer right now, with the offer rows that price bills. Injected rather
+ * than imported so this file stays independent of the quote module, and so the
+ * refusal path is testable without a second endpoint in play.
  */
-export type VerifyPrice = (draft: BookingDraft) => Promise<string>;
+export type VerifyPrice = (draft: BookingDraft) => Promise<PriceCheck>;
+
+export interface PriceCheck {
+  hash: string;
+  /**
+   * The crew and ticked extras the quote bills, by the season price row `addExtras` takes.
+   * The option opens with none of them, so without this the operator held a charter with no
+   * skipper and no transfer while we took the customer's money for both.
+   */
+  billedRows: readonly BilledExtraRow[];
+}
 
 /**
  * Receives every refreshed uuid. `addOrUpdateExtras` returns a `ProviderQuote`,
@@ -91,17 +105,30 @@ export interface NausysBookingServiceDeps {
    * nothing to remove, and left a deselected extra on the booking still being billed.
    */
   loadReservationExtras?: (ref: ProviderReservationRef) => Promise<ReservationExtra[]>;
+  /**
+   * The offer rows a charter bills for a selection, by re-pricing it: what `addOrUpdateExtras`
+   * diffs the reservation against. The same rows `verifyPrice` hands the hold.
+   */
+  billedRowsFor?: (request: QuoteRequest) => Promise<readonly BilledExtraRow[]>;
+  /** The listing's extra names by canonical code, for the lines a mutation's reprice returns. */
+  loadExtraLabels?: (listingId: string) => Promise<ReadonlyMap<string, string>>;
 }
 
 /** One extra already on the reservation, as the vendor's own response describes it. */
 export interface ReservationExtra {
   /** The reservation line id, which is what `updateExtras` addresses. */
   yachtReservationServiceId: number;
-  /** The catalogue service the line was created from. */
+  /** The catalogue service (or, for equipment, the equipment) the line was created from. */
   serviceId: number;
   quantity: number;
   /** False when the operator has locked the line; we cannot change it. */
   editable: boolean;
+  /** Absent means a service line; equipment lines are addressed by their own update key. */
+  kind?: ExtraKind;
+  /** A line the customer never chose and cannot drop. */
+  obligatory?: boolean;
+  /** The operator's condition on the line, which says which variant it is. */
+  condition?: string | null;
 }
 
 export interface NausysBookingService {
@@ -198,7 +225,8 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
     // Before anything is created: `freeYachts` leaves no provider-side artifact,
     // so this hash is the only link between the price the customer accepted and
     // the reservation about to be opened.
-    const current = await verifyPrice(parsed);
+    const check = await verifyPrice(parsed);
+    const current = check.hash;
     if (current !== parsed.priceSourceHash) {
       throw new ContractError(
         "PRICE_CHANGED: the NauSYS price moved between the quote and the hold",
@@ -250,7 +278,8 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
 
     await logEvent(parsed.quoteId, "option_created", option);
 
-    const reservationId = String(option.handle.id);
+    const held = await addBilledExtras(parsed.quoteId, option, check.billedRows);
+    const reservationId = String(held.handle.id);
 
     return providerReservationSchema.parse({
       id: reservationId,
@@ -262,10 +291,55 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
       // the reservation are the same handle.
       providerReservationId: reservationId,
       providerOptionId: reservationId,
-      securityToken: option.handle.uuid,
+      /* The latest handle: `addExtras` rotates the uuid, and only the newest one still works. */
+      securityToken: held.handle.uuid,
       holdExpiresAt: holdExpiresAt(option.response),
-      crewListLink: crewListLinkOf(option.response),
+      crewListLink: crewListLinkOf(held.response) ?? crewListLinkOf(option.response),
     });
+  }
+
+  /**
+   * Puts the charter's crew and ticked extras on the option, by their season price rows.
+   *
+   * `createInfo` takes no extras, so the option opens as a bare charter. A refusal here
+   * releases the option again and fails the hold: a reservation the base reads as having no
+   * skipper and no transfer, beside a payment that covered both, is worse than asking the
+   * customer to try again.
+   */
+  async function addBilledExtras(
+    quoteId: string,
+    option: ReservationStep,
+    rows: readonly BilledExtraRow[],
+  ): Promise<ReservationStep> {
+    if (rows.length === 0) return option;
+
+    try {
+      const added = await withReservation(
+        refOf(option.handle),
+        nausysEndpoints.booking.addExtras,
+        rowAdditions(rows),
+      );
+      await logEvent(quoteId, "extras_updated", added);
+      return added;
+    } catch (error) {
+      await releaseAfterFailedExtras(option);
+      throw new ContractError(
+        `NauSYS refused the extras for reservation ${option.handle.id}: ${rows.map((row) => row.code).join(", ")}`,
+        { endpoint: nausysEndpoints.booking.addExtras, cause: error },
+      );
+    }
+  }
+
+  /**
+   * Best effort: the hold is failing either way, and a storno that also fails leaves an option
+   * the vendor expires on its own clock.
+   */
+  async function releaseAfterFailedExtras(option: ReservationStep): Promise<void> {
+    try {
+      await withReservation(refOf(option.handle), nausysEndpoints.booking.stornoOption);
+    } catch {
+      /* Nothing more to do here; the refusal above is what the caller needs to hear. */
+    }
   }
 
   async function confirmBooking(draft: BookingDraft): Promise<ProviderReservation> {
@@ -324,28 +398,41 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
    * same". Sending the desired set therefore does not remove anything, which is
    * how a deselected extra would have stayed on the booking and kept being billed.
    *
-   * So the set is diffed instead. Additions go through `addExtras` keyed by
-   * catalogue `serviceId`; removals go through `updateExtras` keyed by the
-   * reservation line's own `yachtReservationServiceId`, which is the id semantic
-   * the vendor confirmed for each call.
+   * So the set is diffed instead. What the charter should carry comes from re-pricing it, the
+   * same rows the hold put on the reservation: the crew its crew type puts aboard and the
+   * extras ticked, each as the season price row `addExtras` takes. A reservation line names only
+   * the catalogue id and its condition, so that pair is what matches a line to a row, which is
+   * also what tells one transfer route's line from another's.
    *
    * Removal has no endpoint of its own: NauSYS confirmed (Aug 2026) that setting a
    * line's `quantity` to 0 through `updateExtras` drops it from the info and the
-   * option. Two limits ride with that answer. A line the operator locked
-   * (`editable: false`) cannot be touched, so a removal it blocks fails here rather
-   * than silently keeping a deselected extra on the bill. And extras cannot be
-   * edited at all once the booking is confirmed — that one is the vendor's to
-   * refuse, since only they know the reservation's current status, and it arrives
-   * as a classified provider error.
+   * option. Obligatory lines are never touched: the customer did not choose them and cannot
+   * drop them. A line the operator locked (`editable: false`) cannot be removed, so a removal
+   * it blocks fails here rather than silently keeping a deselected extra on the bill. And
+   * extras cannot be edited at all once the booking is confirmed; that refusal is the
+   * vendor's, since only they know the reservation's current status.
    */
   async function addOrUpdateExtras(input: ProviderExtrasMutation): Promise<ProviderQuote> {
     const parsed = providerExtrasMutationSchema.parse(input);
-    const desired = new Set(await externalServiceIds(parsed.extras));
+    if (!parsed.charter || !deps.billedRowsFor) {
+      throw new ContractError(
+        "NauSYS extras are resolved by re-pricing the charter; the mutation named none",
+        { endpoint: nausysEndpoints.booking.addExtras },
+      );
+    }
+
+    const desired = await deps.billedRowsFor({ ...parsed.charter, extras: parsed.extras });
     const load = deps.loadReservationExtras ?? ((ref) => readReservationExtras(client, ref));
     const current = await load(parsed.ref);
 
-    const currentByService = new Map(current.map((item) => [item.serviceId, item]));
-    const removals = current.filter((item) => !desired.has(item.serviceId));
+    const remaining = current.filter((line) => line.obligatory !== true);
+    const additions: BilledExtraRow[] = [];
+    for (const row of desired) {
+      const at = remaining.findIndex((line) => lineMatchesRow(line, row));
+      if (at === -1) additions.push(row);
+      else remaining.splice(at, 1);
+    }
+    const removals = remaining;
 
     const locked = removals.filter((item) => !item.editable);
     if (locked.length > 0) {
@@ -356,43 +443,35 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
       );
     }
 
-    const additions = [...desired].filter((serviceId) => !currentByService.has(serviceId));
-
     // Removals first: they only ever shrink the reservation, so a later addition
     // that the vendor refuses leaves the customer holding less than they picked
     // rather than being billed for something they deselected.
     let last =
       removals.length === 0
         ? null
-        : await withReservation(parsed.ref, nausysEndpoints.booking.updateExtras, {
-            services: removals.map((item) => ({
-              yachtReservationServiceId: item.yachtReservationServiceId,
-              quantity: 0,
-            })),
-          });
+        : await withReservation(
+            parsed.ref,
+            nausysEndpoints.booking.updateExtras,
+            lineUpdates(removals, () => 0),
+          );
 
     if (additions.length > 0) {
-      // `quantity: 1` is a formality for a measure-priced extra, not a claim: NauSYS
-      // recomputes it from the price measure and answers with its own figure.
-      // Verified live 2026-08-20 on a test yacht — a per-person extra added with
-      // quantity 1 came back `quantity: "6.00", totalPrice: "60.00"` for a six-person
-      // boat. Sending the party size here would change nothing; the headcount the
-      // vendor multiplies by is theirs, and the response is the only authority.
-      last = await withReservation(parsed.ref, nausysEndpoints.booking.addExtras, {
-        services: additions.map((serviceId) => ({ serviceId, quantity: 1 })),
-      });
+      last = await withReservation(
+        last ? refOf(last.handle) : parsed.ref,
+        nausysEndpoints.booking.addExtras,
+        rowAdditions(additions),
+      );
     }
 
     // Nothing changed, so nothing is mutated: the price still has to come back,
     // and re-sending the current lines at their current quantity is the only
     // read the booking side offers.
     if (last === null) {
-      const unchanged = await withReservation(parsed.ref, nausysEndpoints.booking.updateExtras, {
-        services: current.map((item) => ({
-          yachtReservationServiceId: item.yachtReservationServiceId,
-          quantity: item.quantity,
-        })),
-      });
+      const unchanged = await withReservation(
+        parsed.ref,
+        nausysEndpoints.booking.updateExtras,
+        lineUpdates(current, (line) => line.quantity),
+      );
       return await toProviderQuote(unchanged.response);
     }
 
@@ -434,17 +513,6 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
     return numeric;
   }
 
-  async function externalServiceIds(amenityCodes: string[]): Promise<number[]> {
-    const ids = await resolver.toExternalAmenityIds(amenityCodes);
-    return ids.map((id) => {
-      const numeric = Number(id);
-      if (!Number.isInteger(numeric)) {
-        throw new ContractError(`Amenity maps to a non-numeric NauSYS service id: ${id}`);
-      }
-      return numeric;
-    });
-  }
-
   function holdExpiresAt(response: RestYachtReservation): string {
     if (!response.optionTill) {
       // Without the vendor's own expiry we cannot know when it drops the option,
@@ -474,29 +542,40 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
     const checkOut = parseNausysDate(response.periodTo);
     const baseMinor = decimalStringToMinor(response.clientPrice, currency);
 
-    const extraLines = [...(response.services ?? []), ...(response.additionalEquipment ?? [])].map(
-      (extra) => ({
-        // The reservation carries service ids without names; labels live in the
-        // catalogue, which the quote path owns.
-        code: `${PROVIDER}:${extra.serviceId}`,
-        label: `Service ${extra.serviceId}`,
-        // `amount` is the unit price, so a per-person or per-day line billed off it
-        // under-charges by its quantity — NauSYS prices a per-person extra at the
-        // yacht's full berth count, which on a ten-berth yacht is a tenth of the
-        // real figure. `extraLineMinor` is what the quote reads, and the two must
-        // agree or the reservation contradicts the invoice built from the quote.
-        /* The reservation's own charter price is what a percentage line is a share of. */
-        amount: {
-          amountMinor: extraLineMinor(extra, currency, { clientMinor: baseMinor }),
-          currency,
-        },
-        payWhen:
-          extra.calculationType === "SEPARATE_PAYMENT"
-            ? ("at_check_in" as const)
-            : ("now" as const),
-        kind: "extra" as const,
-      }),
-    );
+    const listingId = (await resolver.toListingId(String(response.yachtId))) ?? "";
+    const labels = listingId ? await deps.loadExtraLabels?.(listingId) : undefined;
+    const reservationLines = [
+      ...(response.services ?? []).map((extra) => ({
+        extra,
+        code: formatExtraCode("service", String(extra.serviceId)),
+      })),
+      ...(response.additionalEquipment ?? []).map((extra) => ({
+        extra,
+        code: formatExtraCode("equipment", String(extra.equipmentId)),
+      })),
+    ];
+    const extraLines = reservationLines.map(({ extra, code }) => ({
+      // The same canonical codes the quote uses, and the catalogue's names for them: the
+      // reservation carries ids only. These used to read "nausys:8001", "Service 8001".
+      code,
+      label: labels?.get(code) ?? DEFAULT_LINE_LABELS.extra,
+      ...(extra.obligatory === undefined
+        ? null
+        : { group: extra.obligatory ? ("mandatory" as const) : ("optional" as const) }),
+      // `amount` is the unit price, so a per-person or per-day line billed off it
+      // under-charges by its quantity — NauSYS prices a per-person extra at the
+      // yacht's full berth count, which on a ten-berth yacht is a tenth of the
+      // real figure. `extraLineMinor` is what the quote reads, and the two must
+      // agree or the reservation contradicts the invoice built from the quote.
+      /* The reservation's own charter price is what a percentage line is a share of. */
+      amount: {
+        amountMinor: extraLineMinor(extra, currency, { clientMinor: baseMinor }),
+        currency,
+      },
+      payWhen:
+        extra.calculationType === "SEPARATE_PAYMENT" ? ("at_check_in" as const) : ("now" as const),
+      kind: "extra" as const,
+    }));
 
     const totalMinor = extraLines.reduce((sum, line) => sum + line.amount.amountMinor, baseMinor);
     const policy = paymentPolicyOf(response);
@@ -504,7 +583,7 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
     const quoteInput: z.input<typeof providerQuoteSchema> = {
       id: `qte_${PROVIDER}_${response.id}`,
       provider: PROVIDER,
-      listingId: (await resolver.toListingId(String(response.yachtId))) ?? "",
+      listingId,
       providerSourceId: `${PROVIDER}:${response.yachtId}`,
       checkIn,
       checkOut,
@@ -620,13 +699,89 @@ async function readReservationExtras(
     reservationLane(String(handle.id)),
   );
 
-  return (response.addedServices ?? []).map((line) => ({
+  const services = (response.addedServices ?? []).map((line) => ({
     yachtReservationServiceId: line.id,
     serviceId: line.serviceId,
     quantity: Number(line.quantity ?? "1"),
     /* Absent means the operator has not locked it; only an explicit false is a lock. */
     editable: line.editable !== false,
+    kind: "service" as const,
+    obligatory: line.obligatory === true,
+    condition: internationalText(line.condition),
   }));
+  /* An equipment line that names no equipment cannot be matched to anything, or removed. */
+  const equipment = (response.addedEquipment ?? []).flatMap((line) =>
+    line.equipmentId === undefined
+      ? []
+      : [
+          {
+            yachtReservationServiceId: line.id,
+            serviceId: line.equipmentId,
+            quantity: Number(line.quantity ?? "1"),
+            editable: line.editable !== false,
+            kind: "equipment" as const,
+            obligatory: line.obligatory === true,
+            condition: internationalText(line.condition),
+          },
+        ],
+  );
+  return [...services, ...equipment];
+}
+
+/**
+ * Whether a reservation line is the one a billed row would put there. The line names only the
+ * catalogue id and its condition; a side with no condition matches on the id alone.
+ */
+function lineMatchesRow(line: ReservationExtra, row: BilledExtraRow): boolean {
+  if ((line.kind ?? "service") !== row.kind) return false;
+  if (String(line.serviceId) !== row.externalId) return false;
+  if (row.condition === null || line.condition == null) return true;
+  return line.condition === row.condition;
+}
+
+/** `addExtras` by season price row, services and equipment each in their own list. */
+function rowAdditions(rows: readonly BilledExtraRow[]): JsonObject {
+  const services = rows.filter((row) => row.kind === "service");
+  const equipments = rows.filter((row) => row.kind === "equipment");
+  return {
+    // `quantity: 1` is a formality for a measure-priced extra, not a claim: NauSYS
+    // recomputes it from the price measure and answers with its own figure.
+    // Verified live 2026-08-20 on a test yacht: a per-person extra added with
+    // quantity 1 came back `quantity: "6.00", totalPrice: "60.00"` for a six-person boat.
+    ...(services.length === 0
+      ? null
+      : { services: services.map((row) => ({ serviceId: row.rowId, quantity: 1 })) }),
+    ...(equipments.length === 0
+      ? null
+      : { equipments: equipments.map((row) => ({ equipmentId: row.rowId, quantity: 1 })) }),
+  };
+}
+
+/** `updateExtras` for reservation lines, each list under the key the vendor gives it. */
+function lineUpdates(
+  lines: readonly ReservationExtra[],
+  quantityOf: (line: ReservationExtra) => number,
+): JsonObject {
+  const services = lines.filter((line) => (line.kind ?? "service") === "service");
+  const equipments = lines.filter((line) => line.kind === "equipment");
+  return {
+    ...(services.length === 0
+      ? null
+      : {
+          services: services.map((line) => ({
+            yachtReservationServiceId: line.yachtReservationServiceId,
+            quantity: quantityOf(line),
+          })),
+        }),
+    ...(equipments.length === 0
+      ? null
+      : {
+          equipments: equipments.map((line) => ({
+            yachtReservationEquipmentId: line.yachtReservationServiceId,
+            quantity: quantityOf(line),
+          })),
+        }),
+  };
 }
 
 function requireHandle(ref: ProviderReservationRef, endpoint: string): ReservationHandle {
