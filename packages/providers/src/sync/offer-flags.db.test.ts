@@ -28,6 +28,8 @@ beforeAll(async () => {
   const free = { from, to: shiftIso(from, 28) };
   const flagged = await seedListing(db, "flagged", { providerId: "prov_bm", free });
   const optional = await seedListing(db, "optional", { providerId: "prov_bm", free });
+  const percent = await seedListing(db, "percent", { providerId: "prov_bm", free });
+  const free0 = await seedListing(db, "free", { providerId: "prov_bm", free });
 
   const cover = { source: "booking_manager", kind: "service" as const, name: "Comfort Plus" };
   await db.insert(providerExtraCatalogue).values([
@@ -49,6 +51,27 @@ beforeAll(async () => {
       priceMinor: 20_000,
       depositInsurance: true,
     },
+    /* How the projection files a BM "Damage waiver 6": 6% of the charter, price left at 0. */
+    {
+      ...cover,
+      name: "Damage waiver 6",
+      listingId: percent.listingId,
+      listingOfferId: percent.offerId,
+      externalId: "3",
+      obligatory: false,
+      priceMinor: 0,
+      percentage: "0.0600",
+      depositInsurance: true,
+    },
+    {
+      ...cover,
+      listingId: free0.listingId,
+      listingOfferId: free0.offerId,
+      externalId: "4",
+      obligatory: false,
+      priceMinor: 0,
+      depositInsurance: true,
+    },
   ]);
 
   await deriveOfferFlagsFromExtras(db);
@@ -59,7 +82,7 @@ afterAll(async () => {
 });
 
 describe("deposit cover the vendor flags", () => {
-  it("counts an obligatory waiver as included whatever it is called", async () => {
+  it("counts an obligatory or free waiver as included, and a percentage one as not", async () => {
     const rows = await test.db
       .select({ id: listingOffer.id, included: listingOffer.depositInsuranceIncluded })
       .from(listingOffer);
@@ -67,6 +90,8 @@ describe("deposit cover the vendor flags", () => {
     expect(Object.fromEntries(rows.map((row) => [row.id, row.included]))).toEqual({
       off_flagged: true,
       off_optional: false,
+      off_percent: false,
+      off_free: true,
     });
   });
 });
