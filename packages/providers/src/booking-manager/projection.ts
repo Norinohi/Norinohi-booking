@@ -29,6 +29,7 @@ import {
   restCompanySchema,
   restCountrySchema,
   restEquipmentSchema,
+  restExtrasSchema,
   restProductSchema,
   restSailingAreaSchema,
   restShipyardSchema,
@@ -161,6 +162,7 @@ type RestBase = z.infer<typeof restBaseSchema>;
 type RestCountry = z.infer<typeof restCountrySchema>;
 type RestYacht = z.infer<typeof restYachtSchema>;
 type RestProduct = z.infer<typeof restProductSchema>;
+type RestExtras = z.infer<typeof restExtrasSchema>;
 
 /**
  * Booking Manager's geography is not our geography.
@@ -695,6 +697,7 @@ function percentageRateOf(percentage: number | null | undefined): number | undef
  * obligatory skipper turned a bareboat into a skippered one.
  */
 function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] {
+  const homeBaseId = idOf(yacht.homeBaseId);
   const chosen = new Map<string, CanonicalExtra>();
   for (const item of soldProductOf(yacht)?.extras ?? []) {
     const externalId = idOf(item.id);
@@ -734,12 +737,46 @@ function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] 
       seasonEnd: sailingDateOf(item.sailingDateTo),
       validNightsFrom: positiveInt(item.validDaysFrom),
       validNightsTo: positiveInt(item.validDaysTo),
-      // `validForBases` pairs a start base with an end base, which only a one-way fee needs.
-      oneWayOnly: (item.validForBases ?? []).length > 0 || undefined,
+      ...routeScopeOf(item),
       onRequestOnly: false,
+      // Filed under the home base, which is where the card's charter starts and ends, so the
+      // read model can test the base and route conditions above against it.
+      externalBaseId: homeBaseId ?? undefined,
     });
   }
   return [...chosen.values()];
+}
+
+type ExtraRouteScope = Pick<CanonicalExtra, "oneWayOnly" | "validForBaseIds" | "validRoutes">;
+
+/**
+ * Where an extra is charged, from the two ways the vendor restricts one.
+ *
+ * `validForBases` is a list of allowed routes, each any base of `from` to any base of `to`.
+ * A fee is one-way only when none of those routes returns to where it started; "APA 25%",
+ * "VAT - Greece 6.5%" and "Skipper obligatory" arrive restricted to a return from the home
+ * base on about 120 hulls, and treating every restricted fee as one-way took them off the card.
+ *
+ * `availableInBase` names the one base an extra is sold at, `-1` meaning all of them.
+ */
+function routeScopeOf(item: RestExtras): ExtraRouteScope {
+  const scope: ExtraRouteScope = {};
+
+  const routes = new Map<string, { from: string; to: string }>();
+  for (const pairs of item.validForBases ?? []) {
+    for (const from of pairs.from ?? []) {
+      for (const to of pairs.to ?? []) routes.set(`${from}>${to}`, { from, to });
+    }
+  }
+  if (routes.size > 0) {
+    scope.validRoutes = [...routes.values()];
+    if (!scope.validRoutes.some((route) => route.from === route.to)) scope.oneWayOnly = true;
+  }
+
+  const base = item.availableInBase;
+  if (base != null && base !== "-1") scope.validForBaseIds = [base];
+
+  return scope;
 }
 
 /**

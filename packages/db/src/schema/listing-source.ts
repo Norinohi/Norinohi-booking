@@ -120,8 +120,8 @@ export const providerExtraCatalogue = pgTable(
     validNightsFrom: integer("valid_nights_from"),
     validNightsTo: integer("valid_nights_to"),
     /**
-     * Charged only where the charter ends at a different base than it started. Booking Manager
-     * states it as `validForBases`, a from/to base pairing that only a one-way fee carries.
+     * Charged only where the charter ends at a different base than it started: Booking Manager
+     * restricts the fee to routes and none of them returns. See `validRoutes`.
      */
     oneWayOnly: boolean("one_way_only").default(false).notNull(),
     /**
@@ -130,6 +130,13 @@ export const providerExtraCatalogue = pgTable(
      * unconditional put fees on cards that no charter from that base is charged.
      */
     validForBaseIds: text("valid_for_base_ids").array(),
+    /**
+     * The routes this price applies to, as `from>to` pairs of the provider's own base ids, null
+     * meaning every route. Booking Manager restricts about 20,000 extras this way, and a pair
+     * with one base at both ends is a return from there: its "APA 25%" and "Skipper obligatory"
+     * are filed as a return from the home base, not as one-way fees.
+     */
+    validRoutes: text("valid_routes").array(),
     /**
      * A floor under a computed total, in minor units. Only meaningful beside `percentage`: a
      * 3% fee with a 50 EUR minimum is 50 EUR on a small charter, not 30.

@@ -240,9 +240,15 @@ export const restDocumentSchema = looseJsonObject({
   sortOrder: optionalNumeric,
 });
 
+/**
+ * One set of routes an extra is priced for: any base in `from` to any base in `to`. An extra
+ * carries a list of these, and a pair with the same base at both ends is an ordinary return
+ * charter, which is what "APA 25%" and "Skipper obligatory" are filed under on about 120
+ * hulls. Ids, not numbers: they are the same 19-digit base ids as everywhere else.
+ */
 export const restValidForBasesSchema = looseJsonObject({
-  from: z.array(numeric).optional().nullable(),
-  to: z.array(numeric).optional().nullable(),
+  from: z.array(id).optional().nullable(),
+  to: z.array(id).optional().nullable(),
 });
 
 /** One line of an offer's `discounts[]`. Undocumented; see `restOfferSchema`. */
@@ -299,12 +305,16 @@ export const restExtrasSchema = looseJsonObject({
    */
   sailingDateFrom: optionalText,
   sailingDateTo: optionalText,
-  /** Present only on a fee that applies to one route, which is what a one-way fee is. */
+  /**
+   * The routes this price applies to, absent on a fee that applies to every route. Company 225
+   * sends the key on none of its 161 extras; account-wide 20,344 of 191,163 carry it.
+   */
   validForBases: z.array(restValidForBasesSchema).optional().nullable(),
   validDateFrom: optionalText,
   validDateTo: optionalText,
   description: optionalText,
-  availableInBase: optionalNumeric,
+  /** The one base this extra is sold at, or `-1` for every base. A base id, so read as one. */
+  availableInBase: optionalId,
   validSailingAreas: z.array(numeric).optional().nullable(),
 });
 

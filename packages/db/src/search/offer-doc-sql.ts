@@ -4,6 +4,7 @@ import { toBaseMinorSql } from "../fx/rates";
 import { REFUSAL_TRUST_DAYS } from "../schema/availability";
 import { unavoidableCrew } from "./crew-sql";
 import { unavoidableFees } from "./fees-sql";
+import { extraChargedOnReturnFromFiledBase } from "./extra-scope-sql";
 import { EARLIEST_CHECKIN } from "./lead-time";
 import { listingScope } from "./listing-scope";
 import { pricedMoney } from "./money-sql";
@@ -52,6 +53,7 @@ export function offerDocSql(listingIds: readonly string[] | undefined): SQL {
           where extra.listing_offer_id = o.id
             and extra.obligatory
             and extra.crew_role = 'skipper'
+            and ${extraChargedOnReturnFromFiledBase()}
         ) as has_obligatory_skipper,
         rate.currency,
         avail.available_from,

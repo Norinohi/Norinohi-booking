@@ -7,6 +7,7 @@ import { AMENITY_GROUPS, amenityGroupFor } from "./amenity-groups";
 import { amenityIconFor } from "./amenity-icons";
 import { normalizeSearchRow, searchColumns, type SearchRow } from "./columns";
 import { crewOptionsFor } from "./crew";
+import { extraSoldFromFiledBase } from "./extra-scope-sql";
 import { foldFeeVariants, isSelectableExtra, pricedItem } from "./extras";
 import { valueForLabel } from "./filters";
 import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs } from "./localize";
@@ -348,11 +349,7 @@ export async function getListingDetailByIdOrSlug(
          * valid only at others is somebody else's charter: listing it here told the customer
          * about a fee they will never be asked for.
          */
-        and (
-          extra.valid_for_base_ids is null
-          or extra.external_base_id is null
-          or extra.external_base_id = any(extra.valid_for_base_ids)
-        )
+        and ${extraSoldFromFiledBase()}
       /* Ordered on the vendor's name, not the translated one, so the sections keep the same
          order in every locale. */
       order by extra.obligatory desc, extra.price_minor, extra.name asc

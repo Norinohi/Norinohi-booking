@@ -223,6 +223,76 @@ describe("product extras", () => {
   it("publishes no extras for a yacht with no products", () => {
     expect(listingOf([])?.extras).toEqual([]);
   });
+
+  describe("routes and bases", () => {
+    const extraOf = (fields: Record<string, JsonValue>) =>
+      listingOf([
+        {
+          isDefaultProduct: true,
+          extras: [
+            { id: 9, name: "APA 25%", obligatory: true, price: 0, percentage: 25, ...fields },
+          ],
+        },
+      ])?.extras[0];
+
+    /* Company 225 sends no `validForBases` key at all and `availableInBase` -1 on every extra. */
+    it("leaves a fee with no route or base condition unrestricted", () => {
+      const extra = extraOf({ availableInBase: -1, validSailingAreas: [] });
+
+      expect(extra?.oneWayOnly).toBeUndefined();
+      expect(extra?.validRoutes).toBeUndefined();
+      expect(extra?.validForBaseIds).toBeUndefined();
+      expect(extra?.externalBaseId).toBe("7");
+    });
+
+    it("reads a pair that returns to the home base as a return fee, not a one-way one", () => {
+      const extra = extraOf({ validForBases: [{ from: [7], to: [7] }] });
+
+      expect(extra?.oneWayOnly).toBeUndefined();
+      expect(extra?.validRoutes).toEqual([{ from: "7", to: "7" }]);
+    });
+
+    it("marks a fee one-way only when none of its routes returns", () => {
+      const extra = extraOf({
+        name: "One Way Fee",
+        validForBases: [{ from: ["1179950470000100000"], to: ["1179952620000100000"] }],
+      });
+
+      expect(extra?.oneWayOnly).toBe(true);
+      expect(extra?.validRoutes).toEqual([
+        { from: "1179950470000100000", to: "1179952620000100000" },
+      ]);
+    });
+
+    it("expands each entry to every from and to it names, once per pair", () => {
+      const extra = extraOf({
+        validForBases: [
+          { from: [1, 194], to: [1, 194] },
+          { from: [194], to: [194] },
+        ],
+      });
+
+      expect(extra?.oneWayOnly).toBeUndefined();
+      expect(extra?.validRoutes).toEqual([
+        { from: "1", to: "1" },
+        { from: "1", to: "194" },
+        { from: "194", to: "1" },
+        { from: "194", to: "194" },
+      ]);
+    });
+
+    it("keeps a 19-digit base id to its exact digits", () => {
+      const extra = extraOf({ validForBases: [{ from: ["6614004890000100225"], to: [7] }] });
+
+      expect(extra?.validRoutes).toEqual([{ from: "6614004890000100225", to: "7" }]);
+    });
+
+    it("restricts a fee sold at one base to that base", () => {
+      const extra = extraOf({ availableInBase: "5984471530000100225" });
+
+      expect(extra?.validForBaseIds).toEqual(["5984471530000100225"]);
+    });
+  });
 });
 
 /**

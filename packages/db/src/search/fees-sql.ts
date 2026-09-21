@@ -1,5 +1,7 @@
 import { sql, type SQL } from "drizzle-orm";
 
+import { extraChargedOnReturnFromFiledBase } from "./extra-scope-sql";
+
 /** The obligatory fees for a charter of `nights`, as the `fees` lateral on offer `o`. */
 export function unavoidableFees(nights: SQL): SQL {
   return sql`
@@ -77,19 +79,7 @@ export function unavoidableFees(nights: SQL): SQL {
              * the vendor published and the detail page is where the real fee shows.
              */
             and extra.learned_at is null
-            /*
-             * Only fees charged where this charter starts.
-             *
-             * The operator files a fee per base as well as per season, and most of them do:
-             * 130,535 of NauSYS's 184,539 priced extras rows name the bases they apply at. A
-             * row whose list does not include the base it was filed under is charged at some
-             * other base, and adding it here put fees on a card no charter from here pays.
-             */
-            and (
-              extra.valid_for_base_ids is null
-              or extra.external_base_id is null
-              or extra.external_base_id = any(extra.valid_for_base_ids)
-            )
+            and ${extraChargedOnReturnFromFiledBase()}
             and (extra.season_end is null or extra.season_end >= current_date)
             and (
               extra.season_start is null

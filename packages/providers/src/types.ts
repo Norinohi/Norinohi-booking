@@ -861,6 +861,14 @@ export const canonicalExtraSchema = z.object({
    */
   validForBaseIds: z.array(z.string()).optional(),
   /**
+   * The start and end bases a charter must sail between for this price to apply, by the
+   * provider's own base ids, where it pairs them. Absent means every route. A pair with the
+   * same base at both ends is a return charter from there, so a fee restricted this way is not
+   * a one-way fee unless no pair returns: Booking Manager files "APA 25%" and "VAT - Greece
+   * 6.5%" as a return from the home base, and reading any pair as one-way hid them.
+   */
+  validRoutes: z.array(z.object({ from: z.string(), to: z.string() })).optional(),
+  /**
    * A floor the provider sets under a computed total, in minor units. Only meaningful beside a
    * percentage: a 3% fee with a 50 EUR minimum is 50 EUR on a small charter, not 30.
    */
