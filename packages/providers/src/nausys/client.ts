@@ -38,6 +38,9 @@ import {
  */
 const NON_IDEMPOTENT_ENDPOINTS = new Set<string>(Object.values(nausysEndpoints.booking));
 
+/* Answers with its payload and no `status` when it succeeds; a refusal still carries one. */
+const STATUSLESS_ENDPOINTS = new Set<string>([nausysEndpoints.sales.agencyInvoices]);
+
 type ErrorFactory = (
   message: string,
   options: { endpoint: string; providerCode: string; payload: unknown },
@@ -100,6 +103,7 @@ export function classifyNausysResponse(
   }
 
   const envelope = restStatusSchema.safeParse(body);
+  if (!envelope.success && STATUSLESS_ENDPOINTS.has(context.endpoint)) return null;
   if (!envelope.success) {
     return new ContractError(`NauSYS response from ${context.endpoint} carried no status`, {
       endpoint: context.endpoint,

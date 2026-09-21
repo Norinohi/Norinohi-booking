@@ -14,6 +14,7 @@ import { looseJsonObject } from "../shared/json";
 const CATALOGUE = "/CBMS-external/rest/catalogue/v6";
 const YACHT_RESERVATION = "/CBMS-external/rest/yachtReservation/v6";
 const BOOKING = "/CBMS-external/rest/booking/v6";
+const SALES = "/CBMS-external/rest/sales/v6";
 
 export type NausysId = number | string;
 
@@ -65,6 +66,10 @@ export const nausysEndpoints = {
     stornoOption: `${BOOKING}/stornoOption`,
     addExtras: `${BOOKING}/addExtras`,
     updateExtras: `${BOOKING}/updateExtras`,
+  },
+  sales: {
+    /* The trailing slash is the vendor's own spelling of the URL. */
+    agencyInvoices: `${SALES}/invoices/agency/`,
   },
 } as const;
 

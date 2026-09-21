@@ -476,6 +476,10 @@ Manager hold is refused rather than released: the run exits non-zero and the ven
 keeps holding the boat, which is at least loud, but it is still a boat nobody can
 sell until someone reads the log.
 
+The same run also reads the NauSYS agency invoices of the last 45 days into
+`provider_invoice` (see the backend map, "Agency invoices"). A commission that differs from
+the quoted one is logged, not failed.
+
 `cron-reconcile` needs exactly what the sweep needs, and for the same reason: it walks
 bookings across vendors and resolves each one's adapter from its own `provider` column,
 so **both credential sets** or a booking held by the other vendor is silently skipped.

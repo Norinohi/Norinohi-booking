@@ -13,6 +13,7 @@ import type {
   ListingPeriod,
   ProviderCapabilities,
   ProviderExtrasMutation,
+  ProviderInvoice,
   ProviderKey,
   Money,
   ProviderQuote,
@@ -80,6 +81,7 @@ import {
 } from "./crew-list";
 import { projectNausysCatalogue } from "./projection";
 import { listChangedNausysReservations, readNausysWaitingOptions } from "./reservations";
+import { listNausysAgencyInvoices } from "./invoices";
 import { formatExtraCode } from "../shared/extra-code";
 import { createNausysQuoteService, type CrewRoleService, type DiscountRule } from "./quote";
 import { createNausysBookingService, createSecurityTokenSink } from "./booking";
@@ -286,6 +288,11 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
     reservationIds?: readonly string[] | undefined;
   }): Promise<ProviderReservationState[]> {
     return listChangedNausysReservations(this.syncClient, window, this.config.optionTimeZone);
+  }
+
+  /** On the sync lane: a back-office read nobody is waiting on. */
+  listInvoices(window: { from: string; to: string }): Promise<ProviderInvoice[]> {
+    return listNausysAgencyInvoices(this.syncClient, window);
   }
 
   /** Public on the vendor's side, so this needs no credential and no reservation. */

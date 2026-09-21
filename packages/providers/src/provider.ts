@@ -17,6 +17,7 @@ import type {
   Money,
   ProviderCapabilities,
   ProviderExtrasMutation,
+  ProviderInvoice,
   ProviderKey,
   ProviderQuote,
   ProviderRecordSet,
@@ -96,6 +97,11 @@ export interface InventoryProvider {
    * NauSYS keeps such a queue, Booking Manager does not publish one.
    */
   getWaitingOptions?(input: ListingPeriod): Promise<WaitingOptions>;
+  /**
+   * The invoices the vendor issued in our name between two ISO dates. Optional: NauSYS
+   * exports them, Booking Manager does not.
+   */
+  listInvoices?(window: { from: string; to: string }): Promise<ProviderInvoice[]>;
   /**
    * A catalogue stream that reports scope completion, which `syncCatalogue` cannot. Optional:
    * without it the runner adapts `syncCatalogue` and announces scopes only once it ends.

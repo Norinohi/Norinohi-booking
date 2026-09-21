@@ -782,6 +782,22 @@ export interface CrewPlace {
   label: string;
 }
 
+/**
+ * An invoice the vendor issued in our name, as it states it. Amounts in `currency`, minor units.
+ * See `listInvoices` on the provider.
+ */
+export interface ProviderInvoice {
+  number: string;
+  /** ISO date. */
+  issuedOn: string;
+  providerReservationId?: string;
+  currency: string;
+  totalMinor: number;
+  netMinor: number;
+  documentUrl?: string;
+  lines: { code: string; label: string; netMinor: number; vatRate?: number }[];
+}
+
 export interface CrewListReceipt {
   accepted: boolean;
   /** The vendor's own status name, where it gave one. */

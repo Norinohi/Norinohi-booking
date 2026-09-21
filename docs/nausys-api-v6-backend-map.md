@@ -241,7 +241,15 @@ Verified live on the vendor's test company 102701 (Sep 2026), through the adapte
   step is still unverified live;
 - the crew list refuses an OPTION (AUTHENTICATION_ERROR, and `crewlistlink` is null on the
   option); on fixed reservations `crewlist/v6/get` accepts both the reservation `uuid` and the
-  32-hex token in `crewlistlink`, and refuses an arbitrary one.
+  32-hex token in `crewlistlink`, and refuses an arbitrary one;
+- `set2` on a past reservation answers CREW_LIST_LOCKED (301) with a status; the refusal the PDF
+  prints for an invalid period has none, and the adapter reads that shape as a refusal too;
+- `freeYachts` takes a `periods` array: four October weeks for 109 hulls in 2.1s against 3.3s
+  asked one by one, row for row and price for price the same, with `obligatoryExtras` still
+  itemised. The confirming sweep now asks up to four periods per call;
+- `sales/v6/invoices/agency/` answers with no `status` and one invoice per reservation: the
+  agency's own commission invoice to the operator (`AG-COMM-1`), in the agency currency, dated
+  `yyyy-MM-dd`.
   never matched an extra.
 
 An additional row for a service the offer already bills as obligatory (a damage waiver at 420
@@ -458,7 +466,7 @@ reservation line id and `updateExtras` addresses services.
 | Area                      | Use                                                    | Data handling                                                                                      |
 | ------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
 | Crew list                 | Retrieve/set passenger/crew manifest                   | `crewlist/v6/get` for the operator's requirements, `crewlist/v6/set2` to file the list (see below) |
-| Invoices/linked documents | Provider invoice and document retrieval                | store metadata and provider reference; use object storage for permitted copies                     |
+| Invoices/linked documents | Provider invoice and document retrieval                | `sales/v6/invoices/agency/` read by the reconcile cron into `provider_invoice`, see below          |
 | Contacts2                 | Create, list, read, merge and update provider contacts | map a local customer to `provider_contact`; do not sync provider contacts into user accounts       |
 | Deprecated Contacts       | Legacy contact endpoints                               | do not implement; use Contacts2                                                                    |
 
@@ -467,6 +475,16 @@ email, telephone, document/passport-related data and crew-specific attributes.
 Treat this as sensitive personal data: encrypt at rest where stored, minimize
 retention, redact application logs, and never return it in generic profile or
 booking-list procedures.
+
+#### Agency invoices
+
+The agency export is not the operator's bill to us. It is the commission invoice NauSYS issues
+in the agency's name to the charter company, one per reservation. `syncProviderInvoices`
+(`packages/api/src/services/provider-invoices.ts`) reads the last 45 days on every reconcile run,
+upserts each into `provider_invoice` by number with the booking it names, and logs
+`provider_invoice.commission_mismatch` where the invoiced `AG-COMM` lines differ from the
+commission the quote was won on in the same currency. It reports and never corrects, and it fails
+nothing. The linked PDF (`documentLink`) is kept as a URL, not copied.
 
 #### Crew list: collected here, filed with the operator
 

@@ -16,6 +16,7 @@
  * fail the run: the cursor stays put and the next tick covers the same window.
  */
 import { inventoryProvider } from "@yacht-charter/api/context";
+import { syncProviderInvoices } from "@yacht-charter/api/services/provider-invoices";
 import { reconcileReservations } from "@yacht-charter/api/services/reservation-reconcile";
 import { db } from "@yacht-charter/db";
 import { startJob } from "./job";
@@ -23,8 +24,11 @@ import { startJob } from "./job";
 const job = startJob("reconcile-reservations");
 
 const result = await reconcileReservations(db, inventoryProvider);
+/* Beside the reconcile rather than in a job of its own: the same vendors, the same lane, and a
+   mismatch is reported the same way, as something for a person to take up. It fails nothing. */
+const invoices = await syncProviderInvoices(db, inventoryProvider);
 
-console.log(JSON.stringify(result, null, 2));
+console.log(JSON.stringify({ ...result, invoices }, null, 2));
 
 await db.$client.end();
 
@@ -37,6 +41,9 @@ const metrics = {
   drift: result.drift.length,
   cancelledByOperator: result.drift.filter((item) => item.kind === "cancelled_by_operator").length,
   unreachable: result.unreachable.length,
+  invoicesRecorded: invoices.recorded,
+  invoicesUnmatched: invoices.unmatched,
+  commissionMismatches: invoices.commissionMismatches.length,
 };
 
 if (result.drift.length > 0) {
