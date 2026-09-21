@@ -301,6 +301,29 @@ take the round trip (`preferredFreeYachtRow`); a one-way-only answer is priced a
 reservation's `availableExtras` offers; a refusal there is logged
 (`nausys.on_request_extras_not_added`) and does not undo the booking.
 
+#### Catalogue: seasons, scoped price lists, offline companies, terms
+
+- **Seasons.** `catalogue/seasons` gives each season id its dates. A yacht carries this year's
+  and next year's `seasonSpecificData` side by side, and the catalogue keeps one row per extra;
+  the projection now states the season running today (passed in as `today`), else the next to
+  open. It used to take the highest season id, i.e. next year's fees all this year.
+- **Price lists.** A list with `locationsId` applies only to those locations and outranks a
+  general list (PDF, RestPriceList). The seasonal price loader drops a scoped list's rows for
+  yachts elsewhere and lets it replace a general list's overlapping periods; a yacht's location
+  is its own `locationId`, else its home base's. 333 of 1,770 synced lists are scoped.
+- **Offline companies.** `RestCharterCompany.pac` ("private access company (offline company)")
+  makes the company's yachts `optionApprovalRequired`, so they sell as requests.
+- **Terms.** A service's `description` and an equipment row's `condition` are kept as
+  `provider_extra_catalogue.note` and shown under the extra where the live offer carries no
+  condition of its own. For additional equipment they are the only terms there are.
+- **`approved: false`** on an option is logged (`nausys.option_awaiting_approval`) and kept on
+  the option event; the PDF does not describe the field.
+
+Not changed, on purpose: the client's `company`/`vatNr` on `createInfo` (the company is only
+collected later, for an invoice request, and the operator invoices the agency), and payment
+plans beyond two instalments (the balance is collected at the second date, which is earlier
+than we owe the operator the rest).
+
 #### Waiting options, and what we deliberately do not do with them
 
 `yachtReservation/v6/waitingOptions` answers how many people the operator already has queued
