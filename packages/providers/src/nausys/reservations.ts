@@ -22,9 +22,10 @@ import { nausysEndpoints, restYachtReservationSchema } from "./endpoints";
  * moved into `stornos` where nothing looked, so the one change worth waking somebody for was
  * the one the pass could not see.
  *
- * All three are asked. Where the caller names the reservations it holds, they are asked about
- * by id, which the vendor answers whatever their modify time ("ignored if reservation ids
- * sent"), so a change older than the window is not missed either. Without ids the modify-time
+ * Where the caller names the reservations it holds, they are asked about by id, which the vendor
+ * answers whatever their modify time ("ignored if reservation ids sent") and whatever list they
+ * now sit in, so a change older than the window is not missed either. Without ids all three
+ * lists are read. Without ids the modify-time
  * window stands, verified against the live account (Sep 2026): 14 of the agency's 61
  * reservations answered for a two-month window, each carrying `lastModifiedAt`.
  */
@@ -70,11 +71,20 @@ export async function listChangedNausysReservations(
             modifyTimeTo: nausysMinute(window.until, timeZone),
           },
         ];
-  const lists = [
-    nausysEndpoints.availability.reservations,
-    nausysEndpoints.availability.options,
-    nausysEndpoints.availability.stornos,
-  ];
+  /*
+   * Asked by id, any one list answers for every reservation named, in its current status:
+   * verified on the vendor's test company (Sep 2026), where four stornoed options came back
+   * STORNO from `reservations`, `options` and `stornos` alike. The window has no ids to go by,
+   * so it still needs all three.
+   */
+  const lists =
+    ids.length > 0
+      ? [nausysEndpoints.availability.reservations]
+      : [
+          nausysEndpoints.availability.reservations,
+          nausysEndpoints.availability.options,
+          nausysEndpoints.availability.stornos,
+        ];
 
   const byId = new Map<string, ProviderReservationState>();
   for (const endpoint of lists) {

@@ -120,8 +120,11 @@ describe("the operator's own change feed", () => {
     expect(state).toMatchObject({ status: "option_held", providerStatus: "OPTION" });
   });
 
-  /* Asked by id, the vendor ignores the dates, so a change older than the window still shows. */
-  it("asks all three lists about the reservations we hold, by id", async () => {
+  /*
+   * Asked by id, the vendor ignores the dates and answers from any one list in the current
+   * status, so a change older than the window still shows and one call is enough.
+   */
+  it("asks about the reservations we hold by id, in one call", async () => {
     const { client, transport } = build();
     transport.respondWith("reservations", { status: "OK", reservations: [] });
 
@@ -131,10 +134,9 @@ describe("the operator's own change feed", () => {
       "Europe/Zagreb",
     );
 
-    for (const list of ["reservations", "options", "stornos"]) {
-      expect(transport.lastBody(list)).toMatchObject({ reservations: [920_307_162] });
-      expect(transport.lastBody(list)).not.toHaveProperty("modifyTimeFrom");
-    }
+    expect(transport.lastBody("reservations")).toMatchObject({ reservations: [920_307_162] });
+    expect(transport.lastBody("reservations")).not.toHaveProperty("modifyTimeFrom");
+    expect(transport.callCount("options") + transport.callCount("stornos")).toBe(0);
   });
 
   /* The lists carry `paymentCurrency`; reading only `currency` dropped every price. */
