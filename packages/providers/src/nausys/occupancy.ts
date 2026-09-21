@@ -1,5 +1,5 @@
 import { providerRawPayload, providerRecord } from "@yacht-charter/db/schema/provider";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Database } from "../registry";
@@ -432,6 +432,11 @@ const priceListRowSchema = z.looseObject({
 
 /** Rows stay `unknown` here so one unreadable row costs a row, not the whole list. */
 const priceListSchema = z.looseObject({
+  /**
+   * The locations the list is for. Documented: a list naming locations "applies only to those
+   * locations" and "has a higher priority than a price list without defined locations".
+   */
+  locationsId: z.array(z.number().int()).optional(),
   currency: z.string(),
   type: z.string().optional(),
   columns: z.array(priceListColumnSchema),
@@ -477,8 +482,15 @@ export interface NausysPriceListIssue {
 export function mapNausysPriceLists(
   records: readonly NausysPriceListRecord[],
   onIssue?: (issue: NausysPriceListIssue) => void,
+  /**
+   * Each yacht's location, for the lists that name locations. Without it, or for a yacht it
+   * does not know, a location-scoped list is kept, the reading this had before.
+   */
+  locationByYacht?: ReadonlyMap<string, string>,
 ): Map<string, SeasonalPrice[]> {
   const byYacht = new Map<string, SeasonalPrice[]>();
+  /* Periods priced by a list scoped to the yacht's location, which general lists yield to. */
+  const scopedByYacht = new Map<string, SeasonalPrice[]>();
 
   for (const record of records) {
     const parsed = priceListSchema.safeParse(record.payload);
@@ -513,6 +525,7 @@ export function mapNausysPriceLists(
     const columns = list.columns.map((column) =>
       readColumnPeriods(column.periods, record.externalId, onIssue),
     );
+    const locations = new Set((list.locationsId ?? []).map(String));
 
     for (const raw of list.rows) {
       const row = priceListRowSchema.safeParse(raw);
@@ -539,6 +552,10 @@ export function mapNausysPriceLists(
         continue;
       }
 
+      /* A list for other locations does not price this yacht at all. */
+      const location = locationByYacht?.get(externalYachtId);
+      if (locations.size > 0 && location !== undefined && !locations.has(location)) continue;
+
       const entries = readRowPrices(row.data.prices, columns, currency);
       if (entries === null) {
         onIssue?.({
@@ -550,6 +567,12 @@ export function mapNausysPriceLists(
         continue;
       }
 
+      if (locations.size > 0) {
+        scopedByYacht.set(externalYachtId, [
+          ...(scopedByYacht.get(externalYachtId) ?? []),
+          ...entries,
+        ]);
+      }
       const existing = byYacht.get(externalYachtId);
       if (existing) {
         // One yacht sits in several lists: a list per season and per location set,
@@ -561,6 +584,23 @@ export function mapNausysPriceLists(
         byYacht.set(externalYachtId, entries);
       }
     }
+  }
+
+  /*
+   * Where a location's own list prices a period, a general list's overlapping period goes: the
+   * cheapest-first order below would otherwise pick whichever list was lower, and the card then
+   * showed a rate for another marina that no quote would honour.
+   */
+  for (const [yachtId, scoped] of scopedByYacht) {
+    const all = byYacht.get(yachtId) ?? [];
+    byYacht.set(
+      yachtId,
+      all.filter(
+        (entry) =>
+          scoped.includes(entry) ||
+          !scoped.some((own) => own.startDate < entry.endDate && entry.startDate < own.endDate),
+      ),
+    );
   }
 
   // Earliest and cheapest first, so the writer's "first period covering this date"
@@ -617,7 +657,8 @@ export function createNausysSeasonalPriceLoader(
       )
       .then(async (records) => {
         const issues: NausysPriceListIssue[] = [];
-        const mapped = mapNausysPriceLists(records, (issue) => issues.push(issue));
+        const locations = await loadYachtLocations(db, providerId);
+        const mapped = mapNausysPriceLists(records, (issue) => issues.push(issue), locations);
         if (issues.length > 0) {
           await options.reporter?.reportError(
             new ContractError(`NauSYS priceLists: ${issues.length} rows skipped`, {
@@ -646,6 +687,42 @@ export function createNausysSeasonalPriceLoader(
     }
     return byListing;
   };
+}
+
+/**
+ * Each yacht's location, read straight out of the stored payloads: the yacht's own `locationId`,
+ * else its home base's. Two narrow selects rather than the whole fleet dump, whose season blocks
+ * are most of its weight.
+ */
+async function loadYachtLocations(db: Database, providerId: string): Promise<Map<string, string>> {
+  const idsOf = (resourceType: "yacht" | "base") =>
+    db
+      .select({
+        externalId: providerRecord.externalId,
+        locationId: sql<string | null>`${providerRawPayload.payload}->>'locationId'`,
+        baseId: sql<string | null>`${providerRawPayload.payload}->>'baseId'`,
+      })
+      .from(providerRecord)
+      .innerJoin(providerRawPayload, eq(providerRawPayload.id, providerRecord.rawPayloadId))
+      .where(
+        and(
+          eq(providerRecord.providerId, providerId),
+          eq(providerRecord.resourceType, resourceType),
+          eq(providerRecord.active, true),
+        ),
+      );
+
+  const [yachts, bases] = await Promise.all([idsOf("yacht"), idsOf("base")]);
+  const baseLocation = new Map(
+    bases.flatMap((base) => (base.locationId ? [[base.externalId, base.locationId] as const] : [])),
+  );
+  return new Map(
+    yachts.flatMap((yacht) => {
+      const location =
+        yacht.locationId ?? (yacht.baseId ? baseLocation.get(yacht.baseId) : undefined);
+      return location ? [[yacht.externalId, location] as const] : [];
+    }),
+  );
 }
 
 interface PricePeriod {

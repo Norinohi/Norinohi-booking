@@ -832,3 +832,37 @@ describe("mapNausysPriceLists", () => {
     expect(issues.map((issue) => issue.reason)).toEqual(["row_unreadable"]);
   });
 });
+
+/*
+ * "A price list with defined locations applies only to those locations and has a higher
+ * priority than a price list without defined locations." Merged cheapest first, a yacht's card
+ * could carry another marina's lower rate.
+ */
+describe("price lists scoped to locations", () => {
+  function twoLists() {
+    const general = weeklyList();
+    general.rows = [{ yachtId: 4711001, prices: general.columns.map(() => "1000") }];
+    const scoped = { ...weeklyList(), locationsId: [57] };
+    scoped.rows = [{ yachtId: 4711001, prices: scoped.columns.map(() => "1200") }];
+    return [
+      { externalId: "1", payload: general },
+      { externalId: "2", payload: scoped },
+    ];
+  }
+
+  it("prices a yacht at its location from that location's list", () => {
+    const prices = mapNausysPriceLists(twoLists(), undefined, new Map([["4711001", "57"]]));
+
+    expect(new Set(prices.get("4711001")?.map((price) => price.priceMinor))).toEqual(
+      new Set([120_000]),
+    );
+  });
+
+  it("does not price a yacht elsewhere from another location's list", () => {
+    const prices = mapNausysPriceLists(twoLists(), undefined, new Map([["4711001", "61"]]));
+
+    expect(new Set(prices.get("4711001")?.map((price) => price.priceMinor))).toEqual(
+      new Set([100_000]),
+    );
+  });
+});
