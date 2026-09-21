@@ -199,6 +199,43 @@ Confirmed by NauSYS, Aug 2026, and implemented in `nausys/booking.ts`:
   the reservation's current status, so that refusal arrives as a classified
   provider error rather than a local guard.
 
+#### Extras sold as several variants
+
+An offer can list one additional service several times under the same `extraId`, one row per
+route, vehicle, party size or skipper type, told apart only by `condition` and by the row's own
+`id`. Measured Sep 2026 on 1,500 yachts over three weeks: 44% of yachts carry at least one such
+extra (Transfer, One way fee, Seabob, Liferaft, Skipper, Hostess...). The rows are alternatives,
+never add-ons; obligatory extras showed no repeats. Booking Manager gives each variant its own id,
+so it has no equivalent.
+
+The quote therefore addresses a repeated row by a variant code, `service:100511@66279570`
+(`formatExtraVariantCode` in `shared/extra-code.ts`), and the plain code of a many-row extra
+prices nothing. Crew roles take the customer's pick from the sidebar, else the cheapest row
+whose stated party size fits. The row `id` is also what `addExtras` wants: the PDF (p. 350)
+documents `RestYachtReservationServiceAddRequest.serviceId` as the id of the
+`RestYachtReservationExtra`, the season price row, not the catalogue service id.
+
+`createInfo` takes no extras, so the hold used to open a bare charter while the customer paid
+for crew and add-ons. `createOption` now re-prices through `getNausysQuoteWithRows`, which
+returns the rows the quote billed (`billedExtraRows`), and sends them to `addExtras` by row id
+(`services[].serviceId`, `equipments[].equipmentId`) straight after the option. A refusal
+stornos the option and fails the hold. Not yet verified live against a reservation.
+
+`addOrUpdateExtras` (editing extras on an existing reservation; no API caller yet) takes the
+charter in the mutation, re-prices it through the same rows, and diffs them against
+`listExtras`: a reservation line names only the catalogue id and its `condition`, so that pair
+matches a line to a row. Obligatory lines are never removed; equipment lines are removed by
+`yachtReservationEquipmentId`. It used to resolve ids through the amenity table, whose codes
+never matched an extra.
+
+An additional row for a service the offer already bills as obligatory (a damage waiver at 420
+and again at 350 "when skipper is chosen") is neither offered nor billed, crew included, and the
+catalogue projection keeps the obligatory row when one season lists both.
+
+The price sweep sends `numberOfPersons: 2`, the party the sidebar opens on, so per-head
+obligatory lines on search cards are not priced for a full boat. `id` on `obligatoryExtras` is a
+64-bit value no JavaScript number holds exactly, so it is never used as an id.
+
 #### Extras pricing
 
 `amount` is the **unit price**, `quantity` the multiplier, and `totalPrice` the
