@@ -143,7 +143,10 @@ Ordered by what it costs us to be wrong.
 21. **`inventory=raw` on `/yachts`.** We pass it to get `equipmentRaw`, which is
     our only source of equipment category names. Is it supported and stable, and
     do `equipmentRaw[].id` values share an id space with `/equipment`?
-    (`Q-BM-EQUIPMENT-ID`)
+    (`Q-BM-EQUIPMENT-ID`) Answered by the live data of company 225 (Sep 2026): the
+    raw row's own `id` matches `/equipment` 0 times in 327, its `parentId` 172 times,
+    and `parentId: -1` marks an item the operator added. The projection joins on
+    `parentId`; only the stability of `inventory=raw` is still a question.
 
 22. **`defaultCheckInDay` numbering.** (`Q-BM-CHECKIN-DAY`) Not an assumption any
     more, and worth documenting for the next integrator. Production sends `7` for

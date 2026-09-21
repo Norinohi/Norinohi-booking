@@ -574,6 +574,82 @@ describe("rig and engine", () => {
   );
 });
 
+describe("amenity categories", () => {
+  const equipmentRecords = parseExactJson(
+    readFileSync(new URL("fixtures/equipment.json", import.meta.url), "utf8"),
+  );
+  const catalogueOf = (equipmentRaw: JsonValue[][]) =>
+    projectBookingManagerCatalogue(
+      new Map([
+        [
+          "equipment_category" as const,
+          (Array.isArray(equipmentRecords) ? equipmentRecords : []).map((payload, index) => ({
+            externalId: String(index),
+            payload,
+          })),
+        ],
+        [
+          "yacht" as const,
+          equipmentRaw.map((rows, index) => ({
+            externalId: String(index),
+            payload: { id: 5000 + index, companyId: 42, homeBaseId: 7, equipmentRaw: rows },
+          })),
+        ],
+      ]),
+    );
+  const categoryOf = (catalogue: ReturnType<typeof catalogueOf>, name: string) => {
+    const amenity = catalogue.amenities.find((item) => item.name === name);
+    return catalogue.amenityCategories.find(
+      (item) => item.externalId === amenity?.externalAmenityCategoryId,
+    )?.name;
+  };
+  const row = (parentId: number, name: string, categoryName: string) => ({
+    id: 900 + parentId,
+    parentId,
+    name,
+    value: "",
+    categoryName,
+  });
+
+  it("files an amenity through parentId, not the raw row's own id or its spelling", () => {
+    const catalogue = catalogueOf([[row(5, "Chartplotter", "Instruments")]]);
+    expect(categoryOf(catalogue, "Chart plotter")).toBe("Instruments");
+  });
+
+  it("prefers a specific category over an operator's catch-all, however many use it", () => {
+    const catalogue = catalogueOf([
+      [row(10, "Radar", "Equipment")],
+      [row(10, "Radar", "Equipment")],
+      [row(10, "Radar", "Instruments")],
+    ]);
+    expect(categoryOf(catalogue, "Radar")).toBe("Instruments");
+  });
+
+  it("settles a disagreement by count, then by name, the same way on every sync", () => {
+    const twoToOne = catalogueOf([
+      [row(4, "Dinghy", "Dinghy")],
+      [row(4, "Dinghy", "Dinghy")],
+      [row(4, "Dinghy", "On-Deck")],
+    ]);
+    const tied = catalogueOf([[row(4, "Dinghy", "On-Deck")], [row(4, "Dinghy", "Dinghy")]]);
+
+    expect(categoryOf(twoToOne, "Dinghy")).toBe("Dinghy");
+    expect(categoryOf(tied, "Dinghy")).toBe("Dinghy");
+  });
+
+  it("falls back to the name only where no row points at the amenity", () => {
+    const catalogue = catalogueOf([[row(-1, "DVD player", "Entertainment")]]);
+    expect(categoryOf(catalogue, "DVD player")).toBe("Entertainment");
+  });
+
+  it("files what nothing names under a category of its own, not the operators' Equipment", () => {
+    const catalogue = catalogueOf([[row(10, "Radar", "Equipment")]]);
+
+    expect(categoryOf(catalogue, "Radar")).toBe("Equipment");
+    expect(categoryOf(catalogue, "Heating")).toBe("Uncategorised");
+  });
+});
+
 describe("pictures", () => {
   const mediaOf = (images: JsonValue[]) =>
     projectBookingManagerCatalogue(

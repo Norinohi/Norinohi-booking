@@ -57,8 +57,11 @@ const PROVIDER_PREFIX = "booking_manager";
  */
 const CATALOGUE_LOCALE = "en";
 
-/** Used only when a yacht names equipment the `/equipment` dump does not categorise. */
-const UNCATEGORISED_AMENITY_CATEGORY = { externalId: "uncategorised", name: "Equipment" };
+/**
+ * Used only when no yacht files an `/equipment` item under any category. Not "Equipment": the
+ * writer keys categories by name, and that is also a category operators name themselves.
+ */
+const UNCATEGORISED_AMENITY_CATEGORY = { externalId: "uncategorised", name: "Uncategorised" };
 
 /**
  * `descriptions[]` is category-keyed free text with no kind of its own, so the
@@ -340,15 +343,28 @@ function baseTimesOf(yachts: RestYacht[]) {
 /* ---------------------------------------------------------------- taxonomy */
 
 /**
- * Amenity categories exist nowhere in the vendor's reference data: `/equipment` is
- * a flat id/name list, and the only mention of a category is `categoryName` inside
- * a yacht's `equipmentRaw`. So the categories are derived from the fleet and the
- * amenities filed against them by id, falling back to a name match because the raw
- * inventory rows may not share the `/equipment` id space (Q-BM-EQUIPMENT-ID).
+ * Amenity categories exist nowhere in the vendor's reference data: `/equipment` is a flat
+ * id/name list, and the only mention of a category is `categoryName` on a yacht's
+ * `equipmentRaw` rows, which each operator writes for itself.
+ *
+ * A raw row's own `id` is in a different space from `/equipment` (0 of 327 matches on company
+ * 225); its `parentId` is the `/equipment` id it specialises, and `-1` marks an item the operator
+ * added that `/equipment` does not list. So an amenity takes the category its fleet files it
+ * under most, read through `parentId`, and only an amenity no row points at falls back to rows
+ * of the same name. One fitting arrives under several categories (Radar as "Instruments" and as
+ * "Equipment"), and the catch-alls say nothing about where it belongs, so a specific category
+ * beats them; the rest is decided by count, then name, so a re-sync never flips it.
  */
 function projectAmenities(equipment: z.infer<typeof restEquipmentSchema>[], yachts: RestYacht[]) {
   const categoryNames = new Map<string, string>();
-  const categoryByKey = new Map<string, string>();
+  const byParent = new Map<string, Map<string, number>>();
+  const byName = new Map<string, Map<string, number>>();
+
+  const tally = (index: Map<string, Map<string, number>>, key: string, categoryId: string) => {
+    const counts = index.get(key) ?? new Map<string, number>();
+    counts.set(categoryId, (counts.get(categoryId) ?? 0) + 1);
+    index.set(key, counts);
+  };
 
   for (const yacht of yachts) {
     for (const item of yacht.equipmentRaw ?? []) {
@@ -357,20 +373,21 @@ function projectAmenities(equipment: z.infer<typeof restEquipmentSchema>[], yach
 
       const categoryId = slugify(categoryName);
       if (categoryId === "") continue;
-      categoryNames.set(categoryId, categoryName);
+      if (!categoryNames.has(categoryId)) categoryNames.set(categoryId, categoryName);
 
-      const id = idOf(item.id);
-      if (id !== null) categoryByKey.set(`id:${id}`, categoryId);
+      const parentId = idOf(item.parentId);
+      if (parentId !== null && parentId !== "-1") tally(byParent, parentId, categoryId);
       const name = text(item.name);
-      if (name !== undefined) categoryByKey.set(`name:${name.toLowerCase()}`, categoryId);
+      if (name !== undefined) tally(byName, name.toLowerCase(), categoryId);
     }
   }
 
   let needsFallback = false;
   const amenities = equipment.map((item) => {
     const name = text(item.name) ?? `Equipment ${item.id}`;
-    const categoryId =
-      categoryByKey.get(`id:${item.id}`) ?? categoryByKey.get(`name:${name.toLowerCase()}`);
+    const categoryId = likeliestCategory(
+      byParent.get(String(item.id)) ?? byName.get(name.toLowerCase()),
+    );
     if (categoryId === undefined) needsFallback = true;
 
     return {
@@ -390,6 +407,32 @@ function projectAmenities(equipment: z.infer<typeof restEquipmentSchema>[], yach
   if (needsFallback) categories.push({ ...UNCATEGORISED_AMENITY_CATEGORY });
 
   return { categories, amenities };
+}
+
+/** The operators' names for "everything else", by slug. */
+const CATCH_ALL_CATEGORIES = new Set([
+  "equipment",
+  "other-equipment",
+  "standard-equipment",
+  "more-equipment",
+  "all-equipment",
+  "additional",
+  "amenities",
+  "facilities",
+  "miscellaneous",
+  "general",
+  "inventory",
+]);
+
+function likeliestCategory(counts: ReadonlyMap<string, number> | undefined): string | undefined {
+  if (counts === undefined) return undefined;
+  const ranked = [...counts.entries()].sort(
+    ([leftId, leftCount], [rightId, rightCount]) =>
+      Number(CATCH_ALL_CATEGORIES.has(leftId)) - Number(CATCH_ALL_CATEGORIES.has(rightId)) ||
+      rightCount - leftCount ||
+      leftId.localeCompare(rightId),
+  );
+  return ranked[0]?.[0];
 }
 
 /**
