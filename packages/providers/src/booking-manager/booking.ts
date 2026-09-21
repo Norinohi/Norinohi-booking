@@ -37,6 +37,12 @@ import {
 const PROVIDER = "booking_manager" as const;
 
 /**
+ * A base id the vendor will take back: digits without a leading zero, where `0` itself is a real
+ * base (Marina Cienfuegos on company 225) and ids run from one digit to nineteen.
+ */
+const BASE_ID = /^(?:0|[1-9]\d*)$/;
+
+/**
  * DELETE answers with the cancelled reservation on some tenants and with a bare
  * acknowledgement on others, and nothing about the cancellation is read back, so
  * an unrecognized-but-well-formed body is accepted rather than failing a call the
@@ -169,10 +175,10 @@ export function createBookingManagerBookingService(
      */
     const startBase = draft.route?.startBaseId?.trim() || baseId;
     const endBase = draft.route?.endBaseId?.trim() || startBase;
-    if (startBase !== undefined && /^[1-9]\d*$/.test(startBase)) {
+    if (startBase !== undefined && BASE_ID.test(startBase)) {
       body.baseFromId = exactJsonNumber(startBase);
     }
-    if (endBase !== undefined && /^[1-9]\d*$/.test(endBase)) {
+    if (endBase !== undefined && BASE_ID.test(endBase)) {
       body.baseToId = exactJsonNumber(endBase);
     }
     if (clientId !== undefined) body.clientId = clientId;

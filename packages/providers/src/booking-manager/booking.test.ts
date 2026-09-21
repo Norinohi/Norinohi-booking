@@ -312,6 +312,15 @@ describe("createOption bases", () => {
     expect(sent[0]?.baseToId).toBe(1179994180000100000);
   });
 
+  /* Marina Cienfuegos on company 225 is base 0; a falsy check would fall back to the listing's. */
+  it("sends base 0 as base 0", async () => {
+    const { sent, service } = capturing();
+    await service.createOption({ ...draft, route: { startBaseId: "0", endBaseId: "0" } });
+
+    expect(sent[0]?.baseFromId).toBe(0);
+    expect(sent[0]?.baseToId).toBe(0);
+  });
+
   it("falls back to the listing's own base when the offer named none", async () => {
     const { sent, service } = capturing();
     await service.createOption(draft);

@@ -416,3 +416,67 @@ describe("placeholder shipyards", () => {
     expect(catalogue.models.map((item) => item.externalBuilderId)).toEqual([undefined, "2"]);
   });
 });
+
+/*
+ * Company 225 files boats at bases whose ids are 0, 25, 127 and 194 beside the usual 19 digits.
+ * Rumba sails from Marina Cienfuegos, base 0: read as "no base", the yacht would lose its home
+ * and the listing would be skipped at the writer.
+ */
+describe("short base ids", () => {
+  const cienfuegos = {
+    id: 0,
+    name: "Marina Cienfuegos",
+    city: "Cienfuegos",
+    country: "Cuba",
+    address: "",
+    latitude: "22.126437",
+    longitude: "-80.451321",
+    countryId: 192,
+    sailingAreas: [28],
+  };
+  const bodrum = {
+    id: 25,
+    name: "Bodrum Marina",
+    city: "Bodrum",
+    country: "Turkey",
+    address: "",
+    latitude: "37.034471",
+    longitude: "27.424879",
+    countryId: 792,
+    sailingAreas: [25],
+  };
+
+  const catalogue = projectBookingManagerCatalogue(
+    recordSet([
+      [
+        "country",
+        [
+          { id: 192, name: "Cuba", shortName: "CU", worldRegion: 3 },
+          { id: 792, name: "Turkey", shortName: "TR", worldRegion: 39 },
+        ],
+      ],
+      ["base", [cienfuegos, bodrum]],
+      [
+        "yacht",
+        [
+          { id: 1, name: "Rumba", companyId: 225, homeBaseId: 0, homeBase: "Marina Cienfuegos" },
+          { id: 2, name: "Iraz", companyId: 225, homeBaseId: 25, homeBase: "Bodrum Marina" },
+        ],
+      ],
+    ]),
+  );
+
+  it("keeps base 0 and base 25 as bases", () => {
+    expect(catalogue.bases.map((base) => [base.externalId, base.name])).toEqual([
+      ["0", "Marina Cienfuegos"],
+      ["25", "Bodrum Marina"],
+    ]);
+  });
+
+  it("files a yacht at base 0 rather than at no base", () => {
+    expect(catalogue.listings.map((listing) => [listing.name, listing.externalBaseId])).toEqual([
+      ["Rumba", "0"],
+      ["Iraz", "25"],
+    ]);
+  });
+});
