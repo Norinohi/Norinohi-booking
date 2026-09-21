@@ -81,6 +81,8 @@ export interface InventoryProvider {
   listChangedReservations?(window: {
     since: Date;
     until: Date;
+    /** The reservations we hold open, for a provider that can be asked about them by id. */
+    reservationIds?: readonly string[] | undefined;
   }): Promise<ProviderReservationState[]>;
   /**
    * How many people the operator already has queued for a week it has sold out of. Optional:

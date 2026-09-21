@@ -42,7 +42,9 @@ const metrics = {
 if (result.drift.length > 0) {
   console.error(
     `${result.drift.length} booking(s) no longer match the operator's own record: ` +
-      result.drift.map((item) => `${item.reference} (${item.providerStatus})`).join(", "),
+      result.drift
+        .map((item) => `${item.reference} (${item.kind}: ${item.detail ?? item.providerStatus})`)
+        .join(", "),
   );
   await job.failed("bookings drifted from the operator's record", metrics);
   process.exit(1);

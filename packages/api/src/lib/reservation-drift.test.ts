@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { driftKindOf } from "./reservation-drift";
+import { detailDriftOf, driftKindOf } from "./reservation-drift";
 
 /*
  * What counts as our record and the operator's having come apart. The pass writes nothing on
@@ -37,5 +37,60 @@ describe("driftKindOf", () => {
   it("says nothing about a booking we are confirming right now", () => {
     expect(driftKindOf("CONFIRMING", "option_held")).toBeNull();
     expect(driftKindOf("CONFIRMING", "confirmed")).toBeNull();
+  });
+});
+
+/*
+ * An operator can move the week, swap the hull or reprice a charter without cancelling it. The
+ * pass used to compare status alone, so none of those reached anybody.
+ */
+describe("detailDriftOf", () => {
+  const sold = {
+    checkIn: "2026-09-19",
+    checkOut: "2026-09-26",
+    externalYachtId: "74197399",
+    priceMinor: 334_000,
+    currency: "EUR",
+  };
+  const same = {
+    status: "confirmed" as const,
+    externalYachtId: "74197399",
+    checkIn: "2026-09-19",
+    checkOut: "2026-09-26",
+    priceMinor: 334_000,
+    currency: "EUR",
+  };
+
+  it("says nothing when the reservation is what we sold", () => {
+    expect(detailDriftOf(sold, same)).toEqual([]);
+  });
+
+  it("names a moved week, a swapped hull and a new price", () => {
+    const drift = detailDriftOf(sold, {
+      ...same,
+      checkIn: "2026-09-26",
+      checkOut: "2026-10-03",
+      externalYachtId: "74197400",
+      priceMinor: 350_000,
+    });
+
+    expect(drift.map((item) => item.kind)).toEqual([
+      "dates_changed",
+      "yacht_changed",
+      "price_changed",
+    ]);
+  });
+
+  it("does not compare prices across currencies, or what the vendor did not state", () => {
+    expect(detailDriftOf(sold, { ...same, priceMinor: 400_000, currency: "USD" })).toEqual([]);
+    expect(detailDriftOf(sold, { status: "confirmed" })).toEqual([]);
+    expect(detailDriftOf({ ...sold, priceMinor: null, externalYachtId: null }, same)).toEqual([]);
+  });
+
+  /* A cancellation is its own report; listing what else changed would bury it. */
+  it("leaves a cancelled reservation to the cancellation", () => {
+    expect(detailDriftOf(sold, { ...same, status: "cancelled", checkIn: "2027-01-01" })).toEqual(
+      [],
+    );
   });
 });

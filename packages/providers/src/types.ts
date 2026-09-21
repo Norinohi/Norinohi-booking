@@ -428,6 +428,8 @@ export const providerReservationStateSchema = z.object({
   securityToken: z.string().optional(),
   /** The vendor's own word for the status, kept for the operator reading the report. */
   providerStatus: z.string(),
+  /** The vendor's yacht, which an operator can swap under a booking. */
+  externalYachtId: z.string().optional(),
   checkIn: z.string().optional(),
   checkOut: z.string().optional(),
   priceMinor: z.number().int().optional(),

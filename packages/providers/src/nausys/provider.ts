@@ -172,7 +172,10 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
              observes a different price and fails the comparison it exists to make. */
           currency: draft.currency ?? this.currency,
         });
-        return { hash: quote.priceSourceHash, billedRows };
+        const extrasMinor = quote.lines
+          .filter((line) => line.kind === "extra")
+          .reduce((sum, line) => sum + line.amount.amountMinor, 0);
+        return { hash: quote.priceSourceHash, billedRows, extrasMinor };
       },
       /* The same re-price, for an extras edit on a reservation that already exists. */
       billedRowsFor: async (request) =>
@@ -267,6 +270,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
   listChangedReservations(window: {
     since: Date;
     until: Date;
+    reservationIds?: readonly string[] | undefined;
   }): Promise<ProviderReservationState[]> {
     return listChangedNausysReservations(this.syncClient, window, this.config.optionTimeZone);
   }

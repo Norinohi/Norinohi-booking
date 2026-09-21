@@ -1,14 +1,21 @@
-import { booking } from "@yacht-charter/db/schema/booking";
+import { booking, providerReservationEvent } from "@yacht-charter/db/schema/booking";
+import { quote } from "@yacht-charter/db/schema/quote";
 import { provider as providerTable } from "@yacht-charter/db/schema/provider";
 import { readSyncCursor, writeSyncCursor } from "@yacht-charter/providers/sync/cursor";
 import { thrownFields } from "@yacht-charter/providers/shared/log-fields";
+import { decimalStringToMinor } from "@yacht-charter/providers/shared/money";
 import { log, parseError } from "evlog";
 import type { InventoryProvider, ProviderReservationState } from "@yacht-charter/providers";
-import { and, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Database } from "../context";
-import { driftKindOf, type DriftKind } from "../lib/reservation-drift";
+import {
+  detailDriftOf,
+  driftKindOf,
+  type DriftBaseline,
+  type DriftKind,
+} from "../lib/reservation-drift";
 import { recordErrorInAudit } from "./error-audit";
 import { providerByKey } from "./provider-routing";
 import type { BookingStatus } from "./booking-state";
@@ -63,6 +70,8 @@ export type ReservationDrift = {
   /** Theirs, in theirs. */
   providerStatus: string;
   kind: DriftKind;
+  /** What changed, for the kinds that are about more than status: "2026-09-19..2026-09-26 -> ...". */
+  detail: string | null;
 };
 
 export interface ReconcileResult {
@@ -93,8 +102,11 @@ export async function reconcileReservations(
       providerReservationId: booking.providerReservationId,
       providerReservationUuid: booking.providerReservationUuid,
       providerStatus: booking.providerStatus,
+      checkIn: quote.checkIn,
+      checkOut: quote.checkOut,
     })
     .from(booking)
+    .innerJoin(quote, eq(quote.id, booking.quoteId))
     .where(and(inArray(booking.status, OPEN), isNotNull(booking.providerReservationId)));
 
   const result: ReconcileResult = {
@@ -120,9 +132,18 @@ export async function reconcileReservations(
     };
     const since = await windowStart(db, key, now);
 
+    const held = ours.filter((row) => row.provider === code);
     let changed: ProviderReservationState[];
     try {
-      changed = await adapter.listChangedReservations({ since, until: now });
+      /* Asked about by id as well, for a vendor that can be: a change older than the window, or
+         one filed in a list the window does not cover, is then not missed. */
+      changed = await adapter.listChangedReservations({
+        since,
+        until: now,
+        reservationIds: held.flatMap((row) =>
+          row.providerReservationId ? [row.providerReservationId] : [],
+        ),
+      });
     } catch (error) {
       /* The cursor is deliberately not advanced: the window this run missed is the next
          run's to cover, and a feed that is down must not quietly skip a day of changes. */
@@ -145,8 +166,10 @@ export async function reconcileReservations(
     }
 
     result.reported += changed.length;
-    const mine = new Map(
-      ours.filter((row) => row.provider === code).map((row) => [row.providerReservationId, row]),
+    const mine = new Map(held.map((row) => [row.providerReservationId, row]));
+    const heldRows = await heldAt(
+      db,
+      changed.flatMap((state) => mine.get(state.providerReservationId)?.id ?? []),
     );
 
     for (const state of changed) {
@@ -170,8 +193,7 @@ export async function reconcileReservations(
         await db.update(booking).set(changes).where(eq(booking.id, row.id));
       }
 
-      const kind = driftKindOf(row.status, state.status);
-      if (kind) {
+      const report = (kind: DriftKind, detail: string | null) =>
         result.drift.push({
           bookingId: row.id,
           reference: row.reference,
@@ -179,8 +201,18 @@ export async function reconcileReservations(
           status: row.status,
           providerStatus: state.providerStatus,
           kind,
+          detail,
         });
-      }
+
+      const kind = driftKindOf(row.status, state.status);
+      if (kind) report(kind, null);
+
+      const baseline: DriftBaseline = {
+        checkIn: row.checkIn,
+        checkOut: row.checkOut,
+        ...(heldRows.get(row.id) ?? { externalYachtId: null, priceMinor: null, currency: null }),
+      };
+      for (const item of detailDriftOf(baseline, state)) report(item.kind, item.detail);
     }
 
     if (!result.unreachable.includes(code)) {
@@ -189,6 +221,57 @@ export async function reconcileReservations(
   }
 
   return result;
+}
+
+/** What the vendor last told us a reservation carried, read off the events the adapter wrote. */
+const heldEventSchema = z.object({
+  yachtId: z.number().int().optional(),
+  clientPrice: z.string().optional(),
+  currency: z.string().optional(),
+});
+
+/**
+ * The yacht and price each booking's reservation was held at: the most recent event the adapter
+ * recorded with them (the option, the extras added to it, the confirmation). A booking without
+ * one is compared on its dates alone.
+ */
+async function heldAt(
+  db: Database,
+  bookingIds: readonly string[],
+): Promise<Map<string, Omit<DriftBaseline, "checkIn" | "checkOut">>> {
+  const found = new Map<string, Omit<DriftBaseline, "checkIn" | "checkOut">>();
+  if (bookingIds.length === 0) return found;
+
+  const events = await db
+    .select({
+      bookingId: providerReservationEvent.bookingId,
+      payload: providerReservationEvent.payload,
+    })
+    .from(providerReservationEvent)
+    .where(inArray(providerReservationEvent.bookingId, [...bookingIds]))
+    .orderBy(desc(providerReservationEvent.createdAt));
+
+  for (const event of events) {
+    if (found.has(event.bookingId)) continue;
+    const parsed = heldEventSchema.safeParse(event.payload);
+    if (!parsed.success || parsed.data.yachtId === undefined) continue;
+
+    const { yachtId, clientPrice, currency } = parsed.data;
+    let priceMinor: number | null = null;
+    if (clientPrice !== undefined && currency !== undefined) {
+      try {
+        priceMinor = decimalStringToMinor(clientPrice, currency);
+      } catch {
+        priceMinor = null;
+      }
+    }
+    found.set(event.bookingId, {
+      externalYachtId: String(yachtId),
+      priceMinor,
+      currency: priceMinor === null ? null : (currency ?? null),
+    });
+  }
+  return found;
 }
 
 async function windowStart(

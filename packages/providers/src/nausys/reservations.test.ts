@@ -28,6 +28,9 @@ function build() {
     queue: new SequentialQueue(),
     retry: { maxAttempts: 1 },
   });
+  /* Most cases speak about one list; the other two answer with nothing unless a case says. */
+  transport.respondWith("options", { status: "OK", reservations: [] });
+  transport.respondWith("stornos", { status: "OK", reservations: [] });
 
   return { client, transport };
 }
@@ -77,6 +80,7 @@ describe("the operator's own change feed", () => {
       status: "confirmed",
       providerStatus: "RESERVATION",
       securityToken: "c8abecc7-965c-57f0-9023-9bb4c7695d51",
+      externalYachtId: "74197399",
       checkIn: "2026-09-19",
       checkOut: "2026-09-26",
       priceMinor: 334_000,
@@ -85,17 +89,66 @@ describe("the operator's own change feed", () => {
     });
   });
 
-  /* The one the pass exists for: a charter the operator called off in their own system. */
-  it("reads a storno as a cancellation", async () => {
+  /*
+   * The one the pass exists for: a charter the operator called off in their own system. It
+   * moves to `stornos`, which nothing used to read, so the cancellation was never seen.
+   */
+  it("reads a cancellation off the stornos list, over the reservation it replaced", async () => {
     const { client, transport } = build();
-    transport.respondWith("reservations", {
+    transport.respondWith("reservations", { status: "OK", reservations: [RESERVATION] });
+    transport.respondWith("stornos", {
       status: "OK",
       reservations: [{ ...RESERVATION, reservationStatus: "STORNO" }],
     });
 
+    const states = await listChangedNausysReservations(client, window, "Europe/Zagreb");
+
+    expect(states).toHaveLength(1);
+    expect(states[0]).toMatchObject({ status: "cancelled", providerStatus: "STORNO" });
+  });
+
+  it("reads a hold off the options list", async () => {
+    const { client, transport } = build();
+    transport.respondWith("reservations", { status: "OK", reservations: [] });
+    transport.respondWith("options", {
+      status: "OK",
+      reservations: [{ ...RESERVATION, reservationStatus: "OPTION" }],
+    });
+
     const [state] = await listChangedNausysReservations(client, window, "Europe/Zagreb");
 
-    expect(state).toMatchObject({ status: "cancelled", providerStatus: "STORNO" });
+    expect(state).toMatchObject({ status: "option_held", providerStatus: "OPTION" });
+  });
+
+  /* Asked by id, the vendor ignores the dates, so a change older than the window still shows. */
+  it("asks all three lists about the reservations we hold, by id", async () => {
+    const { client, transport } = build();
+    transport.respondWith("reservations", { status: "OK", reservations: [] });
+
+    await listChangedNausysReservations(
+      client,
+      { ...window, reservationIds: ["920307162", "not-a-number"] },
+      "Europe/Zagreb",
+    );
+
+    for (const list of ["reservations", "options", "stornos"]) {
+      expect(transport.lastBody(list)).toMatchObject({ reservations: [920_307_162] });
+      expect(transport.lastBody(list)).not.toHaveProperty("modifyTimeFrom");
+    }
+  });
+
+  /* The lists carry `paymentCurrency`; reading only `currency` dropped every price. */
+  it("prices a reservation in its payment currency", async () => {
+    const { client, transport } = build();
+    const { currency: _currency, ...listed } = RESERVATION;
+    transport.respondWith("reservations", {
+      status: "OK",
+      reservations: [{ ...listed, paymentCurrency: "EUR" }],
+    });
+
+    const [state] = await listChangedNausysReservations(client, window, "Europe/Zagreb");
+
+    expect(state).toMatchObject({ priceMinor: 334_000, currency: "EUR" });
   });
 
   /* Anything that is neither confirmed nor cancelled is a hold, which is the safe reading. */
