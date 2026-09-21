@@ -221,12 +221,28 @@ returns the rows the quote billed (`billedExtraRows`), and sends them to `addExt
 (`services[].serviceId`, `equipments[].equipmentId`) straight after the option. A refusal
 stornos the option and fails the hold. Not yet verified live against a reservation.
 
-`addOrUpdateExtras` (editing extras on an existing reservation; no API caller yet) takes the
-charter in the mutation, re-prices it through the same rows, and diffs them against
-`listExtras`: a reservation line names only the catalogue id and its `condition`, so that pair
-matches a line to a row. Obligatory lines are never removed; equipment lines are removed by
-`yachtReservationEquipmentId`. It used to resolve ids through the amenity table, whose codes
-never matched an extra.
+`addOrUpdateExtras` (editing extras on an existing reservation; no API caller yet) diffs the
+wanted codes against the reservation's own `listExtras`: the lines it carries, and the season
+price rows it can still take (`availableExtras`), which is where an addition's row id comes
+from. It cannot re-price through `freeYachts`: the vendor no longer reports a yacht we hold. A
+line is matched by catalogue id and, for a variant, its `condition`. Obligatory and crew lines
+are never removed; equipment lines are removed by `yachtReservationEquipmentId`.
+
+Verified live on the vendor's test company 102701 (Sep 2026), through the adapter itself:
+
+- the hold with `numberOfGuests: 2` and `addExtras` by row id put a per-person service and a
+  per-person equipment line on the option at quantity 2 (20.00 each), the skipper at 7 days
+  (1,050.00) and a per-booking service at 100.00, exactly the quote's 1,315.00 of extras;
+- the edit removed the per-person lines, kept the per-booking one and the skipper, and added a
+  new service from `availableExtras`;
+- reservations asked about by id come back in their current status from any of the three
+  lists; after `stornoOption` they read STORNO;
+- `createBooking` answers OPERATION_NOT_ALLOWED (101) on the test agency, so the confirmation
+  step is still unverified live;
+- the crew list refuses an OPTION (AUTHENTICATION_ERROR, and `crewlistlink` is null on the
+  option); on fixed reservations `crewlist/v6/get` accepts both the reservation `uuid` and the
+  32-hex token in `crewlistlink`, and refuses an arbitrary one.
+  never matched an extra.
 
 An additional row for a service the offer already bills as obligatory (a damage waiver at 420
 and again at 350 "when skipper is chosen") is neither offered nor billed, crew included, and the
