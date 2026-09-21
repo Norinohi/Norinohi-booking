@@ -358,7 +358,6 @@
     "crewList": {
       "title": "Mannskapsliste",
       "notice": "Charterselskapet må gi myndighetene en liste over alle om bord før dere seiler. Fyll den ut her, så sender vi den til dem - det som mangler, spør basen om i skranken når dere kommer.",
-      "alsoAsked": "De spør også om {fields}, som basen henter inn i skranken når dere kommer.",
       "maxPassengers": "Listen deres rommer maksimalt {count} personer.",
       "loading": "Laster mannskapslisten din…",
       "empty": "Ingen er lagt til ennå. Bookingen din er for {guests} gjester - legg til alle som skal være om bord, også skipperen.",
@@ -380,11 +379,8 @@
         "firstName": "Skriv inn fornavnet til denne personen",
         "lastName": "Skriv inn etternavnet til denne personen",
         "skipperEmail": "Skriv inn en gyldig e-postadresse",
-        "oneSkipper": "Bare én person kan være skipper"
-      },
-      "requires": {
-        "shoeSize": "skostørrelser",
-        "disabledPerson": "om noen om bord har en funksjonsnedsettelse"
+        "oneSkipper": "Bare én person kan være skipper",
+        "maxPassengers": "Listen til dette charterselskapet har plass til maks {count} personer"
       },
       "legend": "Feltene merket med * er de dette charterselskapet krever.",
       "sent": "Sendt til charterselskapet {when}.",
@@ -411,7 +407,7 @@
       "skipperEmail": "Skipperens e-post",
       "skipperMobile": "Skipperens telefon",
       "note": "Noe basen bør vite",
-      "notePlaceholder": "Ankomsttid, flynummer, noen som trenger assistanse…",
+      "notePlaceholder": "Noen som trenger hjelp, sen ankomst, alt basen bør planlegge for…",
       "documents": {
         "passport": "Pass",
         "idCard": "ID-kort",
@@ -422,7 +418,14 @@
         "female": "Kvinne"
       },
       "placeSearch": "Søk etter steder",
-      "placeEmpty": "Ingen steder med det navnet"
+      "placeEmpty": "Ingen steder med det navnet",
+      "shoeSize": "Skostørrelse",
+      "shoeSizePlaceholder": "EU 42",
+      "disabledPerson": "Denne personen trenger hjelp om bord",
+      "flightNumber": "Flightnummer",
+      "flightNumberPlaceholder": "OU 412",
+      "arrivalTime": "Ankomsttid",
+      "airportTransfer": "Vi ønsker transfer fra flyplassen til basen"
     },
     "priceLineLabels": {
       "charterPrice": "Charterpris",

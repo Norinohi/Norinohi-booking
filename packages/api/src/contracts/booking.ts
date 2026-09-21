@@ -319,6 +319,8 @@ export const travellerSchema = z.object({
   vhfLicence: z.string().nullable(),
   skipperEmail: z.string().nullable(),
   skipperMobile: z.string().nullable(),
+  disabledPerson: z.boolean(),
+  shoeSize: z.string().nullable(),
 });
 
 /** The three the operator's form offers; anything else is `OTHER` there too. */
@@ -353,6 +355,20 @@ export const travellerInputSchema = z.object({
   vhfLicence: z.string().trim().max(64).optional(),
   skipperEmail: z.email().max(200).optional(),
   skipperMobile: z.string().trim().max(32).optional(),
+  /** Needs assistance aboard. Asked only where the operator's list asks it. */
+  disabledPerson: z.boolean().optional(),
+  shoeSize: z.string().trim().max(16).optional(),
+});
+
+/** How the party reaches the base, filed with the list for the base to plan around. */
+export const crewTripSchema = z.object({
+  flightNumber: z.string().trim().max(16).optional(),
+  /** `HH:mm`, local to the base. */
+  arrivalTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .optional(),
+  airportTransfer: z.boolean().optional(),
 });
 
 export const travellerListInputSchema = z.object({ bookingId: idSchema });
@@ -404,6 +420,8 @@ export const travellerListSchema = z.object({
   bookingId: z.string(),
   travellers: z.array(travellerSchema),
   submission: crewListSubmissionSchema.nullable(),
+  note: z.string().nullable(),
+  trip: crewTripSchema,
 });
 
 /**
@@ -415,8 +433,9 @@ export const travellerSaveInputSchema = z
   .object({
     bookingId: idSchema,
     travellers: z.array(travellerInputSchema).max(50),
-    /** Anything the base should know: an arrival time, a wheelchair, a late flight. */
+    /** Anything the base should know: a wheelchair, a late arrival. */
     note: z.string().trim().max(500).optional(),
+    trip: crewTripSchema.optional(),
   })
   /* One boat, one person answering for it. The operator's list has a single skipper slot. */
   .refine(

@@ -76,14 +76,9 @@ const FIELD_NAMES = {
   livingCountry: ["livingCountry"],
   skipperLicence: ["skipperLicence"],
   vhfLicence: ["vhfLicence"],
+  shoeSize: ["shoeSize"],
+  disabledPerson: ["disabledPerson"],
 } as const;
-
-/**
- * What an operator can ask for that this form does not collect. Named in the customer's own
- * language rather than printed as `shoeSize`, and left as a sentence rather than a field: the
- * base asks for these at the desk, and a crewed yacht wanting shoe sizes is not a manifest.
- */
-const UNCOLLECTED_FIELDS = ["shoeSize", "disabledPerson"] as const;
 
 /**
  * The one country whose crew list will not take a place typed freehand: NauSYS publishes the
@@ -110,7 +105,11 @@ const EMPTY_MEMBER = {
   vhfLicence: "",
   skipperEmail: "",
   skipperMobile: "",
+  disabledPerson: false,
+  shoeSize: "",
 };
+
+const EMPTY_TRIP = { flightNumber: "", arrivalTime: "", airportTransfer: false };
 
 /**
  * Mirrors `travellerInputSchema` on the server, with every optional field modelled as an empty
@@ -145,6 +144,8 @@ function useCrewSchema() {
               vhfLicence: z.string().trim().max(64),
               skipperEmail: z.union([z.literal(""), z.email(t("errors.skipperEmail"))]),
               skipperMobile: z.string().trim().max(32),
+              disabledPerson: z.boolean(),
+              shoeSize: z.string().trim().max(16),
             }),
           )
           .max(MAX_TRAVELLERS)
@@ -153,6 +154,12 @@ function useCrewSchema() {
             message: t("errors.oneSkipper"),
           }),
         note: z.string().trim().max(500),
+        trip: z.object({
+          flightNumber: z.string().trim().max(16),
+          /* What a time input holds: blank, or `HH:mm`. */
+          arrivalTime: z.string(),
+          airportTransfer: z.boolean(),
+        }),
       }),
     [t],
   );
@@ -181,6 +188,8 @@ function toInput(member: CrewMember): TravellerInput {
   if (member.birthCountry) input.birthCountry = member.birthCountry;
   if (member.livingPlace.trim()) input.livingPlace = member.livingPlace.trim();
   if (member.livingCountry) input.livingCountry = member.livingCountry;
+  if (member.disabledPerson) input.disabledPerson = true;
+  if (member.shoeSize.trim()) input.shoeSize = member.shoeSize.trim();
 
   /* The licence fields belong to whoever is sailing the boat, and only to them. */
   if (member.isSkipper) {
@@ -191,6 +200,15 @@ function toInput(member: CrewMember): TravellerInput {
   }
 
   return input;
+}
+
+/** Blanks left out, and the transfer only once the customer has ticked it. */
+function toTrip(trip: CrewValues["trip"]): SaveTravellersInput["trip"] {
+  const input: NonNullable<SaveTravellersInput["trip"]> = {};
+  if (trip.flightNumber.trim()) input.flightNumber = trip.flightNumber.trim();
+  if (trip.arrivalTime) input.arrivalTime = trip.arrivalTime;
+  if (trip.airportTransfer) input.airportTransfer = true;
+  return Object.keys(input).length > 0 ? input : undefined;
 }
 
 /* The select holds a string; the contract holds an enum. These are the two crossings. */
@@ -236,13 +254,9 @@ export default function CrewListPanel({ booking }: { booking: BookingDetail }) {
   });
 
   const required = useMemo(() => new Set(requirements?.fields ?? []), [requirements]);
-  /* What this operator wants that we never ask for; the base collects it on arrival. */
-  const alsoAsked = UNCOLLECTED_FIELDS.filter((field) => required.has(field)).map((field) =>
-    t(`requires.${field}`),
-  );
 
   const form = useForm<CrewValues>({
-    defaultValues: { travellers: [], note: "" },
+    defaultValues: { travellers: [], note: "", trip: EMPTY_TRIP },
     resolver: zodResolver(schema),
     mode: "onTouched",
   });
@@ -256,7 +270,12 @@ export default function CrewListPanel({ booking }: { booking: BookingDetail }) {
   useEffect(() => {
     if (!data) return;
     form.reset({
-      note: "",
+      note: data.note ?? "",
+      trip: {
+        flightNumber: data.trip.flightNumber ?? "",
+        arrivalTime: data.trip.arrivalTime ?? "",
+        airportTransfer: data.trip.airportTransfer ?? false,
+      },
       travellers: data.travellers.map((member) => ({
         firstName: member.firstName,
         lastName: member.lastName,
@@ -275,6 +294,8 @@ export default function CrewListPanel({ booking }: { booking: BookingDetail }) {
         vhfLicence: member.vhfLicence ?? "",
         skipperEmail: member.skipperEmail ?? "",
         skipperMobile: member.skipperMobile ?? "",
+        disabledPerson: member.disabledPerson,
+        shoeSize: member.shoeSize ?? "",
       })),
     });
   }, [data, form]);
@@ -293,11 +314,19 @@ export default function CrewListPanel({ booking }: { booking: BookingDetail }) {
   if (closed) return null;
 
   const submit = form.handleSubmit((values) => {
+    /* The operator's own cap: a longer list is refused at the desk, so it is refused here. */
+    const cap = requirements?.maxPassengers;
+    if (cap && values.travellers.length > cap) {
+      form.setError("travellers", { message: t("errors.maxPassengers", { count: cap }) });
+      return;
+    }
     const note = values.note.trim();
+    const trip = toTrip(values.trip);
     save.mutate({
       bookingId: booking.id,
       travellers: values.travellers.map(toInput),
       ...(note ? { note } : null),
+      ...(trip ? { trip } : null),
     });
   });
 
@@ -327,11 +356,6 @@ export default function CrewListPanel({ booking }: { booking: BookingDetail }) {
           Advisory throughout: nothing here gates the save, because the base collects whatever
           is missing on arrival either way. */}
       {required.size > 0 ? <p className="text-sm text-natural-500">{t("legend")}</p> : null}
-      {alsoAsked.length > 0 ? (
-        <p className="text-sm text-natural-500">
-          {t("alsoAsked", { fields: alsoAsked.join(", ") })}
-        </p>
-      ) : null}
       {requirements?.maxPassengers ? (
         <p className="text-sm text-natural-500">
           {t("maxPassengers", { count: requirements.maxPassengers })}
@@ -578,6 +602,24 @@ export default function CrewListPanel({ booking }: { booking: BookingDetail }) {
                     )}
                   />
 
+                  {/* Asked only of an operator that asks: most never do, and a shoe size on
+                      every charter's manifest is noise. */}
+                  {required.has("shoeSize") ? (
+                    <FormField
+                      control={form.control}
+                      name={`travellers.${index}.shoeSize`}
+                      render={({ field: input }) => (
+                        <FormItem>
+                          <FormLabel>{label("shoeSize")}</FormLabel>
+                          <FormControl>
+                            <TextField placeholder={t("shoeSizePlaceholder")} {...input} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ) : null}
+
                   <FormField
                     control={form.control}
                     name={`travellers.${index}.role`}
@@ -592,6 +634,22 @@ export default function CrewListPanel({ booking }: { booking: BookingDetail }) {
                     )}
                   />
                 </div>
+
+                {required.has("disabledPerson") ? (
+                  <FormField
+                    control={form.control}
+                    name={`travellers.${index}.disabledPerson`}
+                    render={({ field: input }) => (
+                      <FormItem className="flex flex-row items-center gap-3">
+                        <FormControl>
+                          <Checkbox checked={input.value} onCheckedChange={input.onChange} />
+                        </FormControl>
+                        <FormLabel className="mt-0!">{t("disabledPerson")}</FormLabel>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : null}
 
                 {/* The skipper is a role the operator files separately, with credentials
                     attached: an operator that requires a licence refuses the boat without
@@ -672,7 +730,55 @@ export default function CrewListPanel({ booking }: { booking: BookingDetail }) {
               </div>
             ))}
 
-            {/* Goes to the base with the list: an arrival time, a late flight, a wheelchair. */}
+            {form.formState.errors.travellers?.message ? (
+              <p className="text-sm text-error-500">{form.formState.errors.travellers.message}</p>
+            ) : null}
+
+            {/* Filed with the list in the vendor's own fields, which the base plans around:
+                the transfer especially, which it books on the strength of this box. */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="trip.flightNumber"
+                render={({ field: input }) => (
+                  <FormItem>
+                    <FormLabel>{t("flightNumber")}</FormLabel>
+                    <FormControl>
+                      <TextField placeholder={t("flightNumberPlaceholder")} {...input} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="trip.arrivalTime"
+                render={({ field: input }) => (
+                  <FormItem>
+                    <FormLabel>{t("arrivalTime")}</FormLabel>
+                    <FormControl>
+                      <TextField type="time" {...input} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="trip.airportTransfer"
+              render={({ field: input }) => (
+                <FormItem className="flex flex-row items-center gap-3">
+                  <FormControl>
+                    <Checkbox checked={input.value} onCheckedChange={input.onChange} />
+                  </FormControl>
+                  <FormLabel className="mt-0!">{t("airportTransfer")}</FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Goes to the base with the list: a wheelchair, a late arrival. */}
             <FormField
               control={form.control}
               name="note"

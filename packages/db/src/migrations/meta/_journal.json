@@ -1002,6 +1002,13 @@
       "when": 1790028113386,
       "tag": "0142_serious_moon_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 143,
+      "version": "7",
+      "when": 1790029010884,
+      "tag": "0143_gigantic_rumiko_fujikawa",
+      "breakpoints": true
     }
   ]
 }

@@ -731,6 +731,10 @@ export const crewListMemberSchema = z.object({
   vhfLicence: z.string().optional(),
   skipperEmail: z.string().optional(),
   skipperMobile: z.string().optional(),
+  /** Needs assistance aboard; the base plans boarding around it. */
+  disabledPerson: z.boolean().optional(),
+  /** Free text, as the vendor takes it: operators that lend deck shoes ask for it. */
+  shoeSize: z.string().optional(),
   /**
    * When this person is aboard, ISO `yyyy-mm-dd`. Not asked of the customer: an operator that
    * requires them means the charter dates, which the booking already knows, and a passenger
@@ -745,6 +749,18 @@ export const crewListSubmissionSchema = z.object({
   ref: providerReservationRefSchema,
   members: z.array(crewListMemberSchema).max(50),
   note: z.string().optional(),
+  /** How the party reaches the base. The base acts on the transfer request. */
+  trip: z
+    .object({
+      flightNumber: z.string().optional(),
+      /** `HH:mm`, local to the base. */
+      arrivalTime: z
+        .string()
+        .regex(/^\d{2}:\d{2}$/)
+        .optional(),
+      airportTransfer: z.boolean().optional(),
+    })
+    .optional(),
 });
 export type CrewListSubmission = z.infer<typeof crewListSubmissionSchema>;
 

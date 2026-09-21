@@ -358,7 +358,6 @@
     "crewList": {
       "title": "Besättningslista",
       "notice": "Charterbolaget måste lämna myndigheterna en lista över alla ombord innan ni seglar. Fyll i den här så skickar vi den till dem: det som saknas frågar basen efter i disken när ni kommer.",
-      "alsoAsked": "De frågar också efter {fields}, som basen samlar in i disken när ni kommer.",
       "maxPassengers": "Deras lista rymmer högst {count} personer.",
       "loading": "Laddar din besättningslista…",
       "empty": "Ingen tillagd än. Din bokning gäller {guests} gäster: lägg till alla som ska vara ombord, inklusive skepparen.",
@@ -380,11 +379,8 @@
         "firstName": "Ange personens förnamn",
         "lastName": "Ange personens efternamn",
         "skipperEmail": "Ange en giltig e-postadress",
-        "oneSkipper": "Bara en person kan vara skeppare"
-      },
-      "requires": {
-        "shoeSize": "skostorlekar",
-        "disabledPerson": "om någon ombord har en funktionsnedsättning"
+        "oneSkipper": "Bara en person kan vara skeppare",
+        "maxPassengers": "Charterbolagets lista rymmer högst {count} personer"
       },
       "legend": "Fält märkta med * är de som det här charterbolaget kräver.",
       "sent": "Skickad till charterbolaget {when}.",
@@ -411,7 +407,7 @@
       "skipperEmail": "Skepparens e-post",
       "skipperMobile": "Skepparens telefon",
       "note": "Något basen bör veta",
-      "notePlaceholder": "Ankomsttid, flightnummer, någon som behöver assistans…",
+      "notePlaceholder": "Någon som behöver hjälp, sen ankomst, allt basen bör planera för…",
       "documents": {
         "passport": "Pass",
         "idCard": "ID-kort",
@@ -422,7 +418,14 @@
         "female": "Kvinna"
       },
       "placeSearch": "Sök platser",
-      "placeEmpty": "Ingen plats med det namnet"
+      "placeEmpty": "Ingen plats med det namnet",
+      "shoeSize": "Skostorlek",
+      "shoeSizePlaceholder": "EU 42",
+      "disabledPerson": "Den här personen behöver hjälp ombord",
+      "flightNumber": "Flightnummer",
+      "flightNumberPlaceholder": "OU 412",
+      "arrivalTime": "Ankomsttid",
+      "airportTransfer": "Vi vill ha transfer från flygplatsen till basen"
     },
     "priceLineLabels": {
       "charterPrice": "Charterpris",

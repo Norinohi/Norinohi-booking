@@ -231,6 +231,15 @@ export const booking = pgTable(
     crewListAccepted: boolean("crew_list_accepted"),
     /** The vendor's own words on a refusal; never anything about a passenger. */
     crewListMessage: text("crew_list_message"),
+    /*
+     * What the customer told the base with the list, filed with it. The note is encrypted like
+     * the passengers' fields: "a wheelchair" is what it is for. The trip is not personal and is
+     * kept plain; `arrival_time` is `HH:mm` at the base.
+     */
+    crewListNote: text("crew_list_note"),
+    crewListFlightNumber: text("crew_list_flight_number"),
+    crewListArrivalTime: text("crew_list_arrival_time"),
+    crewListAirportTransfer: boolean("crew_list_airport_transfer"),
     providerStatus: text("provider_status"),
     holdExpiresAt: timestamp("hold_expires_at"),
     /*
@@ -397,6 +406,9 @@ export const bookingTraveller = pgTable(
     vhfLicence: text("vhf_licence"),
     skipperEmail: text("skipper_email"),
     skipperMobile: text("skipper_mobile"),
+    /* Encrypted "true" or null: health data, even as a flag. */
+    disabledPerson: text("disabled_person"),
+    shoeSize: text("shoe_size"),
     ...timestamps,
   },
   (t) => [index("booking_traveller_booking_idx").on(t.bookingId)],

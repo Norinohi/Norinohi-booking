@@ -358,7 +358,6 @@
     "crewList": {
       "title": "Lista załogi",
       "notice": "Firma czarterowa musi przekazać władzom listę wszystkich osób na pokładzie przed wypłynięciem. Wypełnij ją tutaj, a my ją przekażemy - o brakujące dane baza poprosi przy recepcji po Twoim przyjeździe.",
-      "alsoAsked": "Wymagane są też: {fields}, które baza zbierze przy recepcji po Twoim przyjeździe.",
       "maxPassengers": "Maksymalna liczba osób na liście: {count}.",
       "loading": "Wczytywanie listy załogi…",
       "empty": "Nikogo jeszcze nie dodano. Twoja rezerwacja obejmuje liczbę gości: {guests} - dodaj każdą osobę, która będzie na pokładzie, w tym skippera.",
@@ -380,11 +379,8 @@
         "firstName": "Podaj imię tej osoby",
         "lastName": "Podaj nazwisko tej osoby",
         "skipperEmail": "Podaj prawidłowy adres e-mail",
-        "oneSkipper": "Skipperem może być tylko jedna osoba"
-      },
-      "requires": {
-        "shoeSize": "rozmiary obuwia",
-        "disabledPerson": "informacja, czy na pokładzie jest osoba z niepełnosprawnością"
+        "oneSkipper": "Skipperem może być tylko jedna osoba",
+        "maxPassengers": "Lista tej firmy czarterowej mieści najwyżej {count} osób"
       },
       "legend": "Pola oznaczone * są wymagane przez tę firmę czarterową.",
       "sent": "Wysłano do firmy czarterowej {when}.",
@@ -411,7 +407,7 @@
       "skipperEmail": "E-mail skippera",
       "skipperMobile": "Telefon skippera",
       "note": "Informacje dla bazy",
-      "notePlaceholder": "Godzina przyjazdu, numer lotu, osoby potrzebujące pomocy…",
+      "notePlaceholder": "Ktoś potrzebuje pomocy, późny przyjazd, wszystko, co baza powinna uwzględnić…",
       "documents": {
         "passport": "Paszport",
         "idCard": "Dowód osobisty",
@@ -422,7 +418,14 @@
         "female": "Kobieta"
       },
       "placeSearch": "Szukaj miejscowości",
-      "placeEmpty": "Brak miejscowości o tej nazwie"
+      "placeEmpty": "Brak miejscowości o tej nazwie",
+      "shoeSize": "Rozmiar buta",
+      "shoeSizePlaceholder": "EU 42",
+      "disabledPerson": "Ta osoba potrzebuje pomocy na pokładzie",
+      "flightNumber": "Numer lotu",
+      "flightNumberPlaceholder": "OU 412",
+      "arrivalTime": "Godzina przyjazdu",
+      "airportTransfer": "Prosimy o transfer z lotniska do bazy"
     },
     "priceLineLabels": {
       "charterPrice": "Cena czarteru",

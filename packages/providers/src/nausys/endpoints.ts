@@ -1016,20 +1016,16 @@ const crewListLinkSchema = z
 /**
  * Matches `crewlistlink` and the casings the vendor might have used for it.
  *
- * A pattern rather than a declared field because the spelling is unverified: NauSYS
- * answered our crew-list question (Aug 2026) calling it `crewlistlink`, but no
- * reservation in our recorded test account carries the key at all, so it has never
- * been seen on the wire. `looseJsonObject` keeps undeclared keys, so scanning them
- * means the first live reservation that carries it works whichever convention the
- * field follows, instead of the link silently never appearing.
+ * The wire spelling is `crewlistlink` (seen on the test company's confirmed reservations,
+ * Sep 2026; options carry none). A pattern rather than a declared field so another casing
+ * would still be found.
  */
 const CREW_LIST_LINK_KEY = /^crew[_-]?list[_-]?(link|url)$/i;
 
 /**
  * The vendor's hosted crew-list page for this reservation (`crew.nausys.com`).
  *
- * Forwarding this to the customer is what NauSYS sanctioned in place of posting
- * passenger data through `crewlist/v6/set2`, so it is read here and nowhere else.
+ * Forwarded to the customer beside our own form, which files through `crewlist/v6/set2`.
  * A value that is not an http(s) URL is dropped rather than passed on: this string
  * becomes a link the customer clicks, and the vendor is not the right party to
  * decide what scheme our pages will follow.

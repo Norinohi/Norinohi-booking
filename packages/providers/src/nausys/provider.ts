@@ -262,6 +262,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
       ref.securityToken,
       submission.members,
       submission.note,
+      submission.trip,
     );
   }
 
