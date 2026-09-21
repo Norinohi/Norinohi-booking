@@ -14,6 +14,7 @@ import type {
   ProviderCapabilities,
   ProviderExtrasMutation,
   ProviderKey,
+  Money,
   ProviderQuote,
   ProviderRecordSet,
   ProviderReservation,
@@ -69,6 +70,7 @@ import { streamNausysConfirmedOffers } from "./confirmed-offers";
 import { DEFAULT_HOT_WINDOW_COUNT, sweepWindows, upcomingCharterWeeks } from "./sweep-windows";
 import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { log, parseError } from "evlog";
+import { z } from "zod";
 import { thrownFields } from "../shared/log-fields";
 
 import {
@@ -79,7 +81,7 @@ import {
 import { projectNausysCatalogue } from "./projection";
 import { listChangedNausysReservations, readNausysWaitingOptions } from "./reservations";
 import { formatExtraCode } from "../shared/extra-code";
-import { createNausysQuoteService, type CrewRoleService } from "./quote";
+import { createNausysQuoteService, type CrewRoleService, type DiscountRule } from "./quote";
 import { createNausysBookingService, createSecurityTokenSink } from "./booking";
 
 import type { JsonField } from "../shared/json";
@@ -154,6 +156,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
       loadCrewRoles: (listingId) => loadNausysCrewRoles(this.db, listingId),
       loadExtraLabels: (listingId) => loadNausysExtraLabels(this.db, listingId),
       loadLocationNames: (ids) => loadNausysLocationNames(this.db, ids),
+      loadDiscountRule: (listingId) => loadNausysDiscountRule(this.db, listingId),
       loadDepositInsuranceCodes: (listingId) => loadNausysDepositInsuranceCodes(this.db, listingId),
     });
 
@@ -267,6 +270,14 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
    * On the sync client rather than the live one: this is background work with a whole window
    * of reservations behind it, and it must not compete with a customer waiting on a price.
    */
+  exactClientDiscountCap(quote: ProviderQuote): Promise<Money | undefined> {
+    return this.quotes
+      .getExactDiscountCap(quote)
+      .then((amountMinor) =>
+        amountMinor === undefined ? undefined : { amountMinor, currency: quote.currency },
+      );
+  }
+
   listChangedReservations(window: {
     since: Date;
     until: Date;
@@ -577,6 +588,35 @@ async function loadNausysExtraLabels(
  * the codes the customer ticked and nothing else about them, and buying one of these lowers
  * the deposit instead of adding to the price.
  */
+const discountRuleSchema = z.object({
+  basis: z.enum(["CLIENT_PRICE", "AGENCY_COMMISSION"]),
+  fraction: z.coerce.number().finite(),
+});
+
+/**
+ * The operator's bound on our client discount for this listing's NauSYS yacht, read off the
+ * stored catalogue payload. Undefined where the yacht states none or states it unreadably.
+ */
+async function loadNausysDiscountRule(
+  db: Database,
+  listingId: string,
+): Promise<DiscountRule | undefined> {
+  const [row] = await db
+    .select({
+      basis: sql<string | null>`${providerRawPayload.payload}->>'agencyDiscountType'`,
+      fraction: sql<string | null>`${providerRawPayload.payload}->>'maxDiscountFromCommission'`,
+    })
+    .from(listingSource)
+    .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
+    .innerJoin(providerTable, eq(providerTable.id, providerRecord.providerId))
+    .innerJoin(providerRawPayload, eq(providerRawPayload.id, providerRecord.rawPayloadId))
+    .where(and(eq(listingSource.listingId, listingId), eq(providerTable.code, "nausys")))
+    .limit(1);
+
+  const parsed = discountRuleSchema.safeParse(row);
+  return parsed.success ? parsed.data : undefined;
+}
+
 /** NauSYS location names by the vendor's own id, off the stored catalogue payloads. */
 async function loadNausysLocationNames(
   db: Database,

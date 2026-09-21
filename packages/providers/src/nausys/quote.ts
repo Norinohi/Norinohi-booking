@@ -1,8 +1,9 @@
 import { log } from "evlog";
-import type { z } from "zod";
+import { z } from "zod";
 
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { formatNausysDate, parseNausysDate } from "../shared/dates";
+import { looseJsonObject } from "../shared/json";
 import { ContractError, SlotUnavailableError } from "../shared/errors";
 import {
   baseExtraCode,
@@ -165,6 +166,8 @@ export interface NausysQuoteServiceOptions {
    * priced at nothing, which is what the adapter did before.
    */
   loadCrewRoles?: (listingId: string) => Promise<CrewRoleService[]>;
+  /** The operator's bound on an agency's client discount for this yacht; see `DiscountRule`. */
+  loadDiscountRule?: (listingId: string) => Promise<DiscountRule | undefined>;
   /**
    * Marina names by NauSYS location id, for the route a charter runs. `freeYachts` names the
    * start and end only by location id, and a one-way the operator fixed is something the
@@ -174,8 +177,20 @@ export interface NausysQuoteServiceOptions {
   now?: () => number;
 }
 
+/**
+ * `maxDiscountFromCommission` with the `agencyDiscountType` that says what it is a share of.
+ * Always a fraction: across the 7,408 synced hulls every value lies between 0 and 1 (0.05 of
+ * the client price, 1 of the commission), which is what settled the unit the vendor had not.
+ */
+export interface DiscountRule {
+  basis: "CLIENT_PRICE" | "AGENCY_COMMISSION";
+  fraction: number;
+}
+
 export interface NausysQuoteService {
   getNausysQuote(input: QuoteRequest): Promise<ProviderQuote>;
+  /** The exact bound on our client discount; see `InventoryProvider.exactClientDiscountCap`. */
+  getExactDiscountCap(quote: ProviderQuote): Promise<number | undefined>;
   /** The same quote, with the offer rows it bills, for the hold to put on the reservation. */
   getNausysQuoteWithRows(
     input: QuoteRequest,
@@ -307,6 +322,7 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
       crewServiceIds: crewServiceIdsFor(crewRoles, parsed.crewType),
       crewRoleServiceIds: crewRoles.map((item) => item.externalId),
       locationNames,
+      discountRule: await options.loadDiscountRule?.(parsed.listingId),
       securityDeposit,
       expiresAt: new Date(now() + quoteTtlMs).toISOString(),
       /* The catalogue answers for extras; a discount has no catalogue row, and an
@@ -318,6 +334,42 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
   }
 
   return {
+    /*
+     * A proposal, which the vendor answers "without ID" and does not store: the only place it
+     * states the commission net of VAT that bounds an agency's client discount. Verified on the
+     * test company (Sep 2026): 1,345.10 gross commission, 1,076.08 net, and a discount of
+     * 1,076.08 accepted where 1,076.09 was refused DISCOUNT_TO_HIGH. The client is a placeholder
+     * the proposal needs to parse, since nothing is kept.
+     */
+    async getExactDiscountCap(priced: ProviderQuote): Promise<number | undefined> {
+      const ref = await resolver.toExternalListing(priced.listingId);
+      const yachtId = toPositiveIntId(ref.externalYachtId, {
+        provider: "NauSYS",
+        what: "the yacht id",
+      });
+      const proposal = await client.bookingCall(
+        nausysEndpoints.booking.createInfo,
+        restProposalSchema,
+        {
+          client: { name: "Price", surname: "Check", email: "price-check@example.com" },
+          periodFrom: formatNausysDate(priced.checkIn),
+          periodTo: formatNausysDate(priced.checkOut),
+          yachtID: yachtId,
+          numberOfGuests: priced.guests,
+          proposal: true,
+        },
+      );
+      const currency = proposal.currency ?? proposal.paymentCurrency;
+      const net = proposal.effectiveAgencyCommissionAmountWithoutVAT;
+      if (currency !== priced.currency || net === undefined || proposal.clientPrice === undefined) {
+        return undefined;
+      }
+      return maxClientDiscountOf(
+        await options.loadDiscountRule?.(priced.listingId),
+        decimalStringToMinor(net, currency),
+        decimalStringToMinor(proposal.clientPrice, currency),
+      );
+    },
     async getNausysQuote(input: QuoteRequest): Promise<ProviderQuote> {
       return mapFreeYachtToProviderQuote(await mappingFor(input));
     },
@@ -380,6 +432,8 @@ export interface FreeYachtMapping {
   labelFor?: ((kind: NausysLabelKind, externalId: string) => string | undefined) | undefined;
   /** Marina names by location id; see `loadLocationNames`. */
   locationNames?: ReadonlyMap<string, string> | undefined;
+  /** The operator's bound on our client discount; see `DiscountRule`. */
+  discountRule?: DiscountRule | undefined;
 }
 
 /** Pure `RestFreeYacht → ProviderQuote`. No I/O, no clock, no vendor field beyond this file. */
@@ -455,6 +509,11 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
   ]);
 
   const commission = commissionOf(yacht.price, currency, clientPriceMinor);
+  const maxClientDiscount = maxClientDiscountOf(
+    input.discountRule,
+    commission?.amount.amountMinor,
+    clientPriceMinor,
+  );
 
   return providerQuoteSchema.parse({
     // freeYachts creates nothing provider-side, so there is no vendor quote id to
@@ -475,6 +534,9 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
     paymentPolicy,
     offeredExtras,
     ...(commission === undefined ? null : { commission }),
+    ...(maxClientDiscount === undefined
+      ? null
+      : { maxClientDiscount: { amountMinor: maxClientDiscount, currency } }),
     priceSourceHash,
     // `QuoteRequest` carries no expected price, so the adapter has nothing to
     // compare against; `repriceQuote` sets this itself when the caller asked for
@@ -521,6 +583,38 @@ function routeOf(
       },
     ],
   };
+}
+
+/** What a `createInfo` proposal says about the money; see `getExactDiscountCap`. */
+const restProposalSchema = looseJsonObject({
+  status: z.string(),
+  clientPrice: z.string().optional(),
+  currency: z.string().optional(),
+  paymentCurrency: z.string().optional(),
+  effectiveAgencyCommissionAmountWithoutVAT: z.string().optional(),
+});
+
+/**
+ * How much of the price we may give away, in minor units, or undefined for no bound.
+ *
+ * Never more than the commission itself, whatever the rule says: past it we would sell below
+ * what we pay the operator. A rule stated against a commission the offer did not report allows
+ * nothing, since there is no share of it we can prove we have.
+ */
+function maxClientDiscountOf(
+  rule: DiscountRule | undefined,
+  commissionMinor: number | undefined,
+  clientPriceMinor: number,
+): number | undefined {
+  if (rule === undefined) return commissionMinor;
+  const fraction = Math.min(Math.max(rule.fraction, 0), 1);
+  const byRule =
+    rule.basis === "CLIENT_PRICE"
+      ? Math.floor(clientPriceMinor * fraction)
+      : commissionMinor === undefined
+        ? 0
+        : Math.floor(commissionMinor * fraction);
+  return commissionMinor === undefined ? byRule : Math.min(byRule, commissionMinor);
 }
 
 /**

@@ -1268,3 +1268,74 @@ describe("the route a NauSYS charter runs", () => {
     expect(priced.routeOptions).toEqual([expect.objectContaining({ isOneWay: false })]);
   });
 });
+
+/*
+ * NauSYS lets an agency discount a client only out of its commission, up to
+ * maxDiscountFromCommission, a share of the client price or of the commission. Across the
+ * synced fleet every value is a fraction: 0.05 of the client price, 1 of the commission.
+ */
+describe("the most we may take off a NauSYS charter", () => {
+  async function capWith(rule?: { basis: "CLIENT_PRICE" | "AGENCY_COMMISSION"; fraction: number }) {
+    const body = fixtureResponse();
+    const yacht = firstYacht(body);
+    yacht.price = { ...yacht.price, agencyCommission: "500.00" };
+    const { service, transport } = build({ loadDiscountRule: async () => rule });
+    transport.respondWith("freeYachts", body);
+    return (await service.getNausysQuote(request)).maxClientDiscount?.amountMinor;
+  }
+
+  it("is the stated share of the client price", async () => {
+    // 5% of 3,340.00.
+    expect(await capWith({ basis: "CLIENT_PRICE", fraction: 0.05 })).toBe(16_700);
+  });
+
+  it("is the stated share of the commission", async () => {
+    expect(await capWith({ basis: "AGENCY_COMMISSION", fraction: 0.5 })).toBe(25_000);
+  });
+
+  it("is nothing where the operator allows nothing", async () => {
+    expect(await capWith({ basis: "CLIENT_PRICE", fraction: 0 })).toBe(0);
+  });
+
+  it("never passes the commission, whatever the share says", async () => {
+    // 10% of 3,340.00 is 334.00, below the 500.00 commission; 20% would not be.
+    expect(await capWith({ basis: "CLIENT_PRICE", fraction: 0.2 })).toBe(50_000);
+  });
+
+  it("is the commission where the yacht states no rule", async () => {
+    expect(await capWith()).toBe(50_000);
+  });
+});
+
+/* NauSYS bounds the discount by the commission net of VAT, which only a proposal states. */
+describe("the exact bound, from a createInfo proposal", () => {
+  async function exactWith(rule: {
+    basis: "CLIENT_PRICE" | "AGENCY_COMMISSION";
+    fraction: number;
+  }) {
+    const { service, transport } = build({ loadDiscountRule: async () => rule });
+    transport.respondWith("freeYachts", fixtureResponse());
+    transport.respondWith("createInfo", {
+      status: "OK",
+      reservationStatus: "PROPOSAL",
+      clientPrice: "3340.00",
+      currency: "EUR",
+      effectiveAgencyCommissionAmountWithoutVAT: "400.00",
+    });
+    const priced = await service.getNausysQuote(request);
+    const cap = await service.getExactDiscountCap(priced);
+    return { cap, body: transport.lastBody("createInfo") };
+  }
+
+  it("is the rule's share of the commission net of VAT, asked as a proposal", async () => {
+    const { cap, body } = await exactWith({ basis: "AGENCY_COMMISSION", fraction: 1 });
+
+    expect(cap).toBe(40_000);
+    expect(body).toMatchObject({ proposal: true, yachtID: 4711001, numberOfGuests: 4 });
+  });
+
+  it("holds a share of the client price to the net commission too", async () => {
+    // 20% of 3,340.00 is 668.00, above the 400.00 net commission.
+    expect((await exactWith({ basis: "CLIENT_PRICE", fraction: 0.2 })).cap).toBe(40_000);
+  });
+});

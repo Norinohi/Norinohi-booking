@@ -1036,6 +1036,9 @@ export const restCreateInfoRequestSchema = z.object({
    * prices based on the maximum number of guests"), which is not what the quote charged.
    */
   numberOfGuests: z.number().int().positive().optional(),
+  /** Our discount to the client, out of our commission; always sent as an AMOUNT. */
+  agencyClientDiscountAmount: z.string().optional(),
+  agencyClientDiscountAmountType: z.enum(["AMOUNT", "PERCENTAGE"]).optional(),
 });
 export type RestCreateInfoRequest = z.infer<typeof restCreateInfoRequestSchema>;
 

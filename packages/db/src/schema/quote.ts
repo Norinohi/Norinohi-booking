@@ -114,6 +114,12 @@ export const quote = pgTable(
     discountCode: text("discount_code"),
     // Redeemed for real at checkout, as a negative credit_ledger row.
     creditAppliedMinor: integer("credit_applied_minor").default(0).notNull(),
+    /**
+     * Everything we took off the provider's price of our own accord (price rules, promo code,
+     * referral welcome, credit), capped by what the provider allows. Sent to NauSYS on the
+     * reservation as the agency's client discount, so the operator sees what the client pays.
+     */
+    clientDiscountMinor: integer("client_discount_minor").default(0).notNull(),
     // Re-fetched and compared by every state-advancing call, so a moved provider
     // price cannot pass silently (§6.2).
     /**

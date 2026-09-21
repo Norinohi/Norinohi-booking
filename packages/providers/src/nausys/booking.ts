@@ -17,7 +17,7 @@ import {
 } from "../shared/extra-code";
 import { thrownFields } from "../shared/log-fields";
 import { DEFAULT_LINE_LABELS } from "../shared/generic-labels";
-import { decimalStringToMinor } from "../shared/money";
+import { decimalStringToMinor, minorToDecimalString } from "../shared/money";
 import { stableSourceHash } from "../shared/raw-retention";
 import {
   createReservationEventRecorder,
@@ -265,6 +265,18 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
       yachtID: yachtId,
       // The party the quote priced per-head extras for; see `restCreateInfoRequestSchema`.
       numberOfGuests: parsed.guests,
+      /* Our discount, so the operator's reservation carries the price the client pays rather
+         than the list price. Money, never a share, so there is nothing for the vendor to
+         recompute. */
+      ...(parsed.clientDiscount && parsed.clientDiscount.amountMinor > 0
+        ? {
+            agencyClientDiscountAmount: minorToDecimalString(
+              parsed.clientDiscount.amountMinor,
+              parsed.clientDiscount.currency,
+            ),
+            agencyClientDiscountAmountType: "AMOUNT",
+          }
+        : null),
     });
 
     // A failure after this point leaves an INFO record behind. It holds no yacht,

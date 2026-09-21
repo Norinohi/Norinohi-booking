@@ -574,6 +574,9 @@ async function holdOption(
       // which is what makes the two observations comparable.
       currency: priced.currency,
       priceSourceHash: priced.priceSourceHash,
+      ...(priced.clientDiscountMinor > 0
+        ? { clientDiscount: { amountMinor: priced.clientDiscountMinor, currency: priced.currency } }
+        : null),
       // The base pair the price was for, which is not always the listing's own.
       route: priced.route,
       customer: {

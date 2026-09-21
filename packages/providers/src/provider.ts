@@ -14,6 +14,7 @@ import type {
   CrewListSubmission,
   CrewPlace,
   ListingPeriod,
+  Money,
   ProviderCapabilities,
   ProviderExtrasMutation,
   ProviderKey,
@@ -78,6 +79,12 @@ export interface InventoryProvider {
    * publish such a feed, and a provider that cannot answer simply leaves its bookings
    * unreconciled rather than blocking the pass.
    */
+  /**
+   * The most we may take off this priced charter of our own accord, stated exactly, where the
+   * vendor bounds it more tightly than the offer can say. Optional: only NauSYS does, from its
+   * commission net of VAT. Asked only when our discounts take anything, since it costs a call.
+   */
+  exactClientDiscountCap?(quote: ProviderQuote): Promise<Money | undefined>;
   listChangedReservations?(window: {
     since: Date;
     until: Date;

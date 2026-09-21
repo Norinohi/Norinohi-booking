@@ -308,6 +308,13 @@ export const providerQuoteSchema = z.object({
       pct: z.number().nonnegative().max(100).optional(),
     })
     .optional(),
+  /**
+   * The most we may take off this charter's price of our own accord, where the provider bounds
+   * it. As internal as `commission`, which it is carved out of: NauSYS lets an agency discount
+   * a client only out of its commission, up to `maxDiscountFromCommission`, a share of the
+   * client price or of the commission as `agencyDiscountType` says. Absent means unbounded.
+   */
+  maxClientDiscount: moneySchema.optional(),
   priceSourceHash: z.string(),
   expiresAt: z.string(),
   repriced: z.boolean(),
@@ -383,6 +390,12 @@ export const bookingDraftSchema = z.object({
     city: z.string().optional(),
     countryCode: z.string().optional(),
   }),
+  /**
+   * What we took off the provider's price for this client, where anything. NauSYS records it
+   * on the reservation as the agency's client discount, so the operator's copy shows the price
+   * the client actually pays.
+   */
+  clientDiscount: moneySchema.optional(),
   /** Carried from the option step: confirming needs the handle it produced. */
   reservation: z
     .object({

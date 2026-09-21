@@ -327,6 +327,27 @@ collected later, for an invoice request, and the operator invoices the agency), 
 plans beyond two instalments (the balance is collected at the second date, which is earlier
 than we owe the operator the rest).
 
+#### Our client discount, within the operator's bound
+
+`maxDiscountFromCommission` is a fraction (every one of 7,408 synced hulls is between 0 and 1),
+of the client price or of the commission as `agencyDiscountType` says (`CLIENT_PRICE`: 0.05 on
+2,333 hulls; `AGENCY_COMMISSION`: 1 on 3,279; 240 hulls allow 0). The commission it means is
+net of VAT: a `createInfo` with `proposal: true` (answered without an id, stored nowhere) states
+`effectiveAgencyCommissionAmountWithoutVAT`, and on the test company 1,076.08 of it was accepted
+as `agencyClientDiscountAmount` where 1,076.09 was refused `DISCOUNT_TO_HIGH` (errorCode 409),
+against a gross commission of 1,345.10.
+
+So the quote carries `maxClientDiscount`, estimated from the rule and the offer's gross
+commission; the API's four discounts (price rules, promo code, referral welcome, credit) spend
+that budget in order, and when they take anything it asks the provider for the exact bound
+(`exactClientDiscountCap`, the proposal) and runs them again if it is tighter. What was given is
+kept as `quote.client_discount_minor` and sent on the hold as `agencyClientDiscountAmount` with
+type `AMOUNT`: the reservation then reads `agencyAdditionalDiscountAmount` and
+`agencyClientFinalPrice`, and `agencyPrice` (what we pay) does not move.
+
+Neither `commission` nor `maxClientDiscount` leaves the server: the public quote contract omits
+both. Until Sep 2026 it did not, and any visitor asking for a price was sent our commission.
+
 #### Waiting options, and what we deliberately do not do with them
 
 `yachtReservation/v6/waitingOptions` answers how many people the operator already has queued

@@ -1432,3 +1432,28 @@ describe("an option the operator still has to approve", () => {
     });
   });
 });
+
+describe("our discount on the reservation", () => {
+  /* So the operator's copy shows what the client pays, not the list price. */
+  it("sends it to createInfo as an amount", async () => {
+    const { service, transport } = build();
+
+    await service.createOption({
+      ...draft,
+      clientDiscount: { amountMinor: 12_550, currency: "EUR" },
+    });
+
+    expect(transport.lastBody("createInfo")).toMatchObject({
+      agencyClientDiscountAmount: "125.50",
+      agencyClientDiscountAmountType: "AMOUNT",
+    });
+  });
+
+  it("sends nothing where there was no discount", async () => {
+    const { service, transport } = build();
+
+    await service.createOption(draft);
+
+    expect(transport.lastBody("createInfo")).not.toHaveProperty("agencyClientDiscountAmount");
+  });
+});

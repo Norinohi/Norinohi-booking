@@ -33,51 +33,58 @@ export const quotePaymentScheduleEntrySchema = z.object({
   dueAt: z.string().nullable(),
 });
 
-export const persistedQuoteSchema = providerQuoteSchema.extend({
-  quoteId: z.string(),
-  /**
-   * Extras the customer asked for that no vendor sells through us. Each one with a countable
-   * catalogue rate also appears as a `requested` line paid at check-in, so the total covers it.
-   * They travel to the base as special-request text when the booking is made, and come back on
-   * the quote so the page that offered them can show them still ticked.
-   */
-  requestedExtras: z.array(z.string()),
-  /**
-   * The extra codes this quote was asked to price. Mostly what its optional lines show, but not
-   * only: a crew variant the customer picked travels here too, and its line looks the same as
-   * one the adapter chose on its own, so this is how the sidebar tells a pick from a default.
-   */
-  extras: z.array(z.string()),
-  /** The total split across the party, for the "~€3,500 for person" line. */
-  perPerson: moneySchema.nullable(),
-  paymentSchedule: z.array(quotePaymentScheduleEntrySchema),
-  discount: z
-    .object({ code: z.string(), name: z.string(), amountMinor: z.number().int() })
-    .nullable(),
-  /**
-   * Why a supplied code was not used. The quote is still priced, just without it,
-   * so the checkout screen can explain rather than error.
-   */
-  discountRejected: z
-    .enum([
-      "unknown_code",
-      "inactive",
-      "not_started",
-      "expired",
-      "usage_limit_reached",
-      "not_applicable",
-    ])
-    .nullable(),
-  /** Referral credit absorbed by this quote, redeemed for real at checkout. */
-  creditApplied: moneySchema.nullable(),
-  /**
-   * What the signed-in caller's balance could absorb here, applied or not. Null
-   * for a visitor with no balance, and for a trip under the credit minimum.
-   */
-  creditAvailable: moneySchema.nullable(),
-  /** Every rule and discount that moved the price, in the order applied. */
-  adjustments: z.array(appliedAdjustmentSchema),
-});
+/*
+ * Without `commission` and `maxClientDiscount`: what we earn on a charter, and how much of it we
+ * may give away, are ours. The quote is a public endpoint, and extending the provider schema
+ * whole handed both to any visitor who asked for a price.
+ */
+export const persistedQuoteSchema = providerQuoteSchema
+  .omit({ commission: true, maxClientDiscount: true })
+  .extend({
+    quoteId: z.string(),
+    /**
+     * Extras the customer asked for that no vendor sells through us. Each one with a countable
+     * catalogue rate also appears as a `requested` line paid at check-in, so the total covers it.
+     * They travel to the base as special-request text when the booking is made, and come back on
+     * the quote so the page that offered them can show them still ticked.
+     */
+    requestedExtras: z.array(z.string()),
+    /**
+     * The extra codes this quote was asked to price. Mostly what its optional lines show, but not
+     * only: a crew variant the customer picked travels here too, and its line looks the same as
+     * one the adapter chose on its own, so this is how the sidebar tells a pick from a default.
+     */
+    extras: z.array(z.string()),
+    /** The total split across the party, for the "~€3,500 for person" line. */
+    perPerson: moneySchema.nullable(),
+    paymentSchedule: z.array(quotePaymentScheduleEntrySchema),
+    discount: z
+      .object({ code: z.string(), name: z.string(), amountMinor: z.number().int() })
+      .nullable(),
+    /**
+     * Why a supplied code was not used. The quote is still priced, just without it,
+     * so the checkout screen can explain rather than error.
+     */
+    discountRejected: z
+      .enum([
+        "unknown_code",
+        "inactive",
+        "not_started",
+        "expired",
+        "usage_limit_reached",
+        "not_applicable",
+      ])
+      .nullable(),
+    /** Referral credit absorbed by this quote, redeemed for real at checkout. */
+    creditApplied: moneySchema.nullable(),
+    /**
+     * What the signed-in caller's balance could absorb here, applied or not. Null
+     * for a visitor with no balance, and for a trip under the credit minimum.
+     */
+    creditAvailable: moneySchema.nullable(),
+    /** Every rule and discount that moved the price, in the order applied. */
+    adjustments: z.array(appliedAdjustmentSchema),
+  });
 
 export type PersistedQuoteContract = z.infer<typeof persistedQuoteSchema>;
 
