@@ -862,13 +862,17 @@ function equipmentExtraOf(
   if (withheldFromUs(item, context.agencyId)) return null;
 
   const priceCurrency = currencyOf(item.currency, fallbackCurrency);
+  /* A percentage row, as on services: the PDF's own equipment example is `amount: "0.1500"`
+     with `amountIsPercentage`, which read as money listed 15% of the charter as 0.15 EUR. */
+  const rate = percentageOf(item);
   /* `amount` is the field in use: the vendor deprecated `price` here in its favour (and
      `listPrice` on the equipment prices beside it), so the older one is only a fallback. */
-  const priceMinor = minorOf(item.amount ?? item.price, priceCurrency);
+  const priceMinor = rate === undefined ? minorOf(item.amount ?? item.price, priceCurrency) : 0;
   if (priceMinor === undefined) return null;
 
   return {
     kind: "equipment",
+    ...percentageFields(rate, item.percentageCalculationType),
     externalId,
     name: label,
     translations: context.equipmentTranslationsById.get(externalId),

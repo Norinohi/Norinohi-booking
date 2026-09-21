@@ -759,6 +759,36 @@ describe("projectNausysCatalogue", () => {
       );
     });
 
+    /* The PDF's own equipment example: 15% of the client price, which read as 0.15 EUR. */
+    it("files a percentage-priced add-on as a rate, not as money", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      yacht.seasonSpecificData = [
+        {
+          ...season,
+          additionalYachtEquipment: [
+            {
+              equipmentId: 17,
+              amount: "0.1500",
+              amountIsPercentage: true,
+              percentageCalculationType: "CLIENT_PRICE",
+              currency: "EUR",
+            },
+          ],
+        },
+      ];
+
+      expect(listingOf(yacht)?.extras).toContainEqual(
+        expect.objectContaining({
+          kind: "equipment",
+          externalId: "17",
+          priceMinor: 0,
+          percentage: 0.15,
+          percentageBasis: "CLIENT_PRICE",
+        }),
+      );
+    });
+
     /*
      * Not a fixture gap to paper over: the vendor prices add-ons the equipment
      * dump does not describe, and the same id resolving for one yacht and not
