@@ -60,10 +60,38 @@ describe("one NauSYS vendor run at a time", () => {
     await expect(open("prov_nausys", "availability")).resolves.toEqual(expect.any(String));
   });
 
-  /* Booking Manager took ten parallel calls cleanly; its kinds keep running side by side. */
-  it("leaves Booking Manager's kinds independent", async () => {
+  it("still lets NauSYS open a run while Booking Manager holds one", async () => {
+    await test.db
+      .update(syncRun)
+      .set({ status: "success", finishedAt: new Date() })
+      .where(eq(syncRun.providerId, "prov_nausys"));
     await open("prov_bm", "catalogue");
 
-    await expect(open("prov_bm", "availability")).resolves.toEqual(expect.any(String));
+    await expect(open("prov_nausys", "catalogue")).resolves.toEqual(expect.any(String));
+  });
+});
+
+/*
+ * Booking Manager blocks the whole account past 20 calls in flight, until the vendor's nightly
+ * restart. A catalogue walk and an availability pass side by side would each spend the sweep
+ * budget, from two processes that cannot see each other's lanes.
+ */
+describe("one Booking Manager vendor run at a time", () => {
+  it("refuses availability, price weeks included, while the catalogue walk is in flight", async () => {
+    await expect(openSyncRun(test.db, "prov_bm", "availability")).rejects.toBeInstanceOf(
+      SyncAlreadyRunningError,
+    );
+  });
+
+  it("refuses the catalogue walk while availability is in flight", async () => {
+    await test.db
+      .update(syncRun)
+      .set({ status: "success", finishedAt: new Date() })
+      .where(eq(syncRun.providerId, "prov_bm"));
+    await open("prov_bm", "availability");
+
+    await expect(openSyncRun(test.db, "prov_bm", "catalogue")).rejects.toBeInstanceOf(
+      SyncAlreadyRunningError,
+    );
   });
 });

@@ -8,10 +8,18 @@ vi.hoisted(() => {
 
 import { AuthError } from "../shared/errors";
 import {
+  BM_LIVE_LANES,
+  BM_MAX_CONCURRENT_CALLS,
+  BM_MAX_PRICE_WEEKS_CONCURRENCY,
+  BM_MAX_SWEEP_CONCURRENCY,
+  BM_SHARED_LANE_CALLERS,
+} from "./call-budget";
+import {
   type BookingManagerEnvSource,
   bookingManagerQueueKey,
   resolveBookingManagerConfig,
 } from "./config";
+import { BM_SERVER_COUNT } from "./warmup";
 
 const source: BookingManagerEnvSource = {
   BOOKING_MANAGER_BASE_URL: "https://www.booking-manager.com/api/v2",
@@ -28,14 +36,14 @@ const source: BookingManagerEnvSource = {
 describe("resolveBookingManagerConfig", () => {
   it("refuses a sweep concurrency that could trip the vendor's 20-call ceiling", () => {
     expect(() =>
-      resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_SWEEP_CONCURRENCY: 17 }),
+      resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_SWEEP_CONCURRENCY: 13 }),
     ).toThrow(/SWEEP_CONCURRENCY/);
   });
 
   it("allows the sweep right up to its share of the ceiling", () => {
     expect(
-      resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_SWEEP_CONCURRENCY: 16 }),
-    ).toMatchObject({ sweepConcurrency: 16 });
+      resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_SWEEP_CONCURRENCY: 12 }),
+    ).toMatchObject({ sweepConcurrency: 12 });
   });
 
   it("refuses a price-weeks fan-out above the nightly pass's own ceiling", () => {
@@ -70,6 +78,24 @@ describe("resolveBookingManagerConfig", () => {
     expect(() =>
       resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_API_KEY: token }),
     ).toThrow(AuthError);
+  });
+});
+
+/*
+ * Every guard is per process and the vendor's limit is per account, so the only thing keeping
+ * the worst moment under it is this arithmetic: one sweep at its widest, the server's live lanes,
+ * and every single-lane caller, all at once.
+ */
+describe("the account-wide call budget", () => {
+  it("fits a full-width sweep beside every live and background caller", () => {
+    expect(BM_MAX_SWEEP_CONCURRENCY + BM_LIVE_LANES + BM_SHARED_LANE_CALLERS).toBeLessThanOrEqual(
+      BM_MAX_CONCURRENT_CALLS,
+    );
+  });
+
+  it("keeps the price-weeks pass and the cold-start warm-up inside the sweep's share", () => {
+    expect(BM_MAX_PRICE_WEEKS_CONCURRENCY).toBeLessThanOrEqual(BM_MAX_SWEEP_CONCURRENCY);
+    expect(BM_SERVER_COUNT).toBeLessThanOrEqual(BM_MAX_SWEEP_CONCURRENCY);
   });
 });
 

@@ -9,8 +9,8 @@ import type {
   ConfirmedOfferPage,
   RefusedPeriodWrite,
 } from "./availability-writer";
-import { SyncAlreadyRunningError } from "./run";
-import { openWhenFree, runPriceWeeks, type PriceWeekReport } from "./price-weeks";
+import { openWhenFree, SyncAlreadyRunningError } from "./run";
+import { runPriceWeeks, type PriceWeekReport } from "./price-weeks";
 
 const MINUTE = 60_000;
 const START = Date.parse("2026-09-17T22:15:00.000Z");
@@ -219,6 +219,20 @@ describe("openWhenFree", () => {
       ),
     ).rejects.toBeInstanceOf(SyncAlreadyRunningError);
     expect(clock.now()).toBeLessThanOrEqual(START + 2 * MINUTE);
+  });
+
+  it("reports at once a lock held by a kind it was not told to wait for", async () => {
+    const clock = fakeClock();
+
+    await expect(
+      openWhenFree(() => Promise.reject(new SyncAlreadyRunningError("prv_bm", "catalogue")), {
+        until: START + 20 * MINUTE,
+        pollMs: 30_000,
+        onlyWhileHeldBy: "availability",
+        ...clock,
+      }),
+    ).rejects.toBeInstanceOf(SyncAlreadyRunningError);
+    expect(clock.now()).toBe(START);
   });
 
   it("does not wait on a failure that is not the lock", async () => {

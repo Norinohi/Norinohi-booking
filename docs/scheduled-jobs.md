@@ -594,10 +594,14 @@ Progress and failures land in `sync_run` and `sync_error` either way. Poll
 `admin.provider.syncStatus` to follow a run.
 
 Overlap is safe. A provider with a run of the same kind already in flight is reported as
-not started rather than failing. For NauSYS the catalogue and availability kinds (price
+not started rather than failing. For both vendors the catalogue and availability kinds (price
 weeks included) also exclude each other (`EXCLUSIVE_PROVIDER_CODES` in `sync/run.ts`): the
-client's queue serializes calls only inside one process, and parallel calls on the credential
-were answered 429, so a half-hourly availability run colliding with a still-running nightly
-catalogue walk now skips that run instead of calling the vendor beside it. Booking Manager's
-kinds still run side by side. Reservation reconcile opens no run and is not covered; it makes
-a handful of calls every six hours.
+client's queue serializes calls only inside one process. NauSYS answered parallel calls on the
+credential with 429; Booking Manager allows 20 in flight per account and blocks the key until
+its nightly restart past that, and its sweep width is a share of that budget that holds only
+with one sweep at a time. So a half-hourly availability run colliding with a still-running
+nightly catalogue walk skips that run instead of calling the vendor beside it, and the
+catalogue job, which fires on the same minute as a tick, waits up to 20 minutes for that tick
+to finish rather than losing its night. Reservation reconcile and the expiry sweep open no run
+and are not covered; each holds at most one call open, and the Booking Manager budget counts
+them.

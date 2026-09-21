@@ -96,6 +96,41 @@ async function attempt(
   }
 }
 
+export interface LockWait {
+  /** Epoch ms after which a lock still held is reported rather than waited for. */
+  until: number;
+  pollMs: number;
+  now: () => number;
+  sleep: (ms: number) => Promise<void>;
+  /**
+   * Waits only while a run of this kind holds the ground, and reports any other at once. The
+   * catalogue job waits out a half-hourly availability run but not its own previous night, which
+   * on a multi-hour walk would only spend the wait to reach the same answer.
+   */
+  onlyWhileHeldBy?: SyncKind;
+}
+
+/**
+ * Opens the run once the lock is free, or throws `SyncAlreadyRunningError`.
+ *
+ * The half-hourly sweep holds the lock for five to ten minutes of every half hour, and for an
+ * exclusive provider it holds the other kinds off too, so a nightly run that gave up on the first
+ * refusal would lose its night to whichever container started a second sooner. Waiting costs
+ * budget, which is counted from the process start either way.
+ */
+export async function openWhenFree(open: () => Promise<string>, wait: LockWait): Promise<string> {
+  for (;;) {
+    try {
+      return await open();
+    } catch (error) {
+      if (!(error instanceof SyncAlreadyRunningError)) throw error;
+      if (wait.onlyWhileHeldBy !== undefined && error.kind !== wait.onlyWhileHeldBy) throw error;
+      if (wait.now() + wait.pollMs > wait.until) throw error;
+      await wait.sleep(wait.pollMs);
+    }
+  }
+}
+
 /**
  * The providers whose background calls may not overlap at all, and the kinds that make them.
  *
@@ -104,9 +139,16 @@ async function attempt(
  * answered `429 Too many concurrent requests for user` for all but one. The in-flight index
  * locks per kind, and the client's queue serializes only inside one process, so the nightly
  * catalogue walk (hours long) and the half-hourly availability run each held their own lock and
- * called the vendor side by side. Media cleanup never calls a vendor and is left out.
+ * called the vendor side by side.
+ *
+ * Booking Manager allows 20 calls in flight per account and blocks the key until its nightly
+ * restart past that (MMK, 2026-08-25). Each sweep fans out to the budget in `call-budget.ts`, which
+ * only holds if one sweep runs at a time: the nightly catalogue walk used to overlap the
+ * half-hourly availability run, two processes each spending the whole sweep share.
+ *
+ * Media cleanup never calls a vendor and is left out.
  */
-const EXCLUSIVE_PROVIDER_CODES = new Set(["nausys"]);
+const EXCLUSIVE_PROVIDER_CODES = new Set(["nausys", "booking_manager"]);
 const VENDOR_KINDS: readonly SyncKind[] = ["catalogue", "availability"];
 
 type Executor = Database | Parameters<Parameters<Database["transaction"]>[0]>[0];

@@ -321,8 +321,8 @@ export async function* syncBookingManagerCatalogue(
    *
    * Each lane keeps the client's `minIntervalMs` spacing, so this widens the sweep
    * without also removing the politeness margin. Unlike NauSYS, Booking Manager
-   * does not forbid parallel calls on one credential; it has published no limit at
-   * all, which is why the width is a variable and 1 restores the old walk.
+   * allows parallel calls on one credential, up to an account-wide 20 whose budget
+   * is in `call-budget.ts`; the width is a variable within it and 1 restores the old walk.
    */
   const sweep = orderedWindow(
     companyIds.slice(startCompany),

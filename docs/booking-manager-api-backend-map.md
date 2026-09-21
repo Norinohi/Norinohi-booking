@@ -97,15 +97,27 @@ vendor change cannot fail a whole catalogue sync. Same posture as
 
 Calls are serialized through a `SequentialQueue` keyed by the credential
 fingerprint, with `BOOKING_MANAGER_MIN_INTERVAL_MS` (default 250 ms) spacing.
-Unlike NauSYS this is a precaution rather than a contractual requirement -
-Booking Manager has published no concurrency rule, and no rate limit either
-(§9).
+Booking Manager has published no rate limit (§9), but MMK support stated one
+concurrency rule on 2026-08-25: at most 20 calls in flight per account, and past
+that the key is blocked until the vendor's servers restart overnight. Nothing
+answers 429 first.
+
+The queue is per process and the limit is per account, so the ceiling is kept by
+a budget across processes (`call-budget.ts`): a sweep gets
+`BM_MAX_SWEEP_CONCURRENCY` = 20 - 4 live lanes on the server - 4 single-lane
+callers (the server's and the sweeping process's shared lanes, the reconcile and
+expiry crons) = 12. That holds only because Booking Manager is in
+`EXCLUSIVE_PROVIDER_CODES` (`sync/run.ts`), so the catalogue walk, the half-hourly
+availability run and the price-weeks pass never overlap; the catalogue job waits up
+to 20 minutes for an availability run that holds the lock at 01:00. It also assumes
+one server replica and one deployment per key: a second replica, or staging on the
+production key, needs the sweep lowered to match.
 
 That is what lets the two sweeps that are one-read-per-item widen themselves. The
 catalogue's `/yachts` walk (one read per charter company, ~1300 on a production
 key) and the price loader's `/prices` walk (one read per charter week, ~104 for a
 two-year window) each run `BOOKING_MANAGER_SWEEP_CONCURRENCY` reads at a time (12 by
-default), spread over that many queue lanes so every lane keeps the same spacing.
+default, which is also the budget's ceiling), spread over that many queue lanes so every lane keeps the same spacing.
 Results are still delivered in list order, because the catalogue resume cursor is a
 position in the company list. Setting the variable to 1 restores the
 strictly-sequential walk.
@@ -123,7 +135,7 @@ The ingest scaled 2.09x for 2x the width, which is what a latency-bound sweep do
 when the far end is not throttling. The price sweep barely moved, and would not: ~104
 reads at width 6 is already only ~18 rounds, so what is left is per-request latency on
 fleet-wide payloads rather than queueing. Widening past 12 is therefore mostly buying
-nothing, against a vendor tolerance nobody can see.
+nothing, and the account budget above now forbids it anyway.
 
 ## 3. Endpoint inventory
 

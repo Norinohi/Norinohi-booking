@@ -12,13 +12,8 @@ import {
 } from "../shared/http-client";
 import { parseExactJson } from "../shared/exact-json";
 import { queueForInterval, SequentialQueue } from "../shared/queue";
-
-/**
- * How many customer calls this credential will have in flight at once. Four is the sweep's own
- * default fan-out, so it is a load the vendor already sees from us.
- */
-const LIVE_LANES = 4;
 import type { RetryPolicy } from "../shared/retry";
+import { BM_LIVE_LANES } from "./call-budget";
 import type { BookingManagerConfig } from "./config";
 import { bookingManagerEndpoints } from "./endpoints";
 
@@ -141,7 +136,7 @@ export class BookingManagerClient {
    * has not, so the pool keeps a ceiling on how much of it we ever use at once.
    */
   liveLane(): ProviderRequestOptions {
-    this.liveCalls = (this.liveCalls + 1) % LIVE_LANES;
+    this.liveCalls = (this.liveCalls + 1) % BM_LIVE_LANES;
     return { queueKey: `${this.config.queueKey}:live#${this.liveCalls}` };
   }
 

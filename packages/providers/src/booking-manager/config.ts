@@ -4,6 +4,11 @@ import { env } from "@yacht-charter/env/server";
 
 import { type CompanyScope, companyScopeFromEnv } from "../shared/company-scope";
 import { AuthError, ContractError } from "../shared/errors";
+import {
+  BM_MAX_CONCURRENT_CALLS,
+  BM_MAX_PRICE_WEEKS_CONCURRENCY,
+  BM_MAX_SWEEP_CONCURRENCY,
+} from "./call-budget";
 
 export interface BookingManagerConfig {
   baseUrl: string;
@@ -51,30 +56,6 @@ export interface BookingManagerEnvSource {
 }
 
 /**
- * The vendor allows 20 API calls in flight at once across the whole account.
- * Exceeding it is not throttled: the account "may be blocked until the servers
- * are restarted", which currently happens overnight, so one bad deploy costs a
- * day of catalogue and live quotes alike (Diego Pacifico, MMK, 2026-08-25).
- */
-export const BM_MAX_CONCURRENT_CALLS = 20;
-
-/**
- * The sweep is capped below that ceiling because it is not the only caller: live
- * quotes run on the same credential while a nightly sync is in flight, and they
- * are the traffic that must not be the one to trip the limit. Four slots is the
- * reserve; the sweep may have the rest.
- */
-export const BM_LIVE_TRAFFIC_RESERVE = 4;
-export const BM_MAX_SWEEP_CONCURRENCY = BM_MAX_CONCURRENT_CALLS - BM_LIVE_TRAFFIC_RESERVE;
-
-/**
- * The price-weeks pass runs at night beside the catalogue walk's own lanes, so its ceiling is
- * lower again: the two together must stay under the account limit even if both are misconfigured
- * upward, and this pass stops gaining well before it.
- */
-export const BM_MAX_PRICE_WEEKS_CONCURRENCY = 8;
-
-/**
  * Keyed on a fingerprint rather than the token: the queue key reaches logs and
  * error context, and a bearer token there is a leaked credential.
  */
@@ -104,14 +85,14 @@ export function resolveBookingManagerConfig(
   // and the penalty for guessing wrong in the other direction is a blocked account.
   if (source.BOOKING_MANAGER_SWEEP_CONCURRENCY > BM_MAX_SWEEP_CONCURRENCY) {
     throw new ContractError(
-      `BOOKING_MANAGER_SWEEP_CONCURRENCY is ${source.BOOKING_MANAGER_SWEEP_CONCURRENCY}; the vendor allows ${BM_MAX_CONCURRENT_CALLS} concurrent calls per account and exceeding it can block the credential until their nightly restart, so the sweep is limited to ${BM_MAX_SWEEP_CONCURRENCY}`,
+      `BOOKING_MANAGER_SWEEP_CONCURRENCY is ${source.BOOKING_MANAGER_SWEEP_CONCURRENCY}; the vendor allows ${BM_MAX_CONCURRENT_CALLS} concurrent calls per account and exceeding it can block the credential until their nightly restart, so with the live and background callers beside it the sweep is limited to ${BM_MAX_SWEEP_CONCURRENCY}`,
       { providerCode: "SWEEP_CONCURRENCY_TOO_HIGH" },
     );
   }
 
   if (source.BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY > BM_MAX_PRICE_WEEKS_CONCURRENCY) {
     throw new ContractError(
-      `BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY is ${source.BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY}; the nightly pass is limited to ${BM_MAX_PRICE_WEEKS_CONCURRENCY} so it cannot combine with the catalogue sweep to exceed the ${BM_MAX_CONCURRENT_CALLS} concurrent calls the vendor allows`,
+      `BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY is ${source.BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY}; the nightly pass is limited to ${BM_MAX_PRICE_WEEKS_CONCURRENCY}, which already keeps its writer busy, and wider only spends the ${BM_MAX_CONCURRENT_CALLS} concurrent calls the vendor allows per account`,
       { providerCode: "PRICE_WEEKS_CONCURRENCY_TOO_HIGH" },
     );
   }
