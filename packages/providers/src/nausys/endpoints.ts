@@ -1012,6 +1012,12 @@ export const restCreateInfoRequestSchema = z.object({
   periodTo: nausysDate,
   // Vendor spells this field with a capital D, unlike every neighbouring field.
   yachtID: z.number().int(),
+  /**
+   * The party, which per-head extras on the reservation are priced for. Omitted, the vendor
+   * prices them for the yacht's maximum ("If omitted, the system will calculate the extras
+   * prices based on the maximum number of guests"), which is not what the quote charged.
+   */
+  numberOfGuests: z.number().int().positive().optional(),
 });
 export type RestCreateInfoRequest = z.infer<typeof restCreateInfoRequestSchema>;
 

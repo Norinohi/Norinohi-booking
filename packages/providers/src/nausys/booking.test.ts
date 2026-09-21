@@ -994,6 +994,8 @@ describe("createInfo client mapping", () => {
       periodFrom: "04.07.2026",
       periodTo: "11.07.2026",
       yachtID: 4711001,
+      /* Without it the vendor prices per-head extras for the yacht's full capacity. */
+      numberOfGuests: 6,
     });
   });
 

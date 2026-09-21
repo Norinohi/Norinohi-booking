@@ -1,5 +1,6 @@
 import { booking } from "@yacht-charter/db/schema/booking";
 import { and, eq } from "drizzle-orm";
+import { log } from "evlog";
 import type { z } from "zod";
 
 import type { JsonObject } from "../shared/json";
@@ -61,6 +62,11 @@ export interface PriceCheck {
    * skipper and no transfer while we took the customer's money for both.
    */
   billedRows: readonly BilledExtraRow[];
+  /**
+   * What the quote charged for extras, obligatory and chosen, in minor units of the charter's
+   * currency. The hold compares the reservation's own figure with it.
+   */
+  extrasMinor?: number;
 }
 
 /**
@@ -246,6 +252,8 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
       periodFrom: formatNausysDate(parsed.checkIn),
       periodTo: formatNausysDate(parsed.checkOut),
       yachtID: yachtId,
+      // The party the quote priced per-head extras for; see `restCreateInfoRequestSchema`.
+      numberOfGuests: parsed.guests,
     });
 
     // A failure after this point leaves an INFO record behind. It holds no yacht,
@@ -280,6 +288,7 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
 
     const held = await addBilledExtras(parsed.quoteId, option, check.billedRows);
     const reservationId = String(held.handle.id);
+    reportExtrasDrift(parsed.quoteId, held.response, check.extrasMinor);
 
     return providerReservationSchema.parse({
       id: reservationId,
@@ -726,6 +735,39 @@ async function readReservationExtras(
         ],
   );
   return [...services, ...equipment];
+}
+
+/**
+ * Says so when the reservation bills extras at another figure than the quote did.
+ *
+ * The hold re-prices before opening, but the reservation is the vendor's own calculation, and
+ * it has disagreed before: without the party size it priced per-head lines for a full boat.
+ * A difference is logged rather than refused, because the option is already held and the
+ * customer's quote stands; what the base will ask for at check-in is the part someone has to
+ * look at.
+ */
+function reportExtrasDrift(
+  quoteId: string,
+  reservation: RestYachtReservation,
+  quotedMinor: number | undefined,
+): void {
+  const currency = reservation.currency ?? reservation.paymentCurrency;
+  if (quotedMinor === undefined || !currency || !reservation.clientPrice) return;
+
+  const basis = { clientMinor: decimalStringToMinor(reservation.clientPrice, currency) };
+  const heldMinor = [...(reservation.services ?? []), ...(reservation.additionalEquipment ?? [])]
+    .filter((line) => line.currency === currency)
+    .reduce((sum, line) => sum + extraLineMinor(line, currency, basis), 0);
+  if (heldMinor === quotedMinor) return;
+
+  log.warn({
+    action: "nausys.hold_extras_drift",
+    quoteId,
+    providerReservationId: String(reservation.id),
+    quotedMinor,
+    heldMinor,
+    currency,
+  });
 }
 
 /**
