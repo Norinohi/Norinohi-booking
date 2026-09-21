@@ -250,6 +250,11 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
   cancelReason: z.string().nullable(),
   /** How the yacht was crewed, as priced. Null for a quote taken before the ask. */
   crewType: z.string().nullable(),
+  /**
+   * Where a one-way charter starts and ends, as it was priced; null for a round trip. Either
+   * name is null where the provider sent none, and the charter is still one-way.
+   */
+  oneWayRoute: z.object({ from: z.string().nullable(), to: z.string().nullable() }).nullable(),
   priceLines: z.array(bookingPriceLineSchema),
   extras: z.array(
     z.object({

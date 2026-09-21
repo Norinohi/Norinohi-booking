@@ -49,6 +49,7 @@ import {
   type BookingStatus,
 } from "./booking-state";
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
+import { oneWayRouteOf } from "../lib/one-way-route";
 import { appendRequestedExtras } from "./requested-extras";
 import { notifyBookingCancelled } from "./booking-email";
 import { type AuditEntry, writeAuditLog } from "./audit";
@@ -197,6 +198,7 @@ export async function getBooking(
     cancelledAt: row.booking.cancelledAt?.toISOString() ?? null,
     cancelReason: row.booking.cancelReason,
     crewType: row.quote.crewType,
+    oneWayRoute: oneWayRouteOf(row.quote),
     priceLines: lines.map((line) => ({
       code: line.code,
       label: line.label,

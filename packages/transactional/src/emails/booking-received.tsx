@@ -42,6 +42,11 @@ export type BookingReceivedEmailProps = {
   checkIn: string;
   checkOut: string;
   marina: string;
+  /**
+   * Where a one-way charter runs, "A → B (one-way)", pre-formatted. Absent for a round trip:
+   * `marina` names only the start, and a customer finishing elsewhere has to be told.
+   */
+  oneWayRoute?: string;
   guests: number;
   crew?: string;
   total: string;
@@ -77,6 +82,7 @@ export function BookingReceivedEmail({
   checkIn,
   checkOut,
   marina,
+  oneWayRoute,
   guests,
   crew,
   total,
@@ -112,6 +118,7 @@ export function BookingReceivedEmail({
 
       <FactList>
         <Fact label="Marina" value={marina} />
+        {oneWayRoute ? <Fact label="Route" value={oneWayRoute} /> : null}
         <Fact label="Guests" value={String(guests)} />
         {crew ? <Fact label="Crew" value={crew} /> : null}
       </FactList>
