@@ -8,6 +8,7 @@ import { useExactMoney } from "@/hooks/use-money";
 import { baseExtraCode, isVariantCode } from "@/lib/extra-code";
 
 import type { Quote } from "../../api/queries";
+import { oneWayRouteOf } from "../../lib/one-way-route";
 import type { CrewType } from "../../types";
 
 const PEOPLE_MIN = 1;
@@ -76,6 +77,7 @@ export function CharterOptions({
    * like the charter base added a one-way fee that was, against the real start, entirely correct.
    */
   const pickUpBaseName = dropOffOptions[0]?.startBaseName;
+  const oneWay = oneWayRouteOf(quote);
 
   /*
    * Where this particular charter is collected, which is not always where the listing lives.
@@ -154,6 +156,22 @@ export function CharterOptions({
               onDropOffChange(chosen && chosen.isOneWay ? value : null);
             }}
           />
+        </div>
+      ) : null}
+
+      {/* A route the provider fixed rather than offered: nothing to choose, but the week ends in
+          another marina, and the customer has to know that before paying. */}
+      {oneWay && !(onDropOffChange && dropOffOptions.length > 1) ? (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm leading-4.25 font-semibold text-foreground">
+            {t("sidebar.oneWayRoute")}
+          </span>
+          {oneWay.from && oneWay.to ? (
+            <span className="text-sm leading-4.25 font-medium text-foreground">
+              {oneWay.from} → {oneWay.to}
+            </span>
+          ) : null}
+          <span className="text-xs font-semibold text-natural-300">{t("sidebar.oneWayNote")}</span>
         </div>
       ) : null}
 

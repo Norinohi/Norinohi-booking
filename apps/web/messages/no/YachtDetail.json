@@ -132,6 +132,8 @@
     "onRequest": "Prisen på denne yachten gis på forespørsel",
     "onRequestHint": "Vi har ledige datoer for den, men ingen publisert pris dekker dem. Fortell oss når du vil seile, så kommer vi tilbake med en pris.",
     "dropOff": "Marina for levering",
+    "oneWayRoute": "Enveisrute",
+    "oneWayNote": "Båten leveres i en annen marina enn den hentes i.",
     "pickUp": "Henting: {marina}",
     "boatPriceHintDiscounted": "Leiepris etter rabatt",
     "depositWhenInsured": "eller {amount} med skadeforsikring"

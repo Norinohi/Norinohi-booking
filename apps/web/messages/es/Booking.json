@@ -4,6 +4,8 @@
     "title": "Resumen de la reserva",
     "yacht": "Yate",
     "dates": "Fechas",
+    "route": "Ruta",
+    "oneWay": "solo ida",
     "crew": "Tripulación",
     "people": "Personas",
     "extras": "Extras",

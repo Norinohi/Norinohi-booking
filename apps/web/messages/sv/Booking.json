@@ -4,6 +4,8 @@
     "title": "Bokningssammanfattning",
     "yacht": "Båt",
     "dates": "Datum",
+    "route": "Rutt",
+    "oneWay": "enkel resa",
     "crew": "Besättning",
     "people": "Personer",
     "extras": "Tillval",

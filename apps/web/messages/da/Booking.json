@@ -4,6 +4,8 @@
     "title": "Bookingoversigt",
     "yacht": "Båd",
     "dates": "Datoer",
+    "route": "Rute",
+    "oneWay": "envejs",
     "crew": "Besætning",
     "people": "Personer",
     "extras": "Tillæg",

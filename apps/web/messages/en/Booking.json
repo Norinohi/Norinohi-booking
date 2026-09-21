@@ -4,6 +4,8 @@
     "title": "Booking Summary",
     "yacht": "Yacht",
     "dates": "Dates",
+    "route": "Route",
+    "oneWay": "one-way",
     "crew": "Crew",
     "people": "People",
     "extras": "Extras",

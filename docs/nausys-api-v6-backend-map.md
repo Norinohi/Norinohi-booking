@@ -295,7 +295,10 @@ with errorCode 100.
 
 When `freeYachts` answers one hull twice (a round trip and a one-way), the quote and the sweep
 take the round trip (`preferredFreeYachtRow`); a one-way-only answer is priced and logged
-(`nausys.quote_one_way_only`). The route itself is still not shown to the customer.
+(`nausys.quote_one_way_only`). The quote states the route it priced as `route` and a single
+`routeOptions` entry, marinas named from the stored location records: NauSYS fixes one-ways
+through the yacht's `oneWayPeriods` and `createInfo` takes no base, so it is shown, never
+offered as a choice. The sidebar and the review step say "one-way, A → B".
 
 `onRequestOnly` extras are left off the option and added after `createBooking`, by the row the
 reservation's `availableExtras` offers; a refusal there is logged

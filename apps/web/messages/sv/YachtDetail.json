@@ -132,6 +132,8 @@
     "onRequest": "Den här båten prissätts på förfrågan",
     "onRequestHint": "Vi har datum för den, men inget publicerat pris täcker dem. Berätta när du vill segla så återkommer vi med ett pris.",
     "dropOff": "Marina för återlämning",
+    "oneWayRoute": "Enkelriktad rutt",
+    "oneWayNote": "Båten lämnas i en annan marina än den hämtas i.",
     "pickUp": "Upphämtning: {marina}",
     "boatPriceHintDiscounted": "Hyrespris efter rabatt",
     "depositWhenInsured": "eller {amount} med självriskreducering"

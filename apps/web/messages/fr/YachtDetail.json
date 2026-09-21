@@ -132,6 +132,8 @@
     "onRequest": "Le prix de ce yacht est sur demande",
     "onRequestHint": "Nous avons des dates pour ce yacht, mais aucun tarif publié ne les couvre. Indiquez-nous quand vous souhaitez naviguer et nous reviendrons vers vous avec un prix.",
     "dropOff": "Marina de restitution",
+    "oneWayRoute": "Itinéraire aller simple",
+    "oneWayNote": "Le yacht est rendu dans une autre marina que celle du départ.",
     "pickUp": "Prise en charge : {marina}",
     "boatPriceHintDiscounted": "Prix de location après remise",
     "depositWhenInsured": "ou {amount} avec l’assurance dommages"
