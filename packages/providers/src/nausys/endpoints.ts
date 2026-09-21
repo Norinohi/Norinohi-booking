@@ -719,6 +719,10 @@ export const restExtraSchema = looseJsonObject({
   listPrice: decimal.optional(),
   currency: z.string(),
   quantity: decimal.optional(),
+  /** The unit count, where `quantity` is units times the price measure (deprecated). */
+  quantityExtras: decimal.optional(),
+  /** Added against a season quantity the operator has not released: not charged yet. */
+  onPending: z.boolean().optional(),
   priceMeasureId: z.number().int().optional(),
   calculationType: z.string().optional(),
   /** See `restYachtServicePriceSchema`: a rate to four decimals, never money. */
@@ -760,6 +764,8 @@ const restReservationServiceSchema = looseJsonObject({
   id: z.number().int(),
   serviceId: z.number().int(),
   quantity: decimal.optional(),
+  /** The unit count, where `quantity` is units times the price measure (deprecated). */
+  quantityExtras: decimal.optional(),
   editable: z.boolean().optional(),
   obligatory: z.boolean().optional(),
   /**
@@ -777,6 +783,10 @@ const restReservationEquipmentSchema = looseJsonObject({
   id: z.number().int(),
   equipmentId: z.number().int().optional(),
   quantity: decimal.optional(),
+  /** The unit count, where `quantity` is units times the price measure (deprecated). */
+  quantityExtras: decimal.optional(),
+  /** Added against a season quantity the operator has not released: not charged yet. */
+  onPending: z.boolean().optional(),
   editable: z.boolean().optional(),
   obligatory: z.boolean().optional(),
   condition: restInternationalTextSchema.optional(),

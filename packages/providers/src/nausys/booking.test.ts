@@ -520,7 +520,10 @@ describe("the uuid funnel", () => {
           { yachtReservationServiceId: 991, serviceId: 8001, quantity: 1, editable: false },
         ]),
     });
-    transport.respondWith("updateExtras", fixture("createOption"));
+    transport.respondWith("reservations", {
+      status: "OK",
+      reservations: [fixture("createOption")],
+    });
 
     await service.addOrUpdateExtras({
       charter,
@@ -528,9 +531,9 @@ describe("the uuid funnel", () => {
       extras: ["service:8001"],
     });
 
-    expect(transport.lastBody("updateExtras")).toMatchObject({
-      services: [{ yachtReservationServiceId: 991, quantity: 1 }],
-    });
+    /* Nothing to change, so nothing is written: the price is read back by id. */
+    expect(transport.callCount("updateExtras")).toBe(0);
+    expect(transport.lastBody("reservations")).toMatchObject({ reservations: [55901234] });
   });
 
   it("refuses to call the vendor with a missing uuid", async () => {
@@ -1238,14 +1241,15 @@ describe("extras edits on an existing reservation", () => {
         },
       ],
     });
-    transport.respondWith("updateExtras", fixture("createOption"));
+    transport.respondWith("reservations", {
+      status: "OK",
+      reservations: [fixture("createOption")],
+    });
 
     await service.addOrUpdateExtras({ ref, charter, extras: ["service:100511@66279573"] });
 
     expect(transport.callCount("addExtras")).toBe(0);
-    expect(transport.lastBody("updateExtras")).toMatchObject({
-      services: [{ yachtReservationServiceId: 991, quantity: 1 }],
-    });
+    expect(transport.callCount("updateExtras")).toBe(0);
   });
 
   it("refuses an extra the reservation neither carries nor can take", async () => {
@@ -1455,5 +1459,51 @@ describe("our discount on the reservation", () => {
     await service.createOption(draft);
 
     expect(transport.lastBody("createInfo")).not.toHaveProperty("agencyClientDiscountAmount");
+  });
+});
+
+/*
+ * A line added against a season quantity the operator has not released is "charged only once it
+ * stops pending". The customer pays for it all the same, so it is flagged, and a reprice read
+ * off the reservation leaves it out of the total until it is released.
+ */
+describe("extras the operator has on pending", () => {
+  it("leaves a pending line out of a reservation's total", async () => {
+    const { service, transport } = build();
+    transport.respondWith("listExtras", {
+      status: "OK",
+      addedServices: [],
+      availableExtras: AVAILABLE,
+    });
+    transport.respondWith(
+      "addExtras",
+      fixture("createOption", {
+        services: [
+          {
+            serviceId: 8001,
+            amount: "150.00",
+            totalPrice: "150.00",
+            currency: "EUR",
+            calculationType: "SEPARATE_PAYMENT",
+          },
+          {
+            serviceId: 8002,
+            amount: "90.00",
+            totalPrice: "90.00",
+            currency: "EUR",
+            calculationType: "SEPARATE_PAYMENT",
+            onPending: true,
+          },
+        ],
+      }),
+    );
+
+    const quote = await service.addOrUpdateExtras({
+      ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
+      charter,
+      extras: ["service:8001", "service:8002"],
+    });
+
+    expect(quote.lines.map((line) => line.code)).toEqual(["base-charter", "service:8001"]);
   });
 });

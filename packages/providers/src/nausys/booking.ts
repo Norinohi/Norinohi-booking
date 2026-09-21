@@ -1,7 +1,7 @@
 import { booking } from "@yacht-charter/db/schema/booking";
 import { and, eq } from "drizzle-orm";
 import { log, parseError } from "evlog";
-import type { z } from "zod";
+import { z } from "zod";
 
 import type { JsonObject } from "../shared/json";
 
@@ -45,6 +45,7 @@ import {
   nausysEndpoints,
   restListedExtrasSchema,
   restYachtReservationResponseSchema,
+  restYachtReservationSchema,
   type RestClient,
   type RestYachtReservation,
 } from "./endpoints";
@@ -146,6 +147,8 @@ export interface ReservationExtra {
   obligatory?: boolean;
   /** The operator's condition on the line, which says which variant it is. */
   condition?: string | null;
+  /** Not charged yet: the operator has not released the season quantity it was added against. */
+  pending?: boolean;
 }
 
 export interface NausysBookingService {
@@ -370,6 +373,7 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
         rowAdditions(rows),
       );
       await logEvent(quoteId, "extras_updated", added);
+      reportPendingExtras(quoteId, added.response);
       return added;
     } catch (error) {
       await releaseAfterFailedExtras(option);
@@ -412,6 +416,7 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
         rowAdditions(rows),
       );
       await logEvent(draft.quoteId, "extras_updated", added);
+      reportPendingExtras(draft.quoteId, added.response);
       return added;
     } catch (error) {
       log.warn({
@@ -586,16 +591,11 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
       );
     }
 
-    // Nothing changed, so nothing is mutated: the price still has to come back,
-    // and re-sending the current lines at their current quantity is the only
-    // read the booking side offers.
+    // Nothing changed, so nothing is mutated: the price is read back instead. Re-sending
+    // each line's quantity through updateExtras used to be the read, and the quantity it
+    // resent is units times the price measure, so a per-day line of one became seven.
     if (last === null) {
-      const unchanged = await withReservation(
-        parsed.ref,
-        nausysEndpoints.booking.updateExtras,
-        lineUpdates(current, (line) => line.quantity),
-      );
-      return await toProviderQuote(unchanged.response);
+      return await toProviderQuote(await readReservation(client, parsed.ref));
     }
 
     await logEventForReservation(parsed.ref.providerReservationId, "extras_updated", last);
@@ -669,15 +669,20 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
 
     const listingId = (await resolver.toListingId(String(response.yachtId))) ?? "";
     const labels = listingId ? await deps.loadExtraLabels?.(listingId) : undefined;
+    /* A pending line is not charged until the operator releases it, so it is not in the total. */
     const reservationLines = [
-      ...(response.services ?? []).map((extra) => ({
-        extra,
-        code: formatExtraCode("service", String(extra.serviceId)),
-      })),
-      ...(response.additionalEquipment ?? []).map((extra) => ({
-        extra,
-        code: formatExtraCode("equipment", String(extra.equipmentId)),
-      })),
+      ...(response.services ?? [])
+        .filter((extra) => extra.onPending !== true)
+        .map((extra) => ({
+          extra,
+          code: formatExtraCode("service", String(extra.serviceId)),
+        })),
+      ...(response.additionalEquipment ?? [])
+        .filter((extra) => extra.onPending !== true)
+        .map((extra) => ({
+          extra,
+          code: formatExtraCode("equipment", String(extra.equipmentId)),
+        })),
     ];
     const extraLines = reservationLines.map(({ extra, code }) => ({
       // The same canonical codes the quote uses, and the catalogue's names for them: the
@@ -845,7 +850,8 @@ async function readListedExtras(
   const services = (response.addedServices ?? []).map((line) => ({
     yachtReservationServiceId: line.id,
     serviceId: line.serviceId,
-    quantity: Number(line.quantity ?? "1"),
+    quantity: Number(line.quantityExtras ?? line.quantity ?? "1"),
+    pending: line.onPending === true,
     /* Absent means the operator has not locked it; only an explicit false is a lock. */
     editable: line.editable !== false,
     kind: "service" as const,
@@ -860,7 +866,8 @@ async function readListedExtras(
           {
             yachtReservationServiceId: line.id,
             serviceId: line.equipmentId,
-            quantity: Number(line.quantity ?? "1"),
+            quantity: Number(line.quantityExtras ?? line.quantity ?? "1"),
+            pending: line.onPending === true,
             editable: line.editable !== false,
             kind: "equipment" as const,
             obligatory: line.obligatory === true,
@@ -870,6 +877,50 @@ async function readListedExtras(
   );
   return { lines: [...services, ...equipment], available: response.availableExtras ?? [] };
 }
+
+/**
+ * Says so when the operator put a line we billed on pending: added against a season quantity it
+ * has not released, charged only once it is. The customer has paid for it; until the operator
+ * releases it, somebody has to know it may not be there at the base.
+ */
+function reportPendingExtras(quoteId: string, reservation: RestYachtReservation): void {
+  const pending = [...(reservation.services ?? []), ...(reservation.additionalEquipment ?? [])]
+    .filter((line) => line.onPending === true)
+    .map((line) => line.serviceId ?? line.equipmentId);
+  if (pending.length === 0) return;
+
+  log.warn({
+    action: "nausys.extras_pending",
+    quoteId,
+    providerReservationId: String(reservation.id),
+    pending: pending.join(", "),
+  });
+}
+
+/** The reservation as the vendor holds it, by id; `reservations` answers for any status. */
+async function readReservation(
+  client: NausysClient,
+  ref: ProviderReservationRef,
+): Promise<RestYachtReservation> {
+  const endpoint = nausysEndpoints.availability.reservations;
+  const handle = requireHandle(ref, endpoint);
+  const response = await client.bookingCall(
+    endpoint,
+    restReservationListSchema,
+    { reservations: [handle.id] },
+    reservationLane(String(handle.id)),
+  );
+  const [reservation] = response.reservations ?? [];
+  if (!reservation) {
+    throw new ContractError(`NauSYS has no reservation ${handle.id}`, { endpoint });
+  }
+  return reservation;
+}
+
+const restReservationListSchema = z.looseObject({
+  status: z.string(),
+  reservations: z.array(restYachtReservationSchema).optional(),
+});
 
 /**
  * Says so when the reservation bills extras at another figure than the quote did.
@@ -890,7 +941,7 @@ function reportExtrasDrift(
 
   const basis = { clientMinor: decimalStringToMinor(reservation.clientPrice, currency) };
   const heldMinor = [...(reservation.services ?? []), ...(reservation.additionalEquipment ?? [])]
-    .filter((line) => line.currency === currency)
+    .filter((line) => line.currency === currency && line.onPending !== true)
     .reduce((sum, line) => sum + extraLineMinor(line, currency, basis), 0);
   if (heldMinor === quotedMinor) return;
 
