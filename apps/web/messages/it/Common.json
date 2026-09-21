@@ -49,7 +49,8 @@
       "nauticalMile": "{price} per miglio nautico",
       "roundTrip": "{price} andata e ritorno",
       "litre": "{price} al litro",
-      "weekStartedPerson": "{price} a persona per settimana iniziata"
+      "weekStartedPerson": "{price} a persona per settimana iniziata",
+      "unit": "{price} per unità"
     }
   },
   "resultsCount": "{count, plural, one {# yacht trovato} other {# yacht trovati}}",

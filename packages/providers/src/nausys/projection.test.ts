@@ -1453,3 +1453,20 @@ describe("the operator's terms on a catalogue extra", () => {
     expect(extras.find((extra) => extra.externalId === "17")?.note).toBe("one set per cabin");
   });
 });
+
+describe("a price measure the catalogue cannot name", () => {
+  it("is kept as a measure nothing counts, not as per booking", () => {
+    const yacht = maria();
+    const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+    yacht.seasonSpecificData = [
+      {
+        ...season,
+        services: [{ serviceId: 52, price: "80.00", currency: "EUR", priceMeasureId: 999_999 }],
+      },
+    ];
+
+    const extra = listingOf(yacht)?.extras.find((item) => item.externalId === "52");
+
+    expect(extra?.priceMeasure).toBe("per unit");
+  });
+});

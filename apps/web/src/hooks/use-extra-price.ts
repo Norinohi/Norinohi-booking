@@ -36,7 +36,8 @@ type MeasureKey =
   | "nauticalMile"
   | "roundTrip"
   | "litre"
-  | "weekStartedPerson";
+  | "weekStartedPerson"
+  | "unit";
 
 /**
  * Each provider states what an extra's price is per in its own words: Booking Manager sends
@@ -85,6 +86,8 @@ const MEASURE_KEY_BY_TEXT: ReadonlyMap<string, MeasureKey> = new Map([
   ["round trip", "roundTrip"],
   ["per liter", "litre"],
   ["per week started person", "weekStartedPerson"],
+  /* A measure the provider's own list could not name; the quantity is the base's to count. */
+  ["per unit", "unit"],
 ]);
 
 const levelled = (measure: string) =>

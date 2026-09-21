@@ -49,7 +49,8 @@
       "nauticalMile": "{price} за морську милю",
       "roundTrip": "{price} в обидва боки",
       "litre": "{price} за літр",
-      "weekStartedPerson": "{price} за особу за кожен розпочатий тиждень"
+      "weekStartedPerson": "{price} за особу за кожен розпочатий тиждень",
+      "unit": "{price} за одиницю"
     }
   },
   "resultsCount": "{count, plural, one {# яхта знайдена} few {# яхти знайдено} many {# яхт знайдено} other {# яхти знайдено}}",

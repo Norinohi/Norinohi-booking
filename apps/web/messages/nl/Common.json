@@ -49,7 +49,8 @@
       "nauticalMile": "{price} per zeemijl",
       "roundTrip": "{price} retour",
       "litre": "{price} per liter",
-      "weekStartedPerson": "{price} per persoon per begonnen week"
+      "weekStartedPerson": "{price} per persoon per begonnen week",
+      "unit": "{price} per eenheid"
     }
   },
   "resultsCount": "{count, plural, one {# jacht gevonden} other {# jachten gevonden}}",

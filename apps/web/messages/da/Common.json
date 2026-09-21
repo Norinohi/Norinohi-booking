@@ -49,7 +49,8 @@
       "nauticalMile": "{price} pr. sømil",
       "roundTrip": "{price} tur-retur",
       "litre": "{price} pr. liter",
-      "weekStartedPerson": "{price} pr. person pr. påbegyndt uge"
+      "weekStartedPerson": "{price} pr. person pr. påbegyndt uge",
+      "unit": "{price} pr. enhed"
     }
   },
   "resultsCount": "{count, plural, one {# båd fundet} other {# både fundet}}",

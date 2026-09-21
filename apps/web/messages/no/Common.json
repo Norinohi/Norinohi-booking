@@ -49,7 +49,8 @@
       "nauticalMile": "{price} per nautisk mil",
       "roundTrip": "{price} tur-retur",
       "litre": "{price} per liter",
-      "weekStartedPerson": "{price} per person per påbegynt uke"
+      "weekStartedPerson": "{price} per person per påbegynt uke",
+      "unit": "{price} per enhet"
     }
   },
   "resultsCount": "{count, plural, one {# yacht funnet} other {# yachter funnet}}",

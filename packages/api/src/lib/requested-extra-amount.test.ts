@@ -44,3 +44,14 @@ describe("requestedExtraAmountMinor", () => {
     expect(requestedExtraAmountMinor({ ...rate("per_booking"), included: true }, week)).toBeNull();
   });
 });
+
+describe("a measure the provider could not name", () => {
+  it("stays a request rather than a single charge", () => {
+    expect(
+      requestedExtraAmountMinor(
+        { priceMinor: 8_000, priceMeasure: "per unit", percentage: null, included: false },
+        { nights: 7, guests: 4, baseMinor: 500_000 },
+      ),
+    ).toBeNull();
+  });
+});

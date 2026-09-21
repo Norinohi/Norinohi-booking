@@ -1138,10 +1138,17 @@ function crewRoleOf(name: string): "skipper" | "hostess" | "cook" | undefined {
   return CREW_ROLE_PATTERNS.find((entry) => entry.pattern.test(name))?.role;
 }
 
+/**
+ * An id the priceMeasures dump does not name (missing from it, unnamed in every locale, or a
+ * stale table after a failed step). Stored as a measure no rule counts, so a requested extra
+ * stays a request the base prices; stored as nothing, it read as "per booking", and an item at
+ * 80 a day was added to the total as 80 for a week.
+ */
+const UNRESOLVED_MEASURE = "per unit";
+
 function measureOf(priceMeasureId: number | undefined, context: ExtraNaming): string | undefined {
-  return priceMeasureId === undefined
-    ? undefined
-    : context.priceMeasureById.get(String(priceMeasureId));
+  if (priceMeasureId === undefined) return undefined;
+  return context.priceMeasureById.get(String(priceMeasureId)) ?? UNRESOLVED_MEASURE;
 }
 
 /** The currency the operator prices this season in; the deposit names its own. */
