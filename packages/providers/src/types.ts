@@ -389,6 +389,8 @@ export const bookingDraftSchema = z.object({
     zip: z.string().optional(),
     city: z.string().optional(),
     countryCode: z.string().optional(),
+    /** BCP 47, the site language they booked in. */
+    language: z.string().optional(),
   }),
   /**
    * What we took off the provider's price for this client, where anything. NauSYS records it
@@ -421,7 +423,7 @@ export type BookingDraft = z.infer<typeof bookingDraftSchema>;
  * How many people are already queued for a boat the operator has sold out of, and where in the
  * line they are.
  *
- * Read-only on our side, on purpose. NauSYS will also *join* the queue -- `createInfo` takes a
+ * Read-only on our side, on purpose. NauSYS will also *join* the queue -- `createOption` takes a
  * `fallbackToWaitingOption` that files a waiting option instead of failing when the week is
  * gone -- and that is a product decision nobody has taken: what the customer is promised, what
  * we do when the boat frees up, and whether money moves. This answers the question support is
@@ -915,6 +917,8 @@ const canonicalListingSchema = z.object({
     waterCapacity: z.number().int().optional(),
     /** Rig, resolved against the provider's own reference list rather than left as an id. */
     sailType: z.string().optional(),
+    /** "wheel", "twin wheel", "tiller" or "joystick". */
+    steeringType: z.string().optional(),
   }),
   /** How the boat is sold. Backs the Crew filter, so it is left unset rather than guessed. */
   crewType: crewTypeSchema.optional(),

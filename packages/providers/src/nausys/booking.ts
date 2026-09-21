@@ -308,6 +308,7 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
      */
     const option = await withReservation(refOf(info.handle), nausysEndpoints.booking.createOption, {
       createWaitingOption: "false",
+      fallbackToWaitingOption: false,
     });
 
     await logEvent(parsed.quoteId, "option_created", option);
@@ -1118,10 +1119,27 @@ export function splitCustomerName(name: string, surname?: string): CustomerName 
   return { name: parts.slice(0, -1).join(" "), surname: parts.at(-1) ?? "" };
 }
 
+/** The site's languages NauSYS names; Ukrainian and Danish are not among its eighteen. */
+const NAUSYS_LANGUAGES = new Map([
+  ["en", "ENGLISH"],
+  ["de", "GERMAN"],
+  ["es", "SPANISH"],
+  ["fr", "FRENCH"],
+  ["it", "ITALIAN"],
+  ["pl", "POLISH"],
+  ["nl", "DUTCH"],
+  ["sv", "SWEDISH"],
+  ["no", "NORWEGIAN"],
+]);
+
 function toRestClient(customer: BookingDraft["customer"], countryId?: number): RestClient {
   const { name, surname } = splitCustomerName(customer.name, customer.surname);
 
-  const client: RestClient = { name, surname, email: customer.email };
+  /* `company` is documented as obligatory; a company's VAT number only arrives with an invoice
+     request, after the hold, so every client we open is a private one. */
+  const client: RestClient = { company: false, name, surname, email: customer.email };
+  const language = customer.language && NAUSYS_LANGUAGES.get(customer.language.slice(0, 2));
+  if (language) client.language = language;
   if (customer.phone) {
     // NauSYS treats the two as separate contact channels; we only ever have one.
     client.phone = customer.phone;

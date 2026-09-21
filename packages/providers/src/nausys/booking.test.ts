@@ -301,6 +301,18 @@ describe("the crew-list link", () => {
     expect(confirmed.crewListLink).toBeUndefined();
   });
 
+  it("drops a link with no code in it, as the PDF's own example has", async () => {
+    const { service, transport } = build();
+    transport.respondWith(
+      "createBooking",
+      fixture("createBooking", { crewlistlink: "https://crew.nausys.com/916659874/null/" }),
+    );
+
+    const confirmed = await service.confirmBooking(heldDraft);
+
+    expect(confirmed.crewListLink).toBeUndefined();
+  });
+
   it("is absent when the reservation carries no link at all", async () => {
     const { service } = build();
 
@@ -1029,6 +1041,7 @@ describe("createInfo client mapping", () => {
     expect(transport.lastBody("createInfo")).toEqual({
       credentials: { username: "agency-user", password: "hunter2" },
       client: {
+        company: false,
         name: "Ana",
         surname: "Horvat",
         email: "ana.horvat@example.com",
@@ -1040,6 +1053,27 @@ describe("createInfo client mapping", () => {
       yachtID: 4711001,
       /* Without it the vendor prices per-head extras for the yacht's full capacity. */
       numberOfGuests: 6,
+    });
+  });
+
+  it("files the client's language by the vendor's name for it, where it has one", async () => {
+    const { service, transport } = build();
+
+    await service.createOption({ ...draft, customer: { ...draft.customer, language: "de" } });
+    expect(transport.lastBody("createInfo")).toMatchObject({ client: { language: "GERMAN" } });
+
+    await service.createOption({ ...draft, customer: { ...draft.customer, language: "uk" } });
+    expect(transport.lastBody("createInfo")).not.toHaveProperty("client.language");
+  });
+
+  it("asks for no waiting option in both the old and the new spelling", async () => {
+    const { service, transport } = build();
+
+    await service.createOption(draft);
+
+    expect(transport.lastBody("createOption")).toMatchObject({
+      createWaitingOption: "false",
+      fallbackToWaitingOption: false,
     });
   });
 

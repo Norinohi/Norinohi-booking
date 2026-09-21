@@ -598,6 +598,8 @@ export const guestDetailsSchema = z.object({
    */
   countryCode: z.string().trim().length(2).toUpperCase(),
   specialRequests: z.string().trim().max(2000).optional(),
+  /** The site language they booked in, which the operator files as the client's language. */
+  locale: z.string().trim().min(2).max(10).optional(),
 });
 
 /**

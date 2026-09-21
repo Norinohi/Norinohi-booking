@@ -4,7 +4,7 @@ import { ProviderError } from "../shared/errors";
 import type { JsonObject } from "../shared/json";
 import type { CrewListMember, CrewListReceipt, CrewListSubmission, CrewPlace } from "../types";
 import type { NausysClient } from "./client";
-import { nausysEndpoints, restCountriesResponseSchema } from "./endpoints";
+import { nausysEndpoints } from "./endpoints";
 
 /**
  * What the fleet operator insists on knowing about the people aboard.
@@ -250,6 +250,12 @@ function alpha3Of(
  * It is a static list of 250 rows behind a credentialed call, so refetching it per crew list
  * would put a catalogue call in front of a customer pressing Save.
  */
+const countryRowsSchema = z.looseObject({ countries: z.array(z.json()).optional() });
+const countryCodesSchema = z.looseObject({
+  code: z.string().optional(),
+  code2: z.string().optional(),
+});
+
 const alpha3ByClient = new WeakMap<NausysClient, Promise<ReadonlyMap<string, string>>>();
 
 function nausysAlpha3Codes(client: NausysClient): Promise<ReadonlyMap<string, string>> {
@@ -265,12 +271,17 @@ async function loadAlpha3Codes(client: NausysClient): Promise<ReadonlyMap<string
   try {
     const response = await client.catalogueCall(
       nausysEndpoints.catalogue.countries,
-      restCountriesResponseSchema,
+      countryRowsSchema,
     );
 
+    /* Row by row, and only the two codes: one country with a malformed name used to fail the
+       whole table, and with it every crew-list save. */
     const codes = new Map<string, string>();
-    for (const country of response.countries ?? []) {
-      if (country.code && country.code2) codes.set(country.code2.toUpperCase(), country.code);
+    for (const row of response.countries ?? []) {
+      const country = countryCodesSchema.safeParse(row);
+      if (!country.success) continue;
+      const { code, code2 } = country.data;
+      if (code && code2) codes.set(code2.toUpperCase(), code);
     }
     return codes;
   } catch (failure) {

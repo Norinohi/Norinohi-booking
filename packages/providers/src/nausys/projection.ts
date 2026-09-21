@@ -124,9 +124,17 @@ export function projectNausysCatalogue(
   const services = parseAll(records, "service", restServiceSchema);
   const priceMeasures = parseAll(records, "price_measure", restPriceMeasureSchema);
   const sailTypes = parseAll(records, "sail_type", restSailTypeSchema);
+  const steeringTypes = parseAll(records, "steering_type", restSailTypeSchema);
 
   const countryNameById = new Map(countries.map((item) => [String(item.id), name(item.name)]));
   const locationNameById = new Map(locations.map((item) => [String(item.id), name(item.name)]));
+  const locationById = new Map(locations.map((item) => [String(item.id), item]));
+  const steeringTypeById = new Map(
+    steeringTypes.flatMap((item) => {
+      const kind = steeringKindOf(name(item.name));
+      return kind === undefined ? [] : [[String(item.id), kind] as const];
+    }),
+  );
   const modelById = new Map(models.map((item) => [String(item.id), item]));
   const placeholderBuilders = new Set(
     allBuilders.filter((item) => isPlaceholderBuilder(item.name)).map((item) => String(item.id)),
@@ -197,8 +205,9 @@ export function projectNausysCatalogue(
       // is the right trade while those times are also on the listing's check-in
       // rules, but it needs revisiting if per-operator base detail starts to matter.
       name: text(item.name) ?? locationName,
-      lat: numberOf(item.lat),
-      lng: numberOf(item.lon),
+      /* A base with no fix of its own gets its marina's, which is where the pin belongs anyway. */
+      lat: numberOf(item.lat) ?? numberOf(locationById.get(locationId)?.lat),
+      lng: numberOf(item.lon) ?? numberOf(locationById.get(locationId)?.lon),
       checkInTime: text(item.checkInTime),
       checkOutTime: text(item.checkOutTime),
     };
@@ -217,6 +226,7 @@ export function projectNausysCatalogue(
         placeholderBuilders,
         knownEquipment,
         sailTypeById,
+        steeringTypeById,
         equipmentNameById,
         serviceNameById,
         depositInsuranceServiceIds,
@@ -336,6 +346,7 @@ function projectYacht(
     placeholderBuilders: Set<string>;
     knownEquipment: Set<string>;
     sailTypeById: Map<string, string>;
+    steeringTypeById?: Map<string, string>;
     /**
      * Companies the vendor marks as private-access, offline: NauSYS does not run their
      * bookings live, so a hold the customer pays against may never be honoured. Their yachts
@@ -414,6 +425,10 @@ function projectYacht(
         yacht.sailTypeId === undefined
           ? undefined
           : context.sailTypeById.get(String(yacht.sailTypeId)),
+      steeringType:
+        yacht.steeringTypeId === undefined
+          ? undefined
+          : context.steeringTypeById?.get(String(yacht.steeringTypeId)),
     },
     crewType: crewTypeOf(yacht),
     media: mediaOf(yacht),
@@ -612,6 +627,19 @@ function textsOf(yacht: RestYacht) {
 }
 
 type RestCharterBase = z.infer<typeof restCharterBaseSchema>;
+
+/**
+ * The vendor's four steering names, spelled as it spells them ("Tiller steereing", "2 Steering
+ * Wheels"), as one vocabulary. A name none of these fits is left unset.
+ */
+function steeringKindOf(label: string | undefined): string | undefined {
+  const lower = label?.toLowerCase() ?? "";
+  if (lower.includes("tiller")) return "tiller";
+  if (lower.includes("joystick")) return "joystick";
+  if (/\b(2|two|twin|double)\b/.test(lower) && lower.includes("wheel")) return "twin wheel";
+  if (lower.includes("wheel")) return "wheel";
+  return undefined;
+}
 
 interface ReturnNote {
   kind: "return_note";

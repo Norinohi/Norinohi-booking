@@ -1304,6 +1304,7 @@ async function writeListingOffers(
             fuelCapacity: plan.item.spec.fuelCapacity ?? null,
             waterCapacity: plan.item.spec.waterCapacity ?? null,
             sailType: plan.item.spec.sailType ?? null,
+            steeringType: plan.item.spec.steeringType ?? null,
           },
         ],
   );
@@ -1331,6 +1332,7 @@ async function writeListingOffers(
           fuelCapacity: sql`excluded.fuel_capacity`,
           waterCapacity: sql`excluded.water_capacity`,
           sailType: sql`excluded.sail_type`,
+          steeringType: sql`excluded.steering_type`,
           updatedAt: sql`now()`,
         },
       });

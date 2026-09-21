@@ -161,12 +161,18 @@ export const restRegionSchema = looseJsonObject({
   name: restInternationalTextSchema,
 });
 
+/**
+ * A Decimal coordinate, which a strict number would lose the whole row over if it ever came as
+ * a string or a null: a base dropped that way takes every listing sailing from it along.
+ */
+const coordinateSchema = z.union([z.number(), z.string()]).nullish();
+
 export const restLocationSchema = looseJsonObject({
   id: z.number().int(),
   regionId: z.number().int(),
   name: restInternationalTextSchema,
-  lat: z.number().optional(),
-  lon: z.number().optional(),
+  lat: coordinateSchema,
+  lon: coordinateSchema,
 });
 
 /** A company's season: which dates its `seasonSpecificData` price rows apply to. */
@@ -210,8 +216,8 @@ export const restCharterBaseSchema = looseJsonObject({
   disabledDate: z.string().optional(),
   checkInTime: z.string().optional(),
   checkOutTime: z.string().optional(),
-  lat: z.number().optional(),
-  lon: z.number().optional(),
+  lat: coordinateSchema,
+  lon: coordinateSchema,
   /** International text: "Return on the evening before is obligatory!" on nearly every base. */
   returnToBaseNote: restInternationalTextSchema.optional(),
   /** International text: what to do when that return runs late. */
@@ -229,7 +235,8 @@ export const restEquipmentCategorySchema = looseJsonObject({
  * are better dropped at the parse than carried as an orphan.
  */
 export const restEquipmentSchema = looseJsonObject({
-  id: z.number().int(),
+  /* The PDF types this id as a String ("4"); the dump sends numbers. Either is one id. */
+  id: z.union([z.number().int(), z.string().regex(/^\d+$/).transform(Number)]),
   categoryId: z.number().int(),
   name: restInternationalTextSchema,
 });
@@ -868,8 +875,9 @@ export const restFreeYachtsSearchRequestSchema = z.object({
   ignoreOptions: z.boolean().optional(),
   extendedDataSet: z.string().optional(),
   specialSearchType: z.enum(["REGULAR_OFFERS", "SHORT_OFFERS", "ONE_WAY_OFFERS"]).optional(),
-  specialSearchRangeFrom: nausysDate.optional(),
-  specialSearchRangeTo: nausysDate.optional(),
+  /* Day counts, not dates: 1-6 for SHORT_OFFERS, 1-30 for ONE_WAY_OFFERS. */
+  specialSearchRangeFrom: z.number().int().optional(),
+  specialSearchRangeTo: z.number().int().optional(),
 });
 export type RestFreeYachtsSearchRequest = z.infer<typeof restFreeYachtsSearchRequestSchema>;
 
@@ -953,8 +961,11 @@ export const restClientSchema = looseJsonObject({
   email: blankableString,
   phone: blankableString,
   mobile: blankableString,
+  /** "ENGLISH", "GERMAN", ...: the vendor's own names for the languages it knows. */
+  language: z.string().optional(),
 });
-export type RestClient = z.infer<typeof restClientSchema>;
+/** The request side: `company` goes out as the boolean the vendor documents. */
+export type RestClient = z.input<typeof restClientSchema>;
 
 export const restReservationStatusSchema = z.enum(["INFO", "OPTION", "RESERVATION", "STORNO"]);
 
@@ -1010,7 +1021,13 @@ const crewListLinkSchema = z
   .trim()
   .refine((value) => {
     const url = URL.parse(value);
-    return url !== null && CREW_LIST_LINK_SCHEMES.has(url.protocol);
+    /* The PDF's own example has the literal segment `/null/` where the code belongs, which is a
+       page that opens on nothing. */
+    return (
+      url !== null &&
+      CREW_LIST_LINK_SCHEMES.has(url.protocol) &&
+      !url.pathname.split("/").includes("null")
+    );
   });
 
 /**
@@ -1069,6 +1086,8 @@ export const restCreateOptionRequestSchema = z.object({
    * before any handler sees it. Typed here so the shape cannot regress to a boolean.
    */
   createWaitingOption: z.enum(["true", "false"]).optional(),
+  /** What replaces `createWaitingOption`, sent beside it until the old one is withdrawn. */
+  fallbackToWaitingOption: z.boolean().optional(),
 });
 export type RestCreateOptionRequest = z.infer<typeof restCreateOptionRequestSchema>;
 

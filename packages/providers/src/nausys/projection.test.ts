@@ -138,6 +138,19 @@ describe("projectNausysCatalogue", () => {
       expect(baseIds(closed({ closedBaseDate: "01.11.2026" }))).toContain("102754");
     });
 
+    it("takes its marina's coordinates when it has none of its own", () => {
+      const bases = recorded.base.map((item) =>
+        item.id === 102751 ? { ...item, lat: null, lon: "" } : item,
+      );
+      const base = projectNausysCatalogue(
+        fixtureRecords(recorded.yacht, { base: bases }),
+      ).bases.find((item) => item.externalId === "102751");
+      const marina = recorded.location.find((item) => item.id === 57);
+
+      expect(base?.lat).toBe(marina?.lat);
+      expect(base?.lng).toBe(marina?.lon);
+    });
+
     it("stays while a yacht still sails from it", () => {
       // 102755 is dated closed in 2024 and still carries yacht 103454.
       expect(baseIds(recorded.base)).toContain("102755");
@@ -349,6 +362,24 @@ describe("projectNausysCatalogue", () => {
         fuelType: "diesel",
         propulsionType: "saildrive",
       });
+    });
+
+    it("names the steering from the vendor's list, whatever its spelling", () => {
+      const steering = [
+        { id: 1, name: { textEN: "2 Steering Wheels" } },
+        { id: 3, name: { textEN: "Tiller steereing" } },
+      ];
+      const steeringOf = (id: number) => {
+        const yacht = maria();
+        yacht.steeringTypeId = id;
+        return projectNausysCatalogue(
+          fixtureRecords([yacht], { steering_type: payloadsSchema.parse(steering) }),
+        ).listings[0]?.spec.steeringType;
+      };
+
+      expect(steeringOf(1)).toBe("twin wheel");
+      expect(steeringOf(3)).toBe("tiller");
+      expect(steeringOf(99)).toBeUndefined();
     });
 
     it("reads a zero limit on board as unstated", () => {

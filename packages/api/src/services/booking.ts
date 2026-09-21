@@ -412,7 +412,14 @@ export async function createHold(
    * throws out of holdOption, which is also the right moment to send nothing: there is no
    * hold to write to them about.
    */
-  const held = await holdOption(db, provider, created, priced, account, redeem);
+  const held = await holdOption(
+    db,
+    provider,
+    created,
+    priced,
+    { ...account, ...(guest.locale ? { language: guest.locale } : null) },
+    redeem,
+  );
   await announce(held);
   kickOutbox(db);
 
@@ -552,7 +559,7 @@ async function holdOption(
   provider: InventoryProvider,
   created: BookingRow,
   priced: typeof quote.$inferSelect,
-  account: { name: string; email: string },
+  account: { name: string; email: string; language?: string },
   redeem: () => Promise<void>,
 ): Promise<BookingRow> {
   const pending = await transition(db, created, "OPTION_PENDING");
@@ -584,6 +591,7 @@ async function holdOption(
         email: account.email,
         phone: created.guestPhone ?? undefined,
         countryCode: created.guestCountryCode ?? undefined,
+        ...(account.language ? { language: account.language } : null),
       },
     };
 

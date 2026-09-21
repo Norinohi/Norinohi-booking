@@ -444,7 +444,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
   /**
    * How many people the operator already has queued for this week.
    *
-   * Read-only: joining the queue is a `createInfo` away (`fallbackToWaitingOption`) and is a
+   * Read-only: joining the queue is a `createOption` away (`fallbackToWaitingOption`) and is a
    * product decision nobody has taken, so this answers the question support is asked and
    * changes nothing on the vendor's side.
    */
