@@ -18,6 +18,25 @@ function fakeDb(byCode: { code: string; label: string }[]) {
 }
 
 describe("localizeQuoteLines", () => {
+  it("names a NauSYS discount in the reader's language, and keeps the stored one otherwise", async () => {
+    // SAFETY: a stub with only `execute`; a discount-only quote makes just the one lookup.
+    const db = Object.assign({} as NodePgDatabase<typeof schema>, {
+      execute: () => Promise.resolve({ rows: [{ id: "6001", name: "Frühbucherrabatt" }] }),
+    });
+
+    const lines = await localizeQuoteLines(
+      db,
+      "ylst_1",
+      [
+        { code: "nausys-discount-6001", label: "Early booking", kind: "discount" },
+        { code: "nausys-discount-6002", label: "Block Time Discount", kind: "discount" },
+      ],
+      "de",
+    );
+
+    expect(lines.map((line) => line.label)).toEqual(["Frühbucherrabatt", "Block Time Discount"]);
+  });
+
   it("translates a variant line by its extra and gives it its variant back", async () => {
     const { db } = fakeDb([{ code: "service:100511", label: "Трансфер" }]);
 

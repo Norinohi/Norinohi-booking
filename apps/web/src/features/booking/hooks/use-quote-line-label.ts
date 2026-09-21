@@ -12,9 +12,9 @@ import type { QuoteLine } from "../api/queries";
  * operator-named promo needs.
  *
  * The two vendor discounts are in the list because their name is ours too, despite arriving on
- * a provider line. Neither vendor publishes a catalogue row for a discount -- see `labelFor`
- * in the NauSYS quote mapper -- so both adapters fall back to a fixed English "Charter
- * discount", which is what a Ukrainian checkout used to print under its own total.
+ * a provider line. Booking Manager names none, so its adapter falls back to a fixed English
+ * "Charter discount", which is what a Ukrainian checkout used to print under its own total.
+ * NauSYS names its own ("Early booking"), and that name is kept beside ours.
  */
 type QuoteLineKey = "referral-welcome" | "referral-credit" | "provider-discount";
 
@@ -26,6 +26,9 @@ const QUOTE_LINE_KEY = new Map<string, QuoteLineKey>([
 
 /** NauSYS names one line per discount step, each keyed by the step's own vendor id. */
 const NAUSYS_DISCOUNT_PREFIX = "nausys-discount-";
+
+/** The adapters' placeholder when a discount has no name; see `DEFAULT_LINE_LABELS`. */
+const GENERIC_DISCOUNT_LABEL = "Charter discount";
 
 /**
  * Shared by the sidebar and the review step because they name the same lines. The review step
@@ -39,6 +42,16 @@ export function useQuoteLineLabel() {
     const key = line.code.startsWith(NAUSYS_DISCOUNT_PREFIX)
       ? "provider-discount"
       : QUOTE_LINE_KEY.get(line.code);
+    /* A NauSYS discount the operator named keeps the name beside ours: two discounts on one
+       charter used to read as two identical lines. */
+    if (
+      key === "provider-discount" &&
+      line.code.startsWith(NAUSYS_DISCOUNT_PREFIX) &&
+      line.label.trim() !== "" &&
+      line.label !== GENERIC_DISCOUNT_LABEL
+    ) {
+      return `${t(key)} (${line.label})`;
+    }
     return key ? t(key) : line.label;
   };
 }

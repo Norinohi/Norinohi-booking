@@ -156,6 +156,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
       loadCrewRoles: (listingId) => loadNausysCrewRoles(this.db, listingId),
       loadExtraLabels: (listingId) => loadNausysExtraLabels(this.db, listingId),
       loadLocationNames: (ids) => loadNausysLocationNames(this.db, ids),
+      loadDiscountNames: (ids) => loadNausysCatalogueNames(this.db, "discount_item", ids),
       loadDiscountRule: (listingId) => loadNausysDiscountRule(this.db, listingId),
       loadDepositInsuranceCodes: (listingId) => loadNausysDepositInsuranceCodes(this.db, listingId),
     });
@@ -618,9 +619,18 @@ async function loadNausysDiscountRule(
 }
 
 /** NauSYS location names by the vendor's own id, off the stored catalogue payloads. */
-async function loadNausysLocationNames(
+function loadNausysLocationNames(
   db: Database,
   locationIds: readonly string[],
+): Promise<ReadonlyMap<string, string>> {
+  return loadNausysCatalogueNames(db, "location", locationIds);
+}
+
+/** English names of NauSYS catalogue records by id, off their stored payloads. */
+async function loadNausysCatalogueNames(
+  db: Database,
+  resourceType: "location" | "discount_item",
+  ids: readonly string[],
 ): Promise<ReadonlyMap<string, string>> {
   const rows = await db
     .select({
@@ -633,8 +643,8 @@ async function loadNausysLocationNames(
     .where(
       and(
         eq(providerTable.code, "nausys"),
-        eq(providerRecord.resourceType, "location"),
-        inArray(providerRecord.externalId, [...locationIds]),
+        eq(providerRecord.resourceType, resourceType),
+        inArray(providerRecord.externalId, [...ids]),
       ),
     );
 

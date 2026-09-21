@@ -517,6 +517,20 @@ describe("NauSYS live quote", () => {
     );
   });
 
+  it("names each discount from the discountItems dump, and the rest generically", async () => {
+    const asked: string[][] = [];
+    const priced = await quote({
+      loadDiscountNames: async (ids) => {
+        asked.push([...ids]);
+        return new Map([["6001", "Early booking"]]);
+      },
+    });
+
+    expect(asked).toEqual([["6001", "6002"]]);
+    expect(lineByCode(priced, "nausys-discount-6001").label).toBe("Early booking");
+    expect(lineByCode(priced, "nausys-discount-6002").label).toBe("Charter discount");
+  });
+
   it("falls back to clientPrice when the discounts do not explain the list price", async () => {
     const body = fixtureResponse();
     firstYacht(body).price.clientPrice = "3300.00";

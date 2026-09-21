@@ -176,6 +176,12 @@ export interface NausysQuoteServiceOptions {
   /** The operator's bound on an agency's client discount for this yacht; see `DiscountRule`. */
   loadDiscountRule?: (listingId: string) => Promise<DiscountRule | undefined>;
   /**
+   * The operator's names for its discounts ("Early booking", "Better Price discount") by
+   * discount item id, from the synced discountItems dump. Without it every discount line on a
+   * quote read "Charter discount", two of them side by side on a charter with two.
+   */
+  loadDiscountNames?: (discountItemIds: readonly string[]) => Promise<ReadonlyMap<string, string>>;
+  /**
    * Marina names by NauSYS location id, for the route a charter runs. `freeYachts` names the
    * start and end only by location id, and a one-way the operator fixed is something the
    * customer has to be told in words.
@@ -317,6 +323,9 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
 
     const crewRoles = (await options.loadCrewRoles?.(parsed.listingId)) ?? [];
     const extraLabels = await options.loadExtraLabels?.(parsed.listingId);
+    const discountIds = (yacht.price.discounts ?? []).map((item) => String(item.discountItemId));
+    const discountNames =
+      discountIds.length > 0 ? await options.loadDiscountNames?.(discountIds) : undefined;
     const locationIds = [yacht.locationFromId, yacht.locationToId].flatMap((id) =>
       id === undefined ? [] : [String(id)],
     );
@@ -337,10 +346,13 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
       discountRule: await options.loadDiscountRule?.(parsed.listingId),
       securityDeposit,
       expiresAt: new Date(now() + quoteTtlMs).toISOString(),
-      /* The catalogue answers for extras; a discount has no catalogue row, and an
-           extra the sync never recorded falls through to whatever the caller knows. */
+      /* The catalogue answers for extras, and the discountItems dump for discounts: every
+         RestDiscount names a RestDiscountItem. What neither knows falls through to whatever
+         the caller knows. */
       labelFor: (kind, externalId) =>
-        (kind === "discount" ? undefined : extraLabels?.get(formatExtraCode(kind, externalId))) ??
+        (kind === "discount"
+          ? discountNames?.get(externalId)
+          : extraLabels?.get(formatExtraCode(kind, externalId))) ??
         options.labelFor?.(kind, externalId),
     };
   }
