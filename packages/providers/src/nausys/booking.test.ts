@@ -1418,3 +1418,17 @@ describe("extras the operator sells only on a fixed reservation", () => {
     expect(transport.callCount("stornoOption")).toBe(0);
   });
 });
+
+describe("an option the operator still has to approve", () => {
+  it("is held, and the event says it is not approved", async () => {
+    const { service, transport, events } = build();
+    transport.respondWith("createOption", fixture("createOption", { approved: false }));
+
+    const held = await service.createOption(draft);
+
+    expect(held.status).toBe("option_held");
+    expect(events.find((event) => event.kind === "option_created")?.payload).toMatchObject({
+      approved: false,
+    });
+  });
+});

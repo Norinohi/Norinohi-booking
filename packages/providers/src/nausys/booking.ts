@@ -296,6 +296,19 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
     });
 
     await logEvent(parsed.quoteId, "option_created", option);
+    /*
+     * An option the operator still has to approve by hand. The catalogue's needsOptionApproval
+     * already routes such hulls to a request, so this is the case where the two disagree: the
+     * hold stands, but the customer is about to pay against a week nobody has said yes to.
+     */
+    if (option.response.approved === false) {
+      log.warn({
+        action: "nausys.option_awaiting_approval",
+        quoteId: parsed.quoteId,
+        providerReservationId: String(option.handle.id),
+        yachtId: option.response.yachtId,
+      });
+    }
 
     const onRequest = (await deps.loadOnRequestCodes?.(parsed.listingId)) ?? new Set<string>();
     const held = await addBilledExtras(
@@ -1006,6 +1019,7 @@ function eventPayload(step: ReservationStep) {
     optionTill: response.optionTill,
     clientPrice: response.clientPrice,
     currency: response.currency,
+    ...(response.approved === undefined ? null : { approved: response.approved }),
   };
 }
 
