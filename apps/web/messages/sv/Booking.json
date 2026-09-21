@@ -358,7 +358,7 @@
     "crewList": {
       "title": "Besättningslista",
       "notice": "Charterbolaget måste lämna myndigheterna en lista över alla ombord innan ni seglar. Fyll i den här så skickar vi den till dem: det som saknas frågar basen efter i disken när ni kommer.",
-      "maxPassengers": "Deras lista rymmer högst {count} personer.",
+      "maxPassengers": "Deras lista rymmer högst {count, plural, one {# person} other {# personer}}.",
       "loading": "Laddar din besättningslista…",
       "empty": "Ingen tillagd än. Din bokning gäller {guests} gäster: lägg till alla som ska vara ombord, inklusive skepparen.",
       "member": "Besättningsmedlem {number}",
@@ -380,7 +380,7 @@
         "lastName": "Ange personens efternamn",
         "skipperEmail": "Ange en giltig e-postadress",
         "oneSkipper": "Bara en person kan vara skeppare",
-        "maxPassengers": "Charterbolagets lista rymmer högst {count} personer"
+        "maxPassengers": "Charterbolagets lista rymmer högst {count, plural, one {# person} other {# personer}}"
       },
       "legend": "Fält märkta med * är de som det här charterbolaget kräver.",
       "sent": "Skickad till charterbolaget {when}.",

@@ -358,7 +358,7 @@
     "crewList": {
       "title": "Bemanningslijst",
       "notice": "Het charterbedrijf moet de autoriteiten een lijst geven van iedereen aan boord voordat je vertrekt. Vul die hier in en wij sturen hem door - wat ontbreekt, vraagt de basis bij aankomst aan de balie.",
-      "maxPassengers": "De lijst bevat maximaal {count} personen.",
+      "maxPassengers": "De lijst bevat maximaal {count, plural, one {# persoon} other {# personen}}.",
       "loading": "Je bemanningslijst wordt geladen…",
       "empty": "Nog niemand toegevoegd. Je boeking is voor {guests} gasten - voeg iedereen toe die aan boord gaat, ook de schipper.",
       "member": "Bemanningslid {number}",
@@ -380,7 +380,7 @@
         "lastName": "Voer de achternaam van deze persoon in",
         "skipperEmail": "Voer een geldig e-mailadres in",
         "oneSkipper": "Er kan maar één persoon schipper zijn",
-        "maxPassengers": "De lijst van deze charteraar bevat hoogstens {count} personen"
+        "maxPassengers": "De lijst van deze charteraar bevat hoogstens {count, plural, one {# persoon} other {# personen}}"
       },
       "legend": "Velden met * zijn verplicht voor dit charterbedrijf.",
       "sent": "Op {when} naar het charterbedrijf verstuurd.",

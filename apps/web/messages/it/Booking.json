@@ -358,7 +358,7 @@
     "crewList": {
       "title": "Lista dell’equipaggio",
       "notice": "La società di charter deve fornire alle autorità l’elenco di tutte le persone a bordo prima della partenza. Compilalo qui e lo invieremo loro: gli eventuali dati mancanti ti verranno chiesti alla base al tuo arrivo.",
-      "maxPassengers": "La sua lista può contenere al massimo {count} persone.",
+      "maxPassengers": "La sua lista può contenere al massimo {count, plural, one {# persona} other {# persone}}.",
       "loading": "Caricamento della lista dell’equipaggio…",
       "empty": "Nessuno aggiunto finora. La tua prenotazione è per {guests} ospiti: aggiungi ogni persona che sarà a bordo, incluso lo skipper.",
       "member": "Membro dell’equipaggio {number}",
@@ -380,7 +380,7 @@
         "lastName": "Inserisci il cognome di questa persona",
         "skipperEmail": "Inserisci un indirizzo email valido",
         "oneSkipper": "Solo una persona può essere lo skipper",
-        "maxPassengers": "La lista di questa società di charter ammette al massimo {count} persone"
+        "maxPassengers": "La lista di questa società di charter ammette al massimo {count, plural, one {# persona} other {# persone}}"
       },
       "legend": "I campi contrassegnati con * sono quelli richiesti obbligatoriamente da questa società di charter.",
       "sent": "Inviata alla società di charter il {when}.",
