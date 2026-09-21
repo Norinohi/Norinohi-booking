@@ -834,6 +834,8 @@ export const restFreeYachtsRequestSchema = z.object({
    * seven nights, 93.10) for a couple who owe 14 (18.62).
    */
   numberOfPersons: z.number().int().positive().optional(),
+  /** Several periods in one call; the vendor then ignores `periodFrom`/`periodTo`. */
+  periods: z.array(z.object({ periodFrom: nausysDate, periodTo: nausysDate })).optional(),
 });
 export type RestFreeYachtsRequest = z.infer<typeof restFreeYachtsRequestSchema>;
 

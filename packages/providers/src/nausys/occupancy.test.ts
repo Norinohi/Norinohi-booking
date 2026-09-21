@@ -14,6 +14,7 @@ import {
   restOccupancyReservationSchema,
   restOccupancyResponseSchema,
 } from "./endpoints";
+import freeYachtsFixture from "./fixtures/freeYachts.json" with { type: "json" };
 import freeYachtsSearchFixture from "./fixtures/freeYachtsSearch.json" with { type: "json" };
 import occupancyFixture from "./fixtures/occupancy.json" with { type: "json" };
 import priceListsFixture from "./fixtures/priceLists-recorded.json" with { type: "json" };
@@ -523,7 +524,7 @@ describe("createNausysAvailabilitySource", () => {
     expect(source.searchConfirmed).toBeUndefined();
   });
 
-  it("asks freeYachts for our own hulls, one page per period", async () => {
+  it("asks freeYachts for our own hulls, several periods a call, one page per period", async () => {
     const { client, transport } = build();
     transport.respondWith("freeYachts", { status: "OK", freeYachts: [] });
 
@@ -543,13 +544,52 @@ describe("createNausysAvailabilitySource", () => {
     for await (const page of source.searchConfirmed?.(null) ?? []) pages.push(page);
 
     expect(transport.calls.map((call) => call.body)).toMatchObject([
-      { periodFrom: "04.07.2026", periodTo: "11.07.2026", yachts: [4_711_001, 4_711_002] },
-      { periodFrom: "11.07.2026", periodTo: "18.07.2026", yachts: [4_711_001, 4_711_002] },
+      {
+        periods: [
+          { periodFrom: "04.07.2026", periodTo: "11.07.2026" },
+          { periodFrom: "11.07.2026", periodTo: "18.07.2026" },
+        ],
+        yachts: [4_711_001, 4_711_002],
+      },
     ]);
+    expect(pages.map((page) => page.swept?.startDate)).toEqual(["2026-07-04", "2026-07-11"]);
     expect(pages.map((page) => page.cursor)).toEqual([
       { windowIndex: 1, page: 1 },
       { windowIndex: 2, page: 1 },
     ]);
+  });
+
+  it("files each row of a several-period answer under the period it answers", async () => {
+    const { client, transport } = build();
+    const [row] = freeYachtsFixture.freeYachts;
+    transport.respondWith("freeYachts", {
+      status: "OK",
+      freeYachts: [
+        { ...row, periodFrom: "11.07.2026", periodTo: "18.07.2026" },
+        { ...row, yachtId: 4_711_002 },
+      ],
+    });
+
+    const source = createNausysAvailabilitySource({
+      optionTimeZone: "Europe/Zagreb",
+      client,
+      companyIds: ["102701"],
+      years: [],
+      hotWindows: [
+        { periodFrom: "2026-07-04", periodTo: "2026-07-11" },
+        { periodFrom: "2026-07-11", periodTo: "2026-07-18" },
+      ],
+      loadYachtIds: () => Promise.resolve(["4711001", "4711002"]),
+    });
+
+    const pages = [];
+    for await (const page of source.searchConfirmed?.(null) ?? []) pages.push(page);
+
+    expect(pages.map((page) => page.offers.map((offer) => offer.externalYachtId))).toEqual([
+      ["4711002"],
+      ["4711001"],
+    ]);
+    expect(pages[1]?.offers[0]).toMatchObject({ startDate: "2026-07-11", endDate: "2026-07-18" });
   });
 
   /*
@@ -632,7 +672,7 @@ describe("createNausysAvailabilitySource", () => {
     const pages = [];
     for await (const page of source.searchConfirmed?.(null) ?? []) pages.push(page);
 
-    expect(transport.calls).toHaveLength(2);
+    expect(transport.calls).toHaveLength(1);
     expect(pages.map((page) => page.swept?.startDate)).toEqual([undefined, "2026-07-11"]);
   });
 
