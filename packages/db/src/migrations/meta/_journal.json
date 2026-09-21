@@ -995,6 +995,13 @@
       "when": 1790027791091,
       "tag": "0141_abnormal_lady_vermin",
       "breakpoints": true
+    },
+    {
+      "idx": 142,
+      "version": "7",
+      "when": 1790028113386,
+      "tag": "0142_serious_moon_knight",
+      "breakpoints": true
     }
   ]
 }

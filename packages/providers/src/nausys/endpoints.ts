@@ -205,10 +205,17 @@ export const restCharterBaseSchema = looseJsonObject({
   locationId: z.number().int(),
   companyId: z.number().int(),
   disabled: z.boolean().optional(),
+  /** dd.MM.yyyy. A base the operator has shut, or will; 28 of the 2,493 carry one. */
+  closedBaseDate: z.string().optional(),
+  disabledDate: z.string().optional(),
   checkInTime: z.string().optional(),
   checkOutTime: z.string().optional(),
   lat: z.number().optional(),
   lon: z.number().optional(),
+  /** International text: "Return on the evening before is obligatory!" on nearly every base. */
+  returnToBaseNote: restInternationalTextSchema.optional(),
+  /** International text: what to do when that return runs late. */
+  returnToBaseDelayNote: restInternationalTextSchema.optional(),
 });
 
 export const restEquipmentCategorySchema = looseJsonObject({

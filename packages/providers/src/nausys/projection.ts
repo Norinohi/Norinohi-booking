@@ -124,7 +124,6 @@ export function projectNausysCatalogue(
   const services = parseAll(records, "service", restServiceSchema);
   const priceMeasures = parseAll(records, "price_measure", restPriceMeasureSchema);
   const sailTypes = parseAll(records, "sail_type", restSailTypeSchema);
-  const yachts = parseAll(records, "yacht", restYachtSchema);
 
   const countryNameById = new Map(countries.map((item) => [String(item.id), name(item.name)]));
   const locationNameById = new Map(locations.map((item) => [String(item.id), name(item.name)]));
@@ -167,7 +166,20 @@ export function projectNausysCatalogue(
     }),
   );
 
-  const projectedBases = bases.map((item) => {
+  const yachts = parseAll(records, "yacht", restYachtSchema);
+  /*
+   * A base the operator has shut is left out unless a yacht still sails from it. Bases are
+   * shared per marina and upserted last-write-wins, so a closed one's handover times used to
+   * overwrite a live operator's at the same marina. One that still has a fleet stays: the
+   * vendor's test company sells 14 hulls from a base it dated closed in 2024.
+   */
+  const fleetBaseIds = new Set(yachts.map((yacht) => String(yacht.baseId)));
+  const liveBases = bases.filter(
+    (item) => fleetBaseIds.has(String(item.id)) || !isClosedBase(item, options.today),
+  );
+  const returnNotesByBaseId = new Map(bases.map((item) => [String(item.id), returnNotesOf(item)]));
+
+  const projectedBases = liveBases.map((item) => {
     const locationId = String(item.locationId);
     const locationName = locationNameById.get(locationId) ?? `Location ${locationId}`;
 
@@ -214,6 +226,7 @@ export function projectNausysCatalogue(
         equipmentTranslationsById,
         serviceTranslationsById,
         priceMeasureById,
+        returnNotesByBaseId,
       }),
     )
     .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -329,6 +342,8 @@ function projectYacht(
      * are sold the way a hull needing option approval is, as a request the operator confirms.
      */
     offlineCompanyIds?: ReadonlySet<string>;
+    /** The home base's return-to-base notes, by base id; see `returnNotesOf`. */
+    returnNotesByBaseId?: ReadonlyMap<string, ReturnNote[]>;
   } & ExtraNaming,
 ) {
   // The vendor's own withdrawals. `disabled` is a boat taken out of service and
@@ -406,7 +421,7 @@ function projectYacht(
       .map((item) => String(item.equipmentId))
       .filter((id) => context.knownEquipment.has(id)),
     extras: extrasOf(yacht, currency, context),
-    texts: textsOf(yacht),
+    texts: [...textsOf(yacht), ...(context.returnNotesByBaseId?.get(String(yacht.baseId)) ?? [])],
     checkinRules: checkinRulesOf(yacht),
     oneWayRules: oneWayRulesOf(yacht),
     defaultCurrency: currency,
@@ -594,6 +609,38 @@ function textsOf(yacht: RestYacht) {
   }
 
   return texts;
+}
+
+type RestCharterBase = z.infer<typeof restCharterBaseSchema>;
+
+interface ReturnNote {
+  kind: "return_note";
+  locale: string;
+  value: string;
+}
+
+/** Disabled, or past the date the operator set for closing or disabling it. */
+function isClosedBase(base: RestCharterBase, today: string | undefined): boolean {
+  if (base.disabled === true) return true;
+  if (today === undefined) return false;
+  return [base.closedBaseDate, base.disabledDate].some((date) => {
+    const day = nausysDayOrUndefined(date);
+    return day !== undefined && day <= today;
+  });
+}
+
+/**
+ * The operator's rule for bringing the boat back, per language: the note and, after it, what
+ * to do when the return runs late. The delay note alone is not published; it only qualifies
+ * the rule it follows.
+ */
+function returnNotesOf(base: RestCharterBase): ReturnNote[] {
+  const notes = toLocaleMap(base.returnToBaseNote);
+  const delays = toLocaleMap(base.returnToBaseDelayNote);
+  return Object.entries(notes).flatMap(([locale, note]) => {
+    const value = stripHtml([note, delays[locale]].filter(Boolean).join(" "));
+    return value === undefined ? [] : [{ kind: "return_note" as const, locale, value }];
+  });
 }
 
 /** Recorded periods use `periodFrom`/`periodTo`; `dateFrom`/`dateTo` is the PDF's spelling. */

@@ -914,7 +914,7 @@ const canonicalListingSchema = z.object({
   extras: z.array(canonicalExtraSchema).default([]),
   texts: z.array(
     z.object({
-      kind: z.enum(["description", "notes", "conditions", "one_way_note"]),
+      kind: z.enum(["description", "notes", "conditions", "one_way_note", "return_note"]),
       locale: z.string(),
       value: z.string(),
     }),

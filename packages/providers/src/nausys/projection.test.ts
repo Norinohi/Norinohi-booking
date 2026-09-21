@@ -120,6 +120,42 @@ describe("projectNausysCatalogue", () => {
     });
   });
 
+  describe("a base the operator has shut", () => {
+    const closed = (overrides: Payload) =>
+      recorded.base.map((item) => (item.id === 102754 ? { ...item, ...overrides } : item));
+    const baseIds = (bases: Payload[]) =>
+      projectNausysCatalogue(fixtureRecords(recorded.yacht, { base: bases }), {
+        today: "2026-09-22",
+      }).bases.map((item) => item.externalId);
+
+    it("is left out once disabled or past its closing date", () => {
+      expect(baseIds(closed({ disabled: true }))).not.toContain("102754");
+      expect(baseIds(closed({ closedBaseDate: "01.04.2025" }))).not.toContain("102754");
+      expect(baseIds(closed({ disabledDate: "22.09.2026" }))).not.toContain("102754");
+    });
+
+    it("stays while its closing date is ahead", () => {
+      expect(baseIds(closed({ closedBaseDate: "01.11.2026" }))).toContain("102754");
+    });
+
+    it("stays while a yacht still sails from it", () => {
+      // 102755 is dated closed in 2024 and still carries yacht 103454.
+      expect(baseIds(recorded.base)).toContain("102755");
+    });
+  });
+
+  it("carries the home base's return rule onto the listing, the delay note after it", () => {
+    const texts = listingOf(maria())?.texts.filter((item) => item.kind === "return_note");
+
+    expect(texts).toContainEqual({
+      kind: "return_note",
+      locale: "en",
+      value:
+        "Return on the evening before is desirable! In case of returning on evening before after 18:00 hours contact the base!",
+    });
+    expect(texts?.map((item) => item.locale)).toContain("de");
+  });
+
   it("reads a builder the vendor calls Unknown as no builder at all", () => {
     const builders = recorded.builder.map((item) =>
       item.id === 1 ? { ...item, name: "Unknown" } : item,
@@ -448,8 +484,12 @@ describe("projectNausysCatalogue", () => {
   });
 
   describe("texts", () => {
+    /* The yacht's own prose; the base's return rule is covered on its own. */
+    const yachtTexts = (yacht: Payload) =>
+      listingOf(yacht)?.texts.filter((item) => item.kind !== "return_note");
+
     it("strips the vendor's HTML out of every locale of the highlights", () => {
-      expect(listingOf(maria())?.texts).toEqual([
+      expect(yachtTexts(maria())).toEqual([
         { kind: "description", locale: "en", value: "ana banana test\n\nevo baby blue boja" },
         { kind: "description", locale: "de", value: "ana banana test\n\nevo baby blue boja" },
         { kind: "description", locale: "hr", value: "ana banana test\n\nevo baby blue boja" },
@@ -460,7 +500,7 @@ describe("projectNausysCatalogue", () => {
       // Recorded as "<mark>Yacht note</mark>" in EN, plain text in DE and HR.
       const kan = recordedYacht(1);
 
-      expect(listingOf(kan)?.texts).toEqual([
+      expect(yachtTexts(kan)).toEqual([
         { kind: "notes", locale: "en", value: "Yacht note" },
         { kind: "notes", locale: "de", value: "Jacht bemerkung" },
         { kind: "notes", locale: "hr", value: "Napomena na plovilu" },
@@ -471,7 +511,7 @@ describe("projectNausysCatalogue", () => {
       const yacht = maria();
       yacht.highlightsIntText = { textEN: "<p>Fish &amp; chips</p><p>&lt;script&gt;</p>" };
 
-      expect(listingOf(yacht)?.texts).toEqual([
+      expect(yachtTexts(yacht)).toEqual([
         { kind: "description", locale: "en", value: "Fish & chips\n<script>" },
       ]);
     });
@@ -481,7 +521,7 @@ describe("projectNausysCatalogue", () => {
       delete yacht.highlightsIntText;
       yacht.highlights = "AC / Winch";
 
-      expect(listingOf(yacht)?.texts).toEqual([
+      expect(yachtTexts(yacht)).toEqual([
         { kind: "description", locale: "en", value: "AC / Winch" },
       ]);
     });
@@ -490,7 +530,7 @@ describe("projectNausysCatalogue", () => {
       const yacht = maria();
       yacht.highlightsIntText = { textEN: "<div>  </div>" };
 
-      expect(listingOf(yacht)?.texts).toEqual([]);
+      expect(yachtTexts(yacht)).toEqual([]);
     });
   });
 

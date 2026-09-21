@@ -100,6 +100,26 @@ async function providerDescription(
 }
 
 /**
+ * The operator's rule for bringing the boat back, in `locale`, else in English. Unlike the
+ * description this is an instruction the charter depends on, so English beats saying nothing.
+ */
+async function returnNote(
+  db: NodePgDatabase<typeof schema>,
+  listingId: string,
+  locale: string,
+): Promise<string | undefined> {
+  const rows = await db.execute<{ value: string }>(sql`
+    select value
+    from listing_text
+    where listing_id = ${listingId} and kind = 'return_note' and locale in (${locale}, 'en')
+    order by (locale = ${locale}) desc
+    limit 1
+  `);
+
+  return rows.rows[0]?.value;
+}
+
+/**
  * The listing's amenities, one row per piece of equipment. Exported for its database suite.
  */
 export function readListingAmenities(db: NodePgDatabase<typeof schema>, listingId: string) {
@@ -202,20 +222,29 @@ export async function getListingDetailByIdOrSlug(
   const [localized] = await localizeSearchDocs(db, [raw], locale, translate);
   const listing = localized ?? raw;
 
-  const [infoRows, amenityRows, extraRows, faqRows, reviews, popularYachts, prose, route] =
-    await Promise.all([
-      db.execute<{
-        beamM: string | null;
-        draftM: string | null;
-        engines: number | null;
-        enginePower: string | null;
-        fuelCapacity: number | null;
-        waterCapacity: number | null;
-        checkInTime: string | null;
-        checkOutTime: string | null;
-        videoUrl: string | null;
-        tourUrl: string | null;
-      }>(sql`
+  const [
+    infoRows,
+    amenityRows,
+    extraRows,
+    faqRows,
+    reviews,
+    popularYachts,
+    prose,
+    returnNoteText,
+    route,
+  ] = await Promise.all([
+    db.execute<{
+      beamM: string | null;
+      draftM: string | null;
+      engines: number | null;
+      enginePower: string | null;
+      fuelCapacity: number | null;
+      waterCapacity: number | null;
+      checkInTime: string | null;
+      checkOutTime: string | null;
+      videoUrl: string | null;
+      tourUrl: string | null;
+    }>(sql`
       select
         spec.beam_m as "beamM",
         spec.draft_m as "draftM",
@@ -236,24 +265,24 @@ export async function getListingDetailByIdOrSlug(
       where l.id = ${listing.listingId}
       limit 1
     `),
-      readListingAmenities(db, listing.listingId),
-      db.execute<{
-        source: string;
-        kind: string;
-        externalId: string;
-        label: string;
-        sourceLabel: string;
-        obligatory: boolean;
-        crewRole: string | null;
-        priceMinor: number | null;
-        priceCurrency: string | null;
-        priceMeasure: string | null;
-        calculationType: string | null;
-        percentage: string | null;
-        payableInBase: boolean | null;
-        oneWayOnly: boolean;
-        note: string | null;
-      }>(sql`
+    readListingAmenities(db, listing.listingId),
+    db.execute<{
+      source: string;
+      kind: string;
+      externalId: string;
+      label: string;
+      sourceLabel: string;
+      obligatory: boolean;
+      crewRole: string | null;
+      priceMinor: number | null;
+      priceCurrency: string | null;
+      priceMeasure: string | null;
+      calculationType: string | null;
+      percentage: string | null;
+      payableInBase: boolean | null;
+      oneWayOnly: boolean;
+      note: string | null;
+    }>(sql`
       select
         extra.source,
         extra.kind,
@@ -328,24 +357,24 @@ export async function getListingDetailByIdOrSlug(
          order in every locale. */
       order by extra.obligatory desc, extra.price_minor, extra.name asc
     `),
-      /*
-       * Listing-specific entries and site-wide ones in one read, the listing's own first.
-       * A site-wide entry is the row with a null listing_id; `category` groups it on the page
-       * and orders it here by the enum's declaration order, which is the client's order.
-       *
-       * An entry with no answer is dropped rather than returned blank: the client sent the
-       * questions before the answers, and a question rendered under a heading with nothing
-       * under it reads as a broken page rather than as work in progress.
-       *
-       * Locale is matched exactly, with no fallback, for the same reason providerDescription
-       * refuses one: an English answer served under lang="uk" is worse than a shorter page.
-       */
-      db.execute<{
-        id: string;
-        question: string;
-        answer: string;
-        category: FaqCategory | null;
-      }>(sql`
+    /*
+     * Listing-specific entries and site-wide ones in one read, the listing's own first.
+     * A site-wide entry is the row with a null listing_id; `category` groups it on the page
+     * and orders it here by the enum's declaration order, which is the client's order.
+     *
+     * An entry with no answer is dropped rather than returned blank: the client sent the
+     * questions before the answers, and a question rendered under a heading with nothing
+     * under it reads as a broken page rather than as work in progress.
+     *
+     * Locale is matched exactly, with no fallback, for the same reason providerDescription
+     * refuses one: an English answer served under lang="uk" is worse than a shorter page.
+     */
+    db.execute<{
+      id: string;
+      question: string;
+      answer: string;
+      category: FaqCategory | null;
+    }>(sql`
       select id, question, answer, category
       from faq
       where (listing_id = ${listing.listingId} or listing_id is null)
@@ -353,16 +382,17 @@ export async function getListingDetailByIdOrSlug(
         and nullif(btrim(answer), '') is not null
       order by (listing_id is null), category, sort_order asc, created_at asc
     `),
-      listListingReviews(db, listing.listingId),
-      /* Localized with the same translator as the page around them: these render as ordinary
+    listListingReviews(db, listing.listingId),
+    /* Localized with the same translator as the page around them: these render as ordinary
          search cards, and a Ukrainian page whose "popular yachts" strip says "Sailing yacht"
          next to its own "Вітрильна яхта" is the drift the shared table exists to prevent. */
-      listSimilarListings(db, listing.listingId).then((docs) =>
-        localizeSearchDocs(db, docs, locale, translate),
-      ),
-      providerDescription(db, listing.listingId, locale),
-      suggestedRouteFor(db, listing.baseId, locale),
-    ]);
+    listSimilarListings(db, listing.listingId).then((docs) =>
+      localizeSearchDocs(db, docs, locale, translate),
+    ),
+    providerDescription(db, listing.listingId, locale),
+    returnNote(db, listing.listingId, locale),
+    suggestedRouteFor(db, listing.baseId, locale),
+  ]);
   const info = infoRows.rows[0];
   const amenities = amenityRows.rows.map((item) => ({
     ...item,
@@ -506,7 +536,7 @@ export async function getListingDetailByIdOrSlug(
        * whatever dates the visitor later picks.
        */
       yachtPickup: { time: info?.checkInTime ?? null },
-      yachtDropOff: { time: info?.checkOutTime ?? null },
+      yachtDropOff: { time: info?.checkOutTime ?? null, returnNote: returnNoteText ?? null },
       cancellationPaymentPolicies: "varies_by_selection",
       /* Off the crew this listing can actually be taken with, not off the operator's label:
          a hull whose skipper is an obligatory charge never sails without one, so telling its

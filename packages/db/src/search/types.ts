@@ -298,7 +298,7 @@ export type ListingDetail = ListingSearchDoc & {
     charterCompany: string;
     yachtPickupAddress: string;
     yachtPickup: { time: string | null };
-    yachtDropOff: { time: string | null };
+    yachtDropOff: { time: string | null; returnNote: string | null };
     /*
      * Which sentence to render, not the sentence.
      *

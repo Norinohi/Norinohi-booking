@@ -153,6 +153,8 @@ export type BookingConfirmedEmail = {
   /** The operator's own reservation number, which is what the marina answers to. */
   providerReference: string | null;
   crewListLink: string | null;
+  /** The operator's rule for bringing the boat back to base, in its own words. */
+  returnNote?: string | null;
 };
 
 /**
@@ -185,6 +187,7 @@ export async function notifyBookingConfirmed(booking: BookingConfirmedEmail): Pr
         : undefined,
       providerReference: booking.providerReference ?? undefined,
       crewListUrl: booking.crewListLink ?? undefined,
+      returnNote: booking.returnNote ?? undefined,
       bookingUrl: appUrl(`/bookings/${booking.bookingId}`),
       payUrl:
         booking.outstandingMinor > 0 ? appUrl(`/bookings/${booking.bookingId}/pay`) : undefined,
