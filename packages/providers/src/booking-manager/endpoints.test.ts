@@ -14,6 +14,7 @@ import {
   restIdListSchema,
   restPriceListSchema,
   restReservationSchema,
+  restShortAvailabilitySchema,
   restYachtSchema,
 } from "./endpoints";
 
@@ -214,5 +215,16 @@ describe("the v2.2.2 contract against live payloads", () => {
       endBaseId: "0",
     });
     expect(jack).toMatchObject({ startBaseId: "120", endBaseId: "120" });
+  });
+
+  it("keeps a short-availability yacht id past 2^53 exact", () => {
+    const row = restShortAvailabilitySchema.parse(
+      parseExactJson('{"y":978989560000100225,"bs":"0000"}'),
+    );
+
+    expect(row).toMatchObject({
+      y: "978989560000100225",
+      bs: "0000",
+    });
   });
 });
