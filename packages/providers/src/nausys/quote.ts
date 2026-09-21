@@ -46,8 +46,15 @@ type RestExtra = NonNullable<RestFreeYacht["obligatoryExtras"]>[number];
 type QuoteLine = ProviderQuote["lines"][number];
 type PaymentPolicy = ProviderQuote["paymentPolicy"];
 
-/** PAYMENT_PLAN carries the instalment schedule, ADDITIONAL_EXTRAS the optional services. */
-const EXTENDED_DATA_SET = "PAYMENT_PLAN,ADDITIONAL_EXTRAS";
+/**
+ * PAYMENT_PLAN carries the instalment schedule, ADDITIONAL_EXTRAS the optional services, and
+ * OBLIGATORY_SERVICES the mandatory fees, which the PDF exports "only if one yacht and one
+ * period are requested", exactly what a quote asks. Obligatory extras used to come back only as a
+ * side effect of ADDITIONAL_EXTRAS: on the test company (Sep 2026) PAYMENT_PLAN alone returns
+ * none, so a vendor that started applying its own rule would have quoted every charter without
+ * its tourist tax, transit log and cleaning.
+ */
+const EXTENDED_DATA_SET = "PAYMENT_PLAN,OBLIGATORY_SERVICES,ADDITIONAL_EXTRAS";
 
 const DEFAULT_QUOTE_TTL_MS = 15 * 60 * 1000;
 
@@ -235,9 +242,14 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
       { ...request },
     );
 
-    const yacht = preferredFreeYachtRow(
+    const offered = preferredFreeYachtRow(
       (response.freeYachts ?? []).filter((entry) => entry.yachtId === yachtId),
     );
+    const yacht = offered;
+    /* Asked for by name, so an absent list (not an empty one) is the vendor saying nothing. */
+    if (yacht && yacht.obligatoryExtras === undefined) {
+      log.warn({ action: "nausys.quote_without_obligatory_extras", yachtId, periodFrom });
+    }
     if (yacht && !isRoundTrip(yacht)) {
       log.warn({
         action: "nausys.quote_one_way_only",

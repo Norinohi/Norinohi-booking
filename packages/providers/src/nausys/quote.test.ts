@@ -177,7 +177,7 @@ describe("NauSYS live quote", () => {
       periodTo: "11.07.2026",
       yachts: [4711001],
       currency: "EUR",
-      extendedDataSet: "PAYMENT_PLAN,ADDITIONAL_EXTRAS",
+      extendedDataSet: "PAYMENT_PLAN,OBLIGATORY_SERVICES,ADDITIONAL_EXTRAS",
       numberOfPersons: 4,
     });
   });
