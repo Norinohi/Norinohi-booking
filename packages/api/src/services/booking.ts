@@ -529,6 +529,7 @@ async function copyQuoteExtras(
       bookingId,
       code: line.code,
       label: line.label,
+      detail: line.detail ?? null,
       // Mirrors pricedItemSchema in contracts/catalog.ts, which is what the
       // listing page uses for the same items.
       pricingType:

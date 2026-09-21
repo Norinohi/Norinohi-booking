@@ -324,6 +324,8 @@ export const bookingExtra = pgTable(
       .references(() => booking.id, { onDelete: "cascade" }),
     code: text("code").notNull(),
     label: text("label").notNull(),
+    /** The variant, for an extra the offer sold as several; see `QuoteLine.detail`. */
+    detail: text("detail"),
     pricingType: extraPricingType("pricing_type"),
     amountMinor: integer("amount_minor"),
     currency: text("currency"),

@@ -32,6 +32,11 @@ export type QuoteLine = {
   // and credit, which belong to no section. `requested` is ours, never a vendor's:
   // an extra the offer would not price, charged at the catalogue rate at check-in.
   group?: "mandatory" | "optional" | "crew" | "requested";
+  // Which variant of the extra, where the offer sold it as several. `label` already ends with
+  // it; kept apart so a translated label can be given it back.
+  detail?: string;
+  // The operator's own terms for the charge, where it wrote any. Fine print, never priced.
+  note?: string;
 };
 
 export type QuotePaymentPolicy = {

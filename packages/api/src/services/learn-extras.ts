@@ -1,4 +1,5 @@
 import { providerExtraCatalogue } from "@yacht-charter/db/schema/listing-source";
+import { parseExtraCode } from "@yacht-charter/providers/shared/extra-code";
 import { isGenericLineLabel } from "@yacht-charter/providers/shared/generic-labels";
 import type { ProviderQuote } from "@yacht-charter/providers/types";
 import { and, eq, inArray } from "drizzle-orm";
@@ -47,9 +48,15 @@ export async function learnExtrasFromQuote(
   );
   if (billed.length === 0) return 0;
 
+  /*
+   * Parsed rather than split blind: our own line codes ("base-charter", "bm-discount") share the
+   * space and carry no colon, and a kind the catalogue column cannot hold must not reach the
+   * insert. A variant is skipped: its price is one route's, not the extra's.
+   */
   const billable = billed.flatMap((line) => {
     const code = parseExtraCode(line.code);
-    return code === null ? [] : [{ ...code, line }];
+    if (code === null || code.variantId !== undefined) return [];
+    return [{ kind: code.kind, externalId: code.externalId, line }];
   });
   if (billable.length === 0) return 0;
 
@@ -101,18 +108,4 @@ export async function learnExtrasFromQuote(
     });
 
   return rows.length;
-}
-
-/**
- * `<kind>:<externalId>`, the canonical code both adapters mint. Parsed rather than split blind:
- * our own line codes ("base-charter", "bm-discount") share the space and carry no colon, and a
- * kind the catalogue column cannot hold must not reach the insert.
- */
-function parseExtraCode(
-  code: string,
-): { kind: "service" | "equipment"; externalId: string } | null {
-  const [kind, externalId] = code.split(":", 2);
-  if (externalId === undefined || externalId.length === 0) return null;
-  if (kind !== "service" && kind !== "equipment") return null;
-  return { kind, externalId };
 }

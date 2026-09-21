@@ -11,7 +11,28 @@ import { normalizedKey } from "./normalize";
  * Structural rather than the `QuoteLine` row type, because the same lines pass through here in
  * two shapes: the provider's, before a quote is persisted, and the database's, after.
  */
-export type LocalizableQuoteLine = { code: string; label: string; kind: string };
+export type LocalizableQuoteLine = {
+  code: string;
+  label: string;
+  kind: string;
+  detail?: string | null;
+};
+
+/**
+ * `service:100511@66279570` → `service:100511`. The catalogue and both dictionaries know the
+ * extra, not the vendor's row for one of its variants. Mirrors `baseExtraCode` in
+ * `@yacht-charter/providers/shared/extra-code`, which this package cannot import.
+ */
+function baseCode(code: string): string {
+  const at = code.indexOf("@");
+  return at === -1 ? code : code.slice(0, at);
+}
+
+/** The extra's own name, from a label a variant line ends with its detail. */
+function nameOf(line: LocalizableQuoteLine): string {
+  const suffix = line.detail ? ` (${line.detail})` : "";
+  return suffix && line.label.endsWith(suffix) ? line.label.slice(0, -suffix.length) : line.label;
+}
 
 /**
  * A priced quote's line labels in the reader's language.
@@ -41,18 +62,17 @@ export async function localizeQuoteLines<T extends LocalizableQuoteLine>(
   const byId = await labelsByExtraCode(
     db,
     listingId,
-    extras.map((line) => line.code),
+    [...new Set(extras.map((line) => baseCode(line.code)))],
     locale,
   );
-  const byName = await labelsByName(
-    db,
-    extras.map((line) => line.label),
-    locale,
-  );
+  const byName = await labelsByName(db, extras.map(nameOf), locale);
 
   return lines.map((line) => {
-    const translated = byId.get(line.code) ?? byName.get(normalizedName(line.label));
-    return translated === undefined ? line : { ...line, label: translated };
+    if (line.kind !== "extra" && line.kind !== "fee") return line;
+    const translated = byId.get(baseCode(line.code)) ?? byName.get(normalizedName(nameOf(line)));
+    if (translated === undefined) return line;
+    /* The variant is the operator's own words and has no translation; it goes back on as is. */
+    return { ...line, label: line.detail ? `${translated} (${line.detail})` : translated };
   });
 }
 

@@ -42,6 +42,12 @@ export const persistedQuoteSchema = providerQuoteSchema.extend({
    * the quote so the page that offered them can show them still ticked.
    */
   requestedExtras: z.array(z.string()),
+  /**
+   * The extra codes this quote was asked to price. Mostly what its optional lines show, but not
+   * only: a crew variant the customer picked travels here too, and its line looks the same as
+   * one the adapter chose on its own, so this is how the sidebar tells a pick from a default.
+   */
+  extras: z.array(z.string()),
   /** The total split across the party, for the "~€3,500 for person" line. */
   perPerson: moneySchema.nullable(),
   paymentSchedule: z.array(quotePaymentScheduleEntrySchema),

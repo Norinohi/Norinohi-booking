@@ -15,6 +15,7 @@ import {
 import { booking } from "@yacht-charter/db/schema/booking";
 import { discount } from "@yacht-charter/db/schema/discount";
 import { crewTypeSchema, providerQuoteSchema } from "@yacht-charter/providers";
+import { baseExtraCode } from "@yacht-charter/providers/shared/extra-code";
 import { thrownFields } from "@yacht-charter/providers/shared/log-fields";
 import { log, parseError } from "evlog";
 import type {
@@ -72,6 +73,8 @@ export type PersistedQuote = ProviderQuote & {
   quoteId: string;
   /** Asked of the base rather than bought here; priced off the catalogue. See the quote schema. */
   requestedExtras: string[];
+  /** The codes this quote was asked to price, crew variant picks among them. */
+  extras: string[];
   /** The trip split across the party; null when the guest count is unusable. */
   perPerson: { amountMinor: number; currency: string } | null;
   /** Derived instalments, in the order the customer meets them. */
@@ -638,6 +641,8 @@ async function heldQuote(
       payWhen: line.payWhen,
       kind: line.kind,
       group: line.group,
+      ...(line.detail === undefined ? null : { detail: line.detail }),
+      ...(line.note === undefined ? null : { note: line.note }),
     })),
     total: money(row.totalMinor),
     deposit: money(row.depositMinor),
@@ -665,6 +670,7 @@ async function heldQuote(
     ...priced,
     quoteId: row.id,
     requestedExtras: row.requestedExtras,
+    extras: row.extras,
     perPerson: toPerPerson(row.totalMinor, row.guests, currency),
     paymentSchedule: buildPaymentSchedulePreview({
       lines: row.lines,
@@ -750,7 +756,8 @@ async function assertSelectableExtras(
   if (extras.length === 0) return;
 
   const selectable = await listSelectableExtraCodes(db, listingId, listingOfferId);
-  const unsold = [...new Set(extras)].filter((code) => !selectable.has(code));
+  /* The catalogue lists the extra once; a variant code is sold if its extra is. */
+  const unsold = [...new Set(extras)].filter((code) => !selectable.has(baseExtraCode(code)));
   if (unsold.length === 0) return;
 
   throw new BadRequestError({
@@ -1066,6 +1073,8 @@ async function persistPricedQuote(
       kind: line.kind,
     };
     if (line.group) mapped.group = line.group;
+    if (line.detail !== undefined) mapped.detail = line.detail;
+    if (line.note !== undefined) mapped.note = line.note;
     return mapped;
   });
 
@@ -1150,6 +1159,7 @@ async function persistPricedQuote(
     ...priced,
     quoteId,
     requestedExtras: options.requestedExtras,
+    extras: options.extras,
     crewType,
     lines: lines.map((line) => {
       const mapped: PersistedQuote["lines"][number] = {
@@ -1160,6 +1170,8 @@ async function persistPricedQuote(
         kind: line.kind,
       };
       if (line.group) mapped.group = line.group;
+      if (line.detail !== undefined) mapped.detail = line.detail;
+      if (line.note !== undefined) mapped.note = line.note;
       return mapped;
     }),
     total: { amountMinor: total, currency },

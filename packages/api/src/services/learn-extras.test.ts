@@ -68,6 +68,19 @@ describe("learnExtrasFromQuote", () => {
     expect(inserted[0]?.[0]?.learnedAt).toBeInstanceOf(Date);
   });
 
+  /* One route of a transfer sold as several is not what the transfer costs. */
+  it("does not learn one variant's price as the extra's", async () => {
+    const { db, inserted } = fakeDb([]);
+
+    const learned = await learnExtrasFromQuote(db, {
+      ...input,
+      lines: [line({ code: "service:100511@66279570", detail: "taxi 1 - 3 pax" })],
+    });
+
+    expect(learned).toBe(0);
+    expect(inserted).toEqual([]);
+  });
+
   /* A published row states a list price with the seasons and bases it applies to; a quote
      knows one charter, so it must not overwrite one. */
   it("leaves a code the vendor already publishes alone", async () => {
