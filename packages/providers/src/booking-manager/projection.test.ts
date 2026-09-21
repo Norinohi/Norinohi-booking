@@ -166,6 +166,37 @@ describe("product extras", () => {
     expect(listing?.extras[0]?.priceMinor).toBe(4_000);
   });
 
+  it("takes nothing from a product the listing does not sell", () => {
+    const listing = listingOf([
+      {
+        name: "Bareboat",
+        isDefaultProduct: true,
+        extras: [{ id: 1, name: "Final cleaning", obligatory: true, price: 150 }],
+      },
+      {
+        name: "Flotilla",
+        isDefaultProduct: false,
+        extras: [{ id: 2, name: "FL Flotilla package", obligatory: true, price: 800 }],
+      },
+      {
+        name: "Crewed",
+        isDefaultProduct: false,
+        extras: [{ id: 3, name: "Skipper", obligatory: true, price: 1_400, unit: "per_week" }],
+      },
+    ]);
+
+    expect(listing?.extras.map((extra) => extra.externalId)).toEqual(["1"]);
+  });
+
+  it("reads the first product when the payload flags none as default", () => {
+    const listing = listingOf([
+      { name: "Bareboat", extras: [{ id: 1, name: "Bedding", price: 40 }] },
+      { name: "Crewed", extras: [{ id: 2, name: "Skipper", obligatory: true, price: 900 }] },
+    ]);
+
+    expect(listing?.extras.map((extra) => extra.externalId)).toEqual(["1"]);
+  });
+
   it("drops an extra with no id or no name rather than publishing it unnamed", () => {
     const listing = listingOf([
       {

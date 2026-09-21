@@ -29,6 +29,7 @@ import {
   restCompanySchema,
   restCountrySchema,
   restEquipmentSchema,
+  restProductSchema,
   restSailingAreaSchema,
   restShipyardSchema,
   restYachtSchema,
@@ -159,6 +160,7 @@ export function projectBookingManagerCatalogue(
 type RestBase = z.infer<typeof restBaseSchema>;
 type RestCountry = z.infer<typeof restCountrySchema>;
 type RestYacht = z.infer<typeof restYachtSchema>;
+type RestProduct = z.infer<typeof restProductSchema>;
 
 /**
  * Booking Manager's geography is not our geography.
@@ -671,15 +673,6 @@ function countryCodeOf(country: RestCountry): string {
 }
 
 /**
- * The priced extras behind the listing's two paid sections. Unlike NauSYS these
- * name themselves, so no reference list has to resolve them.
- *
- * The vendor hangs extras off products rather than off the yacht, and the same
- * extra is normally repeated by every product that sells it. The default
- * product's price is the published one, so its entries are taken first and later
- * repeats of the same id are ignored.
- */
-/**
  * The vendor's whole-number percentage as the rate the rest of the codebase carries: 40 -> 0.4.
  *
  * Zero and absent are the same answer here -- a fee of nothing is money, not a share -- so both
@@ -690,59 +683,73 @@ function percentageRateOf(percentage: number | null | undefined): number | undef
   return percentage / 100;
 }
 
+/**
+ * The priced extras behind the listing's two paid sections. Unlike NauSYS these
+ * name themselves, so no reference list has to resolve them.
+ *
+ * Taken from the product the listing sells and no other. Every product carries its own
+ * extras ("each product has its own elaboration of applicable extras"), and `/offers`,
+ * `/prices` and the reservation all go to the default product when none is named, which
+ * nothing here does. Merging every product's list put a Flotilla fleet's 800 EUR
+ * obligatory package on the bareboat card of about 165 listings, and a Crewed product's
+ * obligatory skipper turned a bareboat into a skippered one.
+ */
 function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] {
-  const products = [...(yacht.products ?? [])].sort(
-    (left, right) =>
-      Number(right.isDefaultProduct === true) - Number(left.isDefaultProduct === true),
-  );
-
   const chosen = new Map<string, CanonicalExtra>();
-  for (const product of products) {
-    for (const item of product.extras ?? []) {
-      const externalId = idOf(item.id);
-      const label = text(item.name);
-      // An extra with no id cannot be kept stable across syncs, and one with no
-      // name cannot be shown to a buyer.
-      if (externalId === null || label === undefined) continue;
-      if (chosen.has(externalId)) continue;
+  for (const item of soldProductOf(yacht)?.extras ?? []) {
+    const externalId = idOf(item.id);
+    const label = text(item.name);
+    // An extra with no id cannot be kept stable across syncs, and one with no
+    // name cannot be shown to a buyer.
+    if (externalId === null || label === undefined) continue;
+    if (chosen.has(externalId)) continue;
 
-      const priceCurrency = currencyOf(item.currency, fallbackCurrency);
-      /*
-       * A fee the operator states as a share of the charter rather than as money. The vendor
-       * populates `percentage` and leaves `price` at zero -- the quote path has always read it
-       * (`percentageOfCharter`), and the catalogue never did, so 335 obligatory fees across 278
-       * listings reached the card as free. An APA at 40% is the common one, and a crewed yacht
-       * advertised 56,500 EUR against a quote of 76,501.
-       */
-      const rate = percentageRateOf(item.percentage);
-      const priceMinor = rate === undefined ? minorOf(item.price, priceCurrency) : 0;
-      if (priceMinor === undefined) continue;
+    const priceCurrency = currencyOf(item.currency, fallbackCurrency);
+    /*
+     * A fee the operator states as a share of the charter rather than as money. The vendor
+     * populates `percentage` and leaves `price` at zero -- the quote path has always read it
+     * (`percentageOfCharter`), and the catalogue never did, so 335 obligatory fees across 278
+     * listings reached the card as free. An APA at 40% is the common one, and a crewed yacht
+     * advertised 56,500 EUR against a quote of 76,501.
+     */
+    const rate = percentageRateOf(item.percentage);
+    const priceMinor = rate === undefined ? minorOf(item.price, priceCurrency) : 0;
+    if (priceMinor === undefined) continue;
 
-      chosen.set(externalId, {
-        // The vendor numbers extras in one space of its own, with no separate
-        // equipment pricing list to tell apart.
-        kind: "service",
-        externalId,
-        name: label,
-        obligatory: item.obligatory === true,
-        ...(rate === undefined ? null : { percentage: rate }),
-        priceMinor,
-        priceCurrency,
-        priceMeasure: text(item.unit),
-        calculationType: undefined,
-        // `false` here is a real statement, so it is kept apart from the vendor saying nothing.
-        payableInBase: item.payableInBase ?? undefined,
-        seasonStart: sailingDateOf(item.sailingDateFrom),
-        seasonEnd: sailingDateOf(item.sailingDateTo),
-        validNightsFrom: positiveInt(item.validDaysFrom),
-        validNightsTo: positiveInt(item.validDaysTo),
-        // `validForBases` pairs a start base with an end base, which only a one-way fee needs.
-        oneWayOnly: (item.validForBases ?? []).length > 0 || undefined,
-        onRequestOnly: false,
-      });
-    }
+    chosen.set(externalId, {
+      // The vendor numbers extras in one space of its own, with no separate
+      // equipment pricing list to tell apart.
+      kind: "service",
+      externalId,
+      name: label,
+      obligatory: item.obligatory === true,
+      ...(rate === undefined ? null : { percentage: rate }),
+      priceMinor,
+      priceCurrency,
+      priceMeasure: text(item.unit),
+      calculationType: undefined,
+      // `false` here is a real statement, so it is kept apart from the vendor saying nothing.
+      payableInBase: item.payableInBase ?? undefined,
+      seasonStart: sailingDateOf(item.sailingDateFrom),
+      seasonEnd: sailingDateOf(item.sailingDateTo),
+      validNightsFrom: positiveInt(item.validDaysFrom),
+      validNightsTo: positiveInt(item.validDaysTo),
+      // `validForBases` pairs a start base with an end base, which only a one-way fee needs.
+      oneWayOnly: (item.validForBases ?? []).length > 0 || undefined,
+      onRequestOnly: false,
+    });
   }
   return [...chosen.values()];
+}
+
+/**
+ * The product `/offers` prices when it is not given one. Every recorded yacht flags exactly
+ * one (11,218 of 11,218 account-wide, and all 29 on company 225), so the fallback to the
+ * first is only for a payload that flags none, where the vendor's own order is all there is.
+ */
+function soldProductOf(yacht: RestYacht): RestProduct | undefined {
+  const products = yacht.products ?? [];
+  return products.find((product) => product.isDefaultProduct === true) ?? products[0];
 }
 
 /**
