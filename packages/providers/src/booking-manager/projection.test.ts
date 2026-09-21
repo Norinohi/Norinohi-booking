@@ -785,3 +785,147 @@ describe("handover times", () => {
     });
   });
 });
+
+/*
+ * Five company 225 yachts as the vendor sent them on 2026-09-21: Virgin Mary and Artic fun sold
+ * Crewed by default, Giulia Bareboat by default beside a Crewed product, Queen II and Whisper
+ * bareboat with their rigs and engines stated.
+ */
+describe("live company 225 yachts: crew, rig and pictures", () => {
+  const payloads = parseExactJson(
+    readFileSync(new URL("fixtures/yachts-225-crew-and-rig.json", import.meta.url), "utf8"),
+  );
+  const yachtPayloads = Array.isArray(payloads) ? payloads : [];
+  const { listings } = projectBookingManagerCatalogue(
+    new Map([
+      [
+        "yacht" as const,
+        yachtPayloads.map((payload, index) => ({ externalId: String(index), payload })),
+      ],
+    ]),
+  );
+  const listingNamed = (name: string) => listings.find((listing) => listing.name === name);
+
+  it("sells a yacht whose default product is Crewed as full crew", () => {
+    expect(listingNamed("Virgin Mary - Crewed")?.crewType).toBe("full-crew");
+    expect(listingNamed("Artic fun")?.crewType).toBe("full-crew");
+  });
+
+  it("reads the default product, not a Crewed one the yacht also sells", () => {
+    expect(listingNamed("Giulia")?.crewType).toBe("bareboat");
+  });
+
+  it("names the skipper Queen II bills on every charter, and no optional one", () => {
+    const skippers = listings
+      .flatMap((listing) => listing.extras)
+      .filter((extra) => extra.name === "Skipper");
+
+    expect(skippers.filter((extra) => !extra.obligatory).length).toBeGreaterThan(0);
+    for (const extra of skippers) {
+      expect(extra.crewRole).toBe(extra.obligatory ? "skipper" : undefined);
+    }
+    expect(listingNamed("Queen II")?.extras).toContainEqual(
+      expect.objectContaining({ name: "Skipper", obligatory: true, crewRole: "skipper" }),
+    );
+  });
+});
+
+describe("crew type from the product the listing sells", () => {
+  const crewTypeOf = (product: JsonValue) =>
+    projectBookingManagerCatalogue(
+      new Map([
+        [
+          "yacht" as const,
+          [
+            {
+              externalId: "5001",
+              payload: {
+                id: 5001,
+                companyId: 42,
+                homeBaseId: 7,
+                currency: "EUR",
+                products: [product],
+              },
+            },
+          ],
+        ],
+      ]),
+    ).listings[0]?.crewType;
+
+  it("reads Skippered as a skipper aboard rather than a full crew", () => {
+    expect(crewTypeOf({ name: "Skippered", crewedByDefault: true, isDefaultProduct: true })).toBe(
+      "skipper",
+    );
+  });
+
+  it("reads every crewed product the vendor flags as full crew", () => {
+    for (const name of ["Crewed", "Powered", "AllInclusive", "DailyCharter"]) {
+      expect(crewTypeOf({ name, crewedByDefault: true, isDefaultProduct: true })).toBe("full-crew");
+    }
+  });
+
+  it("reads Bareboat and every Flotilla variant as bareboat", () => {
+    for (const name of ["Bareboat", "Flotilla", "Flotilla Lefkas"]) {
+      expect(crewTypeOf({ name, crewedByDefault: false, isDefaultProduct: true })).toBe("bareboat");
+    }
+  });
+
+  it("leaves a Cabin or Berth product unset rather than guessing its crew", () => {
+    expect(
+      crewTypeOf({ name: "Cabin", crewedByDefault: false, isDefaultProduct: true }),
+    ).toBeUndefined();
+    expect(
+      crewTypeOf({ name: "Berth", crewedByDefault: false, isDefaultProduct: true }),
+    ).toBeUndefined();
+  });
+
+  it("falls back to the name only where the vendor leaves the flag out", () => {
+    expect(crewTypeOf({ name: "Crewed", isDefaultProduct: true })).toBe("full-crew");
+    expect(crewTypeOf({ name: "Bareboat", isDefaultProduct: true })).toBe("bareboat");
+  });
+
+  it("names the role of a crew member the operator bills on every charter", () => {
+    const extras = (items: JsonValue[]) =>
+      projectBookingManagerCatalogue(
+        new Map([
+          [
+            "yacht" as const,
+            [
+              {
+                externalId: "5001",
+                payload: {
+                  id: 5001,
+                  companyId: 42,
+                  homeBaseId: 7,
+                  currency: "EUR",
+                  products: [{ name: "Bareboat", isDefaultProduct: true, extras: items }],
+                },
+              },
+            ],
+          ],
+        ]),
+      ).listings[0]?.extras ?? [];
+
+    const [obligatory, zero, statement, optional] = extras([
+      {
+        id: 1,
+        name: "Skipper fees (plus his/her food) - obligatory",
+        obligatory: true,
+        price: 210,
+      },
+      { id: 2, name: "Skipper - included", obligatory: true, price: 0 },
+      {
+        id: 3,
+        name: "REQUIRED LICENCE + 1 crew member with valid licence",
+        obligatory: true,
+        price: 10,
+      },
+      { id: 4, name: "Skipper", obligatory: false, price: 200 },
+    ]);
+
+    expect(obligatory?.crewRole).toBe("skipper");
+    expect(zero?.crewRole).toBeUndefined();
+    expect(statement?.crewRole).toBeUndefined();
+    expect(optional?.crewRole).toBeUndefined();
+  });
+});

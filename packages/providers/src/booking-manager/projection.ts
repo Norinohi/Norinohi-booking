@@ -3,6 +3,7 @@ import type { z } from "zod";
 import type { JsonField } from "../shared/json";
 import { parseBookingManagerDate } from "./dates";
 import { regionFor } from "./geography";
+import { crewRoleOf } from "../shared/crew-role";
 import { stripHtml } from "../shared/html-text";
 import { decimalStringToMinor } from "../shared/money";
 import { isPlaceholderBuilder } from "../shared/placeholder-builders";
@@ -23,6 +24,7 @@ import {
   type CanonicalCatalogue,
   type CatalogueProjectionContext,
   type CanonicalExtra,
+  type CrewType,
   type ProviderRecordSet,
 } from "../types";
 import {
@@ -478,6 +480,7 @@ function projectYacht(
       fuelCapacity: capacityOf(yacht.fuelCapacity),
       waterCapacity: capacityOf(yacht.waterCapacity),
     },
+    crewType: crewTypeOf(soldProductOf(yacht)),
     media: mediaOf(yacht),
     amenities: amenityIdsOf(yacht).filter((id) => context.knownEquipment.has(id)),
     extras: extrasOf(yacht, currency, context.sailingAreasByBase.get(baseId)),
@@ -765,6 +768,7 @@ function extrasOf(
       ...((item.includesDepositWaiver ?? item.includedDepositWaiver) === true
         ? { depositInsurance: true }
         : null),
+      ...obligatoryCrewRoleOf(item, label, priceMinor, rate),
       // Filed under the home base, which is where the card's charter starts and ends, so the
       // read model can test the base and route conditions above against it.
       externalBaseId: homeBaseId ?? undefined,
@@ -852,6 +856,48 @@ function quantityOf(
   if (limit != null && Number.isInteger(limit) && limit >= 0) quantity.quantityLimit = limit;
   if (item.quantityIsSelectable != null) quantity.quantitySelectable = item.quantityIsSelectable;
   return quantity;
+}
+
+/**
+ * How the listing is sold, read off the product it sells, which is also the product every
+ * `/offers` call prices when none is named.
+ *
+ * `crewedByDefault` is the vendor's own answer and is set on every product account-wide
+ * (Crewed 1,520 default products, Powered 81, AllInclusive 19, DailyCharter 11). Skippered (53)
+ * is crewed too, but only by the skipper the customer still sails with. Bareboat and every
+ * Flotilla variant are sailed by the customer. Cabin (154) and Berth are left unset: they sell
+ * a place aboard with whatever crew the operator names in its extras, and `crew_type` backs a
+ * search filter, so a guess would file the boat under a charter it does not offer.
+ */
+function crewTypeOf(product: RestProduct | undefined): CrewType | undefined {
+  if (product === undefined) return undefined;
+  const name = text(product.name)?.toLowerCase();
+  const crewed = product.crewedByDefault ?? (name === "crewed" || name === "skippered");
+
+  if (crewed) return name === "skippered" ? "skipper" : "full-crew";
+  if (name === "bareboat" || name?.startsWith("flotilla")) return "bareboat";
+  return undefined;
+}
+
+/**
+ * The crew role of an extra the operator bills whatever the customer picks, so the detail page
+ * stops asking a skippered charter's customer for a licence and the card files it as skippered.
+ *
+ * Only obligatory ones. An optional Booking Manager skipper is bought as a requested extra: the
+ * vendor's `/offers` prices no optional extra, and the Crew control would move it out of that
+ * list into a choice our quote does not charge. An obligatory one is already inside the offer's
+ * `obligatoryExtrasPrice`. A zero-priced line is a statement, not a fee ("6% to added on the
+ * invoice when the skipper is hired" on 42 hulls), so it names no role either.
+ */
+function obligatoryCrewRoleOf(
+  item: RestExtras,
+  label: string,
+  priceMinor: number,
+  rate: number | undefined,
+): Pick<CanonicalExtra, "crewRole"> {
+  if (item.obligatory !== true || (priceMinor <= 0 && rate === undefined)) return {};
+  const crewRole = crewRoleOf(label);
+  return crewRole === undefined ? {} : { crewRole };
 }
 
 /**
