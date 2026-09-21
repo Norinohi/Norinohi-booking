@@ -246,6 +246,28 @@ correct. The recorded response `{amount: "10.00", quantity: "10.00", totalPrice:
 "100.00"}` bills the customer 100.00. The connector uses `totalPrice` where the
 vendor sends it and `amount x quantity` where it does not.
 
+#### Writes are attempted once, and the party is on the reservation
+
+Every `booking/v6/*` call goes out once (`NON_IDEMPOTENT_ENDPOINTS` in `client.ts`): a timeout,
+5xx or UNKNOWN_ERROR may follow a write the vendor applied, and a retried `createBooking` with
+the rotated-away uuid had a fixed charter recorded as refused and refunded. `confirmBookingWithProvider`
+now answers a `TransientError` with `indeterminate`: the booking stays in CONFIRMING, the money
+is neither captured nor refunded, and the stale-confirming sweep and reconcile settle it.
+
+`createInfo` sends `numberOfGuests`; omitted, the vendor prices per-head extras on the
+reservation for the yacht's maximum. After `addExtras` the hold logs
+`nausys.hold_extras_drift` when the reservation bills extras at another figure than the quote.
+
+#### Reconcile reads all three reservation lists
+
+`reservations`, `options` and `stornos` take the same request, and a reservation lives in one
+of them by status: an operator cancellation moves to `stornos`, which nothing used to read.
+Reconcile now asks all three, by the reservation ids we hold open (the vendor then ignores the
+dates), and a cancellation outranks the others. Beyond status it reports `dates_changed`,
+`yacht_changed` and `price_changed` against the quote's dates and the yacht and price the
+adapter last recorded; nothing is applied to the customer's booking. The lists carry
+`paymentCurrency`, not `currency`.
+
 #### Waiting options, and what we deliberately do not do with them
 
 `yachtReservation/v6/waitingOptions` answers how many people the operator already has queued
