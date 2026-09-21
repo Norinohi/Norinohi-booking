@@ -19,7 +19,7 @@ import {
   bookingManagerQueueKey,
   resolveBookingManagerConfig,
 } from "./config";
-import { BM_SERVER_COUNT } from "./warmup";
+import { BM_WARMUP_CALLS } from "./warmup";
 
 const source: BookingManagerEnvSource = {
   BOOKING_MANAGER_BASE_URL: "https://www.booking-manager.com/api/v2",
@@ -95,7 +95,7 @@ describe("the account-wide call budget", () => {
 
   it("keeps the price-weeks pass and the cold-start warm-up inside the sweep's share", () => {
     expect(BM_MAX_PRICE_WEEKS_CONCURRENCY).toBeLessThanOrEqual(BM_MAX_SWEEP_CONCURRENCY);
-    expect(BM_SERVER_COUNT).toBeLessThanOrEqual(BM_MAX_SWEEP_CONCURRENCY);
+    expect(BM_WARMUP_CALLS).toBeLessThanOrEqual(BM_MAX_SWEEP_CONCURRENCY);
   });
 });
 
