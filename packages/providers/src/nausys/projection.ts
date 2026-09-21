@@ -27,6 +27,7 @@ import {
 import {
   restCharterBaseSchema,
   restCharterCompanySchema,
+  restSeasonSchema,
   restCountrySchema,
   restEquipmentCategorySchema,
   restEquipmentSchema,
@@ -87,6 +88,12 @@ export interface NausysProjectionOptions {
    * which agency it is offers the row rather than guessing.
    */
   agencyId?: string;
+  /**
+   * Today, ISO. Which season's price row a listing states depends on it: a yacht carries this
+   * year's and next year's rows side by side, and the higher season id used to win, so every
+   * charter this season was shown next season's fees. Omitted, the old order stands.
+   */
+  today?: string;
 }
 
 export function projectNausysCatalogue(
@@ -97,6 +104,15 @@ export function projectNausysCatalogue(
   const regions = parseAll(records, "region", restRegionSchema);
   const locations = parseAll(records, "location", restLocationSchema);
   const companies = parseAll(records, "company", restCharterCompanySchema);
+  const seasonDatesById = new Map(
+    parseAll(records, "season", restSeasonSchema).flatMap((item) => {
+      const from = nausysDayOrUndefined(item.from);
+      const to = nausysDayOrUndefined(item.to);
+      return from === undefined || to === undefined
+        ? []
+        : [[String(item.id), { from, to }] as const];
+    }),
+  );
   const bases = parseAll(records, "base", restCharterBaseSchema);
   const allBuilders = parseAll(records, "builder", restYachtBuilderSchema);
   const builders = allBuilders.filter((item) => !isPlaceholderBuilder(item.name));
@@ -192,6 +208,8 @@ export function projectNausysCatalogue(
         serviceNameById,
         depositInsuranceServiceIds,
         agencyId: options.agencyId,
+        seasonDatesById,
+        today: options.today,
         equipmentTranslationsById,
         serviceTranslationsById,
         priceMeasureById,
@@ -276,6 +294,9 @@ type RestYacht = z.infer<typeof restYachtSchema>;
 type RestYachtModel = z.infer<typeof restYachtModelSchema>;
 
 type ExtraNaming = {
+  /** Season dates by season id, and today, for choosing which season's row a listing states. */
+  seasonDatesById?: ReadonlyMap<string, { from: string; to: string }>;
+  today?: string | undefined;
   equipmentNameById: Map<string, string>;
   serviceNameById: Map<string, string>;
   /** Services that lower the deposit instead of adding something to the charter. */
@@ -693,10 +714,20 @@ function extrasOf(yacht: RestYacht, currency: string, context: ExtraNaming): Can
   );
   const relevant = atHomeBase.length > 0 ? atHomeBase : seasons;
 
-  type Candidate = { rank: ReturnType<typeof extraRank>; seasonId: number; extra: CanonicalExtra };
+  type Candidate = {
+    rank: ReturnType<typeof extraRank>;
+    season: ReturnType<typeof seasonRank>;
+    seasonId: number;
+    extra: CanonicalExtra;
+  };
   const beats = (left: Candidate, right: Candidate): boolean => {
     if (left.rank.atHomeBase !== right.rank.atHomeBase) {
       return left.rank.atHomeBase > right.rank.atHomeBase;
+    }
+    /* The season a charter booked today falls in, else the next one to open. */
+    if (left.season.tier !== right.season.tier) return left.season.tier > right.season.tier;
+    if (left.season.tier === 1 && left.season.from !== right.season.from) {
+      return left.season.from < right.season.from;
     }
     if (left.rank.endsAt !== right.rank.endsAt) return left.rank.endsAt > right.rank.endsAt;
     /*
@@ -713,7 +744,12 @@ function extrasOf(yacht: RestYacht, currency: string, context: ExtraNaming): Can
   const consider = (seasonId: number, extra: CanonicalExtra | null) => {
     if (extra === null) return;
     const key = `${extra.kind}:${extra.externalId}`;
-    const candidate: Candidate = { rank: extraRank(extra, homeBaseId), seasonId, extra };
+    const candidate: Candidate = {
+      rank: extraRank(extra, homeBaseId),
+      season: seasonRank(String(seasonId), context),
+      seasonId,
+      extra,
+    };
     const held = chosen.get(key);
     if (held === undefined || beats(candidate, held)) chosen.set(key, candidate);
   };
@@ -807,6 +843,27 @@ function nightsOf(days: number | undefined): number | undefined {
  * the season id breaks what is left. The conditions ride along on whichever row wins, so a
  * reader can still drop it for a charter it does not cover.
  */
+/**
+ * Where a season stands against today: 2 running, 1 still to come, 0 over or unknown. Without a
+ * date or the season's dates every row ties here, and the order below it decides as it did.
+ */
+interface SeasonRank {
+  tier: 0 | 1 | 2;
+  from: string;
+}
+
+function seasonRank(
+  seasonId: string,
+  context: Pick<ExtraNaming, "seasonDatesById" | "today">,
+): SeasonRank {
+  const dates = context.seasonDatesById?.get(seasonId);
+  const today = context.today;
+  const rank = (tier: SeasonRank["tier"], from: string): SeasonRank => ({ tier, from });
+  if (dates === undefined || today === undefined) return rank(0, "");
+  if (dates.from <= today && today <= dates.to) return rank(2, dates.from);
+  return rank(dates.from > today ? 1 : 0, dates.from);
+}
+
 function extraRank(extra: CanonicalExtra, homeBaseId: string | undefined) {
   const bases = extra.validForBaseIds ?? [];
   const atHomeBase = bases.length === 0 || (homeBaseId !== undefined && bases.includes(homeBaseId));

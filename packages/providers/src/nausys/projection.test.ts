@@ -1374,3 +1374,44 @@ describe("offline charter companies", () => {
     }
   });
 });
+
+/*
+ * The test company's yacht 479287 carries season 2026 (id 50952199) and 2027 (64125042) side by
+ * side. The higher season id won, so every 2026 charter was shown 2027's fees.
+ */
+describe("which season's price a listing states", () => {
+  const seasons = [
+    { id: 50952199, season: "2026", from: "01.01.2026", to: "31.12.2026" },
+    { id: 64125042, season: "2027", from: "01.01.2027", to: "31.12.2027" },
+  ];
+
+  function twoSeasons() {
+    const yacht = maria();
+    const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+    const cleaning = (price: string) => [
+      { serviceId: 52, price, currency: "EUR", obligatory: true },
+    ];
+    yacht.seasonSpecificData = [
+      { ...season, seasonId: 50952199, services: cleaning("125.00") },
+      { ...season, seasonId: 64125042, services: cleaning("150.00") },
+    ];
+    return yacht;
+  }
+
+  const cleaningOn = (today?: string) =>
+    projectNausysCatalogue(fixtureRecords([twoSeasons()], { season: seasons }), {
+      ...(today ? { today } : null),
+    }).listings[0]?.extras.find((extra) => extra.externalId === "52")?.priceMinor;
+
+  it("states the season running today", () => {
+    expect(cleaningOn("2026-09-22")).toBe(12_500);
+  });
+
+  it("states the next season once this one is over", () => {
+    expect(cleaningOn("2027-03-01")).toBe(15_000);
+  });
+
+  it("states the next to open when none is running", () => {
+    expect(cleaningOn("2025-11-01")).toBe(12_500);
+  });
+});

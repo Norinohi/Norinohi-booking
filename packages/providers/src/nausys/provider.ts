@@ -276,7 +276,10 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
   }
 
   projectCatalogue(records: ProviderRecordSet): CanonicalCatalogue {
-    return projectNausysCatalogue(records, { agencyId: this.config.agencyId });
+    return projectNausysCatalogue(records, {
+      agencyId: this.config.agencyId,
+      today: new Date().toISOString().slice(0, 10),
+    });
   }
 
   createAvailabilitySource(options: { resume?: JsonField }): AvailabilitySource {

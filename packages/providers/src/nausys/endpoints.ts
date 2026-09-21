@@ -169,6 +169,17 @@ export const restLocationSchema = looseJsonObject({
   lon: z.number().optional(),
 });
 
+/** A company's season: which dates its `seasonSpecificData` price rows apply to. */
+export const restSeasonSchema = looseJsonObject({
+  id: z.number().int(),
+  season: z.string().optional(),
+  from: nausysDate,
+  to: nausysDate,
+  charterCompanyId: z.number().int().optional(),
+  locationsId: z.array(z.number().int()).optional(),
+  defaultSeason: z.boolean().optional(),
+});
+
 export const restCharterCompanySchema = looseJsonObject({
   id: z.number().int(),
   name: z.string(),
