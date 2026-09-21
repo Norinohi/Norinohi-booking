@@ -1227,3 +1227,44 @@ describe("NauSYS free-yacht rows for one hull", () => {
     expect(lineByCode(priced, "base-charter").amount.amountMinor).not.toBe(999_900);
   });
 });
+
+/*
+ * NauSYS fixes a one-way through the yacht's own periods and takes no base on the reservation,
+ * so the quote states the route rather than offering one. A charter priced from a one-way row
+ * used to say nothing about where it ends.
+ */
+describe("the route a NauSYS charter runs", () => {
+  async function routeFor(from: number, to: number) {
+    const body = fixtureResponse();
+    body.freeYachts = [{ ...firstYacht(body), locationFromId: from, locationToId: to }];
+    const { service, transport } = build({
+      loadLocationNames: async () =>
+        new Map([
+          ["57", "ACI Marina Split"],
+          ["61", "Marina Kaštela"],
+        ]),
+    });
+    transport.respondWith("freeYachts", body);
+    return service.getNausysQuote(request);
+  }
+
+  it("names both ends of a one-way", async () => {
+    const priced = await routeFor(57, 61);
+
+    expect(priced.route).toEqual({ startBaseId: "57", endBaseId: "61" });
+    expect(priced.routeOptions).toEqual([
+      expect.objectContaining({
+        startBaseName: "ACI Marina Split",
+        endBaseName: "Marina Kaštela",
+        isOneWay: true,
+        total: priced.total,
+      }),
+    ]);
+  });
+
+  it("marks a round trip as one", async () => {
+    const priced = await routeFor(57, 57);
+
+    expect(priced.routeOptions).toEqual([expect.objectContaining({ isOneWay: false })]);
+  });
+});

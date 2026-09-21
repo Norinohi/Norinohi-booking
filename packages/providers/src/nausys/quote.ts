@@ -165,6 +165,12 @@ export interface NausysQuoteServiceOptions {
    * priced at nothing, which is what the adapter did before.
    */
   loadCrewRoles?: (listingId: string) => Promise<CrewRoleService[]>;
+  /**
+   * Marina names by NauSYS location id, for the route a charter runs. `freeYachts` names the
+   * start and end only by location id, and a one-way the operator fixed is something the
+   * customer has to be told in words.
+   */
+  loadLocationNames?: (locationIds: readonly string[]) => Promise<ReadonlyMap<string, string>>;
   now?: () => number;
 }
 
@@ -284,6 +290,11 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
 
     const crewRoles = (await options.loadCrewRoles?.(parsed.listingId)) ?? [];
     const extraLabels = await options.loadExtraLabels?.(parsed.listingId);
+    const locationIds = [yacht.locationFromId, yacht.locationToId].flatMap((id) =>
+      id === undefined ? [] : [String(id)],
+    );
+    const locationNames =
+      locationIds.length > 0 ? await options.loadLocationNames?.(locationIds) : undefined;
 
     return {
       yacht,
@@ -295,6 +306,7 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
       extras: parsed.extras,
       crewServiceIds: crewServiceIdsFor(crewRoles, parsed.crewType),
       crewRoleServiceIds: crewRoles.map((item) => item.externalId),
+      locationNames,
       securityDeposit,
       expiresAt: new Date(now() + quoteTtlMs).toISOString(),
       /* The catalogue answers for extras; a discount has no catalogue row, and an
@@ -366,6 +378,8 @@ export interface FreeYachtMapping {
   securityDeposit?: Money | undefined;
   expiresAt: string;
   labelFor?: ((kind: NausysLabelKind, externalId: string) => string | undefined) | undefined;
+  /** Marina names by location id; see `loadLocationNames`. */
+  locationNames?: ReadonlyMap<string, string> | undefined;
 }
 
 /** Pure `RestFreeYacht → ProviderQuote`. No I/O, no clock, no vendor field beyond this file. */
@@ -469,7 +483,44 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
     expiresAt: input.expiresAt,
     checkInTime: wallClockTime(yacht.checkIn),
     checkOutTime: wallClockTime(yacht.checkOut),
+    ...routeOf(yacht, input.locationNames, totalMinor, currency),
   });
+}
+
+/**
+ * Where the charter starts and ends, in the operator's locations.
+ *
+ * One entry, never a choice: NauSYS fixes a one-way through the yacht's `oneWayPeriods`, and
+ * `createInfo` takes no base or location, so there is nothing a customer could pick that the
+ * reservation would honour. What they must be told is that it ends somewhere else, which a
+ * charter priced from a one-way row used to leave unsaid. Ids are NauSYS location ids, a space
+ * the booking never sends back.
+ */
+function routeOf(
+  yacht: RestFreeYacht,
+  names: ReadonlyMap<string, string> | undefined,
+  totalMinor: number,
+  currency: string,
+): Pick<ProviderQuote, "route" | "routeOptions"> | null {
+  if (yacht.locationFromId === undefined || yacht.locationToId === undefined) return null;
+  const startBaseId = String(yacht.locationFromId);
+  const endBaseId = String(yacht.locationToId);
+  const startBaseName = names?.get(startBaseId);
+  const endBaseName = names?.get(endBaseId);
+
+  return {
+    route: { startBaseId, endBaseId },
+    routeOptions: [
+      {
+        startBaseId,
+        endBaseId,
+        ...(startBaseName === undefined ? null : { startBaseName }),
+        ...(endBaseName === undefined ? null : { endBaseName }),
+        isOneWay: startBaseId !== endBaseId,
+        total: { amountMinor: totalMinor, currency },
+      },
+    ],
+  };
 }
 
 /**

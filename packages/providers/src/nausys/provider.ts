@@ -46,7 +46,11 @@ import {
   type NausysHotWindow,
 } from "./occupancy";
 import { listingSource, providerExtraCatalogue } from "@yacht-charter/db/schema/listing-source";
-import { provider as providerTable, providerRecord } from "@yacht-charter/db/schema/provider";
+import {
+  provider as providerTable,
+  providerRawPayload,
+  providerRecord,
+} from "@yacht-charter/db/schema/provider";
 import {
   listAdvertisedCharterPeriods,
   listUnadvertisedYachtIds,
@@ -63,7 +67,7 @@ import {
 import { DEFAULT_RATE_LIMIT_PAUSE, priceWeeksSource } from "../shared/price-weeks";
 import { streamNausysConfirmedOffers } from "./confirmed-offers";
 import { DEFAULT_HOT_WINDOW_COUNT, sweepWindows, upcomingCharterWeeks } from "./sweep-windows";
-import { and, eq, isNotNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { log, parseError } from "evlog";
 import { thrownFields } from "../shared/log-fields";
 
@@ -149,6 +153,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
       config: this.config,
       loadCrewRoles: (listingId) => loadNausysCrewRoles(this.db, listingId),
       loadExtraLabels: (listingId) => loadNausysExtraLabels(this.db, listingId),
+      loadLocationNames: (ids) => loadNausysLocationNames(this.db, ids),
       loadDepositInsuranceCodes: (listingId) => loadNausysDepositInsuranceCodes(this.db, listingId),
     });
 
@@ -572,6 +577,30 @@ async function loadNausysExtraLabels(
  * the codes the customer ticked and nothing else about them, and buying one of these lowers
  * the deposit instead of adding to the price.
  */
+/** NauSYS location names by the vendor's own id, off the stored catalogue payloads. */
+async function loadNausysLocationNames(
+  db: Database,
+  locationIds: readonly string[],
+): Promise<ReadonlyMap<string, string>> {
+  const rows = await db
+    .select({
+      externalId: providerRecord.externalId,
+      name: sql<string | null>`${providerRawPayload.payload}->'name'->>'textEN'`,
+    })
+    .from(providerRecord)
+    .innerJoin(providerTable, eq(providerTable.id, providerRecord.providerId))
+    .innerJoin(providerRawPayload, eq(providerRawPayload.id, providerRecord.rawPayloadId))
+    .where(
+      and(
+        eq(providerTable.code, "nausys"),
+        eq(providerRecord.resourceType, "location"),
+        inArray(providerRecord.externalId, [...locationIds]),
+      ),
+    );
+
+  return new Map(rows.flatMap((row) => (row.name ? [[row.externalId, row.name] as const] : [])));
+}
+
 /** The listing's extras the operator sells only on a fixed reservation, by canonical code. */
 async function loadNausysOnRequestCodes(
   db: Database,
