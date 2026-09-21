@@ -8,6 +8,7 @@ vi.hoisted(() => {
   process.env.SKIP_ENV_VALIDATION = "1";
 });
 
+import { AuthError, TransientError } from "../shared/errors";
 import { parseExactJson } from "../shared/exact-json";
 import type { QueryValue } from "../shared/http-client";
 import type { CatalogueSyncEvent } from "../sync/runner";
@@ -311,7 +312,9 @@ describe("equipment names in the site's languages", () => {
         get: (endpoint: string, _schema: z.ZodType<unknown>, query: CatalogueQuery = {}) => {
           if (endpoint !== bookingManagerEndpoints.equipment) return Promise.resolve([]);
           languages.push(query.language);
-          if (query.language === "fr") return Promise.reject(new Error("vendor 500"));
+          if (query.language === "fr") {
+            return Promise.reject(new TransientError("vendor 500", { endpoint }));
+          }
           return Promise.resolve(query.language === "de" ? german : english);
         },
       },
@@ -335,6 +338,27 @@ describe("equipment names in the site's languages", () => {
         action: "booking_manager.catalogue.equipment_language_failed",
         language: "fr",
       }),
+    );
+    expect(equipment.find((item) => item.externalId === "4")?.payload).not.toHaveProperty(
+      "translations.fr",
+    );
+  });
+
+  it("stops the run when a language fails on the credential", async () => {
+    vi.spyOn(log, "warn").mockImplementation(() => undefined);
+    const rejected = new AuthError("bad token");
+    const client = Object.assign(
+      fakeClient([], () => Promise.resolve([])),
+      {
+        get: (endpoint: string, _schema: z.ZodType<unknown>, query: CatalogueQuery = {}) => {
+          if (endpoint !== bookingManagerEndpoints.equipment) return Promise.resolve([]);
+          return query.language === "de" ? Promise.reject(rejected) : Promise.resolve(english);
+        },
+      },
+    );
+
+    await expect(collect(syncBookingManagerCatalogue(client, { skipWarmup: true }))).rejects.toBe(
+      rejected,
     );
   });
 });
