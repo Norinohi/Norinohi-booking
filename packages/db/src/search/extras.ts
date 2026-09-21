@@ -255,6 +255,7 @@ export function pricedItem(
     percentage?: string | null;
     payableInBase?: boolean | null;
     oneWayOnly?: boolean | null;
+    note?: string | null;
   },
   fallbackCurrency: string | null,
 ): ListingPricedItem {
@@ -273,6 +274,7 @@ export function pricedItem(
       item.percentage === null || item.percentage === undefined ? null : Number(item.percentage),
     payableInBase: item.payableInBase ?? null,
     oneWayOnly: item.oneWayOnly ?? false,
+    note: item.note ?? null,
     pricingType: pricingTypeOf(item.calculationType),
   };
 }

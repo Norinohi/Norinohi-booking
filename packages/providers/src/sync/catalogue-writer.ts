@@ -1436,6 +1436,7 @@ async function writeListingChildren(
         validForBaseIds: extra.validForBaseIds ?? null,
         minimumPriceMinor: extra.minimumPriceMinor ?? null,
         onRequestOnly: extra.onRequestOnly,
+        note: extra.note ?? null,
         depositInsurance: extra.depositInsurance ?? false,
         externalSeasonId: extra.externalSeasonId ?? null,
         externalBaseId: extra.externalBaseId ?? null,

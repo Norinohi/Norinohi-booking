@@ -252,6 +252,7 @@ export async function getListingDetailByIdOrSlug(
         percentage: string | null;
         payableInBase: boolean | null;
         oneWayOnly: boolean;
+        note: string | null;
       }>(sql`
       select
         extra.source,
@@ -271,7 +272,8 @@ export async function getListingDetailByIdOrSlug(
         extra.calculation_type as "calculationType",
         extra.percentage,
         extra.payable_in_base as "payableInBase",
-        extra.one_way_only as "oneWayOnly"
+        extra.one_way_only as "oneWayOnly",
+        extra.note
       from provider_extra_catalogue extra
       left join provider_extra_translation translation
         on translation.source = extra.source
@@ -435,6 +437,7 @@ export async function getListingDetailByIdOrSlug(
     percentage: item.percentage,
     payableInBase: item.payableInBase,
     oneWayOnly: item.oneWayOnly,
+    note: item.note,
     selectable: isSelectableExtra(item.source, item.kind),
   }));
   const mandatoryExtras = foldFeeVariants(

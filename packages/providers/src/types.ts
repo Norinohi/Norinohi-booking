@@ -779,6 +779,8 @@ export const canonicalExtraSchema = z.object({
   percentage: z.number().positive().optional(),
   /** What the rate applies to, in the vendor's own words: PRICELIST_PRICE, CLIENT_PRICE, ... */
   percentageBasis: z.string().optional(),
+  /** The operator's own terms for the extra, where it wrote any. Fine print, never priced. */
+  note: z.string().optional(),
   /**
    * Whether the operator collects this at the base rather than in the prepayment. Left unset
    * where the provider says nothing, which is not the same as false: claiming a fee is due on

@@ -69,7 +69,7 @@ export default function MandatoryExtrasSection() {
                       : tExtras(payableInBase ? "payAtCheckIn" : "dueWithPrepayment")}
                   </p>
                 )}
-                <ExtraNote note={offeredNote.get(item.code)} />
+                <ExtraNote note={offeredNote.get(item.code) ?? item.note} />
               </div>
               {/* The operator's own measure, where it gave one: a per-person extra quoted
                   as "per booking" understates what the charter will be billed. */}

@@ -9,6 +9,7 @@ import { decimalStringToMinor } from "../shared/money";
 import { isPlaceholderBuilder } from "../shared/placeholder-builders";
 import { mergeYachtTitle } from "../shared/yacht-title";
 import type { JsonField, JsonObject } from "../shared/json";
+import { internationalText } from "./extras";
 import {
   currencyOf,
   intOf,
@@ -843,6 +844,12 @@ function nightsOf(days: number | undefined): number | undefined {
  * the season id breaks what is left. The conditions ride along on whichever row wins, so a
  * reader can still drop it for a charter it does not cover.
  */
+/** The operator's text as a note, where it wrote one; see `CanonicalExtra.note`. */
+function noteOf(text: Parameters<typeof internationalText>[0]) {
+  const note = internationalText(text);
+  return note === null ? null : { note };
+}
+
 /**
  * Where a season stands against today: 2 running, 1 still to come, 0 over or unknown. Without a
  * date or the season's dates every row ties here, and the order below it decides as it did.
@@ -907,6 +914,7 @@ function serviceExtraOf(
     calculationType: text(item.calculationType),
     payableInBase: payableInBaseOf(item.calculationType),
     onRequestOnly: item.onRequestOnly === true,
+    ...noteOf(item.description),
     ...(context.depositInsuranceServiceIds.has(externalId) ? { depositInsurance: true } : null),
     ...conditionsOf(item, priceCurrency),
     ...scope,
@@ -956,6 +964,7 @@ function equipmentExtraOf(
     calculationType: text(item.calculationType),
     payableInBase: payableInBaseOf(item.calculationType),
     onRequestOnly: false,
+    ...noteOf(item.condition),
     ...conditionsOf(item, priceCurrency),
     ...scope,
   };

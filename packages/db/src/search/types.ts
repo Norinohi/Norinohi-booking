@@ -355,6 +355,8 @@ export type ListingPricedItem = {
    * "per booking" told the customer €10 for a Tour the quote then charged €100 for.
    */
   priceMeasure: string | null;
+  /** The operator's own terms for the extra, from the catalogue; null where it wrote none. */
+  note: string | null;
   /**
    * Whether the charter base collects this on arrival, or null where the provider never said.
    *

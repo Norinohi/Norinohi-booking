@@ -1415,3 +1415,41 @@ describe("which season's price a listing states", () => {
     expect(cleaningOn("2025-11-01")).toBe(12_500);
   });
 });
+
+/*
+ * The catalogue's own terms: a service's `description`, an equipment row's `condition`. For
+ * additional equipment, which never reaches the offer, they are the only terms there are.
+ */
+describe("the operator's terms on a catalogue extra", () => {
+  it("keeps a service's description and an equipment row's condition as its note", () => {
+    const yacht = maria();
+    const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+    yacht.seasonSpecificData = [
+      {
+        ...season,
+        services: [
+          {
+            serviceId: 52,
+            price: "150.00",
+            currency: "EUR",
+            obligatory: true,
+            description: { textEN: "+ 200 EUR refundable" },
+          },
+        ],
+        additionalYachtEquipment: [
+          {
+            equipmentId: 17,
+            amount: "100.00",
+            currency: "EUR",
+            condition: { textEN: "one set per cabin" },
+          },
+        ],
+      },
+    ];
+
+    const extras = listingOf(yacht)?.extras ?? [];
+
+    expect(extras.find((extra) => extra.externalId === "52")?.note).toBe("+ 200 EUR refundable");
+    expect(extras.find((extra) => extra.externalId === "17")?.note).toBe("one set per cabin");
+  });
+});

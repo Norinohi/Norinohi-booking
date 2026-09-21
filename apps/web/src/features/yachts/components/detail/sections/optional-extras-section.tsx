@@ -205,7 +205,7 @@ function ExtraRow({
         {caption === null ? null : (
           <p className="text-xs font-semibold text-natural-300">{caption}</p>
         )}
-        <ExtraNote note={offered?.note} />
+        <ExtraNote note={offered?.note ?? item.note} />
       </div>
       {repricing ? (
         <Skeleton className="h-5.5 w-24 shrink-0" />

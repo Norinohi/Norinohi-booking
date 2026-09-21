@@ -77,7 +77,7 @@ function ExtraRow({
         {caption === null ? null : (
           <span className="text-xs leading-[1.3] font-semibold text-natural-300">{caption}</span>
         )}
-        <ExtraNote note={offered?.note} />
+        <ExtraNote note={offered?.note ?? item.note} />
       </span>
       <span className="shrink-0 text-base leading-[1.4] font-bold text-foreground">
         {kind === "percentage" && item.percentage !== null

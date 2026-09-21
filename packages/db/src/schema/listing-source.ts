@@ -142,6 +142,12 @@ export const providerExtraCatalogue = pgTable(
     minimumPriceMinor: integer("minimum_price_minor"),
     onRequestOnly: boolean("on_request_only").default(false).notNull(),
     /**
+     * The operator's own terms for this extra, in the catalogue: a service's `description`, an
+     * equipment row's `condition` ("+ 200 EUR refundable deposit"). The only place additional
+     * equipment states them, since it never reaches the offer.
+     */
+    note: text("note"),
+    /**
      * Buying this lowers the security deposit rather than adding anything to the charter, so
      * the quote answers with the operator's reduced figure instead of the ordinary one.
      */
