@@ -796,6 +796,24 @@ describe("projectNausysCatalogue", () => {
       expect(extras.filter((extra) => extra.kind === "service")).toEqual([]);
     });
 
+    /* Yacht 9155510 lists its damage waiver as a fee and again as an add-on, in one season. */
+    it("states a service listed both ways as the obligatory fee", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      const optional = { serviceId: 52, price: "350.00", currency: "EUR", obligatory: false };
+      const fee = { serviceId: 52, price: "420.00", currency: "EUR", obligatory: true };
+
+      for (const services of [
+        [optional, fee],
+        [fee, optional],
+      ]) {
+        yacht.seasonSpecificData = [{ ...season, services }];
+        expect(listingOf(yacht)?.extras.filter((extra) => extra.externalId === "52")).toEqual([
+          expect.objectContaining({ obligatory: true, priceMinor: 42_000 }),
+        ]);
+      }
+    });
+
     it("drops an extra the vendor withholds from the agency portal", () => {
       const yacht = maria();
       const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);

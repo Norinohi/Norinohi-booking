@@ -102,3 +102,19 @@ function quantityOf(extra: RestExtra): number {
   const parsed = Number(extra.quantity.replace(",", "."));
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
+
+/**
+ * What the operator wrote, in English where it wrote English. Each language sits in its own
+ * `textXX` key and none of them is ours, so any other it filled in beats nothing.
+ */
+export function internationalText(
+  text:
+    | { textEN?: string; textDE?: string; textIT?: string; textHR?: string; textSI?: string }
+    | undefined,
+): string | null {
+  if (text === undefined) return null;
+  const texts = [text.textEN, text.textDE, text.textIT, text.textHR, text.textSI];
+  return (
+    texts.map((entry) => entry?.trim()).find((entry) => entry !== undefined && entry !== "") ?? null
+  );
+}

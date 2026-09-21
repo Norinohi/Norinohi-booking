@@ -177,6 +177,18 @@ export const providerQuoteSchema = z.object({
        * extras the offer would not price, at the catalogue rate.
        */
       group: z.enum(["mandatory", "optional", "crew", "requested"]).optional(),
+      /**
+       * Which of an extra's variants this line is, in the operator's words, where the offer
+       * sells it as several. `label` already ends with it, so a reader that shows only the label
+       * still names the variant; this is kept apart so a translated label can be given it back.
+       */
+      detail: z.string().optional(),
+      /**
+       * The operator's own terms for this charge, where it wrote any: "Applies only when
+       * skipper is chosen", "includes final cleaning, gas, bed linen". Fine print for the
+       * customer, never used to price anything.
+       */
+      note: z.string().optional(),
     }),
   ),
   total: moneySchema,
@@ -213,6 +225,10 @@ export const providerQuoteSchema = z.object({
    *
    * Null means "the offer does not report it", never "none": a provider that
    * publishes no per-period extras must not have its whole list greyed out.
+   *
+   * `variants` is set where the offer sells the extra as several alternatives, a transfer by
+   * route and vehicle, say. Those are chosen by their own codes, the plain code prices nothing,
+   * and `amount` is then the cheapest of them.
    */
   offeredExtras: z
     .array(
@@ -220,6 +236,19 @@ export const providerQuoteSchema = z.object({
         code: z.string(),
         amount: moneySchema,
         payWhen: z.enum(["now", "at_check_in"]),
+        /** The operator's terms for an extra it sells once; see `note` on a line. */
+        note: z.string().optional(),
+        variants: z
+          .array(
+            z.object({
+              code: z.string(),
+              /** The operator's description of the variant; null where it wrote none. */
+              detail: z.string().nullable(),
+              amount: moneySchema,
+              payWhen: z.enum(["now", "at_check_in"]),
+            }),
+          )
+          .optional(),
       }),
     )
     .nullable()
@@ -450,6 +479,21 @@ export type ProviderReservationRef = z.infer<typeof providerReservationRefSchema
 export const providerExtrasMutationSchema = z.object({
   ref: providerReservationRefSchema,
   extras: z.array(z.string()),
+  /**
+   * The charter the reservation is for, as it was quoted. A code names an extra, not the offer
+   * row a reservation takes, and a crew role is on the reservation without being in `extras`:
+   * NauSYS re-prices the charter to learn both, so it is required there.
+   */
+  charter: z
+    .object({
+      listingId: z.string(),
+      checkIn: z.iso.date(),
+      checkOut: z.iso.date(),
+      guests: z.number().int().positive(),
+      crewType: crewTypeSchema.optional(),
+      currency: z.string().length(3).optional(),
+    })
+    .optional(),
 });
 export type ProviderExtrasMutation = z.infer<typeof providerExtrasMutationSchema>;
 

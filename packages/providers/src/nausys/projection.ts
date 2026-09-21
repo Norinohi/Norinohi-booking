@@ -684,6 +684,13 @@ function extrasOf(yacht: RestYacht, currency: string, context: ExtraNaming): Can
       return left.rank.atHomeBase > right.rank.atHomeBase;
     }
     if (left.rank.endsAt !== right.rank.endsAt) return left.rank.endsAt > right.rank.endsAt;
+    /*
+     * The same season can list a service twice, as an obligatory fee and again as an add-on
+     * ("Damage waiver" at 420, and at 350 "applies only when skipper is chosen"). The fee is
+     * what every charter pays, so it is the row the listing states; the add-on stored in its
+     * place put an obligatory charge in the optional list.
+     */
+    if (left.extra.obligatory !== right.extra.obligatory) return left.extra.obligatory;
     return left.seasonId > right.seasonId;
   };
 

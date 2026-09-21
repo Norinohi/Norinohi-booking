@@ -51,6 +51,14 @@ export type NausysConfirmedCursor = z.infer<typeof nausysConfirmedCursorSchema>;
 /** PAYMENT_PLAN carries the instalment schedule, ADDITIONAL_EXTRAS the optional services. */
 const EXTENDED_DATA_SET = "PAYMENT_PLAN,ADDITIONAL_EXTRAS";
 
+/**
+ * The party the swept price is for. Per-head obligatory lines (tourist tax, cruising permit)
+ * are priced for whatever party is named, and naming none prices them for a full boat: the
+ * card then showed a couple ten berths' worth of tax that the sidebar, opening on two guests,
+ * did not charge. Two, because that is the party the sidebar opens on.
+ */
+const SWEPT_PARTY = 2;
+
 const freeYachtsRequestSchema = restFreeYachtsRequestSchema.omit({ credentials: true });
 
 export interface NausysConfirmedOfferOptions {
@@ -137,6 +145,7 @@ export async function* streamNausysConfirmedOffers(
         periodTo: formatNausysDate(period.endDate),
         yachts: yachtIds.slice(at, at + chunkSize),
         extendedDataSet: EXTENDED_DATA_SET,
+        numberOfPersons: SWEPT_PARTY,
         ...(options.currency ? { currency: options.currency } : null),
       });
 

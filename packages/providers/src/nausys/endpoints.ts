@@ -681,8 +681,20 @@ export const restPaymentPlanSchema = looseJsonObject({
  * text rather than a string (frequently `{}`).
  */
 export const restExtraSchema = looseJsonObject({
-  /** Present on obligatory extras. */
+  /**
+   * The season price row this entry was priced from, unique within the offer where the other
+   * ids are not: one service can arrive as several rows, one per route or vehicle. It is the
+   * id `addExtras` takes (`RestYachtReservationServiceAddRequest.serviceId`).
+   *
+   * Not validated as an integer: on `obligatoryExtras` the live account sends 64-bit values
+   * (8662719459186772932, -6253611674196455678) that no JavaScript number holds exactly, and
+   * refusing them refused every quote. Only a safe integer is ever used as an id.
+   */
+  id: z.number().optional(),
+  /** Present on obligatory extras, and on a reservation's service lines. */
   serviceId: z.number().int().optional(),
+  /** Present on a reservation's equipment lines, where `serviceId` is not. */
+  equipmentId: z.number().int().optional(),
   /** Present on additional extras, alongside `extrasType`. */
   extraId: z.number().int().optional(),
   extrasType: z.string().optional(),
@@ -740,12 +752,24 @@ const restReservationServiceSchema = looseJsonObject({
    * is ahead of itself.
    */
   onPending: z.boolean().optional(),
+  /** Which variant the line is, in the operator's words; see `restExtraSchema`. */
+  condition: restInternationalTextSchema.optional(),
+});
+
+/** The same line for additional equipment, keyed by `equipmentId` rather than `serviceId`. */
+const restReservationEquipmentSchema = looseJsonObject({
+  id: z.number().int(),
+  equipmentId: z.number().int().optional(),
+  quantity: decimal.optional(),
+  editable: z.boolean().optional(),
+  obligatory: z.boolean().optional(),
+  condition: restInternationalTextSchema.optional(),
 });
 
 export const restListedExtrasSchema = looseJsonObject({
   ...statusFields,
   addedServices: z.array(restReservationServiceSchema).optional(),
-  addedEquipment: z.array(looseJsonObject({ id: z.number().int() })).optional(),
+  addedEquipment: z.array(restReservationEquipmentSchema).optional(),
 });
 
 export const restFreeYachtsRequestSchema = z.object({
