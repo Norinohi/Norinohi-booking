@@ -598,7 +598,8 @@ type MediaRole = "main" | "layout" | "gallery";
  * company 225 "Main image" is first on 5 of the 20 yachts with pictures.
  *
  * `sortOrder` is 0 on every picture of that fleet and on most account-wide, so it orders only
- * where it is set, and the vendor's array order decides the rest. A yacht naming no main image
+ * where it is set: a picture carrying none follows every one that does, and the vendor's array
+ * order decides the rest. A yacht naming no main image
  * takes its first picture that is not a plan; one showing only plans has no cover at all, which
  * ranks its layouts behind any other offer's photos rather than presenting a drawing as the boat.
  * Duplicate URLs are dropped because the same photo repeats across products.
@@ -608,7 +609,7 @@ function mediaOf(yacht: RestYacht) {
     .map((image, index) => ({
       url: text(image.url),
       label: text(image.description)?.toLowerCase(),
-      sortOrder: intOf(image.sortOrder) ?? 0,
+      sortOrder: intOf(image.sortOrder) ?? Number.MAX_SAFE_INTEGER,
       index,
     }))
     .filter((image): image is typeof image & { url: string } => image.url !== undefined)

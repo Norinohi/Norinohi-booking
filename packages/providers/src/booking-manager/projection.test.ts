@@ -684,10 +684,10 @@ describe("pictures", () => {
         ],
       ]),
     ).listings[0]?.media;
-  const image = (name: string, description: string, sortOrder = 0) => ({
+  const image = (name: string, description: string, sortOrder: number | null = 0) => ({
     url: `https://example.test/${name}.jpg`,
     description,
-    sortOrder,
+    ...(sortOrder === null ? null : { sortOrder }),
   });
 
   it("makes the picture the operator labelled Main image the cover, wherever it sits", () => {
@@ -720,6 +720,22 @@ describe("pictures", () => {
       "https://example.test/a.jpg",
       "https://example.test/b.jpg",
       "https://example.test/c.jpg",
+    ]);
+  });
+
+  it("puts pictures with no sortOrder after the ordered ones, in array order", () => {
+    const media = mediaOf([
+      image("x", "Main image", null),
+      image("b", "", 2),
+      image("y", "", null),
+      image("a", "", 1),
+    ]);
+
+    expect(media?.map((item) => item.externalUrl)).toEqual([
+      "https://example.test/x.jpg",
+      "https://example.test/a.jpg",
+      "https://example.test/b.jpg",
+      "https://example.test/y.jpg",
     ]);
   });
 });
