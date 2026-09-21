@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { log } from "evlog";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { z } from "zod";
 
 vi.hoisted(() => {
@@ -214,5 +215,70 @@ describe("syncBookingManagerCatalogue yacht sweep", () => {
     );
 
     expect(asked).toEqual(["4", "5"]);
+  });
+});
+
+/*
+ * An operator's `/yachts` answering 200 with `[]` used to be read as "every boat withdrawn", and
+ * the scope sweep deactivated the fleet on the strength of that one answer.
+ */
+describe("an empty fleet answer", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const sweptCompanies = (events: CatalogueSyncEvent[]) =>
+    events
+      .filter((event) => event.type === "scope-complete" && event.resourceType === "yacht")
+      .map((event) => (event.type === "scope-complete" ? event.scopeKey : null));
+
+  it("leaves unswept, and says so, a company whose boats we hold", async () => {
+    const warn = vi.spyOn(log, "warn").mockImplementation(() => undefined);
+    const client = fakeClient(["225", "331"], (companyId) =>
+      Promise.resolve(companyId === "225" ? [] : [{ id: "y331" }]),
+    );
+
+    const events = await collect(
+      syncBookingManagerCatalogue(client, {
+        listImportedCompanyIds: () => Promise.resolve(["225", "331"]),
+      }),
+    );
+
+    expect(sweptCompanies(events)).toEqual(["331"]);
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "booking_manager.catalogue.empty_fleet_kept",
+        companyId: "225",
+      }),
+    );
+  });
+
+  it("still completes a company that never had a fleet", async () => {
+    const warn = vi.spyOn(log, "warn").mockImplementation(() => undefined);
+    const client = fakeClient(["225", "900"], (companyId) =>
+      Promise.resolve(companyId === "225" ? [{ id: "y225" }] : []),
+    );
+
+    const events = await collect(
+      syncBookingManagerCatalogue(client, {
+        listImportedCompanyIds: () => Promise.resolve(["225"]),
+      }),
+    );
+
+    expect(sweptCompanies(events)).toEqual(["225", "900"]);
+    expect(warn).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action: "booking_manager.catalogue.empty_fleet_kept" }),
+    );
+  });
+
+  it("asks which companies hold boats once, however many answer empty", async () => {
+    vi.spyOn(log, "warn").mockImplementation(() => undefined);
+    const listImportedCompanyIds = vi.fn(() => Promise.resolve(["1", "2", "3"]));
+    const client = fakeClient(["1", "2", "3"], () => Promise.resolve([]));
+
+    await collect(syncBookingManagerCatalogue(client, { listImportedCompanyIds }));
+
+    // Once for the empty answers and once more at the end, for retiring out-of-scope companies.
+    expect(listImportedCompanyIds).toHaveBeenCalledTimes(2);
   });
 });

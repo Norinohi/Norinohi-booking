@@ -1,3 +1,4 @@
+import { log } from "evlog";
 import { z } from "zod";
 
 import { AuthError, ContractError } from "../shared/errors";
@@ -147,9 +148,10 @@ export interface BookingManagerCatalogueOptions {
    */
   companyScope?: CompanyScope;
   /**
-   * Companies our fleet is filed under, for retiring the ones now out of scope.
-   * Injected rather than queried here so this stream stays a pure function of the
-   * vendor client, which is what its tests fake.
+   * Companies our fleet is filed under, for retiring the ones now out of scope and for
+   * telling an operator whose boats vanished from one that never had any. Injected rather
+   * than queried here so this stream stays a pure function of the vendor client, which is
+   * what its tests fake.
    */
   listImportedCompanyIds?: () => Promise<readonly string[]>;
   /** Recoverable failures go here so the stream survives them; see below. */
@@ -308,6 +310,14 @@ export async function* syncBookingManagerCatalogue(
   const startCompany = resumeCompanyIndex(resume, companyIds);
   const concurrency = options.concurrency ?? client.config.sweepConcurrency;
 
+  /* Read once, and only if some operator answers with no boats at all. */
+  let importedCompanies: Promise<ReadonlySet<string>> | null = null;
+  const hadFleet = async (companyId: string): Promise<boolean> => {
+    if (options.listImportedCompanyIds === undefined) return false;
+    importedCompanies ??= options.listImportedCompanyIds().then((ids) => new Set(ids));
+    return (await importedCompanies).has(companyId);
+  };
+
   /*
    * The fleet, several operators at a time but delivered one at a time.
    *
@@ -350,6 +360,25 @@ export async function* syncBookingManagerCatalogue(
         resourceType: "yacht",
         scopeKey: companyId,
         context: { endpoint: bookingManagerEndpoints.yachts, companyIndex: index },
+      });
+      continue;
+    }
+
+    /*
+     * A 200 with an empty list, for an operator whose boats we hold, is not believed. The
+     * scope-complete below would deactivate the whole fleet on the strength of one answer, and
+     * an empty answer is also what a vendor-side hiccup or a credential that lost the company's
+     * permission looks like. Left unswept, the boats keep their last-seen date and the next run
+     * that sees them settles it. An operator that really emptied its fleet stays listed until
+     * someone acts on the warning or it leaves the company dump, which retires it through
+     * `retireOutOfScopeCompanies`; its boats cannot be sold meanwhile, since `/offers` has
+     * nothing for them.
+     */
+    if (items.length === 0 && (await hadFleet(companyId))) {
+      log.warn({
+        action: "booking_manager.catalogue.empty_fleet_kept",
+        companyId,
+        companyIndex: index,
       });
       continue;
     }
