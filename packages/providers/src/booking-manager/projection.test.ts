@@ -1,5 +1,7 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
+import { parseExactJson } from "../shared/exact-json";
 import type { JsonValue } from "../shared/json";
 import type { ProviderRecordSet, ProviderResourceType } from "../types";
 import { projectBookingManagerCatalogue } from "./projection";
@@ -222,6 +224,66 @@ describe("product extras", () => {
 
   it("publishes no extras for a yacht with no products", () => {
     expect(listingOf([])?.extras).toEqual([]);
+  });
+
+  describe("the deposit waiver", () => {
+    const waiverYacht = (fields: Record<string, JsonValue>, extra: Record<string, JsonValue>) =>
+      projectBookingManagerCatalogue(
+        new Map([
+          [
+            "yacht" as const,
+            [
+              {
+                externalId: "5001",
+                payload: {
+                  ...yacht([
+                    {
+                      isDefaultProduct: true,
+                      extras: [{ id: 11, name: "Damage waiver", price: 250, ...extra }],
+                    },
+                  ]),
+                  deposit: 2_500,
+                  ...fields,
+                },
+              },
+            ],
+          ],
+        ]),
+      ).listings[0];
+
+    it("reads the flag under the key the vendor actually sends", () => {
+      const listing = waiverYacht({}, { includesDepositWaiver: true });
+
+      expect(listing?.extras[0]?.depositInsurance).toBe(true);
+    });
+
+    it("still reads the spec's spelling", () => {
+      const listing = waiverYacht({}, { includedDepositWaiver: true });
+
+      expect(listing?.extras[0]?.depositInsurance).toBe(true);
+    });
+
+    it("leaves an extra that waives nothing unflagged", () => {
+      const listing = waiverYacht({}, { includesDepositWaiver: false });
+
+      expect(listing?.extras[0]?.depositInsurance).toBeUndefined();
+    });
+
+    it("carries the reduced deposit a waiver buys", () => {
+      const listing = waiverYacht({ depositWithWaiver: 500 }, { includesDepositWaiver: true });
+
+      expect(listing?.securityDepositMinor).toBe(250_000);
+      expect(listing?.securityDepositWhenInsuredMinor).toBe(50_000);
+    });
+
+    it("reads zero, and a figure that reduces nothing, as no waiver", () => {
+      expect(waiverYacht({ depositWithWaiver: 0 }, {})?.securityDepositWhenInsuredMinor).toBe(
+        undefined,
+      );
+      expect(
+        waiverYacht({ depositWithWaiver: 2_500 }, {})?.securityDepositWhenInsuredMinor,
+      ).toBeUndefined();
+    });
   });
 
   describe("routes and bases", () => {
@@ -579,5 +641,34 @@ describe("short base ids", () => {
       ["Rumba", "0"],
       ["Iraz", "25"],
     ]);
+  });
+});
+
+/* West Wind as company 225 sent it on 2026-09-21: a Cabin product first, the default Bareboat after. */
+describe("a live company 225 yacht", () => {
+  const payload = parseExactJson(
+    readFileSync(new URL("fixtures/yacht-225-west-wind.json", import.meta.url), "utf8"),
+  );
+  const listing = projectBookingManagerCatalogue(
+    new Map([["yacht" as const, [{ externalId: "978989630000100225", payload }]]]),
+  ).listings[0];
+
+  it("prices its extras from the default product and files them at its home base", () => {
+    expect(listing?.extras).toHaveLength(11);
+    expect(new Set(listing?.extras.map((extra) => extra.externalBaseId))).toEqual(new Set(["194"]));
+  });
+
+  it("restricts none of them, since the fleet sends no route and no base", () => {
+    for (const extra of listing?.extras ?? []) {
+      expect(extra.oneWayOnly).toBeUndefined();
+      expect(extra.validRoutes).toBeUndefined();
+      expect(extra.validForBaseIds).toBeUndefined();
+    }
+  });
+
+  it("reads no waiver where the fleet configures none", () => {
+    expect(listing?.securityDepositMinor).toBe(200_000);
+    expect(listing?.securityDepositWhenInsuredMinor).toBeUndefined();
+    expect(listing?.extras.some((extra) => extra.depositInsurance)).toBe(false);
   });
 });

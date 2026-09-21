@@ -283,7 +283,12 @@ export const restExtrasSchema = looseJsonObject({
   kind: optionalNumeric,
   percentage: optionalNumeric,
   payableInBase: z.boolean().optional().nullable(),
-  /** The spec's spelling. Every live extra spells it `includesDepositWaiver` instead. */
+  /**
+   * Whether buying this extra lowers the deposit to the yacht's `depositWithWaiver`. The spec
+   * lists `includedDepositWaiver` under properties and `includesDepositWaiver` under required;
+   * the vendor sends only the second (161 of 161 extras on company 225, 7,491 of them true
+   * account-wide), so both are read.
+   */
   includedDepositWaiver: z.boolean().optional().nullable(),
   includesDepositWaiver: z.boolean().optional().nullable(),
   /**
@@ -390,10 +395,10 @@ export const restYachtSchema = looseJsonObject({
   engine: optionalText,
   deposit: optionalNumeric,
   /**
-   * `0.0` on every yacht measured, which is indistinguishable from "no waiver
-   * product configured" - the vendor exposes no waiver, damage-insurance or
-   * deposit product among the extras either. Do not read `0` as "the waiver is
-   * free"; see VENDOR QUESTION Q3.
+   * The deposit asked of a charter that bought the waiver, the extra flagged
+   * `includesDepositWaiver`. Above zero on about 2,900 yachts account-wide, below `deposit` on
+   * 2,457 of them; `0` on all of company 225, which is "no waiver configured", never "the
+   * waiver leaves nothing to pay".
    */
   depositWithWaiver: optionalNumeric,
   currency: optionalText,

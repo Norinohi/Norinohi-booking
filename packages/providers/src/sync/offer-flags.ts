@@ -75,6 +75,8 @@ export async function deriveOfferFlagsFromExtras(db: Database, listingIds?: read
 }
 
 async function updateOfferFlags(db: Database, scope: SQL) {
+  /* The vendor's own flag first; the name still catches an operator that never set it. */
+  const isDepositCover = sql`(e.deposit_insurance or e.name ~* ${DEPOSIT_INSURANCE_PATTERN})`;
   await db.execute(sql`
     update listing_offer o
     set
@@ -94,7 +96,7 @@ async function updateOfferFlags(db: Database, scope: SQL) {
         select 1
         from provider_extra_catalogue e
         where e.listing_offer_id = o.id
-          and e.name ~* ${DEPOSIT_INSURANCE_PATTERN}
+          and ${isDepositCover}
           and (e.obligatory or e.price_minor = 0)
       )
     where ${scope}
@@ -110,7 +112,7 @@ async function updateOfferFlags(db: Database, scope: SQL) {
           select 1
           from provider_extra_catalogue e
           where e.listing_offer_id = o.id
-            and e.name ~* ${DEPOSIT_INSURANCE_PATTERN}
+            and ${isDepositCover}
             and (e.obligatory or e.price_minor = 0)
         )
       )

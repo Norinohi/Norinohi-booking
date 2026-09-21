@@ -477,6 +477,7 @@ function projectYacht(
     oneWayRules: [],
     defaultCurrency: currency,
     securityDepositMinor: minorOf(yacht.deposit, currency),
+    securityDepositWhenInsuredMinor: waivedDepositOf(yacht, currency),
     // Booking Manager prices the yacht and its deposit in one currency.
     securityDepositCurrency: currency,
     // Booking Manager publishes no review aggregate, and absent must stay absent: a
@@ -739,6 +740,9 @@ function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] 
       validNightsTo: positiveInt(item.validDaysTo),
       ...routeScopeOf(item),
       onRequestOnly: false,
+      ...((item.includesDepositWaiver ?? item.includedDepositWaiver) === true
+        ? { depositInsurance: true }
+        : null),
       // Filed under the home base, which is where the card's charter starts and ends, so the
       // read model can test the base and route conditions above against it.
       externalBaseId: homeBaseId ?? undefined,
@@ -804,6 +808,19 @@ function sailingDateOf(value: JsonField): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * The deposit once the waiver is bought, where it is really a reduction. Zero is the vendor
+ * configuring no waiver, and a figure at or above the full deposit reduces nothing, so both
+ * leave the ordinary deposit standing alone.
+ */
+function waivedDepositOf(yacht: RestYacht, currency: string): number | undefined {
+  const waived = minorOf(yacht.depositWithWaiver, currency);
+  if (waived === undefined || waived <= 0) return undefined;
+
+  const deposit = minorOf(yacht.deposit, currency);
+  return deposit !== undefined && waived >= deposit ? undefined : waived;
 }
 
 /**
