@@ -1,6 +1,6 @@
 {
-  "id": "1e9841a6-bd8f-453f-8eb7-e4c0f1cdce7b",
-  "prevId": "6e69a6e7-2536-4ad7-87ec-f819067d7728",
+  "id": "2c2488b5-0dc4-418c-9873-ce2bd7a4da40",
+  "prevId": "e043dc8d-aa4d-44d2-aba6-f023269dbe50",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -6908,6 +6908,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "check_in_time": {
+          "name": "check_in_time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "check_out_time": {
+          "name": "check_out_time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "security_deposit_minor": {
           "name": "security_deposit_minor",
           "type": "integer",
@@ -8283,6 +8295,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "check_in_time": {
+          "name": "check_in_time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "check_out_time": {
+          "name": "check_out_time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "security_deposit_minor": {
           "name": "security_deposit_minor",
           "type": "integer",
@@ -9291,6 +9315,18 @@
         "included_external_ids": {
           "name": "included_external_ids",
           "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quantity_limit": {
+          "name": "quantity_limit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quantity_selectable": {
+          "name": "quantity_selectable",
+          "type": "boolean",
           "primaryKey": false,
           "notNull": false
         },

@@ -334,6 +334,21 @@ describe("projectNausysCatalogue", () => {
     });
   });
 
+  describe("handover times", () => {
+    it("takes the boat's home base's, not whichever operator last wrote the marina", () => {
+      // Maria sails from 102751, whose own times are 17:00 and 09:00.
+      expect(listingOf(maria())).toMatchObject({ checkInTime: "17:00", checkOutTime: "09:00" });
+    });
+
+    it("prefers a time the boat states itself, and reads a blank one as none", () => {
+      const own = maria();
+      own.checkInTime = "18:00";
+      own.checkOutTime = "";
+
+      expect(listingOf(own)).toMatchObject({ checkInTime: "18:00", checkOutTime: "09:00" });
+    });
+  });
+
   describe("specification", () => {
     it("takes length and beam from the model, which is where the vendor keeps them", () => {
       expect(listingOf(maria())?.spec).toMatchObject({

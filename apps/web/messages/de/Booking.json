@@ -358,7 +358,7 @@
     "crewList": {
       "title": "Crewliste",
       "notice": "Die Charterfirma muss den Behörden vor dem Ablegen eine Liste aller an Bord melden. Füllen Sie sie hier aus, wir leiten sie weiter - was fehlt, fragt die Basis bei der Ankunft am Schalter ab.",
-      "maxPassengers": "Ihre Liste fasst höchstens {count} Personen.",
+      "maxPassengers": "Ihre Liste fasst höchstens {count, plural, one {# Person} other {# Personen}}.",
       "loading": "Ihre Crewliste wird geladen…",
       "empty": "Noch niemand hinzugefügt. Ihre Buchung gilt für {guests} Gäste - fügen Sie jede Person an Bord hinzu, einschließlich des Skippers.",
       "member": "Crewmitglied {number}",
@@ -380,7 +380,7 @@
         "lastName": "Bitte den Nachnamen angeben",
         "skipperEmail": "Bitte eine gültige E-Mail-Adresse angeben",
         "oneSkipper": "Nur eine Person kann der Skipper sein",
-        "maxPassengers": "Die Liste dieser Charterfirma fasst höchstens {count} Personen"
+        "maxPassengers": "Die Liste dieser Charterfirma fasst höchstens {count, plural, one {# Person} other {# Personen}}"
       },
       "legend": "Mit * markierte Felder verlangt diese Charterfirma.",
       "sent": "Am {when} an die Charterfirma gesendet.",

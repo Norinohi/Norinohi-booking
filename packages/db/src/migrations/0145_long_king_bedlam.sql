@@ -1,1 +1,0 @@
-ALTER TABLE "provider_extra_catalogue" ADD COLUMN "valid_routes" text[];

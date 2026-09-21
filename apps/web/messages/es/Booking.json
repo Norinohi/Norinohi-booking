@@ -358,7 +358,7 @@
     "crewList": {
       "title": "Lista de tripulación",
       "notice": "La empresa de chárter debe entregar a las autoridades la lista de todos los que van a bordo antes de zarpar. Complétala aquí y se la enviamos: lo que falte, la base lo pedirá en el mostrador cuando llegues.",
-      "maxPassengers": "Su lista admite como máximo {count} personas.",
+      "maxPassengers": "Su lista admite como máximo {count, plural, one {# persona} other {# personas}}.",
       "loading": "Cargando tu lista de tripulación…",
       "empty": "Aún no has añadido a nadie. Tu reserva es para {guests} huéspedes: añade a cada persona que vaya a bordo, incluido el patrón.",
       "member": "Tripulante {number}",
@@ -380,7 +380,7 @@
         "lastName": "Escribe los apellidos de esta persona",
         "skipperEmail": "Escribe un correo electrónico válido",
         "oneSkipper": "Solo una persona puede ser el patrón",
-        "maxPassengers": "La lista de esta empresa de chárter admite como máximo {count} personas"
+        "maxPassengers": "La lista de esta empresa de chárter admite como máximo {count, plural, one {# persona} other {# personas}}"
       },
       "legend": "Los campos marcados con * son los que exige esta empresa de chárter.",
       "sent": "Enviada a la empresa de chárter el {when}.",

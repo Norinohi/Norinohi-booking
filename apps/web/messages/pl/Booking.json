@@ -380,7 +380,7 @@
         "lastName": "Podaj nazwisko tej osoby",
         "skipperEmail": "Podaj prawidłowy adres e-mail",
         "oneSkipper": "Skipperem może być tylko jedna osoba",
-        "maxPassengers": "Lista tej firmy czarterowej mieści najwyżej {count} osób"
+        "maxPassengers": "Lista tej firmy czarterowej mieści najwyżej {count, plural, one {# osobę} few {# osoby} many {# osób} other {# osoby}}"
       },
       "legend": "Pola oznaczone * są wymagane przez tę firmę czarterową.",
       "sent": "Wysłano do firmy czarterowej {when}.",

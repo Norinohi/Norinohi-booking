@@ -358,7 +358,7 @@
     "crewList": {
       "title": "Liste d'équipage",
       "notice": "La société de location doit transmettre aux autorités la liste de toutes les personnes à bord avant le départ. Remplissez-la ici et nous la leur enverrons - pour toute information manquante, la base vous la demandera au comptoir à votre arrivée.",
-      "maxPassengers": "Sa liste peut contenir au maximum {count} personnes.",
+      "maxPassengers": "Sa liste peut contenir au maximum {count, plural, one {# personne} other {# personnes}}.",
       "loading": "Chargement de votre liste d'équipage…",
       "empty": "Personne n’a encore été ajouté. Votre réservation concerne {guests} passagers - ajoutez chaque personne qui sera à bord, skipper compris.",
       "member": "Membre d’équipage {number}",
@@ -380,7 +380,7 @@
         "lastName": "Saisissez le nom de famille de cette personne",
         "skipperEmail": "Saisissez une adresse e-mail valide",
         "oneSkipper": "Une seule personne peut être le skipper",
-        "maxPassengers": "La liste de ce loueur accepte au plus {count} personnes"
+        "maxPassengers": "La liste de ce loueur accepte au plus {count, plural, one {# personne} other {# personnes}}"
       },
       "legend": "Les champs marqués d'un * sont ceux exigés par cette société de location.",
       "sent": "Envoyée à la société de location le {when}.",

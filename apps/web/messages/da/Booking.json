@@ -358,7 +358,7 @@
     "crewList": {
       "title": "Besætningsliste",
       "notice": "Charterfirmaet skal give myndighederne en liste over alle om bord, før I sejler. Udfyld den her, så sender vi den videre - mangler der noget, spørger basen om det i skranken, når I ankommer.",
-      "maxPassengers": "Listen kan rumme højst {count} personer.",
+      "maxPassengers": "Listen kan rumme højst {count, plural, one {# person} other {# personer}}.",
       "loading": "Indlæser din besætningsliste…",
       "empty": "Der er ikke tilføjet nogen endnu. Din booking er til {guests} gæster - tilføj hver person, der kommer om bord, inklusive skipperen.",
       "member": "Besætningsmedlem {number}",
@@ -380,7 +380,7 @@
         "lastName": "Indtast personens efternavn",
         "skipperEmail": "Indtast en gyldig e-mailadresse",
         "oneSkipper": "Kun én person kan være skipper",
-        "maxPassengers": "Dette charterfirmas liste kan højst rumme {count} personer"
+        "maxPassengers": "Dette charterfirmas liste kan højst rumme {count, plural, one {# person} other {# personer}}"
       },
       "legend": "Felter markeret med * er dem, dette charterfirma kræver.",
       "sent": "Sendt til charterfirmaet den {when}.",

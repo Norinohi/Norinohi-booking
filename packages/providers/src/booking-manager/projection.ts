@@ -7,6 +7,7 @@ import { stripHtml } from "../shared/html-text";
 import { decimalStringToMinor } from "../shared/money";
 import { isPlaceholderBuilder } from "../shared/placeholder-builders";
 import { mergeYachtTitle } from "../shared/yacht-title";
+import { wallClockTime } from "../shared/wall-clock";
 import {
   currencyOf,
   idOf,
@@ -486,6 +487,8 @@ function projectYacht(
     // shows up, as a start base that differs from the end base.
     oneWayRules: [],
     defaultCurrency: currency,
+    checkInTime: wallClockTime(text(yacht.defaultCheckInTime)),
+    checkOutTime: wallClockTime(text(yacht.defaultCheckOutTime)),
     securityDepositMinor: minorOf(yacht.deposit, currency),
     securityDepositWhenInsuredMinor: waivedDepositOf(yacht, currency),
     // Booking Manager prices the yacht and its deposit in one currency.

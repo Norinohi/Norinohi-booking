@@ -482,6 +482,9 @@ const euminiaSchema = looseJsonObject({
 });
 
 export const restYachtSchema = looseJsonObject({
+  /* Set on 20 of 7,529 hulls, as an empty string on the rest; the base's times apply there. */
+  checkInTime: z.string().nullish(),
+  checkOutTime: z.string().nullish(),
   id: z.number().int(),
   name: z.string(),
   companyId: z.number().int(),

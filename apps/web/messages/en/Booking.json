@@ -358,7 +358,7 @@
     "crewList": {
       "title": "Crew list",
       "notice": "The charter company has to give the authorities a list of everyone aboard before you sail. Fill it in here and we'll send it to them - anything missing, the base will ask for at the desk when you arrive.",
-      "maxPassengers": "Its list holds at most {count} people.",
+      "maxPassengers": "Its list holds at most {count, plural, one {# person} other {# people}}.",
       "loading": "Loading your crew list…",
       "empty": "No one added yet. Your booking is for {guests} guests - add each person who will be aboard, including the skipper.",
       "member": "Crew member {number}",
@@ -380,7 +380,7 @@
         "lastName": "Enter this person's last name",
         "skipperEmail": "Enter a valid email address",
         "oneSkipper": "Only one person can be the skipper",
-        "maxPassengers": "This charter company's list holds at most {count} people"
+        "maxPassengers": "This charter company's list holds at most {count, plural, one {# person} other {# people}}"
       },
       "legend": "Fields marked * are the ones this charter company insists on.",
       "sent": "Sent to the charter company on {when}.",

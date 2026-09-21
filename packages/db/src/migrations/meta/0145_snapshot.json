@@ -1,5 +1,5 @@
 {
-  "id": "6e69a6e7-2536-4ad7-87ec-f819067d7728",
+  "id": "e043dc8d-aa4d-44d2-aba6-f023269dbe50",
   "prevId": "6898949f-9fd2-400d-9b6c-de771ad3185c",
   "version": "7",
   "dialect": "postgresql",
@@ -6908,6 +6908,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "check_in_time": {
+          "name": "check_in_time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "check_out_time": {
+          "name": "check_out_time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "security_deposit_minor": {
           "name": "security_deposit_minor",
           "type": "integer",
@@ -8283,6 +8295,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "check_in_time": {
+          "name": "check_in_time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "check_out_time": {
+          "name": "check_out_time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "security_deposit_minor": {
           "name": "security_deposit_minor",
           "type": "integer",
@@ -9278,12 +9302,6 @@
         },
         "valid_for_base_ids": {
           "name": "valid_for_base_ids",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "valid_routes": {
-          "name": "valid_routes",
           "type": "text[]",
           "primaryKey": false,
           "notNull": false

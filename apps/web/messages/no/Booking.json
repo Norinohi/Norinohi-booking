@@ -358,7 +358,7 @@
     "crewList": {
       "title": "Mannskapsliste",
       "notice": "Charterselskapet må gi myndighetene en liste over alle om bord før dere seiler. Fyll den ut her, så sender vi den til dem - det som mangler, spør basen om i skranken når dere kommer.",
-      "maxPassengers": "Listen deres rommer maksimalt {count} personer.",
+      "maxPassengers": "Listen deres rommer maksimalt {count, plural, one {# person} other {# personer}}.",
       "loading": "Laster mannskapslisten din…",
       "empty": "Ingen er lagt til ennå. Bookingen din er for {guests} gjester - legg til alle som skal være om bord, også skipperen.",
       "member": "Mannskapsmedlem {number}",
@@ -380,7 +380,7 @@
         "lastName": "Skriv inn etternavnet til denne personen",
         "skipperEmail": "Skriv inn en gyldig e-postadresse",
         "oneSkipper": "Bare én person kan være skipper",
-        "maxPassengers": "Listen til dette charterselskapet har plass til maks {count} personer"
+        "maxPassengers": "Listen til dette charterselskapet har plass til maks {count, plural, one {# person} other {# personer}}"
       },
       "legend": "Feltene merket med * er de dette charterselskapet krever.",
       "sent": "Sendt til charterselskapet {when}.",

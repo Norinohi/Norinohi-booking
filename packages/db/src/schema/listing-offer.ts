@@ -132,6 +132,9 @@ export const listingOffer = pgTable(
      */
     commissionPct: pct("commission_pct"),
     commissionSeenAt: timestamp("commission_seen_at"),
+    /* This boat's own handover, `HH:mm`; the shared base row's times are only a fallback. */
+    checkInTime: text("check_in_time"),
+    checkOutTime: text("check_out_time"),
     securityDepositMinor: integer("security_deposit_minor"),
     /** The deposit this offer takes when the charter carries deposit insurance. */
     securityDepositWhenInsuredMinor: integer("security_deposit_when_insured_minor"),
