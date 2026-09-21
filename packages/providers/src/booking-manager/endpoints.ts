@@ -320,7 +320,12 @@ export const restExtrasSchema = looseJsonObject({
   description: optionalText,
   /** The one base this extra is sold at, or `-1` for every base. A base id, so read as one. */
   availableInBase: optionalId,
-  validSailingAreas: z.array(numeric).optional().nullable(),
+  /**
+   * The sailing areas this extra is sold in, empty for all of them: "CharterPack Caribbean" is
+   * filed `[28]` on a fleet that also sails elsewhere. The ids of `/sailingAreas`, which a base
+   * lists as its own `sailingAreas`.
+   */
+  validSailingAreas: z.array(id).optional().nullable(),
 });
 
 export const restProductSchema = looseJsonObject({

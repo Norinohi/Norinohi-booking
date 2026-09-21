@@ -875,6 +875,13 @@ export const canonicalExtraSchema = z.object({
    */
   includedExternalIds: z.array(z.string()).optional(),
   /**
+   * How many of this extra one charter may book, where the provider caps it; absent means no
+   * cap. Booking Manager's `quantityLimit`, `-1` for unlimited on nearly every row.
+   */
+  quantityLimit: z.number().int().nonnegative().optional(),
+  /** Whether the customer picks a quantity rather than taking the extra once. */
+  quantitySelectable: z.boolean().optional(),
+  /**
    * A floor the provider sets under a computed total, in minor units. Only meaningful beside a
    * percentage: a 3% fee with a 50 EUR minimum is 50 EUR on a small charter, not 30.
    */

@@ -286,6 +286,81 @@ describe("product extras", () => {
     });
   });
 
+  describe("the vendor's own terms on an extra", () => {
+    const extraOf = (fields: Record<string, JsonValue>) =>
+      listingOf([
+        { isDefaultProduct: true, extras: [{ id: 21, name: "SUP", price: 100, ...fields }] },
+      ])?.extras[0];
+
+    it("keeps the description as fine print, markup stripped", () => {
+      expect(extraOf({ description: "<p>Applies only when skipper is chosen</p>" })?.note).toBe(
+        "Applies only when skipper is chosen",
+      );
+      expect(extraOf({ description: "" })?.note).toBeUndefined();
+    });
+
+    it("reads -1 as no quantity cap, and keeps a real one", () => {
+      expect(extraOf({ quantityLimit: -1, quantityIsSelectable: false })).toMatchObject({
+        quantitySelectable: false,
+      });
+      expect(extraOf({ quantityLimit: -1 })?.quantityLimit).toBeUndefined();
+      expect(extraOf({ quantityLimit: 4, quantityIsSelectable: true })).toMatchObject({
+        quantityLimit: 4,
+        quantitySelectable: true,
+      });
+    });
+  });
+
+  describe("sailing areas", () => {
+    const withBase = (sailingAreas: JsonValue[] | undefined, validSailingAreas: JsonValue[]) =>
+      projectBookingManagerCatalogue(
+        new Map<ProviderResourceType, { externalId: string; payload: JsonValue }[]>([
+          [
+            "yacht",
+            [
+              {
+                externalId: "5001",
+                payload: yacht([
+                  {
+                    isDefaultProduct: true,
+                    extras: [
+                      {
+                        id: 31,
+                        name: "CharterPack Caribbean",
+                        obligatory: true,
+                        price: 750,
+                        validSailingAreas,
+                      },
+                    ],
+                  },
+                ]),
+              },
+            ],
+          ],
+          [
+            "base",
+            sailingAreas === undefined
+              ? []
+              : [{ externalId: "7", payload: { id: 7, sailingAreas } }],
+          ],
+        ]),
+      ).listings[0]?.extras;
+
+    it("drops an extra sold only in sailing areas the home base is not in", () => {
+      expect(withBase([9, 10], [28])).toEqual([]);
+    });
+
+    it("keeps one sold in an area the home base is in", () => {
+      expect(withBase([9, 28], [28])).toHaveLength(1);
+    });
+
+    it("keeps one restricted to no area, or where the base's areas are unknown", () => {
+      expect(withBase([9], [])).toHaveLength(1);
+      expect(withBase(undefined, [28])).toHaveLength(1);
+      expect(withBase([], [28])).toHaveLength(1);
+    });
+  });
+
   describe("routes and bases", () => {
     const extraOf = (fields: Record<string, JsonValue>) =>
       listingOf([

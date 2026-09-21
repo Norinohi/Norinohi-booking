@@ -144,6 +144,14 @@ export const providerExtraCatalogue = pgTable(
      */
     includedExternalIds: text("included_external_ids").array(),
     /**
+     * How many of this extra one charter may book, null for no cap, and whether the customer
+     * picks the quantity. Booking Manager's `quantityLimit` and `quantityIsSelectable` (API
+     * 2.2.2); nothing here books more than one of anything yet, so they are kept for the
+     * checkout that will.
+     */
+    quantityLimit: integer("quantity_limit"),
+    quantitySelectable: boolean("quantity_selectable"),
+    /**
      * A floor under a computed total, in minor units. Only meaningful beside `percentage`: a
      * 3% fee with a 50 EUR minimum is 50 EUR on a small charter, not 30.
      *

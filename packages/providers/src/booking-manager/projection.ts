@@ -98,8 +98,17 @@ export function projectBookingManagerCatalogue(
   const models = projectModels(yachts, knownShipyards);
   const baseTimes = baseTimesOf(yachts);
 
+  const sailingAreasByBase = sailingAreasByBaseOf(parseAll(records, "base", restBaseSchema));
+
   const listings = yachts
-    .map((yacht) => projectYacht(yacht, { categoryIdByKind, knownEquipment, knownShipyards }))
+    .map((yacht) =>
+      projectYacht(yacht, {
+        categoryIdByKind,
+        knownEquipment,
+        knownShipyards,
+        sailingAreasByBase,
+      }),
+    )
     .filter((item): item is NonNullable<typeof item> => item !== null);
 
   return canonicalCatalogueSchema.parse({
@@ -424,6 +433,7 @@ function projectYacht(
     categoryIdByKind: Map<string, string>;
     knownEquipment: Set<string>;
     knownShipyards: Set<string>;
+    sailingAreasByBase: ReadonlyMap<string, ReadonlySet<string>>;
   },
 ) {
   const companyId = idOf(yacht.companyId);
@@ -469,7 +479,7 @@ function projectYacht(
     },
     media: mediaOf(yacht),
     amenities: amenityIdsOf(yacht).filter((id) => context.knownEquipment.has(id)),
-    extras: extrasOf(yacht, currency),
+    extras: extrasOf(yacht, currency, context.sailingAreasByBase.get(baseId)),
     texts: textsOf(yacht),
     checkinRules: checkinRulesOf(yacht),
     // The catalogue states no one-way periods; `/offers` is where a one-way charter
@@ -697,7 +707,11 @@ function percentageRateOf(percentage: number | null | undefined): number | undef
  * obligatory package on the bareboat card of about 165 listings, and a Crewed product's
  * obligatory skipper turned a bareboat into a skippered one.
  */
-function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] {
+function extrasOf(
+  yacht: RestYacht,
+  fallbackCurrency: string,
+  homeSailingAreas: ReadonlySet<string> | undefined,
+): CanonicalExtra[] {
   const homeBaseId = idOf(yacht.homeBaseId);
   const chosen = new Map<string, CanonicalExtra>();
   for (const item of soldProductOf(yacht)?.extras ?? []) {
@@ -707,6 +721,7 @@ function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] 
     // name cannot be shown to a buyer.
     if (externalId === null || label === undefined) continue;
     if (chosen.has(externalId)) continue;
+    if (!soldInSailingArea(item, homeSailingAreas)) continue;
 
     const priceCurrency = currencyOf(item.currency, fallbackCurrency);
     /*
@@ -740,6 +755,9 @@ function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] 
       validNightsTo: positiveInt(item.validDaysTo),
       ...routeScopeOf(item),
       ...includedIdsOf(item, externalId),
+      ...quantityOf(item),
+      // The operator's own fine print: "Applies only when skipper is chosen", a pack's contents.
+      note: stripHtml(text(item.description)),
       onRequestOnly: false,
       ...((item.includesDepositWaiver ?? item.includedDepositWaiver) === true
         ? { depositInsurance: true }
@@ -791,6 +809,46 @@ function includedIdsOf(
 ): Pick<CanonicalExtra, "includedExternalIds"> {
   const ids = [...new Set(item.includedExtras ?? [])].filter((id) => id !== externalId);
   return ids.length > 0 ? { includedExternalIds: ids } : {};
+}
+
+/**
+ * Whether an extra restricted to sailing areas is sold where this yacht is based. An operator
+ * files one extras list across a fleet spread over several areas, so "CharterPack Caribbean
+ * (Cleaning + Bedlinen + Towels + First Gas bottle)" at 750 EUR obligatory arrives on its
+ * Mediterranean hulls too. A base whose areas the dump did not name keeps the extra: silence is
+ * not a reason to hide a fee.
+ */
+function soldInSailingArea(
+  item: RestExtras,
+  homeSailingAreas: ReadonlySet<string> | undefined,
+): boolean {
+  const areas = item.validSailingAreas ?? [];
+  if (areas.length === 0 || homeSailingAreas === undefined || homeSailingAreas.size === 0) {
+    return true;
+  }
+  return areas.some((area) => homeSailingAreas.has(area));
+}
+
+function sailingAreasByBaseOf(bases: readonly RestBase[]): Map<string, Set<string>> {
+  const byBase = new Map<string, Set<string>>();
+  for (const item of bases) {
+    const areas = (item.sailingAreas ?? [])
+      .map((value) => idOf(value))
+      .filter((area): area is string => area !== null);
+    byBase.set(String(item.id), new Set(areas));
+  }
+  return byBase;
+}
+
+/** `-1` is the vendor's unlimited, and so is a limit it did not send. */
+function quantityOf(
+  item: RestExtras,
+): Pick<CanonicalExtra, "quantityLimit" | "quantitySelectable"> {
+  const limit = item.quantityLimit;
+  const quantity: Pick<CanonicalExtra, "quantityLimit" | "quantitySelectable"> = {};
+  if (limit != null && Number.isInteger(limit) && limit >= 0) quantity.quantityLimit = limit;
+  if (item.quantityIsSelectable != null) quantity.quantitySelectable = item.quantityIsSelectable;
+  return quantity;
 }
 
 /**
