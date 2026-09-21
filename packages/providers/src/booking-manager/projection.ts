@@ -526,34 +526,44 @@ function amenityIdsOf(yacht: RestYacht): string[] {
   return [];
 }
 
+type MediaRole = "main" | "layout" | "gallery";
+
 /**
- * `sortOrder` is the vendor's own ordering and the first image is the cover shot;
- * nothing in the payload marks an accommodation layout, so no image is ever filed
- * as one. Duplicate URLs are dropped because the same photo repeats across
- * products on recorded yachts.
+ * The operator labels each picture in `description`: "Main image" is the cover it chose, "Plan
+ * image" the accommodation layout, "Interior image" and a blank the rest. Taking the first
+ * picture as the cover put a deck plan on about 1,370 cards and an interior on about 1,280; on
+ * company 225 "Main image" is first on 5 of the 20 yachts with pictures.
+ *
+ * `sortOrder` is 0 on every picture of that fleet and on most account-wide, so it orders only
+ * where it is set, and the vendor's array order decides the rest. A yacht naming no main image
+ * takes its first picture that is not a plan; one showing only plans has no cover at all, which
+ * ranks its layouts behind any other offer's photos rather than presenting a drawing as the boat.
+ * Duplicate URLs are dropped because the same photo repeats across products.
  */
 function mediaOf(yacht: RestYacht) {
   const images = [...(yacht.images ?? [])]
     .map((image, index) => ({
       url: text(image.url),
-      sortOrder: intOf(image.sortOrder) ?? index,
+      label: text(image.description)?.toLowerCase(),
+      sortOrder: intOf(image.sortOrder) ?? 0,
       index,
     }))
-    .filter((image): image is { url: string; sortOrder: number; index: number } => {
-      return image.url !== undefined;
-    })
+    .filter((image): image is typeof image & { url: string } => image.url !== undefined)
     .sort((left, right) => left.sortOrder - right.sortOrder || left.index - right.index);
 
-  const media: { externalUrl: string; role: "main" | "gallery"; sortOrder: number }[] = [];
+  const cover =
+    images.find((image) => image.label === "main image") ??
+    images.find((image) => image.label !== "plan image");
+
+  const media: { externalUrl: string; role: MediaRole; sortOrder: number }[] = [];
   const seen = new Set<string>();
 
-  for (const image of images) {
-    const url = image.url;
-    if (seen.has(url)) continue;
-    seen.add(url);
+  for (const image of cover === undefined ? images : [cover, ...images]) {
+    if (seen.has(image.url)) continue;
+    seen.add(image.url);
     media.push({
-      externalUrl: url,
-      role: media.length === 0 ? "main" : "gallery",
+      externalUrl: image.url,
+      role: image === cover ? "main" : image.label === "plan image" ? "layout" : "gallery",
       sortOrder: media.length,
     });
   }

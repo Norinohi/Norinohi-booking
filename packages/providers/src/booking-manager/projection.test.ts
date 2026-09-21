@@ -574,6 +574,56 @@ describe("rig and engine", () => {
   );
 });
 
+describe("pictures", () => {
+  const mediaOf = (images: JsonValue[]) =>
+    projectBookingManagerCatalogue(
+      new Map([
+        [
+          "yacht" as const,
+          [{ externalId: "5001", payload: { id: 5001, companyId: 42, homeBaseId: 7, images } }],
+        ],
+      ]),
+    ).listings[0]?.media;
+  const image = (name: string, description: string, sortOrder = 0) => ({
+    url: `https://example.test/${name}.jpg`,
+    description,
+    sortOrder,
+  });
+
+  it("makes the picture the operator labelled Main image the cover, wherever it sits", () => {
+    expect(
+      mediaOf([image("plan", "Plan image"), image("deck", ""), image("hull", "Main image")]),
+    ).toEqual([
+      { externalUrl: "https://example.test/hull.jpg", role: "main", sortOrder: 0 },
+      { externalUrl: "https://example.test/plan.jpg", role: "layout", sortOrder: 1 },
+      { externalUrl: "https://example.test/deck.jpg", role: "gallery", sortOrder: 2 },
+    ]);
+  });
+
+  it("falls back to the first picture that is not a plan", () => {
+    const media = mediaOf([image("plan", "Plan image"), image("saloon", "Interior image")]);
+
+    expect(media?.map((item) => [item.externalUrl, item.role])).toEqual([
+      ["https://example.test/saloon.jpg", "main"],
+      ["https://example.test/plan.jpg", "layout"],
+    ]);
+  });
+
+  it("gives a yacht showing only its plans no cover rather than a drawing", () => {
+    expect(mediaOf([image("plan", "Plan image")])?.map((item) => item.role)).toEqual(["layout"]);
+  });
+
+  it("orders by sortOrder where the vendor sets one, and by the array where it does not", () => {
+    const media = mediaOf([image("c", "", 3), image("b", "", 2), image("a", "Main image", 5)]);
+
+    expect(media?.map((item) => item.externalUrl)).toEqual([
+      "https://example.test/a.jpg",
+      "https://example.test/b.jpg",
+      "https://example.test/c.jpg",
+    ]);
+  });
+});
+
 describe("the legal limit on board", () => {
   const specOf = (over: Record<string, JsonValue>) =>
     projectBookingManagerCatalogue(
@@ -912,6 +962,18 @@ describe("live company 225 yachts: crew, rig and pictures", () => {
     for (const listing of listings) {
       expect(listing.checkinRules.every((rule) => rule.maxNights === 90)).toBe(true);
     }
+  });
+
+  it("covers Artic fun and Virgin Mary with the picture labelled Main image, not a plan", () => {
+    expect(listingNamed("Artic fun")?.media.map((item) => item.role)).toEqual([
+      "main",
+      "layout",
+      "gallery",
+    ]);
+    expect(listingNamed("Artic fun")?.media[0]?.externalUrl).toMatch(/Oceanis46\.1_main\.jpg$/);
+    expect(listingNamed("Virgin Mary - Crewed")?.media[0]?.externalUrl).toMatch(
+      /BavariaC38_main\.jpg$/,
+    );
   });
 
   it("carries the rig and engine the fleet states", () => {
