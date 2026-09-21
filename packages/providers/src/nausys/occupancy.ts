@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import type { Database } from "../registry";
 import { parseNausysDate, parseNausysDateTime } from "../shared/dates";
-import { ContractError } from "../shared/errors";
+import { AuthError, ContractError } from "../shared/errors";
 import { nausysConfirmedCursorSchema, streamNausysConfirmedOffers } from "./confirmed-offers";
 import { decimalStringToMinor } from "../shared/money";
 import { stableSourceHash } from "../shared/raw-retention";
@@ -21,7 +21,7 @@ import type { SyncReporter } from "../sync/runner";
 import type { NausysClient } from "./client";
 import {
   nausysEndpoints,
-  type restOccupancyReservationSchema,
+  restOccupancyReservationSchema,
   restOccupancyResponseSchema,
 } from "./endpoints";
 
@@ -52,6 +52,8 @@ export interface NausysOccupancyDump {
   year?: number;
   seasonId?: string;
   reservations: RestOccupancyReservation[];
+  /** Rows that did not parse, with the yacht they name where they name one. */
+  unreadable?: { yachtId: string | null; issue: string }[];
 }
 
 export async function fetchNausysOccupancy(
@@ -65,16 +67,47 @@ export async function fetchNausysOccupancy(
 
   // Occupancy takes the TOP-LEVEL {username, password} body despite living under
   // `yachtReservation/v6` next to `freeYachts`, which takes the nested one.
-  const response = await client.catalogueCall(endpoint, restOccupancyResponseSchema);
+  const response = await client.catalogueCall(endpoint, restOccupancyEnvelopeSchema);
+
+  /*
+   * Row by row. One row with a new reservationType literal (SERVICE was one, found in
+   * production) or no yachtId failed the whole response, which is a ContractError out of the
+   * fetch: the year was lost, and under the default every company after it. A row that names
+   * its yacht now quarantines that yacht, the bargain `mapOccupancyDump` already strikes.
+   */
+  const reservations: RestOccupancyReservation[] = [];
+  const unreadable: NausysOccupancyDump["unreadable"] = [];
+  for (const row of response.reservations ?? []) {
+    const parsed = restOccupancyReservationSchema.safeParse(row);
+    if (parsed.success) {
+      reservations.push(parsed.data);
+      continue;
+    }
+    const yacht = unreadableRowSchema.safeParse(row);
+    unreadable.push({
+      yachtId: yacht.success ? String(yacht.data.yachtId) : null,
+      issue: parsed.error.issues
+        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+        .join(", "),
+    });
+  }
 
   return {
     companyId: scope.companyId,
     ...("seasonId" in scope
       ? { seasonId: String(scope.seasonId) }
       : { year: response.year ?? scope.year }),
-    reservations: response.reservations ?? [],
+    reservations,
+    unreadable,
   };
 }
+
+const restOccupancyEnvelopeSchema = restOccupancyResponseSchema.extend({
+  reservations: z.array(z.json()).optional(),
+});
+
+/** Enough of an unreadable row to know whose calendar it belongs to. */
+const unreadableRowSchema = z.looseObject({ yachtId: z.number().int() });
 
 /**
  * Lossy for one yacht, never for the scope - the same bargain
@@ -160,6 +193,24 @@ export function mapOccupancyDump(dump: NausysOccupancyDump, optionTimeZone: stri
   const intervals: OccupiedInterval[] = [];
   const quarantinedYachtIds = new Set<string>();
   const issues: string[] = [];
+
+  /*
+   * A row we could not read is a week we cannot vouch for. Where it names its yacht, that yacht
+   * is quarantined like any other unreadable row; where it names none, the dump cannot be
+   * trusted for anyone, so the scope-year is refused rather than advertised half-read.
+   */
+  const anonymous = (dump.unreadable ?? []).filter((row) => row.yachtId === null);
+  if (anonymous.length > 0) {
+    throw new ContractError(
+      `NauSYS occupancy for company ${dump.companyId} has ${anonymous.length} unreadable row(s) naming no yacht: ${anonymous[0]?.issue ?? ""}`,
+      { endpoint: "occupancy" },
+    );
+  }
+  for (const row of dump.unreadable ?? []) {
+    if (row.yachtId === null) continue;
+    quarantinedYachtIds.add(row.yachtId);
+    if (issues.length < MAX_REPORTED_ISSUES) issues.push(`yacht ${row.yachtId}: ${row.issue}`);
+  }
 
   for (const reservation of dump.reservations) {
     try {
@@ -279,6 +330,13 @@ export function createNausysAvailabilitySource(
     options.loadHotWindows ?? (() => Promise.resolve({ advertised: [], grid: staticWindows }));
 
   const source: AvailabilitySource = {
+    /*
+     * Only a dead credential stops the run. A company that withdrew our agency's access answers
+     * OPERATION_NOT_ALLOWED on every run until the catalogue drops it, and a malformed dump is
+     * that company-year's problem; under the shared default either one abandoned every company
+     * after it, leaving their stale free weeks on sale.
+     */
+    isFatal: (error) => error instanceof AuthError && error.providerCode === "AUTHENTICATION_ERROR",
     listScopes(): Promise<AvailabilityScope[]> {
       const scopes: AvailabilityScope[] = [];
       for (const companyId of options.companyIds) {

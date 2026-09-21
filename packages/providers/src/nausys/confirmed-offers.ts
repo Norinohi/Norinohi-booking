@@ -1,11 +1,14 @@
+import { log } from "evlog";
 import { z } from "zod";
 
+import type { JsonValue } from "../shared/json";
 import type { SweepPeriod } from "../shared/sweep-periods";
 import type { ConfirmedOffer, ConfirmedOfferPage } from "../sync/availability-writer";
 import type { NausysClient } from "./client";
 import { decimalStringToMinor } from "../shared/money";
 import { reconciledListPriceMinor } from "./discounts";
 import { extraLineMinor } from "./extras";
+import { preferredFreeYachtRow } from "./quote";
 import { stableSourceHash } from "../shared/raw-retention";
 import { formatNausysDate, parseNausysDate } from "../shared/dates";
 import {
@@ -16,6 +19,18 @@ import {
 } from "./endpoints";
 
 type RestFreeYacht = z.infer<typeof restFreeYachtSchema>;
+
+/** The response with its rows unread, so each hull is parsed, and refused, on its own. */
+const freeYachtsEnvelopeSchema = restFreeYachtsResponseSchema.extend({
+  freeYachts: z.array(z.json()).optional(),
+});
+
+const yachtIdSchema = z.looseObject({ yachtId: z.number().int() });
+
+function yachtIdOf(row: JsonValue): number | null {
+  const parsed = yachtIdSchema.safeParse(row);
+  return parsed.success ? parsed.data.yachtId : null;
+}
 
 /**
  * The weeks NauSYS will actually sell, priced, read from `freeYachts` a batch of hulls at a
@@ -151,12 +166,39 @@ export async function* streamNausysConfirmedOffers(
 
       const response = await client.bookingCall(
         nausysEndpoints.availability.freeYachts,
-        restFreeYachtsResponseSchema,
+        freeYachtsEnvelopeSchema,
         { ...request },
       );
 
-      for (const yacht of response.freeYachts ?? []) {
-        const offer = mapFreeYachtToConfirmedOffer(yacht);
+      const readable: RestFreeYacht[] = [];
+      for (const row of response.freeYachts ?? []) {
+        /*
+         * Row by row. One hull the schema refuses (a missing status or currency, a new status
+         * literal) failed the whole batch of 250, and advertised weeks are re-walked first on
+         * every run, so the same row stalled the fleet's confirmed prices run after run. A hull
+         * dropped here is read as silence, like any hull the vendor did not answer for.
+         */
+        const yacht = restFreeYachtSchema.safeParse(row);
+        if (!yacht.success) {
+          log.warn({
+            action: "nausys.sweep_row_unreadable",
+            yachtId: yachtIdOf(row),
+            periodFrom: request.periodFrom,
+            issues: yacht.error.issues
+              .slice(0, 3)
+              .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+              .join("; "),
+          });
+          continue;
+        }
+        readable.push(yacht.data);
+      }
+
+      /* One offer per hull, the round trip where the vendor also answered a one-way: the
+         writer kept whichever row came last, so a card could show a one-way price. */
+      for (const yachtId of new Set(readable.map((yacht) => yacht.yachtId))) {
+        const yacht = preferredFreeYachtRow(readable.filter((row) => row.yachtId === yachtId));
+        const offer = yacht ? mapFreeYachtToConfirmedOffer(yacht) : null;
         if (offer) offers.push(offer);
       }
     }

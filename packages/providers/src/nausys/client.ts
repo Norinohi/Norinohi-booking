@@ -113,9 +113,13 @@ export function classifyNausysResponse(
     return null;
   }
 
+  /* The status word where it is one of the vendor's names: an agency refused a company's
+     occupancy is answered `OPERATION_NOT_ALLOWED` with errorCode 100, and labelling that
+     AUTHENTICATION_ERROR off the number made a per-company refusal read as a dead credential. */
+  const named = statusCodesByName.has(status) ? status : undefined;
   const options = {
     endpoint: context.endpoint,
-    providerCode: code === undefined ? status : (NAUSYS_STATUS_NAMES[code] ?? status),
+    providerCode: named ?? (code === undefined ? status : (NAUSYS_STATUS_NAMES[code] ?? status)),
     payload: body,
   };
   const factory = code === undefined ? contractError : (ERROR_BY_CODE.get(code) ?? contractError);

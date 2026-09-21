@@ -1206,3 +1206,24 @@ describe("NauSYS services listed as both obligatory and optional", () => {
     expect(sumOf(priced)).toBe(priced.total.amountMinor);
   });
 });
+
+/* The vendor can answer a hull twice in one period: a round trip and a one-way, priced apart. */
+describe("NauSYS free-yacht rows for one hull", () => {
+  it("prices the round trip, whichever order they come in", async () => {
+    const body = fixtureResponse();
+    const roundTrip = { ...firstYacht(body), locationFromId: 11, locationToId: 11 };
+    const oneWay = {
+      ...firstYacht(body),
+      locationFromId: 11,
+      locationToId: 22,
+      price: { ...firstYacht(body).price, clientPrice: "9999.00", priceListPrice: "9999.00" },
+    };
+    body.freeYachts = [oneWay, roundTrip];
+    const { service, transport } = build();
+    transport.respondWith("freeYachts", body);
+
+    const priced = await service.getNausysQuote(request);
+
+    expect(lineByCode(priced, "base-charter").amount.amountMinor).not.toBe(999_900);
+  });
+});

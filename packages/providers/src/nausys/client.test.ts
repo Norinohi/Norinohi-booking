@@ -358,3 +358,15 @@ describe("NauSYS retries on reservation writes", () => {
     expect(transport.callCount("freeYachts")).toBe(2);
   });
 });
+
+/* An agency refused one company's data is answered OPERATION_NOT_ALLOWED with errorCode 100. */
+describe("NauSYS status names", () => {
+  it("keeps the status word when the number says something else", async () => {
+    const { client, transport } = build();
+    transport.respondWith("freeYachts", { status: "OPERATION_NOT_ALLOWED", errorCode: 100 });
+
+    await expect(
+      client.bookingCall(nausysEndpoints.availability.freeYachts, restStatusSchema, {}),
+    ).rejects.toMatchObject({ providerCode: "OPERATION_NOT_ALLOWED" });
+  });
+});

@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { unscopedCompanies } from "../shared/company-scope";
-import { ContractError } from "../shared/errors";
-import { looseJsonObject } from "../shared/json";
+import { AuthError, ContractError } from "../shared/errors";
+import { type JsonObject, looseJsonObject } from "../shared/json";
 import { SequentialQueue } from "../shared/queue";
 import { occupiedIntervalSchema } from "../sync/availability-writer";
 import { NausysClient } from "./client";
@@ -158,6 +158,77 @@ describe("fetchNausysOccupancy", () => {
     await fetchNausysOccupancy(client, { companyId: "102701", seasonId: 771 });
 
     expect(transport.calls[0]?.endpoint).toBe("occupancy2/102701/771");
+  });
+});
+
+/*
+ * One odd row used to fail the whole response, and the ContractError out of the fetch took the
+ * rest of the run with it: SERVICE was such a literal once, found in production.
+ */
+describe("occupancy rows the schema does not know", () => {
+  function withRows(extra: JsonObject[]): JsonObject {
+    const body = z
+      .looseObject({ reservations: z.array(looseJsonObject({})) })
+      .parse(structuredClone(occupancyFixture));
+    return { ...body, reservations: [...body.reservations, ...extra] };
+  }
+
+  it("quarantines the yacht an unreadable row names, and keeps the rest", async () => {
+    const { client, transport } = build();
+    transport.respondWith(
+      "occupancy",
+      withRows([
+        {
+          id: 1,
+          yachtId: 9_999_001,
+          reservationType: "MAINTENANCE_WINDOW",
+          periodFrom: "01.07.2026",
+          periodTo: "08.07.2026",
+        },
+      ]),
+    );
+
+    const dump = await fetchNausysOccupancy(client, { companyId: "102701", year: 2026 });
+    const mapped = mapOccupancyDump(dump, "Europe/Zagreb");
+
+    expect(dump.reservations).toHaveLength(3);
+    expect(mapped.quarantinedYachtIds).toEqual(["9999001"]);
+    expect(mapped.intervals.length).toBeGreaterThan(0);
+  });
+
+  /* A row that names no yacht could be anybody's week; the scope-year is refused, not guessed. */
+  it("refuses the dump when an unreadable row names no yacht", async () => {
+    const { client, transport } = build();
+    transport.respondWith(
+      "occupancy",
+      withRows([{ id: 2, reservationType: "RESERVATION", periodFrom: "01.07.2026" }]),
+    );
+
+    const dump = await fetchNausysOccupancy(client, { companyId: "102701", year: 2026 });
+
+    expect(() => mapOccupancyDump(dump, "Europe/Zagreb")).toThrow(ContractError);
+  });
+});
+
+describe("what stops a NauSYS availability run", () => {
+  const source = () =>
+    createNausysAvailabilitySource({
+      client: build().client,
+      companyIds: ["102701"],
+      years: [2026],
+      optionTimeZone: "Europe/Zagreb",
+    });
+
+  it("is a dead credential, and not one company refusing us or one bad dump", () => {
+    const isFatal = source().isFatal;
+    expect(isFatal).toBeDefined();
+    expect(isFatal?.(new AuthError("refused", { providerCode: "AUTHENTICATION_ERROR" }))).toBe(
+      true,
+    );
+    expect(isFatal?.(new AuthError("refused", { providerCode: "OPERATION_NOT_ALLOWED" }))).toBe(
+      false,
+    );
+    expect(isFatal?.(new ContractError("bad dump"))).toBe(false);
   });
 });
 

@@ -1,3 +1,4 @@
+import { log } from "evlog";
 import type { z } from "zod";
 
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
@@ -213,7 +214,18 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
       { ...request },
     );
 
-    const yacht = (response.freeYachts ?? []).find((entry) => entry.yachtId === yachtId);
+    const yacht = preferredFreeYachtRow(
+      (response.freeYachts ?? []).filter((entry) => entry.yachtId === yachtId),
+    );
+    if (yacht && !isRoundTrip(yacht)) {
+      log.warn({
+        action: "nausys.quote_one_way_only",
+        yachtId,
+        periodFrom,
+        locationFromId: yacht.locationFromId,
+        locationToId: yacht.locationToId,
+      });
+    }
     // An empty list is how the vendor says "not free in that period": there is no
     // separate unavailable status, and no other reading of it is safe.
     if (!yacht) {
@@ -302,6 +314,28 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
       return { quote: mapFreeYachtToProviderQuote(mapping), billedRows: billedExtraRows(mapping) };
     },
   };
+}
+
+/**
+ * The row to price when the vendor answers one yacht more than once.
+ *
+ * A free-yacht row is a yacht, a period and a pair of locations: the same hull can come back as
+ * a round trip and as a one-way, at different prices. The first row was taken, so a customer
+ * could be quoted the one-way without being told they would finish elsewhere. A round trip is
+ * what we sell unless nothing else is on offer.
+ */
+export function preferredFreeYachtRow<T extends { locationFromId?: number; locationToId?: number }>(
+  rows: readonly T[],
+): T | undefined {
+  return rows.find(isRoundTrip) ?? rows[0];
+}
+
+function isRoundTrip(row: { locationFromId?: number; locationToId?: number }): boolean {
+  return (
+    row.locationFromId === undefined ||
+    row.locationToId === undefined ||
+    row.locationFromId === row.locationToId
+  );
 }
 
 export interface FreeYachtMapping {
