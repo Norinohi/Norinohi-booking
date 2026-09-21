@@ -25,6 +25,7 @@ import { allInPrice, isOneWay, rankOffers } from "./offer-ranking";
 import {
   BM_EXTRA_KIND,
   bookingManagerEndpoints,
+  isSameBookingManagerProduct,
   restOfferListSchema,
   type RestExtras,
   type RestOffer,
@@ -245,7 +246,7 @@ function offersForPeriod(
   );
 
   const ofProduct = productName
-    ? candidates.filter((offer) => offer.product === productName)
+    ? candidates.filter((offer) => isSameBookingManagerProduct(offer.product, productName))
     : candidates;
 
   return ofProduct.length > 0 ? ofProduct : candidates;

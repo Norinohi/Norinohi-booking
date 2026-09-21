@@ -144,6 +144,20 @@ export const BM_RESERVATION_STATUS_NAMES = new Map<number, string>([
   [BM_RESERVATION_STATUS.SLEEP_ABOARD, "SLEEP_ABOARD"],
 ]);
 
+/**
+ * Whether two `ProductEnum` values name the same product. The spec spells them
+ * lowercase (`bareboat`), the vendor answers `Bareboat`, and it accepts either when
+ * asked, so a strict comparison between what we send and what comes back never
+ * matches. Measured on company 225, 2026-09-21.
+ */
+export function isSameBookingManagerProduct(
+  left: string | null | undefined,
+  right: string | null | undefined,
+): boolean {
+  if (left == null || right == null) return false;
+  return left.trim().toLowerCase() === right.trim().toLowerCase();
+}
+
 /** `format=3` on /shortAvailability: one character per day. */
 export const BM_SHORT_AVAILABILITY_FORMAT = { BINARY: 1, HEX: 2, STATUS: 3 } as const;
 

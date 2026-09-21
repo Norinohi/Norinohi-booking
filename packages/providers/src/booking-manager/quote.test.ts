@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { z } from "zod";
 
+import { parseExactJson } from "../shared/exact-json";
 import { bookingDraftSchema } from "../types";
-import { restExtrasSchema, restOfferSchema } from "./endpoints";
+import { restExtrasSchema, restOfferListSchema, restOfferSchema } from "./endpoints";
 import {
   mapOfferToProviderQuote,
   type OfferMapping,
@@ -258,6 +259,66 @@ describe("selectOffer", () => {
 
     expect(selectOffer([otherWeek], "9001", "2026-09-26", "2026-10-03", undefined)).toBeUndefined();
   });
+});
+
+/*
+ * Rumba on company 225, week of 5 June 2027, exactly as `/offers` answered it. Its base is
+ * Marina Cienfuegos, whose id is 0, beside neighbours with ids like 25 and 127 and the usual
+ * 19 digits: nothing may read the 0 as "no base" or assume an id's length.
+ */
+describe("an offer on the vendor's short base ids", () => {
+  const [rumba] = restOfferListSchema.parse(
+    parseExactJson(
+      '[{"yachtId":123325530000100225,"yacht":"Rumba","startBaseId":0,"endBaseId":0,' +
+        '"startBase":"Cienfuegos / Marina Cienfuegos","endBase":"Cienfuegos / Marina Cienfuegos",' +
+        '"dateFrom":"2027-06-05 17:00:00","dateTo":"2027-06-12 09:00:00","status":0,' +
+        '"product":"Bareboat","price":4600.0,"currency":"EUR","startPrice":5000.0,' +
+        '"obligatoryExtrasPrice":0.0,"obligatoryExtras":[],"paymentPlan":[' +
+        '{"date":"2026-09-29 00:18:12","amount":2300.0},{"date":"2027-05-08 00:00:00","amount":2300.0}],' +
+        '"discounts":[{"id":8294180160000100225,"name":"Early booking 2027","percentage":8.0,' +
+        '"price":400.0,"currency":"EUR"}],"securityDeposit":2500.0,"commissionPercentage":15.0,' +
+        '"commissionValue":690.0,"discountPercentage":8.0}]',
+    ),
+  );
+  if (rumba === undefined) throw new Error("fixture did not parse");
+  const yachtId = "123325530000100225";
+
+  it("keeps base 0 as a base", () => {
+    expect(rumba).toMatchObject({ yachtId, startBaseId: "0", endBaseId: "0" });
+  });
+
+  it("finds the offer when the drop-off asked for is base 0", () => {
+    expect(selectOffer([rumba], yachtId, "2027-06-05", "2027-06-12", undefined, "0")).toBe(rumba);
+  });
+
+  it("names base 0 on the quote's route", () => {
+    const quote = mapOfferToProviderQuote({
+      offer: rumba,
+      listingId: "lst_rumba",
+      checkIn: "2027-06-05",
+      checkOut: "2027-06-12",
+      guests: 4,
+      requestedCurrency: "EUR",
+      expiresAt: "2027-05-01T00:00:00.000Z",
+    });
+
+    expect(quote.route).toEqual({ startBaseId: "0", endBaseId: "0" });
+  });
+
+  /* The spec spells ProductEnum lowercase; the vendor answers "Bareboat" and accepts both. */
+  it.each(["bareboat", "BAREBOAT", " Bareboat "])(
+    "matches the product whatever case it is spelled in (%o)",
+    (productName) => {
+      const crewed = restOfferSchema.parse({
+        ...JSON.parse(JSON.stringify(rumba)),
+        product: "Crewed",
+      });
+
+      expect(
+        selectOffer([crewed, rumba], yachtId, "2027-06-05", "2027-06-12", productName)?.product,
+      ).toBe("Bareboat");
+    },
+  );
 });
 
 describe("repriceRequestFor", () => {
