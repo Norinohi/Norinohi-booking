@@ -268,6 +268,23 @@ dates), and a cancellation outranks the others. Beyond status it reports `dates_
 adapter last recorded; nothing is applied to the customer's booking. The lists carry
 `paymentCurrency`, not `currency`.
 
+#### Rows are read one at a time
+
+`occupancy` and the sweep's `freeYachts` parse each row on its own. An occupancy row the schema
+refuses quarantines the yacht it names (a row naming none refuses that company-year), and an
+unreadable free-yacht row drops that hull (`nausys.sweep_row_unreadable`). A NauSYS availability
+run stops only on `AUTHENTICATION_ERROR`; a company answering `OPERATION_NOT_ALLOWED` costs that
+company. The status word now wins over `errorCode` for `providerCode`, since that refusal arrives
+with errorCode 100.
+
+When `freeYachts` answers one hull twice (a round trip and a one-way), the quote and the sweep
+take the round trip (`preferredFreeYachtRow`); a one-way-only answer is priced and logged
+(`nausys.quote_one_way_only`). The route itself is still not shown to the customer.
+
+`onRequestOnly` extras are left off the option and added after `createBooking`, by the row the
+reservation's `availableExtras` offers; a refusal there is logged
+(`nausys.on_request_extras_not_added`) and does not undo the booking.
+
 #### Waiting options, and what we deliberately do not do with them
 
 `yachtReservation/v6/waitingOptions` answers how many people the operator already has queued
