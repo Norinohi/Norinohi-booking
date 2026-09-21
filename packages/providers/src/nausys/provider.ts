@@ -177,14 +177,8 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
           .reduce((sum, line) => sum + line.amount.amountMinor, 0);
         return { hash: quote.priceSourceHash, billedRows, extrasMinor };
       },
-      /* The same re-price, for an extras edit on a reservation that already exists. */
-      billedRowsFor: async (request) =>
-        (
-          await this.quotes.getNausysQuoteWithRows({
-            ...request,
-            currency: request.currency ?? this.currency,
-          })
-        ).billedRows,
+      loadCrewRoleServiceIds: async (listingId) =>
+        new Set((await loadNausysCrewRoles(this.db, listingId)).map((role) => role.externalId)),
       loadExtraLabels: (listingId) => loadNausysExtraLabels(this.db, listingId),
       loadOnRequestCodes: (listingId) => loadNausysOnRequestCodes(this.db, listingId),
       recordEvent: createReservationEventRecorder(this.db, "nausys"),

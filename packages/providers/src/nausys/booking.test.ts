@@ -132,19 +132,14 @@ const charter = {
 /** Season price row ids sit in another range than catalogue ids, as they do live. */
 const ROW_OFFSET = 60_000_000;
 
-/** The re-price, standing in: each `service:<id>` code is one row with no condition. */
-async function rowsForCodes(request: { extras?: readonly string[] | undefined }) {
-  return (request.extras ?? []).map((code) => {
-    const externalId = code.slice("service:".length);
-    return {
-      kind: "service" as const,
-      rowId: ROW_OFFSET + Number(externalId),
-      code,
-      externalId,
-      condition: null,
-    };
-  });
-}
+/** What the reservation can still take, one season row per catalogue service. */
+const AVAILABLE = [8001, 8002, 8003].map((serviceId) => ({
+  id: ROW_OFFSET + serviceId,
+  extraId: serviceId,
+  extrasType: "SERVICE",
+  amount: "150.00",
+  currency: "EUR",
+}));
 
 function build(overrides: Partial<NausysBookingServiceDeps> = {}) {
   const transport = new FakeNausysTransport();
@@ -166,7 +161,7 @@ function build(overrides: Partial<NausysBookingServiceDeps> = {}) {
     config,
     db,
     verifyPrice: () => Promise.resolve({ hash: PRICE_HASH, billedRows: [] }),
-    billedRowsFor: rowsForCodes,
+    loadAvailableExtras: async () => AVAILABLE,
     recordEvent: (event) => {
       events.push(event);
       return Promise.resolve();
@@ -362,7 +357,11 @@ describe("the uuid funnel", () => {
     const { service, transport, rotations } = build();
     const rotated = "aa11bb22-xtra-4e55-9fcc-000000000005";
     /* The reservation's own extras, read from the vendor before anything is diffed. */
-    transport.respondWith("listExtras", { status: "OK", addedServices: [] });
+    transport.respondWith("listExtras", {
+      status: "OK",
+      addedServices: [],
+      availableExtras: AVAILABLE,
+    });
     transport.respondWith("addExtras", fixture("createOption", { uuid: rotated }));
 
     await service.addOrUpdateExtras({
@@ -782,7 +781,11 @@ describe("reservation events", () => {
 describe("agencyPrice never leaves the adapter", () => {
   it("is absent from every returned DTO and every logged event", async () => {
     const { service, events, transport } = build();
-    transport.respondWith("listExtras", { status: "OK", addedServices: [] });
+    transport.respondWith("listExtras", {
+      status: "OK",
+      addedServices: [],
+      availableExtras: AVAILABLE,
+    });
     transport.respondWith("addExtras", fixture("createOption"));
 
     const held = await service.createOption(draft);
@@ -808,7 +811,11 @@ describe("agencyPrice never leaves the adapter", () => {
 describe("extras mutation pricing", () => {
   it("re-reads the price from the mutation response", async () => {
     const { service, transport } = build();
-    transport.respondWith("listExtras", { status: "OK", addedServices: [] });
+    transport.respondWith("listExtras", {
+      status: "OK",
+      addedServices: [],
+      availableExtras: AVAILABLE,
+    });
     transport.respondWith("addExtras", fixture("createOption"));
 
     const quote = await service.addOrUpdateExtras({
@@ -844,7 +851,11 @@ describe("extras mutation pricing", () => {
    */
   it("bills a per-person extra at its line total, not its unit price", async () => {
     const { service, transport } = build();
-    transport.respondWith("listExtras", { status: "OK", addedServices: [] });
+    transport.respondWith("listExtras", {
+      status: "OK",
+      addedServices: [],
+      availableExtras: AVAILABLE,
+    });
     transport.respondWith(
       "addExtras",
       fixture("createOption", {
@@ -879,7 +890,11 @@ describe("extras mutation pricing", () => {
   /** Production always sends `totalPrice`; a vendor that omits it still owes the product. */
   it("falls back to unit times quantity when the vendor omits the line total", async () => {
     const { service, transport } = build();
-    transport.respondWith("listExtras", { status: "OK", addedServices: [] });
+    transport.respondWith("listExtras", {
+      status: "OK",
+      addedServices: [],
+      availableExtras: AVAILABLE,
+    });
     transport.respondWith(
       "addExtras",
       fixture("createOption", {
@@ -905,9 +920,35 @@ describe("extras mutation pricing", () => {
     expect(quote.lines[1]?.amount.amountMinor).toBe(10_000);
   });
 
+  /* Live on the test company, Sep 2026: the reservation's dates carry the handover time. */
+  it("reads reservation dates that carry a time", async () => {
+    const { service, transport } = build();
+    transport.respondWith("listExtras", {
+      status: "OK",
+      addedServices: [],
+      availableExtras: AVAILABLE,
+    });
+    transport.respondWith(
+      "addExtras",
+      fixture("createOption", { periodFrom: "04.07.2026 17:00", periodTo: "11.07.2026 09:00" }),
+    );
+
+    const quote = await service.addOrUpdateExtras({
+      ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
+      charter,
+      extras: ["service:8001"],
+    });
+
+    expect([quote.checkIn, quote.checkOut]).toEqual(["2026-07-04", "2026-07-11"]);
+  });
+
   it("produces a hash that ignores the rotating uuid", async () => {
     const { service, transport } = build();
-    transport.respondWith("listExtras", { status: "OK", addedServices: [] });
+    transport.respondWith("listExtras", {
+      status: "OK",
+      addedServices: [],
+      availableExtras: AVAILABLE,
+    });
     transport.respondWith("addExtras", fixture("createOption"));
     const first = await service.addOrUpdateExtras({
       charter,
@@ -1147,17 +1188,19 @@ describe("billed extras on the hold", () => {
 
 describe("extras edits on an existing reservation", () => {
   const ref = { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID };
-  const transferRow = (rowId: number, condition: string) => ({
-    kind: "service" as const,
-    rowId,
-    code: `service:100511@${rowId}`,
-    externalId: "100511",
-    condition,
-  });
 
-  it("swaps one transfer route for another by the line's condition", async () => {
+  it("swaps one transfer route for another", async () => {
     const { service, transport } = build({
-      billedRowsFor: async () => [transferRow(66279573, "minivan up to 8 pax")],
+      loadAvailableExtras: async () => [
+        {
+          id: 66279573,
+          extraId: 100511,
+          extrasType: "SERVICE",
+          amount: "120.00",
+          currency: "EUR",
+          condition: { textEN: "minivan up to 8 pax" },
+        },
+      ],
       loadReservationExtras: async () => [
         {
           yachtReservationServiceId: 991,
@@ -1181,9 +1224,10 @@ describe("extras edits on an existing reservation", () => {
     });
   });
 
+  /* A row already on the reservation is no longer among the ones it can take. */
   it("keeps the route that is already on the reservation", async () => {
     const { service, transport } = build({
-      billedRowsFor: async () => [transferRow(66279573, "minivan up to 8 pax")],
+      loadAvailableExtras: async () => [],
       loadReservationExtras: async () => [
         {
           yachtReservationServiceId: 991,
@@ -1202,6 +1246,36 @@ describe("extras edits on an existing reservation", () => {
     expect(transport.lastBody("updateExtras")).toMatchObject({
       services: [{ yachtReservationServiceId: 991, quantity: 1 }],
     });
+  });
+
+  it("refuses an extra the reservation neither carries nor can take", async () => {
+    const { service, transport } = build({
+      loadAvailableExtras: async () => [],
+      loadReservationExtras: async () => [],
+    });
+
+    await expect(
+      service.addOrUpdateExtras({ ref, charter, extras: ["service:934251"] }),
+    ).rejects.toThrow(/cannot take/);
+    expect(transport.calls).toHaveLength(0);
+  });
+
+  /* The skipper belongs to the crew type; an extras edit that does not name it keeps it. */
+  it("never removes a crew line", async () => {
+    const { service, transport } = build({
+      loadCrewRoleServiceIds: async () => new Set(["1"]),
+      loadReservationExtras: async () => [
+        { yachtReservationServiceId: 992, serviceId: 1, quantity: 7, editable: true },
+        { yachtReservationServiceId: 993, serviceId: 8001, quantity: 1, editable: true },
+      ],
+    });
+    transport.respondWith("updateExtras", fixture("createOption"));
+
+    await service.addOrUpdateExtras({ ref, charter, extras: [] });
+
+    expect(transport.lastBody("updateExtras")).toEqual(
+      expect.objectContaining({ services: [{ yachtReservationServiceId: 993, quantity: 0 }] }),
+    );
   });
 
   /* The cleaning fee is on every charter; deselecting everything must not take it off. */
@@ -1262,15 +1336,6 @@ describe("extras edits on an existing reservation", () => {
     expect(transport.lastBody("updateExtras")).toMatchObject({
       equipments: [{ yachtReservationEquipmentId: 323413, quantity: 0 }],
     });
-  });
-
-  it("refuses a mutation that does not say which charter it is for", async () => {
-    const { service, transport } = build();
-
-    await expect(service.addOrUpdateExtras({ ref, extras: ["service:8001"] })).rejects.toThrow(
-      /re-pricing the charter/,
-    );
-    expect(transport.calls).toHaveLength(0);
   });
 });
 

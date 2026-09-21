@@ -482,9 +482,8 @@ export const providerExtrasMutationSchema = z.object({
   ref: providerReservationRefSchema,
   extras: z.array(z.string()),
   /**
-   * The charter the reservation is for, as it was quoted. A code names an extra, not the offer
-   * row a reservation takes, and a crew role is on the reservation without being in `extras`:
-   * NauSYS re-prices the charter to learn both, so it is required there.
+   * The charter the reservation is for. NauSYS reads the listing from it to know which lines
+   * are crew, which an extras edit leaves to the crew type.
    */
   charter: z
     .object({

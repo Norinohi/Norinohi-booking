@@ -35,7 +35,6 @@ import {
   type ProviderQuote,
   type ProviderReservation,
   type ProviderReservationRef,
-  type QuoteRequest,
 } from "../types";
 import { type NausysClient, reservationLane } from "./client";
 import type { NausysConfig } from "./config";
@@ -117,11 +116,10 @@ export interface NausysBookingServiceDeps {
    * nothing to remove, and left a deselected extra on the booking still being billed.
    */
   loadReservationExtras?: (ref: ProviderReservationRef) => Promise<ReservationExtra[]>;
-  /**
-   * The offer rows a charter bills for a selection, by re-pricing it: what `addOrUpdateExtras`
-   * diffs the reservation against. The same rows `verifyPrice` hands the hold.
-   */
-  billedRowsFor?: (request: QuoteRequest) => Promise<readonly BilledExtraRow[]>;
+  /** The rows a reservation can still take, where `loadReservationExtras` is overridden. */
+  loadAvailableExtras?: (ref: ProviderReservationRef) => Promise<AvailableExtra[]>;
+  /** Every crew role's service id for a listing, whose lines an extras edit never removes. */
+  loadCrewRoleServiceIds?: (listingId: string) => Promise<ReadonlySet<string>>;
   /** The listing's extra names by canonical code, for the lines a mutation's reprice returns. */
   loadExtraLabels?: (listingId: string) => Promise<ReadonlyMap<string, string>>;
   /**
@@ -471,11 +469,14 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
    * same". Sending the desired set therefore does not remove anything, which is
    * how a deselected extra would have stayed on the booking and kept being billed.
    *
-   * So the set is diffed instead. What the charter should carry comes from re-pricing it, the
-   * same rows the hold put on the reservation: the crew its crew type puts aboard and the
-   * extras ticked, each as the season price row `addExtras` takes. A reservation line names only
-   * the catalogue id and its condition, so that pair is what matches a line to a row, which is
-   * also what tells one transfer route's line from another's.
+   * So the set is diffed instead, against the reservation's own `listExtras`: the lines it
+   * carries, and the season price rows it can still take (`availableExtras`), which is where an
+   * addition's row id comes from. Re-pricing the charter cannot answer that on a live hold:
+   * freeYachts no longer reports a yacht we hold, so the edit refused every reservation (seen
+   * live on the vendor's test company, Sep 2026). A code whose row is still available is an
+   * addition; one whose extra is already on the reservation is kept; one that is neither is
+   * refused rather than dropped. Crew lines belong to the crew type, which this does not edit,
+   * so they are left alone.
    *
    * Removal has no endpoint of its own: NauSYS confirmed (Aug 2026) that setting a
    * line's `quantity` to 0 through `updateExtras` drops it from the info and the
@@ -487,23 +488,47 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
    */
   async function addOrUpdateExtras(input: ProviderExtrasMutation): Promise<ProviderQuote> {
     const parsed = providerExtrasMutationSchema.parse(input);
-    if (!parsed.charter || !deps.billedRowsFor) {
-      throw new ContractError(
-        "NauSYS extras are resolved by re-pricing the charter; the mutation named none",
-        { endpoint: nausysEndpoints.booking.addExtras },
-      );
-    }
+    const listed = deps.loadReservationExtras
+      ? {
+          lines: await deps.loadReservationExtras(parsed.ref),
+          available: (await deps.loadAvailableExtras?.(parsed.ref)) ?? [],
+        }
+      : await readListedExtras(client, parsed.ref);
+    const current = listed.lines;
+    const crew = parsed.charter
+      ? ((await deps.loadCrewRoleServiceIds?.(parsed.charter.listingId)) ?? new Set<string>())
+      : new Set<string>();
 
-    const desired = await deps.billedRowsFor({ ...parsed.charter, extras: parsed.extras });
-    const load = deps.loadReservationExtras ?? ((ref) => readReservationExtras(client, ref));
-    const current = await load(parsed.ref);
-
-    const remaining = current.filter((line) => line.obligatory !== true);
+    const remaining = current.filter(
+      (line) =>
+        line.obligatory !== true &&
+        !((line.kind ?? "service") === "service" && crew.has(String(line.serviceId))),
+    );
     const additions: BilledExtraRow[] = [];
-    for (const row of desired) {
-      const at = remaining.findIndex((line) => lineMatchesRow(line, row));
-      if (at === -1) additions.push(row);
-      else remaining.splice(at, 1);
+    const unavailable: string[] = [];
+    for (const code of parsed.extras) {
+      const [row] = rowsForCodes([code], listed.available);
+      const wanted = parseExtraCode(code);
+      /* Already on the reservation: the same extra, and for a variant the same condition. */
+      const at = remaining.findIndex(
+        (line) =>
+          wanted !== null &&
+          (line.kind ?? "service") === wanted.kind &&
+          String(line.serviceId) === wanted.externalId &&
+          (row === undefined ||
+            row.condition === null ||
+            line.condition == null ||
+            line.condition === row.condition),
+      );
+      if (at !== -1) remaining.splice(at, 1);
+      else if (row) additions.push(row);
+      else unavailable.push(code);
+    }
+    if (unavailable.length > 0) {
+      throw new ContractError(
+        `NauSYS reservation ${parsed.ref.providerReservationId} cannot take ${unavailable.join(", ")}`,
+        { endpoint: nausysEndpoints.availability.listExtras },
+      );
     }
     const removals = remaining;
 
@@ -611,8 +636,10 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
       });
     }
 
-    const checkIn = parseNausysDate(response.periodFrom);
-    const checkOut = parseNausysDate(response.periodTo);
+    /* The reservation carries the handover time ("17.10.2026 17:00"), which the date parser
+       refused: every extras edit threw after the vendor had already applied it. */
+    const checkIn = parseNausysDate(dayOf(response.periodFrom));
+    const checkOut = parseNausysDate(dayOf(response.periodTo));
     const baseMinor = decimalStringToMinor(response.clientPrice, currency);
 
     const listingId = (await resolver.toListingId(String(response.yachtId))) ?? "";
@@ -738,6 +765,11 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
 
 /* ------------------------------------------------------------------ internals */
 
+/** The date in front of a NauSYS date-time. */
+function dayOf(value: string): string {
+  return value.split(" ")[0] ?? value;
+}
+
 function refOf(handle: ReservationHandle): ProviderReservationRef {
   return { providerReservationId: String(handle.id), securityToken: handle.uuid };
 }
@@ -758,10 +790,15 @@ function refOf(handle: ReservationHandle): ProviderReservationRef {
  * Only services. Removal is keyed by the reservation line id, and `updateExtras` addresses
  * services; the vendor numbers added equipment separately and nothing here removes one yet.
  */
-async function readReservationExtras(
+type AvailableExtra = NonNullable<
+  z.infer<typeof restListedExtrasSchema>["availableExtras"]
+>[number];
+
+/** The reservation's lines and the rows it can still take, from one `listExtras`. */
+async function readListedExtras(
   client: NausysClient,
   ref: ProviderReservationRef,
-): Promise<ReservationExtra[]> {
+): Promise<{ lines: ReservationExtra[]; available: AvailableExtra[] }> {
   const endpoint = nausysEndpoints.availability.listExtras;
   const handle = requireHandle(ref, endpoint);
 
@@ -798,7 +835,7 @@ async function readReservationExtras(
           },
         ],
   );
-  return [...services, ...equipment];
+  return { lines: [...services, ...equipment], available: response.availableExtras ?? [] };
 }
 
 /**
@@ -840,7 +877,7 @@ function reportExtrasDrift(
  */
 function rowsForCodes(
   codes: readonly string[],
-  available: NonNullable<z.infer<typeof restListedExtrasSchema>["availableExtras"]>,
+  available: readonly AvailableExtra[],
 ): BilledExtraRow[] {
   return codes.flatMap((code) => {
     const parsed = parseExtraCode(code);
@@ -869,17 +906,6 @@ function rowsForCodes(
       },
     ];
   });
-}
-
-/**
- * Whether a reservation line is the one a billed row would put there. The line names only the
- * catalogue id and its condition; a side with no condition matches on the id alone.
- */
-function lineMatchesRow(line: ReservationExtra, row: BilledExtraRow): boolean {
-  if ((line.kind ?? "service") !== row.kind) return false;
-  if (String(line.serviceId) !== row.externalId) return false;
-  if (row.condition === null || line.condition == null) return true;
-  return line.condition === row.condition;
 }
 
 /** `addExtras` by season price row, services and equipment each in their own list. */
