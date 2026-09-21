@@ -51,9 +51,9 @@ import {
 const PROVIDER_PREFIX = "booking_manager";
 
 /**
- * Booking Manager returns one language per request and the catalogue sync asks
- * for none, so every string here is the vendor's default. Recorded responses are
- * English; flagged as an assumption rather than something the vendor states.
+ * Booking Manager returns one language per request and the catalogue sync asks for none
+ * except on `/equipment`, whose names per locale arrive as `translations` on each item. Every
+ * other string here is the vendor's default, which recorded responses show to be English.
  */
 const CATALOGUE_LOCALE = "en";
 
@@ -397,6 +397,7 @@ function projectAmenities(equipment: z.infer<typeof restEquipmentSchema>[], yach
       // shape is load-bearing, not cosmetic.
       code: `${PROVIDER_PREFIX}:${item.id}`,
       name,
+      translations: translationsOf(item.translations, name),
     };
   });
 
@@ -407,6 +408,24 @@ function projectAmenities(equipment: z.infer<typeof restEquipmentSchema>[], yach
   if (needsFallback) categories.push({ ...UNCATEGORISED_AMENITY_CATEGORY });
 
   return { categories, amenities };
+}
+
+/**
+ * The names `/equipment` returned per language, less those that are only the English again: the
+ * vendor leaves about a quarter of its items untranslated in every language, and a copy stored
+ * as a translation would outrank the curated label for that locale.
+ */
+function translationsOf(
+  names: Record<string, string> | null | undefined,
+  english: string,
+): Record<string, string> | undefined {
+  const translated = Object.entries(names ?? {}).flatMap(([locale, value]) => {
+    const name = text(value);
+    return name === undefined || name.toLowerCase() === english.toLowerCase()
+      ? []
+      : [[locale, name] as const];
+  });
+  return translated.length === 0 ? undefined : Object.fromEntries(translated);
 }
 
 /** The operators' names for "everything else", by slug. */

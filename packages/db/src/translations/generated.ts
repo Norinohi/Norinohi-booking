@@ -11,8 +11,8 @@ const labelsByGroup = z.record(z.string(), z.record(z.string(), z.string()));
  * NauSYS names every reference list in eighteen languages, and two the site serves are not
  * among them: Ukrainian and Danish. Where German, Spanish and the rest are sourced and
  * refreshed on each sync, these are produced once and reviewed in their own file. Booking
- * Manager ships no translations at all, in any locale, which is why nothing of its own appears
- * in either.
+ * Manager translates its equipment names into eight of the site's languages but neither of
+ * these two (its Ukrainian answers in English), which is why nothing of its own appears here.
  *
  * `apply-translations.ts` writes these as `source = 'generated'`, which is what keeps them out
  * of the way of both the sync and the hand-written editorial copy in `seed.ts`.

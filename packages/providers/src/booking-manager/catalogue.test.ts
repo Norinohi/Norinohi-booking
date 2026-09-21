@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { log } from "evlog";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { z } from "zod";
@@ -6,6 +8,7 @@ vi.hoisted(() => {
   process.env.SKIP_ENV_VALIDATION = "1";
 });
 
+import { parseExactJson } from "../shared/exact-json";
 import type { QueryValue } from "../shared/http-client";
 import type { CatalogueSyncEvent } from "../sync/runner";
 import type { BookingManagerClient } from "./client";
@@ -280,5 +283,58 @@ describe("an empty fleet answer", () => {
 
     // Once for the empty answers and once more at the end, for retiring out-of-scope companies.
     expect(listImportedCompanyIds).toHaveBeenCalledTimes(2);
+  });
+});
+
+/*
+ * `/equipment` translates into eight of the site's languages; the names ride on each English
+ * item as `translations`, and a language that fails leaves the others and the English standing.
+ */
+describe("equipment names in the site's languages", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const english = parseExactJson(
+    readFileSync(new URL("fixtures/equipment.json", import.meta.url), "utf8"),
+  );
+  const german = parseExactJson(
+    readFileSync(new URL("fixtures/equipment-de.json", import.meta.url), "utf8"),
+  );
+
+  it("asks for each language the vendor translates and files the names on the English item", async () => {
+    const warn = vi.spyOn(log, "warn").mockImplementation(() => undefined);
+    const languages: unknown[] = [];
+    const client = Object.assign(
+      fakeClient([], () => Promise.resolve([])),
+      {
+        get: (endpoint: string, _schema: z.ZodType<unknown>, query: CatalogueQuery = {}) => {
+          if (endpoint !== bookingManagerEndpoints.equipment) return Promise.resolve([]);
+          languages.push(query.language);
+          if (query.language === "fr") return Promise.reject(new Error("vendor 500"));
+          return Promise.resolve(query.language === "de" ? german : english);
+        },
+      },
+    );
+
+    const events = await collect(syncBookingManagerCatalogue(client, { skipWarmup: true }));
+    const equipment = events.flatMap((event) =>
+      event.type === "entity" && event.entity.resourceType === "equipment_category"
+        ? [event.entity]
+        : [],
+    );
+
+    expect(languages).toEqual([undefined, "de", "es", "fr", "it", "nl", "no", "pl", "sv"]);
+    expect(equipment).toHaveLength(52);
+    expect(equipment.find((item) => item.externalId === "4")?.payload).toMatchObject({
+      name: "Dinghy",
+      translations: { de: "Beiboot", es: "Dinghy" },
+    });
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "booking_manager.catalogue.equipment_language_failed",
+        language: "fr",
+      }),
+    );
   });
 });

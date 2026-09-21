@@ -650,6 +650,30 @@ describe("amenity categories", () => {
   });
 });
 
+describe("amenity names in other languages", () => {
+  const amenitiesOf = (payload: JsonValue) =>
+    projectBookingManagerCatalogue(
+      new Map([["equipment_category" as const, [{ externalId: "4", payload }]]]),
+    ).amenities;
+
+  it("carries the vendor's translations, and not the ones that are only the English again", () => {
+    const [dinghy] = amenitiesOf({
+      id: 4,
+      name: "Dinghy",
+      translations: { de: "Beiboot", es: "Embarcación auxiliar", sv: "Dinghy", no: " " },
+    });
+
+    expect(dinghy?.translations).toEqual({ de: "Beiboot", es: "Embarcación auxiliar" });
+  });
+
+  it("leaves an amenity no language renamed without translations", () => {
+    expect(
+      amenitiesOf({ id: 1, name: "Autopilot", translations: { de: "Autopilot" } })[0],
+    ).not.toHaveProperty("translations.de");
+    expect(amenitiesOf({ id: 1, name: "Autopilot" })[0]?.translations).toBeUndefined();
+  });
+});
+
 describe("pictures", () => {
   const mediaOf = (images: JsonValue[]) =>
     projectBookingManagerCatalogue(

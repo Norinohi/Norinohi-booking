@@ -533,7 +533,15 @@ export const restWorldRegionSchema = looseJsonObject({ id: numeric, name: option
 
 export const restSailingAreaSchema = looseJsonObject({ id: numeric, name: optionalText });
 
-export const restEquipmentSchema = looseJsonObject({ id: numeric, name: optionalText });
+export const restEquipmentSchema = looseJsonObject({
+  id: numeric,
+  name: optionalText,
+  /**
+   * Ours, not the vendor's: the item's name per site locale, collected by the catalogue step
+   * from `/equipment?language=` and stored on the record beside the English it came with.
+   */
+  translations: z.record(z.string(), z.string()).optional().nullable(),
+});
 
 export const restYachtTypeSchema = looseJsonObject({ name: z.string() });
 
