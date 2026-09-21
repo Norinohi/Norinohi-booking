@@ -158,6 +158,7 @@
     "summary": {
       "yacht": "Jacht",
       "dates": "Data",
+      "route": "Route",
       "crew": "Bemanning",
       "mandatory": "Verplicht",
       "selectedExtras": "Gekozen extra's",
@@ -339,6 +340,7 @@
     "guestsLabel": "Gasten",
     "crew": "Bemanning",
     "marina": "Jachthaven",
+    "route": "Route",
     "referenceLabel": "Referentie",
     "settled": "Niets meer te betalen",
     "viewYacht": "Jachtpagina bekijken",

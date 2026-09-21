@@ -158,6 +158,7 @@
     "summary": {
       "yacht": "Båt",
       "dates": "Datum",
+      "route": "Rutt",
       "crew": "Besättning",
       "mandatory": "Obligatoriskt",
       "selectedExtras": "Valda tillval",
@@ -339,6 +340,7 @@
     "guestsLabel": "Gäster",
     "crew": "Besättning",
     "marina": "Marina",
+    "route": "Rutt",
     "referenceLabel": "Referens",
     "settled": "Inget kvar att betala",
     "viewYacht": "Visa båtsidan",

@@ -158,6 +158,7 @@
     "summary": {
       "yacht": "Yacht",
       "dates": "Dates",
+      "route": "Itinéraire",
       "crew": "Équipage",
       "mandatory": "Obligatoires",
       "selectedExtras": "Suppléments sélectionnés",
@@ -339,6 +340,7 @@
     "guestsLabel": "Passagers",
     "crew": "Équipage",
     "marina": "Marina",
+    "route": "Itinéraire",
     "referenceLabel": "Référence",
     "settled": "Plus rien à payer",
     "viewYacht": "Voir la page du yacht",

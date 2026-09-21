@@ -21,6 +21,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
+import { oneWayRouteLabel } from "../lib/one-way-route";
 import { Link } from "@/i18n/navigation";
 import { type ReactNode, useState } from "react";
 
@@ -207,6 +208,7 @@ function Charter({
   bookingId: string;
   signedIn: boolean;
 }) {
+  const tReview = useTranslations("Booking.review");
   const t = useTranslations("Booking.detail");
   const tCancel = useTranslations("Bookings.cancel");
   const tBalance = useTranslations("Booking.balance");
@@ -282,6 +284,13 @@ function Charter({
           <Fact label={t("crew")} value={crewLabel(tCrew, booking.crewType)} />
         ) : null}
         <Fact label={t("marina")} value={placeLine(booking.base.name, booking.base.countryName)} />
+        {/* The marina above is where it starts; a one-way ends somewhere else. */}
+        {booking.oneWayRoute ? (
+          <Fact
+            label={t("route")}
+            value={oneWayRouteLabel(booking.oneWayRoute, tReview("oneWay"))}
+          />
+        ) : null}
         <Fact label={t("referenceLabel")} value={booking.reference} className="font-mono" />
         {/* Once it is off, the two facts that explain it — the rest of the panel is history. */}
         {booking.cancelledAt ? (

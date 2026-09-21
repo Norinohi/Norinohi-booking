@@ -158,6 +158,7 @@
     "summary": {
       "yacht": "Yacht",
       "dates": "Datoer",
+      "route": "Rute",
       "crew": "Mannskap",
       "mandatory": "Obligatorisk",
       "selectedExtras": "Valgt ekstrautstyr",
@@ -339,6 +340,7 @@
     "guestsLabel": "Gjester",
     "crew": "Mannskap",
     "marina": "Marina",
+    "route": "Rute",
     "referenceLabel": "Referanse",
     "settled": "Ingenting gjenstår å betale",
     "viewYacht": "Se yachtsiden",

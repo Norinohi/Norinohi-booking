@@ -158,6 +158,7 @@
     "summary": {
       "yacht": "Yacht",
       "dates": "Dates",
+      "route": "Route",
       "crew": "Crew",
       "mandatory": "Mandatory",
       "selectedExtras": "Selected extras",
@@ -339,6 +340,7 @@
     "guestsLabel": "Guests",
     "crew": "Crew",
     "marina": "Marina",
+    "route": "Route",
     "referenceLabel": "Reference",
     "settled": "Nothing left to pay",
     "viewYacht": "View yacht page",

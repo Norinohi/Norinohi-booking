@@ -158,6 +158,7 @@
     "summary": {
       "yacht": "Jacht",
       "dates": "Daty",
+      "route": "Trasa",
       "crew": "Załoga",
       "mandatory": "Obowiązkowe",
       "selectedExtras": "Wybrane dodatki",
@@ -339,6 +340,7 @@
     "guestsLabel": "Goście",
     "crew": "Załoga",
     "marina": "Marina",
+    "route": "Trasa",
     "referenceLabel": "Numer",
     "settled": "Nic nie pozostało do zapłaty",
     "viewYacht": "Zobacz stronę jachtu",

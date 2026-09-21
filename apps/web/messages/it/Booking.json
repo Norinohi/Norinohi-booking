@@ -158,6 +158,7 @@
     "summary": {
       "yacht": "Yacht",
       "dates": "Date",
+      "route": "Rotta",
       "crew": "Equipaggio",
       "mandatory": "Obbligatori",
       "selectedExtras": "Extra selezionati",
@@ -339,6 +340,7 @@
     "guestsLabel": "Ospiti",
     "crew": "Equipaggio",
     "marina": "Marina",
+    "route": "Rotta",
     "referenceLabel": "Codice",
     "settled": "Nulla da pagare",
     "viewYacht": "Vedi la pagina dello yacht",

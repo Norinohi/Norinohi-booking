@@ -158,6 +158,7 @@
     "summary": {
       "yacht": "Яхта",
       "dates": "Дати",
+      "route": "Маршрут",
       "crew": "Екіпаж",
       "mandatory": "Обов'язкове",
       "selectedExtras": "Обрані додатки",
@@ -339,6 +340,7 @@
     "guestsLabel": "Гості",
     "crew": "Екіпаж",
     "marina": "Марина",
+    "route": "Маршрут",
     "referenceLabel": "Номер",
     "settled": "Немає що сплачувати",
     "viewYacht": "Сторінка яхти",

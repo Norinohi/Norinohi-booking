@@ -158,6 +158,7 @@
     "summary": {
       "yacht": "Yacht",
       "dates": "Zeitraum",
+      "route": "Route",
       "crew": "Crew",
       "mandatory": "Obligatorisch",
       "selectedExtras": "Gewählte Extras",
@@ -339,6 +340,7 @@
     "guestsLabel": "Gäste",
     "crew": "Crew",
     "marina": "Marina",
+    "route": "Route",
     "referenceLabel": "Buchungsnummer",
     "settled": "Nichts mehr zu zahlen",
     "viewYacht": "Yachtseite ansehen",

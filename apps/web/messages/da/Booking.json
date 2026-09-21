@@ -158,6 +158,7 @@
     "summary": {
       "yacht": "Båd",
       "dates": "Datoer",
+      "route": "Rute",
       "crew": "Besætning",
       "mandatory": "Obligatorisk",
       "selectedExtras": "Valgte tillæg",
@@ -339,6 +340,7 @@
     "guestsLabel": "Gæster",
     "crew": "Besætning",
     "marina": "Marina",
+    "route": "Rute",
     "referenceLabel": "Reference",
     "settled": "Der er ikke mere at betale",
     "viewYacht": "Se bådens side",

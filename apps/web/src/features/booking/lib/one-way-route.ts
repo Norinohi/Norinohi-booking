@@ -23,3 +23,8 @@ export function oneWayRouteOf(
   if (!priced?.isOneWay) return null;
   return { from: priced.startBaseName ?? null, to: priced.endBaseName ?? null };
 }
+
+/** "A → B, one-way", or the word alone where the marinas were never named. */
+export function oneWayRouteLabel(route: OneWayRoute, oneWayWord: string): string {
+  return route.from && route.to ? `${route.from} → ${route.to}, ${oneWayWord}` : oneWayWord;
+}

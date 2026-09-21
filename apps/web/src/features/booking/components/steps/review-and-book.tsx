@@ -12,7 +12,7 @@ import { dayToDisplay } from "@/lib/date";
 
 import { useLineRateLabel } from "../../hooks/use-line-rate-label";
 import { useQuoteLineLabel } from "../../hooks/use-quote-line-label";
-import { oneWayRouteOf } from "../../lib/one-way-route";
+import { oneWayRouteLabel, oneWayRouteOf } from "../../lib/one-way-route";
 import type { BookingValues } from "../../lib/booking-form";
 import { dayWithHandover } from "../../lib/handover";
 import { useBooking } from "../booking-provider";
@@ -144,12 +144,7 @@ export default function ReviewAndBookStep() {
           ? [
               {
                 label: t("route"),
-                value: [
-                  oneWay.from && oneWay.to ? `${oneWay.from} → ${oneWay.to}` : null,
-                  t("oneWay"),
-                ]
-                  .filter(Boolean)
-                  .join(", "),
+                value: oneWayRouteLabel(oneWay, t("oneWay")),
               },
             ]
           : []),

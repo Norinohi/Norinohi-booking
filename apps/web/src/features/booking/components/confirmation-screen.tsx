@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FileText, Share2 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
+import { oneWayRouteLabel } from "../lib/one-way-route";
 import { Link } from "@/i18n/navigation";
 import { useQueryStates } from "nuqs";
 import { toast } from "sonner";
@@ -137,6 +138,7 @@ function Row({ row, last }: { row: SummaryRow; last: boolean }) {
 }
 
 export default function BookingConfirmationScreen() {
+  const tReview = useTranslations("Booking.review");
   const t = useTranslations("Booking.confirmation");
   const tCrew = useTranslations("Common.crewTypes");
   const locale = useLocale();
@@ -317,6 +319,14 @@ export default function BookingConfirmationScreen() {
   const rows: SummaryRow[] = [
     { label: t("summary.yacht"), value: booking.listing.title },
     { label: t("summary.dates"), value: charterRange(day, booking.checkIn, booking.checkOut) },
+    ...(booking.oneWayRoute
+      ? [
+          {
+            label: t("summary.route"),
+            value: oneWayRouteLabel(booking.oneWayRoute, tReview("oneWay")),
+          },
+        ]
+      : []),
     ...(crewLabel ? [{ label: t("summary.crew"), value: crewLabel }] : []),
     ...(mandatory.length
       ? [{ label: t("summary.mandatory"), value: mandatory.map((line) => line.label).join(", ") }]

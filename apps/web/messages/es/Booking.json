@@ -158,6 +158,7 @@
     "summary": {
       "yacht": "Yate",
       "dates": "Fechas",
+      "route": "Ruta",
       "crew": "Tripulación",
       "mandatory": "Obligatorio",
       "selectedExtras": "Extras seleccionados",
@@ -339,6 +340,7 @@
     "guestsLabel": "Huéspedes",
     "crew": "Tripulación",
     "marina": "Marina",
+    "route": "Ruta",
     "referenceLabel": "Referencia",
     "settled": "Nada pendiente de pago",
     "viewYacht": "Ver el yate",
