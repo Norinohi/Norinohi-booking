@@ -175,9 +175,15 @@ export function projectNausysCatalogue(
     };
   });
 
+  /* See `offlineCompanyIds` on `projectYacht`. */
+  const offlineCompanyIds = new Set(
+    companies.filter((item) => item.pac === true).map((item) => String(item.id)),
+  );
+
   const listings = yachts
     .map((yacht) =>
       projectYacht(yacht, {
+        offlineCompanyIds,
         modelById,
         placeholderBuilders,
         knownEquipment,
@@ -295,6 +301,12 @@ function projectYacht(
     placeholderBuilders: Set<string>;
     knownEquipment: Set<string>;
     sailTypeById: Map<string, string>;
+    /**
+     * Companies the vendor marks as private-access, offline: NauSYS does not run their
+     * bookings live, so a hold the customer pays against may never be honoured. Their yachts
+     * are sold the way a hull needing option approval is, as a request the operator confirms.
+     */
+    offlineCompanyIds?: ReadonlySet<string>;
   } & ExtraNaming,
 ) {
   // The vendor's own withdrawals. `disabled` is a boat taken out of service and
@@ -368,6 +380,9 @@ function projectYacht(
     oneWayRules: oneWayRulesOf(yacht),
     defaultCurrency: currency,
     ...fleetAndFilmOf(yacht),
+    ...(context.offlineCompanyIds?.has(String(yacht.companyId))
+      ? { optionApprovalRequired: true }
+      : null),
     securityDepositMinor: minorOf(yacht.deposit, depositCurrency),
     securityDepositWhenInsuredMinor: reducedDepositOf(yacht, depositCurrency),
     securityDepositCurrency: depositCurrency,

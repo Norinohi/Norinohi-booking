@@ -1345,3 +1345,32 @@ describe("what counts as crew", () => {
     expect(serviceNamed("Hostess")?.crewRole).toBe("hostess");
   });
 });
+
+/*
+ * `pac`: "private access company (offline company)". NauSYS does not run their bookings live,
+ * so a paid hold may never be honoured; their boats are sold as requests the operator confirms.
+ */
+describe("offline charter companies", () => {
+  const withPac = (pac: boolean | number) =>
+    recorded.company.map((company) => ({ ...company, pac }));
+  /* A hull that needs no approval of its own, so only the company can make it a request. */
+  const unapproved = () => ({ ...maria(), needsOptionApproval: false });
+
+  it("sells an offline company's yachts as requests", () => {
+    for (const pac of [1, true]) {
+      const [listing] = projectNausysCatalogue(
+        fixtureRecords([unapproved()], { company: withPac(pac) }),
+      ).listings;
+      expect(listing?.optionApprovalRequired).toBe(true);
+    }
+  });
+
+  it("leaves an online company's yachts as the vendor set them", () => {
+    for (const pac of [0, false]) {
+      const [listing] = projectNausysCatalogue(
+        fixtureRecords([unapproved()], { company: withPac(pac) }),
+      ).listings;
+      expect(listing?.optionApprovalRequired).toBe(false);
+    }
+  });
+});

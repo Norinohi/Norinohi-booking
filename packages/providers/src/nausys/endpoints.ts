@@ -182,6 +182,11 @@ export const restCharterCompanySchema = looseJsonObject({
   web: z.string().optional(),
   // Lower-case `c`, unlike every neighbouring camelCase field.
   vatcode: z.string().optional(),
+  /**
+   * "private access company (offline company)". Documented as an Integer, sent as 0 in the
+   * recorded dump and as a boolean in the PDF's examples, so both are read as a boolean.
+   */
+  pac: z.union([z.boolean(), z.number().transform((value) => value !== 0)]).optional(),
 });
 
 export const restCharterBaseSchema = looseJsonObject({
