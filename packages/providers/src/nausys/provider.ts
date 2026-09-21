@@ -186,6 +186,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
           })
         ).billedRows,
       loadExtraLabels: (listingId) => loadNausysExtraLabels(this.db, listingId),
+      loadOnRequestCodes: (listingId) => loadNausysOnRequestCodes(this.db, listingId),
       recordEvent: createReservationEventRecorder(this.db, "nausys"),
       persistSecurityToken: createSecurityTokenSink(this.db),
     });
@@ -574,6 +575,28 @@ async function loadNausysExtraLabels(
  * the codes the customer ticked and nothing else about them, and buying one of these lowers
  * the deposit instead of adding to the price.
  */
+/** The listing's extras the operator sells only on a fixed reservation, by canonical code. */
+async function loadNausysOnRequestCodes(
+  db: Database,
+  listingId: string,
+): Promise<ReadonlySet<string>> {
+  const rows = await db
+    .select({
+      kind: providerExtraCatalogue.kind,
+      externalId: providerExtraCatalogue.externalId,
+    })
+    .from(providerExtraCatalogue)
+    .where(
+      and(
+        eq(providerExtraCatalogue.listingId, listingId),
+        eq(providerExtraCatalogue.source, "nausys"),
+        eq(providerExtraCatalogue.onRequestOnly, true),
+      ),
+    );
+
+  return new Set(rows.map((row) => formatExtraCode(row.kind, row.externalId)));
+}
+
 async function loadNausysDepositInsuranceCodes(
   db: Database,
   listingId: string,

@@ -1,6 +1,6 @@
 import { booking } from "@yacht-charter/db/schema/booking";
 import { and, eq } from "drizzle-orm";
-import { log } from "evlog";
+import { log, parseError } from "evlog";
 import type { z } from "zod";
 
 import type { JsonObject } from "../shared/json";
@@ -9,7 +9,13 @@ import type { Database } from "../registry";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { formatNausysDate, parseNausysDate, parseNausysDateTime } from "../shared/dates";
 import { ContractError } from "../shared/errors";
-import { formatExtraCode, type ExtraKind } from "../shared/extra-code";
+import {
+  baseExtraCode,
+  formatExtraCode,
+  parseExtraCode,
+  type ExtraKind,
+} from "../shared/extra-code";
+import { thrownFields } from "../shared/log-fields";
 import { DEFAULT_LINE_LABELS } from "../shared/generic-labels";
 import { decimalStringToMinor } from "../shared/money";
 import { stableSourceHash } from "../shared/raw-retention";
@@ -118,6 +124,13 @@ export interface NausysBookingServiceDeps {
   billedRowsFor?: (request: QuoteRequest) => Promise<readonly BilledExtraRow[]>;
   /** The listing's extra names by canonical code, for the lines a mutation's reprice returns. */
   loadExtraLabels?: (listingId: string) => Promise<ReadonlyMap<string, string>>;
+  /**
+   * The listing's extras the operator sells only on a fixed reservation (`onRequestOnly`: "If
+   * true service is available only on YachtReservation type RESERVATION"). They go on after
+   * createBooking rather than on the option, where the vendor may refuse them and the refusal
+   * would release a hold the customer had done nothing wrong to lose.
+   */
+  loadOnRequestCodes?: (listingId: string) => Promise<ReadonlySet<string>>;
 }
 
 /** One extra already on the reservation, as the vendor's own response describes it. */
@@ -286,7 +299,12 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
 
     await logEvent(parsed.quoteId, "option_created", option);
 
-    const held = await addBilledExtras(parsed.quoteId, option, check.billedRows);
+    const onRequest = (await deps.loadOnRequestCodes?.(parsed.listingId)) ?? new Set<string>();
+    const held = await addBilledExtras(
+      parsed.quoteId,
+      option,
+      check.billedRows.filter((row) => !onRequest.has(baseExtraCode(row.code))),
+    );
     const reservationId = String(held.handle.id);
     reportExtrasDrift(parsed.quoteId, held.response, check.extrasMinor);
 
@@ -340,6 +358,51 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
   }
 
   /**
+   * The on-request extras the customer chose, put on the reservation now that it is one.
+   *
+   * The offer that priced them is gone (the yacht is ours, so freeYachts no longer answers for
+   * it), so the rows come from the reservation's own `availableExtras`: a variant code names its
+   * row, a plain code the one row of its extra. A refusal does not undo the booking, which the
+   * customer has paid for; it is logged for a person to arrange with the base.
+   */
+  async function addOnRequestExtras(
+    draft: BookingDraft,
+    booked: ReservationStep,
+  ): Promise<ReservationStep> {
+    const onRequest = (await deps.loadOnRequestCodes?.(draft.listingId)) ?? new Set<string>();
+    const wanted = draft.extras.filter((code) => onRequest.has(baseExtraCode(code)));
+    if (wanted.length === 0) return booked;
+
+    try {
+      const listed = await client.bookingCall(
+        nausysEndpoints.availability.listExtras,
+        restListedExtrasSchema,
+        { id: booked.handle.id, uuid: booked.handle.uuid },
+        reservationLane(String(booked.handle.id)),
+      );
+      const rows = rowsForCodes(wanted, listed.availableExtras ?? []);
+      if (rows.length === 0) throw new Error("none of them is available on the reservation");
+
+      const added = await withReservation(
+        refOf(booked.handle),
+        nausysEndpoints.booking.addExtras,
+        rowAdditions(rows),
+      );
+      await logEvent(draft.quoteId, "extras_updated", added);
+      return added;
+    } catch (error) {
+      log.warn({
+        action: "nausys.on_request_extras_not_added",
+        quoteId: draft.quoteId,
+        providerReservationId: String(booked.handle.id),
+        extras: wanted.join(", "),
+        ...thrownFields(parseError(error)),
+      });
+      return booked;
+    }
+  }
+
+  /**
    * Best effort: the hold is failing either way, and a storno that also fails leaves an option
    * the vendor expires on its own clock.
    */
@@ -361,10 +424,11 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
       );
     }
 
-    const step = await withReservation(parsed.reservation, nausysEndpoints.booking.createBooking);
+    const booked = await withReservation(parsed.reservation, nausysEndpoints.booking.createBooking);
 
-    await logEvent(parsed.quoteId, "confirm_succeeded", step);
+    await logEvent(parsed.quoteId, "confirm_succeeded", booked);
 
+    const step = await addOnRequestExtras(parsed, booked);
     const reservationId = String(step.handle.id);
 
     return providerReservationSchema.parse({
@@ -767,6 +831,43 @@ function reportExtrasDrift(
     quotedMinor,
     heldMinor,
     currency,
+  });
+}
+
+/**
+ * The season price rows a set of codes names, among the rows a reservation can still take. A
+ * variant code carries its row; a plain code takes its extra's row where there is exactly one.
+ */
+function rowsForCodes(
+  codes: readonly string[],
+  available: NonNullable<z.infer<typeof restListedExtrasSchema>["availableExtras"]>,
+): BilledExtraRow[] {
+  return codes.flatMap((code) => {
+    const parsed = parseExtraCode(code);
+    if (parsed === null) return [];
+    const candidates = available.filter(
+      (row) =>
+        row.extraId !== undefined &&
+        String(row.extraId) === parsed.externalId &&
+        (row.extrasType ?? "").toLowerCase() === parsed.kind &&
+        Number.isSafeInteger(row.id),
+    );
+    const row =
+      parsed.variantId === undefined
+        ? candidates.length === 1
+          ? candidates[0]
+          : undefined
+        : candidates.find((candidate) => String(candidate.id) === parsed.variantId);
+    if (row?.id === undefined) return [];
+    return [
+      {
+        kind: parsed.kind,
+        rowId: row.id,
+        code,
+        externalId: parsed.externalId,
+        condition: internationalText(row.condition),
+      },
+    ];
   });
 }
 

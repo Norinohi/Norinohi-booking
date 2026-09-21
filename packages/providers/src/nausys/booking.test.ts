@@ -1273,3 +1273,83 @@ describe("extras edits on an existing reservation", () => {
     expect(transport.calls).toHaveLength(0);
   });
 });
+
+/*
+ * `onRequestOnly`: "available only on YachtReservation type RESERVATION". Added to the option,
+ * a refusal released the hold every time the customer ticked one.
+ */
+describe("extras the operator sells only on a fixed reservation", () => {
+  const onRequest = async () => new Set(["service:100511"]);
+  const transferRow = {
+    kind: "service" as const,
+    rowId: 66279573,
+    code: "service:100511@66279573",
+    externalId: "100511",
+    condition: "minivan up to 8 pax",
+  };
+  const wifiRow = {
+    kind: "service" as const,
+    rowId: 66279577,
+    code: "service:109564",
+    externalId: "109564",
+    condition: null,
+  };
+
+  it("leaves them off the option", async () => {
+    const { service, transport } = build({
+      loadOnRequestCodes: onRequest,
+      verifyPrice: async () => ({ hash: PRICE_HASH, billedRows: [transferRow, wifiRow] }),
+    });
+    transport.respondWith("addExtras", fixture("createOption"));
+
+    await service.createOption(draft);
+
+    expect(transport.lastBody("addExtras")).toMatchObject({
+      services: [{ serviceId: 66279577, quantity: 1 }],
+    });
+  });
+
+  it("adds them once the booking is fixed, by the row the reservation offers", async () => {
+    const { service, transport } = build({ loadOnRequestCodes: onRequest });
+    transport.respondWith("listExtras", {
+      status: "OK",
+      availableExtras: [
+        {
+          id: 66279573,
+          extraId: 100511,
+          extrasType: "SERVICE",
+          amount: "120.00",
+          currency: "EUR",
+          condition: { textEN: "minivan up to 8 pax" },
+        },
+      ],
+    });
+    transport.respondWith("addExtras", fixture("createOption", { uuid: "after-extras" }));
+
+    const confirmed = await service.confirmBooking({
+      ...heldDraft,
+      extras: ["service:100511@66279573"],
+    });
+
+    expect(transport.callSequence()).toEqual(["createBooking", "listExtras", "addExtras"]);
+    expect(transport.lastBody("addExtras")).toMatchObject({
+      services: [{ serviceId: 66279573, quantity: 1 }],
+    });
+    expect(confirmed.securityToken).toBe("after-extras");
+  });
+
+  /* The customer has paid for the charter; a refused add-on is for a person, not a storno. */
+  it("keeps the booking when the operator refuses them", async () => {
+    const { service, transport } = build({ loadOnRequestCodes: onRequest });
+    transport.respondWith("listExtras", { status: "OK", availableExtras: [] });
+
+    const confirmed = await service.confirmBooking({
+      ...heldDraft,
+      extras: ["service:100511@66279573"],
+    });
+
+    expect(confirmed.status).toBe("confirmed");
+    expect(transport.callCount("addExtras")).toBe(0);
+    expect(transport.callCount("stornoOption")).toBe(0);
+  });
+});

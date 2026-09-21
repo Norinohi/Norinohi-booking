@@ -770,6 +770,8 @@ export const restListedExtrasSchema = looseJsonObject({
   ...statusFields,
   addedServices: z.array(restReservationServiceSchema).optional(),
   addedEquipment: z.array(restReservationEquipmentSchema).optional(),
+  /** What could still be added, as season price rows: `id` is what `addExtras` takes. */
+  availableExtras: z.array(restExtraSchema).optional(),
 });
 
 export const restFreeYachtsRequestSchema = z.object({
