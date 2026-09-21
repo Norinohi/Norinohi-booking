@@ -245,6 +245,7 @@ export async function getListingDetailByIdOrSlug(
       checkOutTime: string | null;
       videoUrl: string | null;
       tourUrl: string | null;
+      skipperLicenceRequired: boolean | null;
     }>(sql`
       select
         spec.beam_m as "beamM",
@@ -260,7 +261,8 @@ export async function getListingDetailByIdOrSlug(
         /* Read from the offer the card is priced from, like the extras: two vendors selling
            one hull can film it separately, and the page shows one of them. */
         coalesce(o.video_url, l.video_url) as "videoUrl",
-        coalesce(o.tour_url, l.tour_url) as "tourUrl"
+        coalesce(o.tour_url, l.tour_url) as "tourUrl",
+        o.skipper_licence_required as "skipperLicenceRequired"
       from listing l
       left join listing_specification spec on spec.listing_id = l.id
       left join base bs on bs.id = l.home_base_id
@@ -539,8 +541,12 @@ export async function getListingDetailByIdOrSlug(
       cancellationPaymentPolicies: "varies_by_selection",
       /* Off the crew this listing can actually be taken with, not off the operator's label:
          a hull whose skipper is an obligatory charge never sails without one, so telling its
-         customer to bring a licence asks for a document the charter does not need. */
-      sailingLicenseRequired: crewOptions.includes("bareboat") ? "required" : "not_required",
+         customer to bring a licence asks for a document the charter does not need. Nor does a
+         hull the vendor says can be taken without one, which Booking Manager states per boat. */
+      sailingLicenseRequired:
+        crewOptions.includes("bareboat") && info?.skipperLicenceRequired !== false
+          ? "required"
+          : "not_required",
       /*
        * Absence of the flag is not a prohibition. NauSYS publishes no pets field at all, so
        * `pets_allowed` is false for the whole fleet, and the old copy turned "we were not told"

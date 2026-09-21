@@ -545,6 +545,7 @@ function projectYacht(
       sailType: sailTypeOf(text(yacht.mainsailType)),
     },
     crewType: crewTypeOf(soldProductOf(yacht)),
+    skipperLicenceRequired: licenceRequiredOf(yacht.requiredSkipperLicense),
     media: mediaOf(yacht),
     amenities: amenityIdsOf(yacht).filter((id) => context.knownEquipment.has(id)),
     extras: extrasOf(yacht, currency, context.sailingAreasByBase.get(baseId)),
@@ -1015,6 +1016,15 @@ function crewTypeOf(product: RestProduct | undefined): CrewType | undefined {
   if (crewed) return name === "skippered" ? "skipper" : "full-crew";
   if (name === "bareboat" || name?.startsWith("flotilla")) return "bareboat";
   return undefined;
+}
+
+/**
+ * `requiredSkipperLicense` is 1 or 0 on every yacht of the account (1 on about 9,300, 0 on
+ * about 1,900, among them company 225's Giulia). Anything else is not an answer.
+ */
+function licenceRequiredOf(value: JsonField): boolean | undefined {
+  const flag = intOf(value);
+  return flag === 1 ? true : flag === 0 ? false : undefined;
 }
 
 /**

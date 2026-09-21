@@ -141,6 +141,12 @@ export const listingOffer = pgTable(
     securityDepositCurrency: text("security_deposit_currency"),
     depositInsuranceIncluded: boolean("deposit_insurance_included").default(false).notNull(),
     crewType: text("crew_type"),
+    /**
+     * Whether the customer who sails this boat without a skipper must hold a licence, as this
+     * vendor states it per hull. Null where it does not say, which is read as required: only
+     * Booking Manager answers, and says no on about 1,900 of its hulls.
+     */
+    skipperLicenceRequired: boolean("skipper_licence_required"),
     providerRating: numeric("provider_rating", { precision: 3, scale: 2 }),
     providerReviewCount: integer("provider_review_count"),
 

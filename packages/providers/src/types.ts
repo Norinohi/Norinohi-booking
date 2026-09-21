@@ -959,6 +959,11 @@ const canonicalListingSchema = z.object({
   }),
   /** How the boat is sold. Backs the Crew filter, so it is left unset rather than guessed. */
   crewType: crewTypeSchema.optional(),
+  /**
+   * Whether a customer sailing the boat themselves needs a licence to. Unset where the vendor
+   * does not say; `false` is a vendor stating it does not.
+   */
+  skipperLicenceRequired: z.boolean().optional(),
   media: z.array(
     z.object({
       externalUrl: z.string(),

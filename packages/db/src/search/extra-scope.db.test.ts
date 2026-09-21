@@ -1,6 +1,7 @@
+import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { providerExtraCatalogue } from "../schema";
+import { listingOffer, providerExtraCatalogue } from "../schema";
 import { createTestDatabase, type TestDatabase } from "../test-support/database";
 import {
   isoDay,
@@ -24,6 +25,7 @@ import type { ListingSearchInput } from "./types";
  *             pack bundling the APA
  *   skippered an obligatory skipper for a return from home: a skippered charter
  *   elsewhere an obligatory skipper for a return from another base: still bareboat
+ *   licence-free, licence-unsaid  bareboat hulls whose vendor does and does not waive the licence
  */
 
 const HOME = "194";
@@ -70,6 +72,12 @@ beforeAll(async () => {
   });
   const skippered = await seedListing(db, "skippered", { providerId: "prov_bm", free, rules });
   const elsewhere = await seedListing(db, "elsewhere", { providerId: "prov_bm", free, rules });
+  const licenceFree = await seedListing(db, "licence-free", { providerId: "prov_bm", free, rules });
+  await seedListing(db, "licence-unsaid", { providerId: "prov_bm", free, rules });
+  await db
+    .update(listingOffer)
+    .set({ skipperLicenceRequired: false })
+    .where(eq(listingOffer.id, licenceFree.offerId));
 
   await db.insert(providerExtraCatalogue).values([
     fee(routed.listingId, routed.offerId, "APA", {
@@ -154,5 +162,23 @@ describe("a pack that bundles other extras", () => {
       "service:Bed linen",
       "service:APA",
     ]);
+  });
+});
+
+describe("the sailing licence the page asks for", () => {
+  const licenceOf = async (slug: string) =>
+    (await getListingDetailByIdOrSlug(test.db, slug))?.importantInformation.sailingLicenseRequired;
+
+  it("asks for one on a bareboat the vendor says nothing about", async () => {
+    expect(await licenceOf("licence-unsaid")).toBe("required");
+  });
+
+  it("does not on a bareboat the vendor states can be taken without one", async () => {
+    expect(await licenceOf("licence-free")).toBe("not_required");
+  });
+
+  it("does not where the skipper is billed on every charter", async () => {
+    expect(await licenceOf("skippered")).toBe("not_required");
+    expect(await licenceOf("elsewhere")).toBe("required");
   });
 });

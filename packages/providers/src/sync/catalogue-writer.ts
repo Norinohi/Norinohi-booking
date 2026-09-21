@@ -1234,6 +1234,8 @@ async function writeListingOffers(
     providerId: ctx.providerId,
     status: "active" as const,
     ...plan.columns,
+    /* An offer's own term with no listing column behind it: two vendors may disagree. */
+    skipperLicenceRequired: plan.item.skipperLicenceRequired ?? null,
     nameKey: plan.nameKey,
     catalogueSyncedAt: ctx.now,
   }));
@@ -1258,6 +1260,7 @@ async function writeListingOffers(
           petsAllowed: sql`excluded.pets_allowed`,
           defaultCurrency: sql`excluded.default_currency`,
           crewType: sql`excluded.crew_type`,
+          skipperLicenceRequired: sql`excluded.skipper_licence_required`,
           outOfFleetDate: sql`excluded.out_of_fleet_date`,
           optionApprovalRequired: sql`excluded.option_approval_required`,
           fixedBookingSupported: sql`excluded.fixed_booking_supported`,

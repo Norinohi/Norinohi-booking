@@ -724,6 +724,35 @@ describe("pictures", () => {
   });
 });
 
+describe("the skipper licence", () => {
+  const licenceOf = (value: JsonValue | undefined) =>
+    projectBookingManagerCatalogue(
+      new Map([
+        [
+          "yacht" as const,
+          [
+            {
+              externalId: "5001",
+              payload: {
+                id: 5001,
+                companyId: 42,
+                homeBaseId: 7,
+                ...(value === undefined ? null : { requiredSkipperLicense: value }),
+              },
+            },
+          ],
+        ],
+      ]),
+    ).listings[0]?.skipperLicenceRequired;
+
+  it("reads 1 and 0 as the vendor's yes and no, and anything else as no answer", () => {
+    expect(licenceOf(1)).toBe(true);
+    expect(licenceOf(0)).toBe(false);
+    expect(licenceOf(2)).toBeUndefined();
+    expect(licenceOf(undefined)).toBeUndefined();
+  });
+});
+
 describe("the legal limit on board", () => {
   const specOf = (over: Record<string, JsonValue>) =>
     projectBookingManagerCatalogue(
@@ -1080,6 +1109,11 @@ describe("live company 225 yachts: crew, rig and pictures", () => {
     expect(listingNamed("Queen II")?.spec).toMatchObject({ sailType: "full batten" });
     expect(listingNamed("Whisper")?.spec).toMatchObject({ engines: 2, enginePower: "38 hp" });
     expect(listingNamed("Whisper")?.spec.sailType).toBeUndefined();
+  });
+
+  it("carries the licence requirement the vendor states per hull, Giulia's waived", () => {
+    expect(listingNamed("Giulia")?.skipperLicenceRequired).toBe(false);
+    expect(listingNamed("Queen II")?.skipperLicenceRequired).toBe(true);
   });
 
   it("reads the default product, not a Crewed one the yacht also sells", () => {
