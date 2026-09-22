@@ -45,7 +45,9 @@ import { createQuote } from "../services/quote";
 
 export type Db = TestDatabase["db"];
 
-export const WEEK_START = isoDay(saturdayAhead(60));
+/* Past the 60-day deposit lead time on every weekday: a Saturday exactly 60 days out is already
+   payable in full, which failed the deposit path each Tuesday. */
+export const WEEK_START = isoDay(saturdayAhead(61));
 export const WEEK_END = shiftIso(WEEK_START, 7);
 export const WEEKLY_RATE_MINOR = 350_000;
 
