@@ -1,7 +1,7 @@
 import { base, baseSource, location, region } from "@yacht-charter/db/schema/geography";
 import { listing } from "@yacht-charter/db/schema/listing";
 import { operator } from "@yacht-charter/db/schema/operator";
-import { provider } from "@yacht-charter/db/schema/provider";
+import { provider, providerRecord } from "@yacht-charter/db/schema/provider";
 import { suggestedRoute } from "@yacht-charter/db/schema/route";
 import { createTestDatabase, type TestDatabase } from "@yacht-charter/db/test-support/database";
 import { and, eq } from "drizzle-orm";
@@ -187,5 +187,98 @@ describe("a provider base bound to its row", () => {
     const own = await boundBase("prov_bm", "194");
     expect(own).not.toBe(shared);
     expect(await placeOf(own)).toMatchObject({ region: "Dalmatia" });
+  });
+});
+
+/*
+ * Booking Manager base 301 leaves "Zadar area" for "Zadar region"; its neighbour 302 stays behind
+ * and gets its first boat in the same run, and a NauSYS base with no boat stands there too.
+ */
+describe("a location a base left", () => {
+  const zadar = (
+    bases: { externalId: string; regionName: string; name: string }[],
+    listings: CanonicalCatalogue["listings"] = [],
+  ): CanonicalCatalogue => ({
+    countries: [{ externalId: "191", code: "HR", name: "Croatia" }],
+    regions: [...new Set(bases.map((item) => item.regionName))].map((name) => ({
+      externalId: `region:${name}`,
+      externalCountryId: "191",
+      name,
+    })),
+    locations: [...new Set(bases.map((item) => item.regionName))].map((name) => ({
+      externalId: `location:${name}`,
+      externalRegionId: `region:${name}`,
+      name: "Zadar",
+      city: "Zadar",
+    })),
+    bases: bases.map((item) => ({
+      externalId: item.externalId,
+      externalLocationId: `location:${item.regionName}`,
+      name: item.name,
+    })),
+    operators: [{ externalId: "225", name: "Zadar Charter", slug: "zadar-charter" }],
+    builders: [],
+    models: [],
+    categories: [],
+    amenityCategories: [],
+    amenities: [],
+    listings,
+  });
+  const boat: CanonicalCatalogue["listings"][number] = {
+    externalId: "y-302",
+    externalCompanyId: "225",
+    externalBaseId: "302",
+    title: "Bavaria 46 Nova",
+    slug: "bavaria-46-nova",
+    spec: { lengthM: 14, cabins: 4, berths: 8, heads: 2, yearBuilt: 2019 },
+    media: [],
+    amenities: [],
+    extras: [],
+    texts: [],
+    checkinRules: [],
+    oneWayRules: [],
+    defaultCurrency: "EUR",
+  };
+
+  it("keeps the bases still stated there, and puts the new boat on its own", async () => {
+    await sync(
+      "prov_bm",
+      zadar([
+        { externalId: "301", regionName: "Zadar area", name: "Marina Borik" },
+        { externalId: "302", regionName: "Zadar area", name: "Marina Zadar" },
+      ]),
+    );
+    await sync(
+      "prov_ns",
+      zadar([{ externalId: "ns-9", regionName: "Zadar area", name: "Marina Tankerkomerc" }]),
+    );
+    const borik = await boundBase("prov_bm", "301");
+    const marinaZadar = await boundBase("prov_bm", "302");
+    const tankerkomerc = await boundBase("prov_ns", "ns-9");
+    await test.db
+      .insert(providerRecord)
+      .values({ providerId: "prov_bm", resourceType: "yacht", externalId: "y-302" });
+
+    const summary = await sync(
+      "prov_bm",
+      zadar(
+        [
+          { externalId: "301", regionName: "Zadar region", name: "Marina Borik" },
+          { externalId: "302", regionName: "Zadar area", name: "Marina Zadar" },
+        ],
+        [boat],
+      ),
+    );
+
+    expect(summary.listingsFailed).toBe(0);
+    expect(await placeOf(borik)).toMatchObject({ region: "Zadar region" });
+    expect(await boundBase("prov_bm", "302")).toBe(marinaZadar);
+    expect(await boundBase("prov_ns", "ns-9")).toBe(tankerkomerc);
+    expect(await placeOf(tankerkomerc)).toMatchObject({ region: "Zadar area" });
+    const [written] = await test.db
+      .select({ homeBaseId: listing.homeBaseId })
+      .from(listing)
+      .where(eq(listing.slug, "bavaria-46-nova"));
+    expect(written?.homeBaseId).toBe(marinaZadar);
   });
 });

@@ -236,10 +236,14 @@ export type GeographyPruneReport = { bases: number; locations: number; regions: 
  * only once it holds no base, and a region only once it holds no location and carries no route:
  * a suggested route cascades with its region, so a region somebody wrote a route for is kept
  * even empty.
+ *
+ * `keepBound` also keeps every base a provider is bound to (`base_source`). A catalogue sync
+ * passes it: a base its vendor still states is not stale for having no boat yet, and deleting it
+ * would take the binding with it and write the row again under a new id on the next sync.
  */
 export async function pruneEmptyGeography(
   db: DatabaseExecutor,
-  scope: { regionNames: readonly string[]; locationIds: readonly string[] },
+  scope: { regionNames: readonly string[]; locationIds: readonly string[]; keepBound?: boolean },
 ): Promise<GeographyPruneReport> {
   const byRegionName =
     scope.regionNames.length === 0
@@ -277,6 +281,7 @@ export async function pruneEmptyGeography(
         and not exists (select 1 from listing where home_base_id = b.id)
         and not exists (select 1 from listing_offer where home_base_id = b.id)
         and not exists (select 1 from suggested_route where base_id = b.id)
+        and (${scope.keepBound !== true} or not exists (select 1 from base_source where base_id = b.id))
       returning b.id
     `);
     bases = deletedBases.rows.length;

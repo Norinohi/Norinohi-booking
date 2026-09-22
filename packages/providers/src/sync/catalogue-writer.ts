@@ -279,7 +279,12 @@ export async function writeCanonicalCatalogue(
     if (row) operatorIds.set(item.externalId, row.id);
   }
 
-  const { baseIds, relocatedListingIds } = await writeBases(db, providerId, catalogue, locationIds);
+  const { baseIds, relocatedListingIds, vacatedLocationIds } = await writeBases(
+    db,
+    providerId,
+    catalogue,
+    locationIds,
+  );
 
   const builderIds = new Map<string, string>();
   for (const item of catalogue.builders) {
@@ -556,6 +561,15 @@ export async function writeCanonicalCatalogue(
     summary.touchedListingIds,
   );
 
+  // Only now: a base left behind in a vacated location may be the one a boat of this run moors at.
+  if (vacatedLocationIds.length > 0) {
+    await pruneEmptyGeography(db, {
+      regionNames: [],
+      locationIds: vacatedLocationIds,
+      keepBound: true,
+    });
+  }
+
   const hidden = await hideOrphanedListings(db, providerId);
   summary.listingsHidden = hidden.length;
 
@@ -731,9 +745,6 @@ async function writeBases(
     baseIds.set(item.externalId, id);
     if (bindings.get(item.externalId) !== id) await bindBase(db, providerId, item.externalId, id);
   }
-  if (relocation.vacatedLocationIds.length > 0) {
-    await pruneEmptyGeography(db, { regionNames: [], locationIds: relocation.vacatedLocationIds });
-  }
 
   if (relocation.relocations.length > 0) {
     log.info({
@@ -743,7 +754,11 @@ async function writeBases(
       merged: mergedInto.size,
     });
   }
-  return { baseIds, relocatedListingIds: relocation.affectedListingIds };
+  return {
+    baseIds,
+    relocatedListingIds: relocation.affectedListingIds,
+    vacatedLocationIds: relocation.vacatedLocationIds,
+  };
 }
 
 const unboundKey = (countryCode: string, name: string) => `${countryCode}\u0000${name}`;
