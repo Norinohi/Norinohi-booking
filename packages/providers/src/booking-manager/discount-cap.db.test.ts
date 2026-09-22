@@ -1,3 +1,4 @@
+import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { providerRawPayload, providerRecord } from "@yacht-charter/db/schema/provider";
 import { createTestDatabase, type TestDatabase } from "@yacht-charter/db/test-support/database";
 import {
@@ -15,6 +16,7 @@ import { loadBookingManagerDiscountCap } from "./discount-cap";
 /*
  * `stated` carries the yacht's own bound, as all 29 on company 225 do; `inherited` has lost it
  * from its payload and falls back to its company's; `unbound` belongs to a company stating none.
+ * `stated`'s listing also keeps a retired hull, older on the listing, that allowed half.
  */
 
 let test: TestDatabase;
@@ -40,6 +42,11 @@ beforeAll(async () => {
     },
     { id: "praw_inherited", providerId: "prov_bm", payload: { id: 2, companyId: 225 } },
     { id: "praw_unbound", providerId: "prov_bm", payload: { id: 3, companyId: 7 } },
+    {
+      id: "praw_retired",
+      providerId: "prov_bm",
+      payload: { id: 4, companyId: 225, maxDiscountFromCommissionPercentage: 50 },
+    },
   ]);
   await db.insert(providerRecord).values([
     {
@@ -62,6 +69,21 @@ beforeAll(async () => {
       .set({ rawPayloadId: `praw_${slug}` })
       .where(eq(providerRecord.id, `prec_${slug}`));
   }
+  await db.insert(providerRecord).values({
+    id: "prec_retired",
+    providerId: "prov_bm",
+    resourceType: "yacht",
+    externalId: "retired",
+    rawPayloadId: "praw_retired",
+    active: false,
+  });
+  await db.insert(listingSource).values({
+    id: "lsrc_retired",
+    listingId: "lst_stated",
+    providerRecordId: "prec_retired",
+    externalYachtId: "retired",
+    createdAt: new Date("2020-01-01T00:00:00Z"),
+  });
 }, 120_000);
 
 afterAll(async () => {
@@ -70,15 +92,19 @@ afterAll(async () => {
 
 describe("loadBookingManagerDiscountCap", () => {
   it("reads the yacht's own bound, zero included", async () => {
-    await expect(loadBookingManagerDiscountCap(test.db, "lst_stated")).resolves.toBe(0);
+    await expect(loadBookingManagerDiscountCap(test.db, "stated")).resolves.toBe(0);
+  });
+
+  it("reads the hull being quoted, not an older one the listing keeps", async () => {
+    await expect(loadBookingManagerDiscountCap(test.db, "retired")).resolves.toBe(50);
   });
 
   it("falls back to the company's bound", async () => {
-    await expect(loadBookingManagerDiscountCap(test.db, "lst_inherited")).resolves.toBe(10);
+    await expect(loadBookingManagerDiscountCap(test.db, "inherited")).resolves.toBe(10);
   });
 
   it("answers nothing where neither states one", async () => {
-    await expect(loadBookingManagerDiscountCap(test.db, "lst_unbound")).resolves.toBeUndefined();
-    await expect(loadBookingManagerDiscountCap(test.db, "lst_missing")).resolves.toBeUndefined();
+    await expect(loadBookingManagerDiscountCap(test.db, "unbound")).resolves.toBeUndefined();
+    await expect(loadBookingManagerDiscountCap(test.db, "missing")).resolves.toBeUndefined();
   });
 });

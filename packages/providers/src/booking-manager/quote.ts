@@ -74,10 +74,10 @@ export interface BookingManagerQuoteServiceOptions {
    */
   loadExtraLabels?: (listingId: string) => Promise<ReadonlyMap<string, string>>;
   /**
-   * The operator's `maxDiscountFromCommissionPercentage` for the listing's yacht, else its
-   * company's, off the stored catalogue. Undefined where neither states one.
+   * The operator's `maxDiscountFromCommissionPercentage` for the quoted yacht, by its vendor id,
+   * else its company's, off the stored catalogue. Undefined where neither states one.
    */
-  loadDiscountCapPercentage?: (listingId: string) => Promise<number | undefined>;
+  loadDiscountCapPercentage?: (externalYachtId: string) => Promise<number | undefined>;
   now?: () => number;
 }
 
@@ -143,7 +143,7 @@ export function createBookingManagerQuoteService(
 
       const [extraLabels, maxDiscountFromCommissionPercentage] = await Promise.all([
         options.loadExtraLabels?.(parsed.listingId),
-        options.loadDiscountCapPercentage?.(parsed.listingId),
+        options.loadDiscountCapPercentage?.(yachtId),
       ]);
 
       return mapOfferToProviderQuote({

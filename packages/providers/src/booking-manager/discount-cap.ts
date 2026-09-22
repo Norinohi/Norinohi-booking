@@ -1,4 +1,3 @@
-import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import {
   provider as providerTable,
   providerRawPayload,
@@ -12,14 +11,17 @@ import type { Database } from "../registry";
 const discountCapSchema = z.coerce.number().finite();
 
 /**
- * The operator's bound on our client discount for this listing's yacht, off the stored catalogue:
- * the yacht's own `maxDiscountFromCommissionPercentage`, else its company's. Every yacht on the
- * account states one today and agrees with its company, so the fallback covers a yacht payload
- * that stops carrying it rather than any known case.
+ * The operator's bound on our client discount for the yacht being quoted, off the stored
+ * catalogue: the yacht's own `maxDiscountFromCommissionPercentage`, else its company's. Every
+ * yacht on the account states one today and agrees with its company, so the fallback covers a
+ * yacht payload that stops carrying it rather than any known case.
+ *
+ * Keyed on the vendor's yacht id the quote priced, not on the listing: a listing can keep an
+ * older Booking Manager hull beside the one it sells now, with a bound of its own.
  */
 export async function loadBookingManagerDiscountCap(
   db: Database,
-  listingId: string,
+  externalYachtId: string,
 ): Promise<number | undefined> {
   const yachtPayload = alias(providerRawPayload, "yacht_payload");
   const companyRecord = alias(providerRecord, "company_record");
@@ -31,8 +33,7 @@ export async function loadBookingManagerDiscountCap(
         ${companyPayload.payload}->>'maxDiscountFromCommissionPercentage'
       )`,
     })
-    .from(listingSource)
-    .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
+    .from(providerRecord)
     .innerJoin(providerTable, eq(providerTable.id, providerRecord.providerId))
     .innerJoin(yachtPayload, eq(yachtPayload.id, providerRecord.rawPayloadId))
     .leftJoin(
@@ -44,7 +45,13 @@ export async function loadBookingManagerDiscountCap(
       ),
     )
     .leftJoin(companyPayload, eq(companyPayload.id, companyRecord.rawPayloadId))
-    .where(and(eq(listingSource.listingId, listingId), eq(providerTable.code, "booking_manager")))
+    .where(
+      and(
+        eq(providerTable.code, "booking_manager"),
+        eq(providerRecord.resourceType, "yacht"),
+        eq(providerRecord.externalId, externalYachtId),
+      ),
+    )
     .limit(1);
 
   if (row?.percentage == null) return undefined;

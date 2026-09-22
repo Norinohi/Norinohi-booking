@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { z } from "zod";
 
+import type { CatalogueResolver } from "../shared/catalogue-resolver";
+import { unscopedCompanies } from "../shared/company-scope";
 import { parseExactJson } from "../shared/exact-json";
+import { SequentialQueue } from "../shared/queue";
 import { bookingDraftSchema } from "../types";
+import { BookingManagerClient } from "./client";
+import type { BookingManagerConfig } from "./config";
 import { restExtrasSchema, restOfferListSchema, restOfferSchema } from "./endpoints";
 import {
+  createBookingManagerQuoteService,
   mapOfferToProviderQuote,
   type OfferMapping,
   repriceRequestFor,
@@ -468,5 +474,77 @@ describe("priceSourceHash and the payment plan", () => {
     ];
 
     expect(hashOf(early)).not.toBe(hashOf(late));
+  });
+});
+
+/*
+ * The listing may keep an older Booking Manager hull beside the one it sells; the bound is looked
+ * up by the vendor yacht id `/offers` priced, never by the listing.
+ */
+describe("getBookingManagerQuote's discount bound", () => {
+  const yachtId = "123325530000100225";
+  const config: BookingManagerConfig = {
+    baseUrl: "https://www.booking-manager.com/api/v2",
+    apiToken: "t0ken",
+    timeoutMs: 1000,
+    syncTimeoutMs: 5000,
+    minIntervalMs: 0,
+    sweepConcurrency: 1,
+    priceWeeksConcurrency: 4,
+    optionSafetyMarginMinutes: 15,
+    timeZone: "Europe/Zagreb",
+    companyScope: unscopedCompanies,
+    queueKey: "booking-manager:test",
+  };
+  const offers =
+    `[{"yachtId":${yachtId},"yacht":"Rumba","startBaseId":0,"endBaseId":0,` +
+    '"dateFrom":"2027-06-05 17:00:00","dateTo":"2027-06-12 09:00:00","status":0,' +
+    '"product":"Bareboat","price":4600.0,"currency":"EUR","obligatoryExtras":[],' +
+    '"commissionPercentage":15.0,"commissionValue":690.0}]';
+  const resolver: CatalogueResolver = {
+    providerId: () => Promise.resolve("prv_booking_manager"),
+    toExternalListing: () =>
+      Promise.resolve({
+        externalYachtId: yachtId,
+        externalCompanyId: "225",
+        externalBaseId: "0",
+        listingSourceId: "lsrc_rumba",
+      }),
+    toExternalYachtIds: () => Promise.reject(new Error("not used by a quote")),
+    toListingId: () => Promise.reject(new Error("not used by a quote")),
+    toExternalCountryId: () => Promise.reject(new Error("not used by a quote")),
+    loadListingSummary: () => Promise.reject(new Error("not used by a quote")),
+    listExternalCompanyIds: () => Promise.reject(new Error("not used by a quote")),
+    listYachtCompanyScopeKeys: () => Promise.reject(new Error("not used by a quote")),
+  };
+
+  it("asks for the bound of the yacht it priced", async () => {
+    const asked: string[] = [];
+    const service = createBookingManagerQuoteService({
+      client: new BookingManagerClient({
+        config,
+        queue: new SequentialQueue(),
+        retry: { maxAttempts: 1 },
+        fetchImpl: () => Promise.resolve({ status: 200, text: () => Promise.resolve(offers) }),
+      }),
+      resolver,
+      config,
+      loadDiscountCapPercentage: (externalYachtId) => {
+        asked.push(externalYachtId);
+        return Promise.resolve(10);
+      },
+    });
+
+    const quote = await service.getBookingManagerQuote({
+      listingId: "lst_rumba",
+      checkIn: "2027-06-05",
+      checkOut: "2027-06-12",
+      guests: 4,
+      extras: [],
+      currency: "EUR",
+    });
+
+    expect(asked).toEqual([yachtId]);
+    expect(quote.maxClientDiscount).toEqual({ amountMinor: 6_900, currency: "EUR" });
   });
 });

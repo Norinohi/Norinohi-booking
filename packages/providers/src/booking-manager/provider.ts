@@ -116,7 +116,8 @@ export class BookingManagerInventoryProvider
       resolver: this.resolver,
       config: this.config,
       loadExtraLabels: (listingId) => loadBookingManagerExtraLabels(this.db, listingId),
-      loadDiscountCapPercentage: (listingId) => loadBookingManagerDiscountCap(this.db, listingId),
+      loadDiscountCapPercentage: (externalYachtId) =>
+        loadBookingManagerDiscountCap(this.db, externalYachtId),
     });
 
     this.seasonalPrices = createBookingManagerSeasonalPriceLoader({
