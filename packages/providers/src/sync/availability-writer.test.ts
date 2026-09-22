@@ -334,14 +334,15 @@ describe("freePeriodsFrom", () => {
   describe("after a one-way charter", () => {
     const home = "25";
 
-    it("asserts nothing free until the next charter once the boat ended at another base", () => {
+    it("asserts nothing free until a charter ends at home again", () => {
       expect(
         freePeriodsFrom({
           windows: [JULY],
           homeBaseId: home,
           occupied: [
-            { startDate: "2026-07-04", endDate: "2026-07-11", endBaseId: "31" },
-            { startDate: "2026-07-18", endDate: "2026-07-25", endBaseId: home },
+            { startDate: "2026-07-04", endDate: "2026-07-11", startBaseId: home, endBaseId: "31" },
+            { startDate: "2026-07-14", endDate: "2026-07-16", startBaseId: "31", endBaseId: "31" },
+            { startDate: "2026-07-18", endDate: "2026-07-25", startBaseId: "31", endBaseId: home },
           ],
         }),
       ).toEqual([
@@ -356,20 +357,24 @@ describe("freePeriodsFrom", () => {
           windows: [JULY],
           homeBaseId: home,
           occupied: [
-            { startDate: "2026-06-20", endDate: "2026-06-27", endBaseId: "31" },
-            { startDate: "2026-07-18", endDate: "2026-07-25", endBaseId: home },
+            { startDate: "2026-06-20", endDate: "2026-06-27", startBaseId: home, endBaseId: "31" },
+            { startDate: "2026-07-18", endDate: "2026-07-25", startBaseId: "31", endBaseId: home },
           ],
         }),
       ).toEqual([{ startDate: "2026-07-25", endDate: "2026-07-31" }]);
     });
 
-    it("keeps the stretch after a charter back at home, or one that names no base", () => {
+    /*
+     * A boat sailing round trips from a base that is not its stated home is stationed there, so
+     * nothing about it says the calendar is wrong.
+     */
+    it("keeps the stretch after a round trip, at home or not, and after one naming no base", () => {
       expect(
         freePeriodsFrom({
           windows: [JULY],
           homeBaseId: home,
           occupied: [
-            { startDate: "2026-07-04", endDate: "2026-07-11", endBaseId: home },
+            { startDate: "2026-07-04", endDate: "2026-07-11", startBaseId: "31", endBaseId: "31" },
             { startDate: "2026-07-18", endDate: "2026-07-25" },
           ],
         }),
@@ -384,7 +389,9 @@ describe("freePeriodsFrom", () => {
       expect(
         freePeriodsFrom({
           windows: [JULY],
-          occupied: [{ startDate: "2026-07-04", endDate: "2026-07-11", endBaseId: "31" }],
+          occupied: [
+            { startDate: "2026-07-04", endDate: "2026-07-11", startBaseId: home, endBaseId: "31" },
+          ],
         }),
       ).toEqual([
         { startDate: "2026-07-01", endDate: "2026-07-04" },

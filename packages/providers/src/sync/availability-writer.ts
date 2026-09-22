@@ -366,10 +366,10 @@ const DAY_MS = 86_400_000;
 export interface FreePeriodInput {
   /** Only ranges whose occupancy we actually hold; see `runAvailabilitySync`. */
   windows: readonly DateWindow[];
-  occupied: readonly { startDate: string; endDate: string; endBaseId?: string | undefined }[];
+  occupied: readonly OccupiedStretch[];
   /**
-   * The provider's id for the base the listing sells from. With it, the stretch after a charter
-   * that ended at another base is not asserted free; see `freePeriodsFrom`.
+   * The provider's id for the base the listing sells from. With it, the stretch after a one-way
+   * charter that left the boat at another base is not asserted free; see `freePeriodsFrom`.
    */
   homeBaseId?: string | undefined;
 }
@@ -377,6 +377,13 @@ export interface FreePeriodInput {
 export interface FreePeriod {
   startDate: string;
   endDate: string;
+}
+
+interface OccupiedStretch {
+  startDate: string;
+  endDate: string;
+  startBaseId?: string | undefined;
+  endBaseId?: string | undefined;
 }
 
 /**
@@ -395,17 +402,16 @@ export interface FreePeriod {
  *
  * A one-way charter leaves the boat at another base, and the listing is sold from its home
  * base, so the stretch after it was advertised from a marina the boat was not in (4.2% of
- * Booking Manager's availability rows end elsewhere). Nothing says when it gets back, so that
- * whole stretch, up to the next charter, is not asserted: whether it sells, and from where, is
- * the vendor's to say, and the confirming `/offers` pass records it where it does.
+ * Booking Manager's availability rows end elsewhere). Nothing says when it gets back, so every
+ * stretch after it is left unasserted until a charter ends at home again: whether it sells, and
+ * from where, is the vendor's to say, and the confirming `/offers` pass records it where it
+ * does. Only a one-way starts that: a round trip from a base that is not the stated home is a
+ * boat stationed there, and hiding its calendar would hide the fleet of an operator whose
+ * records lag the season's move.
  */
 export function freePeriodsFrom(input: FreePeriodInput): FreePeriod[] {
   const periods: FreePeriod[] = [];
-  const { homeBaseId } = input;
-  const endsAway = (interval: { endBaseId?: string | undefined }) =>
-    homeBaseId !== undefined &&
-    interval.endBaseId !== undefined &&
-    interval.endBaseId !== homeBaseId;
+  const awayAfter = awayAfterEach(input.occupied, input.homeBaseId);
 
   for (const window of input.windows) {
     const inside = input.occupied
@@ -413,17 +419,17 @@ export function freePeriodsFrom(input: FreePeriodInput): FreePeriod[] {
       .map((interval) => ({
         startDate: interval.startDate < window.start ? window.start : interval.startDate,
         endDate: interval.endDate > window.end ? window.end : interval.endDate,
-        away: endsAway(interval),
+        away: awayAfter.get(interval) ?? false,
       }))
       .sort((a, b) => a.startDate.localeCompare(b.startDate));
 
-    // Where the boat is as the window opens: wherever the last charter before it ended.
+    // Where the boat is as the window opens: wherever the last charter before it left it.
     let away = false;
     let lastEnd = "";
     for (const interval of input.occupied) {
       if (interval.endDate <= window.start && interval.endDate > lastEnd) {
         lastEnd = interval.endDate;
-        away = endsAway(interval);
+        away = awayAfter.get(interval) ?? false;
       }
     }
 
@@ -442,6 +448,35 @@ export function freePeriodsFrom(input: FreePeriodInput): FreePeriod[] {
   }
 
   return periods.sort((a, b) => a.startDate.localeCompare(b.startDate));
+}
+
+/**
+ * Whether the boat is away from home once each charter ends, walking them in date order: a
+ * one-way ending elsewhere takes it away, and it stays away until a charter ends at home.
+ */
+function awayAfterEach(
+  occupied: readonly OccupiedStretch[],
+  homeBaseId: string | undefined,
+): Map<OccupiedStretch, boolean> {
+  const awayAfter = new Map<OccupiedStretch, boolean>();
+  if (homeBaseId === undefined) return awayAfter;
+
+  let away = false;
+  let reach = "";
+  for (const interval of [...occupied].sort((a, b) => a.startDate.localeCompare(b.startDate))) {
+    const endsElsewhere = interval.endBaseId !== undefined && interval.endBaseId !== homeBaseId;
+    const oneWay =
+      interval.startBaseId !== undefined &&
+      interval.endBaseId !== undefined &&
+      interval.startBaseId !== interval.endBaseId;
+    const after: boolean = endsElsewhere && (oneWay || away);
+    awayAfter.set(interval, after);
+    if (interval.endDate > reach) {
+      reach = interval.endDate;
+      away = after;
+    }
+  }
+  return awayAfter;
 }
 
 /* ------------------------------------------------------------- date helpers */
