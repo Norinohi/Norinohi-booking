@@ -142,6 +142,9 @@
   },
   "confirmation": {
     "reserved": "¡Tu yate está reservado!",
+    "questionSent": "Tu pregunta está en camino",
+    "questionHold": "Tu yate está reservado hasta el {date}. Preguntar no amplía la reserva: paga antes o el operador puede liberarlo.",
+    "questionEmailed": "Te hemos enviado una copia de tu pregunta por correo y te responderemos en la misma dirección",
     "notFound": "Reserva no encontrada",
     "browse": "Ver yates",
     "remaining": "Los {amount} restantes se pagarán al check-in.",

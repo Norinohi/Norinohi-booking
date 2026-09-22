@@ -142,6 +142,9 @@
   },
   "confirmation": {
     "reserved": "Twój jacht jest zarezerwowany!",
+    "questionSent": "Twoje pytanie zostało wysłane",
+    "questionHold": "Jacht jest zarezerwowany dla Ciebie do {date}. Pytanie nie przedłuża rezerwacji: zapłać przed tym terminem, inaczej armator może zwolnić jacht.",
+    "questionEmailed": "Wysłaliśmy Ci e-mailem kopię pytania i odpowiemy na ten sam adres",
     "notFound": "Nie znaleziono rezerwacji",
     "browse": "Przeglądaj jachty",
     "remaining": "Pozostała kwota {amount} zostanie zapłacona przy zaokrętowaniu.",

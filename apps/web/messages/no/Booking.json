@@ -142,6 +142,9 @@
   },
   "confirmation": {
     "reserved": "Yachten din er reservert!",
+    "questionSent": "Spørsmålet ditt er sendt",
+    "questionHold": "Yachten er holdt av til deg til {date}. Et spørsmål forlenger ikke reservasjonen, så betal før det, ellers kan utleier frigi yachten.",
+    "questionEmailed": "Vi har sendt deg en kopi av spørsmålet på e-post og svarer til samme adresse",
     "notFound": "Bookingen ble ikke funnet",
     "browse": "Bla gjennom yachter",
     "remaining": "De resterende {amount} betales ved innsjekk.",

@@ -142,6 +142,9 @@
   },
   "confirmation": {
     "reserved": "Je jacht is gereserveerd!",
+    "questionSent": "Je vraag is verstuurd",
+    "questionHold": "Je jacht wordt voor je vastgehouden tot {date}. Een vraag verlengt de optie niet: betaal daarvoor, anders kan de verhuurder het jacht vrijgeven.",
+    "questionEmailed": "We hebben je een kopie van je vraag gemaild en sturen het antwoord naar hetzelfde adres",
     "notFound": "Boeking niet gevonden",
     "browse": "Jachten bekijken",
     "remaining": "Het resterende bedrag van {amount} betaal je bij het inchecken.",

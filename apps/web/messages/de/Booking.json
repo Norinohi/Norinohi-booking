@@ -142,6 +142,9 @@
   },
   "confirmation": {
     "reserved": "Ihre Yacht ist reserviert!",
+    "questionSent": "Ihre Frage ist unterwegs",
+    "questionHold": "Ihre Yacht ist bis {date} für Sie reserviert. Die Frage verlängert die Reservierung nicht: Bitte zahlen Sie vorher, sonst kann der Betreiber die Yacht freigeben.",
+    "questionEmailed": "Wir haben Ihnen eine Kopie Ihrer Frage gemailt und schicken die Antwort an dieselbe Adresse",
     "notFound": "Buchung nicht gefunden",
     "browse": "Yachten entdecken",
     "remaining": "Die restlichen {amount} werden beim Check-in bezahlt.",

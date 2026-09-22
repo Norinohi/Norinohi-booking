@@ -142,6 +142,9 @@
   },
   "confirmation": {
     "reserved": "Il tuo yacht è prenotato!",
+    "questionSent": "La tua domanda è stata inviata",
+    "questionHold": "Il tuo yacht è bloccato fino al {date}. La domanda non prolunga l'opzione: paga entro quella data, altrimenti l'operatore può liberarlo.",
+    "questionEmailed": "Ti abbiamo inviato via email una copia della domanda e risponderemo allo stesso indirizzo",
     "notFound": "Prenotazione non trovata",
     "browse": "Sfoglia gli yacht",
     "remaining": "I restanti {amount} saranno pagati al check-in.",
