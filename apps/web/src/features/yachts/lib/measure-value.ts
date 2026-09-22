@@ -17,3 +17,9 @@ export function localizeMeasure(value: string, formatUnit: UnitFormatter): strin
   if (amount === undefined || (symbol !== "m" && symbol !== "l")) return value;
   return formatUnit(Number(amount), UNIT[symbol]);
 }
+
+/** The number of metres in a "12.35 m" the API wrote, or undefined for anything else. */
+export function metresOf(value: string): number | undefined {
+  const [, amount, symbol] = MEASURE.exec(value.trim()) ?? [];
+  return amount !== undefined && symbol === "m" ? Number(amount) : undefined;
+}

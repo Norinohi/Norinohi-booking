@@ -137,7 +137,7 @@
       "mainsail": "Typ grota",
       "cabins": "Kabiny",
       "length": "Długość",
-      "lengthValue": "{length, number} m"
+      "lengthValue": "{feet, number} ft / {metres, number} m"
     },
     "battenMainsail": "Grot z listwami",
     "badges": {

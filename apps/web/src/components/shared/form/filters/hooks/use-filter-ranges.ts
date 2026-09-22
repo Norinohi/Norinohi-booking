@@ -2,6 +2,8 @@
 
 import { useMemo } from "react";
 
+import { metresToFeet } from "@/lib/boat-length";
+
 import { useFacets } from "./use-facets";
 import { usePriceBasis } from "./use-price-basis";
 import {
@@ -14,10 +16,9 @@ import {
 
 const asRange = (bound: { min: number; max: number }): Range => [bound.min, bound.max];
 
-const FEET_PER_METRE = 1 / 0.3048;
-const metresToFeet = (bound: { min: number; max: number }): Range => [
-  Math.round(bound.min * FEET_PER_METRE),
-  Math.round(bound.max * FEET_PER_METRE),
+const feetRange = (bound: { min: number; max: number }): Range => [
+  metresToFeet(bound.min),
+  metresToFeet(bound.max),
 ];
 
 /**
@@ -47,7 +48,7 @@ export function useFilterRanges(): {
     }
 
     const ranges: FilterRanges = {
-      length: metresToFeet(r.length),
+      length: feetRange(r.length),
       cabins: asRange(r.cabins),
       berths: asRange(r.berths),
       bathrooms: asRange(r.bathrooms),

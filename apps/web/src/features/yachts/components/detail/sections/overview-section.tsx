@@ -18,7 +18,9 @@ import {
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
-import { localizeMeasure, type UnitFormatter } from "../../../lib/measure-value";
+import { formatBoatLength } from "@/lib/boat-length";
+
+import { localizeMeasure, metresOf, type UnitFormatter } from "../../../lib/measure-value";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
 import DetailSection from "./detail-section";
@@ -88,6 +90,13 @@ export default function OverviewSection() {
 
   if (!data) return null;
 
+  const valueOf = (code: string, value: string) => {
+    const metres = code === "length" ? metresOf(value) : undefined;
+    return metres === undefined
+      ? localizeMeasure(value, formatUnit)
+      : formatBoatLength(format, metres);
+  };
+
   const labelOf = (code: string, fallback: string) => {
     const key = OVERVIEW_LABEL_KEY.get(code);
     return key ? tOverview(key) : fallback;
@@ -111,9 +120,7 @@ export default function OverviewSection() {
               {labelOf(item.code, item.label)}:
             </span>
             <span className="min-w-0 flex-1 text-sm font-medium text-natural-600">
-              {item.value === null
-                ? tOverview("notSpecified")
-                : localizeMeasure(item.value, formatUnit)}
+              {item.value === null ? tOverview("notSpecified") : valueOf(item.code, item.value)}
             </span>
           </div>
         ))}

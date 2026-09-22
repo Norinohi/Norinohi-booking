@@ -137,7 +137,7 @@
       "mainsail": "Storsejlstype",
       "cabins": "Kahytter",
       "length": "Længde",
-      "lengthValue": "{length, number} m"
+      "lengthValue": "{feet, number} fod / {metres, number} m"
     },
     "battenMainsail": "Storsejl med sejlpinde",
     "badges": {

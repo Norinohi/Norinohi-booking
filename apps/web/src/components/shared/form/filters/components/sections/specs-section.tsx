@@ -4,6 +4,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { useMoney } from "@/hooks/use-money";
+import { feetToMetres } from "@/lib/boat-length";
 
 import { RangeField, Section, type SectionProps, SelectField } from "../fields";
 import { useFilterOptions } from "../../hooks/use-filter-options";
@@ -17,16 +18,14 @@ import {
   type YearBounds,
 } from "../../lib/boat-age";
 
-const FEET_TO_METRES = 0.3048;
-
 export default function SpecsSection({ value, set }: SectionProps) {
   const t = useTranslations("Filters");
   const format = useFormatter();
   const { options } = useFilterOptions();
   const { ranges, priceCurrency } = useFilterRanges();
   const money = useMoney();
-  /* Metres, because the cards, the specs table and the map all report length in them. */
-  const [lengthUnit, setLengthUnit] = useState("m");
+  /* Feet first, like every other place a boat's length is printed; metres stay one click away. */
+  const [lengthUnit, setLengthUnit] = useState("ft");
 
   /*
    * One decimal, because the slider steps in whole feet: rounded to whole metres, three
@@ -35,7 +34,7 @@ export default function SpecsSection({ value, set }: SectionProps) {
    */
   const showLength = (feet: number) =>
     lengthUnit === "m"
-      ? format.number(feet * FEET_TO_METRES, { maximumFractionDigits: 1 })
+      ? format.number(feetToMetres(feet), { maximumFractionDigits: 1 })
       : String(feet);
 
   /* Two keys, one constraint: the slider and both selects all write through here. */

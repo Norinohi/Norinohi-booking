@@ -137,7 +137,7 @@
       "mainsail": "Тип грота",
       "cabins": "Кают",
       "length": "Довжина",
-      "lengthValue": "{length, number} м"
+      "lengthValue": "{feet, number} фт / {metres, number} м"
     },
     "battenMainsail": "Грот на латах",
     "badges": {

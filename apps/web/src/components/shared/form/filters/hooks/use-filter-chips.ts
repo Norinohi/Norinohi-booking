@@ -4,6 +4,7 @@ import { useFormatter, useTranslations } from "next-intl";
 
 import { dayToDisplay } from "@/lib/date";
 import { useMoney } from "@/hooks/use-money";
+import { formatBoatLengthRange } from "@/lib/boat-length";
 
 import { type ChipId, CHIP_DEFS, type FilterChip, isFilterKeyActive } from "../lib/chips";
 import { labelOf, type Option } from "../lib/options";
@@ -13,7 +14,6 @@ import { useFilterOptions } from "./use-filter-options";
 import { useFilterRanges } from "./use-filter-ranges";
 
 const SHOWN_LABELS = 2;
-const FEET_TO_METRES = 0.3048;
 
 export function useFilterChips(state: FiltersState): FilterChip[] {
   const t = useTranslations("Filters.chips");
@@ -34,12 +34,6 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
   }
 
   const range = ([from, to]: Range) => `${format.number(from)}-${format.number(to)}`;
-  /* The URL holds feet, but the panel, the cards and the specs all speak metres. */
-  const lengthRange = ([from, to]: Range) =>
-    `${format.number(from * FEET_TO_METRES, { maximumFractionDigits: 1 })}-${format.number(
-      to * FEET_TO_METRES,
-      { style: "unit", unit: "meter", maximumFractionDigits: 1 },
-    )}`;
   const priceRange = ([from, to]: Range) =>
     `${money(from * 100, priceCurrency)}-${money(to * 100, priceCurrency)}`;
 
@@ -89,7 +83,7 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
       case "equipment":
         return t("equipment", { value: names(options.equipment, state.equipment) });
       case "length":
-        return t("length", { value: lengthRange(state.length) });
+        return t("length", { value: formatBoatLengthRange(format, state.length) });
       case "cabins":
         return t("cabins", { value: range(state.cabins) });
       case "berths":

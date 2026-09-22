@@ -137,7 +137,7 @@
       "mainsail": "Type de grand-voile",
       "cabins": "Cabines",
       "length": "Longueur",
-      "lengthValue": "{length, number} m"
+      "lengthValue": "{feet, number} pi / {metres, number} m"
     },
     "battenMainsail": "Grand-voile lattée",
     "badges": {
