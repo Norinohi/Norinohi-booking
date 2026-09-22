@@ -265,7 +265,8 @@ export function selectOffer(
  *
  * An offer of another product is dropped rather than taken in its place: it is another charter,
  * with its own crew and extras, and a reservation opened for the product we named would not be
- * the one priced.
+ * the one priced. So is one at no price, before the ranking, where it would otherwise win as the
+ * cheapest: the availability sweep skips it the same way, so the card and the quote agree.
  */
 function offersForPeriod(
   offers: readonly RestOffer[],
@@ -281,6 +282,8 @@ function offersForPeriod(
       offer.dateTo != null &&
       parseBookingManagerDate(offer.dateFrom) === checkIn &&
       parseBookingManagerDate(offer.dateTo) === checkOut &&
+      offer.price != null &&
+      offer.price > 0 &&
       (productName === undefined || isSameBookingManagerProduct(offer.product, productName)),
   );
 }

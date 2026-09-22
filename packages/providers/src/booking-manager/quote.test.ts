@@ -16,6 +16,7 @@ import {
   mapOfferToProviderQuote,
   type OfferMapping,
   repriceRequestFor,
+  routeOptionsFor,
   selectOffer,
 } from "./quote";
 
@@ -307,6 +308,24 @@ describe("selectOffer", () => {
     it("answers nothing for a pair the week does not sell", () => {
       expect(pick({ startBaseId: "100", endBaseId: "300" })).toBeUndefined();
     });
+  });
+
+  it("never ranks an offer at no price ahead of a priced one", () => {
+    const unpriced = restOfferSchema.parse({ ...JSON.parse(JSON.stringify(sameBase)), price: 0 });
+    const dearer = pair("200", "200", 400);
+
+    expect(selectOffer([unpriced, dearer], "9001", "2026-09-26", "2026-10-03", undefined)).toBe(
+      dearer,
+    );
+    expect(selectOffer([unpriced], "9001", "2026-09-26", "2026-10-03", undefined)).toBeUndefined();
+  });
+
+  it("offers no route at no price", () => {
+    const unpriced = restOfferSchema.parse({ ...JSON.parse(JSON.stringify(oneWay)), price: 0 });
+
+    expect(
+      routeOptionsFor([sameBase, unpriced], "9001", "2026-09-26", "2026-10-03", undefined, "EUR"),
+    ).toEqual([expect.objectContaining({ startBaseId: "100", endBaseId: "100" })]);
   });
 
   it("ignores offers the vendor echoed for other dates", () => {
