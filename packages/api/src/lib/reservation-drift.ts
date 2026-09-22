@@ -11,13 +11,14 @@ import type { BookingStatus } from "../services/booking-state";
  * one that costs a customer their holiday. So is a hold that ran out at the vendor while we
  * still count on it, which nobody cancelled and which Booking Manager goes on blocking the week
  * for. The rest is drift worth an operator's eye: a hold the vendor confirmed behind our back,
- * or a confirmed charter it has put back on hold.
+ * or a confirmed charter it has put back on hold, or one it has turned into something that is
+ * neither (a service or owner's week), which is reported whatever our side is doing.
  *
  * A booking mid-flight through our own confirm is not drift. The vendor is answering about the
  * reservation we are in the middle of changing, and reporting that would be noise on every
  * checkout.
  */
-export type ProviderReservationStatus = "option_held" | "confirmed" | "cancelled";
+export type ProviderReservationStatus = "option_held" | "confirmed" | "cancelled" | "unrecognised";
 export type DriftKind =
   | "cancelled_by_operator"
   | "option_lapsed"
@@ -32,6 +33,7 @@ export function driftKindOf(
   lapsed = false,
 ): DriftKind | null {
   if (theirs === "cancelled") return lapsed ? "option_lapsed" : "cancelled_by_operator";
+  if (theirs === "unrecognised") return "status_drift";
   if (ours === "CONFIRMING") return null;
   if (theirs === "confirmed" && ours === "OPTION_HELD") return "status_drift";
   if (theirs === "option_held" && ours === "CONFIRMED") return "status_drift";

@@ -62,7 +62,7 @@ export async function listChangedBookingManagerReservations(
 }
 
 /**
- * The record in our terms, or nothing where it is not one we can read as ours.
+ * The record in our terms, or nothing where the answer is for another reservation.
  *
  * `3` and a `2` past its `expirationDate` are both a hold that ran out rather than one anybody
  * cancelled. The vendor states no moment at which a lapsed option turns `3`, so the expiry is
@@ -105,12 +105,15 @@ export function reservationStateOf(
       status = "cancelled";
       break;
     default:
+      /* Ours was an option or a charter; a record now in any other status (a service or
+         owner's week, a waiting option) was changed by somebody, and dropping it would let the
+         run pass while the week is no longer the customer's. */
       log.warn({
         action: "booking_manager.reconcile.unexpected_status",
         reservationId: askedId,
         status: vendorStatus ?? null,
       });
-      return undefined;
+      status = "unrecognised";
   }
 
   const currency = record.currency?.trim().toUpperCase() || undefined;
@@ -121,7 +124,10 @@ export function reservationStateOf(
   return {
     providerReservationId: askedId,
     status,
-    providerStatus: BM_RESERVATION_STATUS_NAMES.get(vendorStatus) ?? String(vendorStatus),
+    providerStatus:
+      vendorStatus == null
+        ? "UNKNOWN"
+        : (BM_RESERVATION_STATUS_NAMES.get(vendorStatus) ?? String(vendorStatus)),
     ...(lapsed ? { lapsed } : null),
     ...(record.yachtId == null ? null : { externalYachtId: record.yachtId }),
     ...(checkIn === undefined ? null : { checkIn }),

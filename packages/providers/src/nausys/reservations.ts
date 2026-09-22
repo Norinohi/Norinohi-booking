@@ -54,6 +54,7 @@ const PRECEDENCE = {
   cancelled: 3,
   confirmed: 2,
   option_held: 1,
+  unrecognised: 0,
 } satisfies Record<ProviderReservationState["status"], number>;
 
 export async function listChangedNausysReservations(

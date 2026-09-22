@@ -31,6 +31,13 @@ describe("driftKindOf", () => {
     expect(driftKindOf("CONFIRMED", "option_held")).toBe("status_drift");
   });
 
+  /* A service or owner's week under our id: the week is no longer the customer's, confirming or not. */
+  it("flags a reservation the operator turned into a status that is none of ours", () => {
+    expect(driftKindOf("CONFIRMED", "unrecognised")).toBe("status_drift");
+    expect(driftKindOf("OPTION_HELD", "unrecognised")).toBe("status_drift");
+    expect(driftKindOf("CONFIRMING", "unrecognised")).toBe("status_drift");
+  });
+
   it("says nothing when the two agree", () => {
     expect(driftKindOf("CONFIRMED", "confirmed")).toBeNull();
     expect(driftKindOf("OPTION_HELD", "option_held")).toBeNull();

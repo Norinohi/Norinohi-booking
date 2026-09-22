@@ -8,7 +8,7 @@ vi.hoisted(() => {
 });
 
 import { unscopedCompanies } from "../shared/company-scope";
-import { AuthError } from "../shared/errors";
+import { AuthError, RateLimitedError, TransientError } from "../shared/errors";
 import type { FetchLike } from "../shared/http-client";
 import { SequentialQueue } from "../shared/queue";
 import type { Database } from "../registry";
@@ -43,6 +43,18 @@ const OPTION = fixture("reservation-225-option.json");
 const CANCELLED = fixture("reservation-225-cancelled.json");
 /** An agency-side option that expired on 2026-09-01 and still read 3 three weeks later. */
 const EXPIRED = fixture("reservation-225-expired.json");
+
+/*
+ * The same charter-side record as the vendor answers a GET on its own id once the hold ran out:
+ * status 3 and its expiry passed, charterReservationId still null (a GET on the charter id is
+ * answered by the charter side, lifecycle 06-get-charter). Synthesised from OPTION.
+ */
+const OPTION_EXPIRED_CHARTER = OPTION.replace('"status": 2', '"status": 3').replace(
+  '"expirationDate": "2026-09-25 11:59:26"',
+  '"expirationDate": "2026-09-20 11:59:26"',
+);
+/** OPTION turned into a service week by the operator (status 4). */
+const SERVICE = OPTION.replace('"status": 2', '"status": 4');
 
 const PIPO = "8295147330000100225";
 const EXPIRED_CHARTER = "8192659040000100225";
@@ -110,7 +122,28 @@ describe("listChangedBookingManagerReservations", () => {
     expect(state?.lapsed).toBeUndefined();
   });
 
-  it("reads status 3 as a lapsed hold, on the agency twin's charter id too", async () => {
+  it("reads status 3 on the charter-side record as a lapsed hold", async () => {
+    expect(OPTION_EXPIRED_CHARTER).toContain('"status": 3');
+    const { client } = scripted({ [PIPO]: json(OPTION_EXPIRED_CHARTER) });
+
+    const [state] = await listChangedBookingManagerReservations(
+      client,
+      { reservationIds: [PIPO] },
+      { timeZone: config.timeZone, now: BEFORE_EXPIRY },
+    );
+
+    expect(state).toMatchObject({
+      providerReservationId: PIPO,
+      status: "cancelled",
+      providerStatus: "OPTION_EXPIRED",
+      lapsed: true,
+      externalYachtId: "207160073500225",
+    });
+  });
+
+  /* 225 never answered a GET on a charter id with the twin, but the twin names the charter id
+     it belongs to, so such an answer is still about the reservation we asked for. */
+  it("reads status 3 off the agency twin when that is what answers for the charter id", async () => {
     const { client } = scripted({ [EXPIRED_CHARTER]: json(EXPIRED) });
 
     const [state] = await listChangedBookingManagerReservations(
@@ -140,6 +173,23 @@ describe("listChangedBookingManagerReservations", () => {
     expect(state).toMatchObject({ status: "cancelled", providerStatus: "OPTION", lapsed: true });
   });
 
+  it("reports a reservation the operator turned into a status that is none of ours", async () => {
+    expect(SERVICE).toContain('"status": 4');
+    const { client } = scripted({ [PIPO]: json(SERVICE) });
+
+    const [state] = await listChangedBookingManagerReservations(
+      client,
+      { reservationIds: [PIPO] },
+      { timeZone: config.timeZone, now: BEFORE_EXPIRY },
+    );
+
+    expect(state).toMatchObject({
+      providerReservationId: PIPO,
+      status: "unrecognised",
+      providerStatus: "SERVICE",
+    });
+  });
+
   it("leaves out a record that answers for another reservation", async () => {
     const { client } = scripted({ [EXPIRED_AGENCY]: json(OPTION) });
 
@@ -163,6 +213,51 @@ describe("listChangedBookingManagerReservations", () => {
 
     expect(asked).toHaveLength(2);
     expect(states.map((state) => state.providerReservationId)).toEqual([PIPO]);
+  });
+
+  it("skips one reservation answered in a shape we cannot read and still answers for the rest", async () => {
+    const BROKEN = "8000000000000200225";
+    const { client, asked } = scripted({
+      [BROKEN]: json('{"id": "not a number", "status": "two"}'),
+      [PIPO]: json(OPTION),
+    });
+
+    const states = await listChangedBookingManagerReservations(
+      client,
+      { reservationIds: [BROKEN, PIPO] },
+      { timeZone: config.timeZone, now: BEFORE_EXPIRY },
+    );
+
+    expect(asked).toHaveLength(2);
+    expect(states.map((state) => state.providerReservationId)).toEqual([PIPO]);
+  });
+
+  it("fails the pass when the vendor is down", async () => {
+    const { client } = scripted({
+      [PIPO]: () => new Response("<html>Gateway Timeout</html>", { status: 504 }),
+    });
+
+    await expect(
+      listChangedBookingManagerReservations(
+        client,
+        { reservationIds: [PIPO, "8000000000000100225"] },
+        { timeZone: config.timeZone, now: BEFORE_EXPIRY },
+      ),
+    ).rejects.toBeInstanceOf(TransientError);
+  });
+
+  it("fails the pass when the vendor rate-limits it", async () => {
+    const { client } = scripted({
+      [PIPO]: () => new Response("Too Many Requests", { status: 429 }),
+    });
+
+    await expect(
+      listChangedBookingManagerReservations(
+        client,
+        { reservationIds: [PIPO] },
+        { timeZone: config.timeZone, now: BEFORE_EXPIRY },
+      ),
+    ).rejects.toBeInstanceOf(RateLimitedError);
   });
 
   it("fails the pass when the key is refused, so the reconcile reports the vendor unreachable", async () => {

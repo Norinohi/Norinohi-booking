@@ -448,7 +448,12 @@ export interface WaitingOptions {
 
 export const providerReservationStateSchema = z.object({
   providerReservationId: z.string(),
-  status: z.enum(["option_held", "confirmed", "cancelled"]),
+  /**
+   * `unrecognised` is a record the vendor still keeps under our id in a status that is none of
+   * ours (a Booking Manager service week, an owner's week, a waiting option): not something to
+   * guess a meaning for, and not something to drop either, so the pass reports it.
+   */
+  status: z.enum(["option_held", "confirmed", "cancelled", "unrecognised"]),
   /** Rotates on every write, so the vendor's copy is newer than ours by definition. */
   securityToken: z.string().optional(),
   /** The vendor's own word for the status, kept for the operator reading the report. */
