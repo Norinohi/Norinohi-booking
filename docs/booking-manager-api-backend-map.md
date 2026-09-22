@@ -1,11 +1,17 @@
-# Booking Manager API v2.1.4 - backend integration map
+# Booking Manager API v2.2.2 - backend integration map
 
-Source: SwaggerHub `mmksystems/bm-api`, version **2.1.4**.
+Source: SwaggerHub `mmksystems/bm-api`, version **2.2.2**. The connector was first
+written against 2.1.4; the contract header in `booking-manager/endpoints.ts` is pinned
+to 2.2.2 and lists the changelog entries the schemas follow, plus the keys the live
+feed sends that the spec does not declare (`includesDepositWaiver`,
+`Extras.includedExtras`, `Description.documents`, `Company.rating`). Section 10 is the
+endpoint-by-endpoint coverage as of the 2026-09-22 audit against 2.2.2, checked live on
+test company 225.
 
 > **Read this before hunting for the spec.** The SwaggerHub _UI_ page for this API is
 > login-walled, which reads like "no access" and has already cost one person an
 > afternoon. The definition itself is publicly readable without an account at
-> `https://api.swaggerhub.com/apis/mmksystems/bm-api/2.1.4`. Fetch that URL, not
+> `https://api.swaggerhub.com/apis/mmksystems/bm-api/2.2.2`. Fetch that URL, not
 > the UI.
 
 > **Canonical model:** [`backend-architecture.md`](./backend-architecture.md) is the authoritative shared vocabulary and data model for both providers. This document is the **Booking Manager connector-specific reference** - it maps Booking Manager endpoints and `Rest*` types onto the canonical names defined there (`listing`, `provider_record`+`listing_source`, `operator`, `amenity`, `booking`, `price_adjustment_rule`, …). Its sibling is [`nausys-api-v6-backend-map.md`](./nausys-api-v6-backend-map.md); where the two providers disagree, §2 below is the place that says so.
@@ -77,13 +83,19 @@ Consequences already in the code:
   every call was a POST. Booking Manager's catalogue, availability and pricing
   are all GET with query parameters, so the shared client had to grow query
   serialization rather than the connector hand-rolling URLs.
-- **Booking Manager uses the default `httpStatusClassifier`.** NauSYS needs a
-  custom classifier that opens the 200-OK envelope and reads `status` /
-  `errorCode` out of the body. Booking Manager's real status codes map straight
-  onto the shared taxonomy: 401 → `AuthError`, 404 → `NotFound`, 429/5xx →
+- **Booking Manager's classifier is the shared status one plus the 400 bodies.**
+  NauSYS needs a custom classifier that opens the 200-OK envelope and reads
+  `status` / `errorCode` out of the body. Booking Manager's real status codes map
+  straight onto the shared taxonomy: 401 → `AuthError`, 404 → `NotFound`, 429/5xx →
   `RateLimited`/`Transient` (retried with backoff), and **422 falls through to
   `ContractError`**, which is correct - an unprocessable obligatory field is a
-  payload we got wrong, not something a retry fixes.
+  payload we got wrong, not something a retry fixes. The one exception is a
+  plain-text `400` on `POST /reservation` opening "Yacht is not available":
+  `classifyBookingManagerResponse` reads the rest of the sentence into
+  `SlotUnavailableError` with `OWN_OPTION_EXISTS` (our own option sits on the slot),
+  `PRICE_NOT_DEFINED` (the product or period has no price) or `NOT_AVAILABLE` (the
+  week is sold). Only the last one takes the week off the card. Any other plain-text
+  4xx keeps the vendor's sentence in the `ContractError` message.
 - **Spec location matters for projection.** `length`, `beam`, `cabins` and
   `berths` sit on `restYachtSchema` here. Assuming the NauSYS layout (specs on
   the model) is what made the first NauSYS import drop every listing, so the
@@ -159,10 +171,52 @@ Full dumps, no cursor. Each projects into one canonical resource type.
 | `yachts`, `yacht/{id}`             | Full yacht record: identity, home base, company, shipyard, year, dimensions, tanks, engine, deposit, commission, berths/cabins/WC (+ their notes), sail areas, licence requirement, default check-in day/time and check-out time, minimum charter duration, max people on board, images, equipment (three shapes: `equipmentIds`, `equipment`, `equipmentRaw`), products with extras, categorized descriptions, crew | `provider_listing` → canonical `listing`, `listing_specification`, `listing_media`, `listing_amenity`, `listing_checkin_rule`; `products[].extras` → `provider_extra_catalogue` |
 
 `listing_media` needs source provider, external media URL, role, sort order,
-import time and an optional Cloudinary asset ID. `restImageSchema` supplies
-`name`, `description`, `url` and `sortOrder`; there is no explicit role flag, so
-role is derived from sort order until the vendor says otherwise. Do not assume
-rights to copy or transform media until the terms confirm it (§9).
+import time and an optional Cloudinary asset ID. `restImageSchema` supplies `id`,
+`name`, `description`, `url` and `sortOrder`. There is no role flag, but operators
+label pictures in `description`: the first `Main image` is the cover, `Plan image`
+is the layout, the rest is gallery (no `Main image`: the first picture that is not a
+plan). `sortOrder` is 0 on every picture of company 225, so it orders only the
+pictures that set it, after which array order stands. Media rights were answered
+verbally (§9).
+
+What else the projection reads off `/yachts` (all measured on 225 and the account):
+
+- **Products.** Extras, crew and the weekly price come from the yacht's **default
+  product** only (`isDefaultProduct`, else the first product), because `/offers` and
+  `POST /reservation` sell only that one without `productName`. Its name is sent as
+  `productName` on the quote and the reservation (`loadBookingManagerProductName`).
+  `crewedByDefault` or a Crewed product makes the listing `full-crew`, Skippered
+  `skipper`, Bareboat and Flotilla `bareboat`; an obligatory priced crew extra on a
+  bareboat carries its `crewRole`. Cabin and berth products set no crew type.
+- **Extras.** `validForBases` is a list of allowed `from`>`to` routes
+  (`provider_extra_catalogue.valid_routes`), not a one-way flag; `availableInBase`
+  and `validSailingAreas` narrow where an extra applies; `includesDepositWaiver`
+  (the spec's `includedDepositWaiver` is a fallback) and `depositWithWaiver` give
+  the reduced deposit; `includedExtras` lists what a pack already contains, and a
+  requested pack is netted by the obligatory extras the quote already bills (pending
+  vendor question 21, section 10); `description` becomes the line's fine print;
+  `quantityLimit`/`quantityIsSelectable` are recorded, not yet used by checkout.
+- **Limits and rig.** `maxPeopleOnBoard` is `spec.maxPersons`,
+  `maximumCharterDuration` is `max_nights` on every check-in rule,
+  `requiredSkipperLicense: 0` clears the licence requirement, `mainsailType` and
+  `engine` fill `sailType`, `enginePower` and `engines` (`None`/`Keine` read as
+  unset). `genoaType` has no column.
+- **Equipment.** Categories come through `equipmentRaw.parentId` (`-1` is an item
+  the operator added), and names are translated from `/equipment?language=` for
+  de, es, fr, it, nl, no, pl and sv. `da` and `ua` answer in English, so they are
+  never asked. `/yachts` stays without `language`: it translates `kind`, which is a
+  join key.
+- **Operator and base.** `Company.checkoutNote` becomes the operator's return
+  note, `Base.address` the marina line, base coordinates are kept only as a whole
+  point inside the globe, and each vendor base id is bound to its row in
+  `base_source`, so a base that changes region moves in place instead of forking.
+  A base whose only region is a coarse sailing area is filed under a curated name
+  (`sailing-area-regions.json`). The company's `vatCode` and `bankAccountNumber` are
+  dropped before the raw payload is stored.
+- **Commercial caps.** `maxDiscountFromCommissionPercentage` (yacht, else company)
+  caps our own discounts at that share of the offer's `commissionValue`
+  (`discount-cap.ts`); the reading as a share of commission is the conservative one
+  until questions-v2 Q2 is answered.
 
 ### 3.2 Availability
 
@@ -172,7 +226,23 @@ rights to copy or transform media until the terms confirm it (§9).
 | `shortAvailability/{year}` | Bulk compressed year view, one record per yacht: `y` (yacht id), `bs` (one character per day)                           | cheap whole-fleet refresh; `format` selects the encoding (`BM_SHORT_AVAILABILITY_FORMAT`: `1` binary, `2` hex, `3` status) |
 
 The field names on `shortAvailability` are abbreviated by the vendor to keep the
-bulk payload small; they are not a typo.
+bulk payload small; they are not a typo. `shortAvailability` is not called by the
+sync; it was used once to measure that `dateTo` is exclusive.
+
+How `/availability` is read (measured on 225, 2026-09-22):
+
+- `dateTo` is the exclusive check-out day. A row that crosses New Year comes back
+  whole in both years' dumps and is clipped per year; each year runs to the next
+  one's 1 January, and clean neighbouring years join into one calendar, so a free
+  stretch can span 31 December.
+- A status `5` row is skipped: our `DELETE` sets it and `/offers` sells the week
+  again at once. Every other status blocks, including an unknown or missing one,
+  which is counted in one `booking_manager.availability.unknown_status` warning per
+  dump.
+- `baseFromId`/`baseToId` are carried on the occupied interval. After a one-way
+  charter that ends away from the listing's home base, no free time is published
+  until a charter ends at home again, since the boat is not where the card says. The
+  confirming `/offers` sweep still sells the weeks the vendor itself offers.
 
 ### 3.3 Pricing and offers
 
@@ -185,13 +255,34 @@ bulk payload small; they are not a typo.
 Never cache an `offers` result as a booking guarantee. Every checkout quote
 re-runs the provider query.
 
+`/offers` as the quote uses it: `productName` is the listing's default product,
+`startBaseId` and `endBaseId` are the route the customer chose (a pinned pair the
+vendor does not sell that week refuses with `ROUTE_NOT_OFFERED`, and a stored product
+it no longer sells with `PRODUCT_NOT_OFFERED`; neither takes the week off the card),
+`currency` is the quote's, and offers at price 0 or below are dropped before ranking.
+The confirming sweep sends `passengersOnBoard=1`, because without it the vendor
+counts per-person extras for two people (not the berths the spec says), and the card
+counts them once; the quote sends the real party. `discounts[]` become one line per
+step under the operator's own name when they add up to `startPrice - price`. A
+payment plan of three or more instalments is collapsed on purpose into a deposit and
+one balance (`booking_manager.quote.payment_plan_collapsed`). In a converted offer
+`price` and the extras use two different rates, so totals are built only from the
+vendor's own lines, never converted by us (vendor question 20, section 10).
+
+`/prices` is a price list, not a promise to sell: it prices one-way pairs, lengths
+under the yacht's minimum, and weeks `/offers` never sells (Alien on 225). So
+`selectBookingManagerWeeklyPrices` keeps one row per yacht-week (§8b), a complete sweep
+deletes the weekly rates it no longer states (`prices.periods_pruned`), and a week
+that is priced but absent from a whole-scope `/offers` answer is refused for the card
+by the confirming sweep.
+
 ### 3.4 Booking
 
-| Endpoint              | Method       | Canonical action                                                                |
-| --------------------- | ------------ | ------------------------------------------------------------------------------- |
-| `reservation`         | write        | create a reservation or option                                                  |
-| `reservation/{id}`    | read / write | read, amend or cancel a specific reservation                                    |
-| `reservations/{year}` | read         | our agency's reservations for a year: reconciliation job, status refresh, audit |
+| Endpoint              | Method       | Canonical action                                                                 |
+| --------------------- | ------------ | -------------------------------------------------------------------------------- |
+| `reservation`         | write        | create a reservation or option                                                   |
+| `reservation/{id}`    | read / write | read, amend or cancel a specific reservation                                     |
+| `reservations/{year}` | read         | our agency's reservations for a year: finding our own expired option on recovery |
 
 Reservation records carry `id`, `charterReservationId` (agency reservations
 only), `reservationCode`, the period, `creationDate` / `confirmationDate` /
@@ -229,6 +320,28 @@ the booking indeterminate in CONFIRMING. Only an answer at `1` is reported as co
 still at `2` returns as a hold, which the booking chain leaves in CONFIRMING rather than
 marking CONFIRMED or refunding. Not exercised live, since it would fix a charter on 225.
 
+The create's answer is checked before it is trusted: it must be an open option
+(status `2`; a `9` is released and refused as `NOT_AN_OPTION`), and its yacht, dates,
+bases, product, currency and `clientPrice` must be what we sent, since the vendor
+silently rewrites a base pair it does not sell or a currency it will not book. Any
+difference deletes the option and refuses the hold (`RESERVATION_SUBSTITUTED`).
+`clientPrice` is compared with every line paid online: the charter net of vendor
+discounts plus the obligatory extras not `payableInBase`.
+
+Releasing a hold deletes the option by id, an expired one (status `3`) too, since it
+keeps blocking the week until deleted; a record already at `5` counts as released. A
+refused confirm releases our option the same way.
+
+**Reconciliation.** `listChangedReservations` reads `GET reservation/{id}` once per
+held id, sequentially on the shared lane: `1` confirmed, `2` open, `5` cancelled (by
+the operator when we did not ask), `3` or a `2` past its `expirationDate` lapsed, and
+any other status, or none, comes back as unrecognised and fails the run as status
+drift. A 404 is logged and skipped until the vendor says what it means. It
+deliberately does not use `reservations/{year}` (no status `5` without a filter, and
+agency-wide, so it cannot tell our options from ones the agency makes by hand) or
+`/objects/Reservation/search/` (non-monotonic sync point, misses cancellations).
+Bookings whose check-out is more than two days past are no longer read.
+
 What the hold keeps off the option (measured on company 225, 2026-09-22):
 
 - `crewListLink`: the operator's hosted crew-list page, already present on the option, on both
@@ -244,12 +357,17 @@ What the hold keeps off the option (measured on company 225, 2026-09-22):
 
 `status` on both reservation and availability records:
 
-| Value | Name             | Meaning                              |
-| ----- | ---------------- | ------------------------------------ |
-| 1     | `RESERVATION`    | confirmed booking                    |
-| 2     | `OPTION`         | soft hold                            |
-| 3     | `OPTION_EXPIRED` | lapsed option, still blocks the week |
-| 4     | `SERVICE`        | vendor maintenance or delivery block |
+| Value | Name             | Meaning                                                                  |
+| ----- | ---------------- | ------------------------------------------------------------------------ |
+| 1     | `RESERVATION`    | confirmed booking                                                        |
+| 2     | `OPTION`         | soft hold                                                                |
+| 3     | `OPTION_EXPIRED` | lapsed option, still blocks the week                                     |
+| 4     | `SERVICE`        | vendor maintenance or delivery block                                     |
+| 5     | `CANCELLED`      | cancelled; skipped by the availability read, a cancellation on reconcile |
+
+Statuses past 5 appear on `/availability` (7, 8, 11 among them, questions-v2 Q5) and on
+the create (`9`, OPTION_ON_WAITING). All of them block the week; on a held reservation
+of ours any status but 1, 2, 3 and 5 is reported as drift.
 
 **3 is not a live hold.** The spec calls it "option in expiration"; the vendor's own
 status list names it "Option expired" (`BLOCKS_AVAILABILITY` true), and measured on
@@ -330,6 +448,13 @@ on.
 > pair, in the immutable quote snapshot, and treat the choice as one switch in
 > the mapper rather than an assumption spread through the pricing pipeline.
 
+Measured on 225 since (2026-09-22), not vendor-confirmed: on the charter-side record
+`finalPrice` is the operator's net (1445 against a `clientPrice` of 1700), and
+`clientPrice` equals the charter net of vendor discounts plus the obligatory extras
+that are not `payableInBase`, on 112 of 116 saved reservations (the other four differ
+only by an "Agency discount" line). The hold checks `clientPrice` that way, and keeps
+`finalPrice` as `booking.operator_settlement`, never as what the customer pays.
+
 Money is stored as integer minor units plus ISO currency (D-MONEY); percentages
 stay exact decimals.
 
@@ -357,11 +482,15 @@ Per [`backend-architecture.md`](./backend-architecture.md) §3:
 
 ## 8. Deliberate MVP exclusions
 
-`specialOffers` merchandising, crew profiles (`restCrewSchema`), linked
-documents, and cabin/berth-level charter products are parsed and retained but not
-projected into public tables or oRPC procedures until the product scope includes
-them. Preserving the raw records keeps every one of those a later addition rather
-than a re-sync.
+`specialOffers` merchandising, crew profiles (`Yacht.crew[]`, `restCrewSchema`: named
+operator staff with age, nationality and photo, which needs a table, a page section and
+a product decision on showing them), linked documents (the live key is `documents`, the
+spec says `document`), `Yacht.transitLog` (outside `obligatoryExtrasPrice`; whether the
+base collects it is vendor question 18, and surfacing it would double count the 889
+hulls that already carry an obligatory "Transit log" extra), `Company.rating`, and
+cabin/berth-level charter products are parsed and retained but not projected into
+public tables or oRPC procedures until the product scope includes them. Preserving the
+raw records keeps every one of those a later addition rather than a re-sync.
 
 ## 8b. The vendor's own integration guide
 
@@ -509,7 +638,8 @@ above the 13-15k that was being assumed from fleet-size guesses.
 
 ## 9. Open vendor questions
 
-**The sendable list lives in [`booking-manager-vendor-questions.md`](./booking-manager-vendor-questions.md)**,
+**What is still open after the 2026-09-22 audit is listed in §10.3**, and in section H of
+the sendable list. **The sendable list lives in [`booking-manager-vendor-questions.md`](./booking-manager-vendor-questions.md)**,
 which consolidates these, the Booking Manager items from
 `open-questions-and-decisions.md` §3, and every `Q-BM-*` marker in the connector,
 each stated with the assumption we ship so a short answer resolves it. The
@@ -542,3 +672,74 @@ now answered; these are not.
   copy and transform their photos and serve them from our own storage. Still to be
   confirmed by email, with the governing T&C clause, before the contract is signed.
 - **Pricing semantics** - see the callout in §6.
+
+## 10. Coverage against 2.2.2 (audit of 2026-09-22)
+
+Every endpoint of spec 2.2.2, what the connector does with it, and why the rest is not
+called. Checked against the code on `feat/bm-api-coverage` and, where the rules allow,
+live on test company 225 (the end-to-end run: catalogue, availability, price weeks,
+quote, hold, reconcile, cancel and an operator-side cancel, all on 225, both options
+deleted afterwards).
+
+### 10.1 Covered
+
+| Endpoint                                                                                                      | Use                                                                           |
+| ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `GET countries`, `worldRegions`, `sailingAreas`, `bases`, `equipment`, `companies`, `shipyards`, `yachtTypes` | nightly full dumps (§3.1, §8b); `equipment` also once per translated language |
+| `GET yachts?companyId=`                                                                                       | nightly catalogue walk, one call per company (§3.1)                           |
+| `GET availability/{year}`                                                                                     | half-hourly availability run (§3.2)                                           |
+| `GET prices`                                                                                                  | weekly price list, one call per Saturday pair (§3.3, §8b)                     |
+| `GET offers`                                                                                                  | quote, the confirming sweep, `showOptions=true` to find our own option        |
+| `POST reservation`                                                                                            | create the option, sent once (§3.4)                                           |
+| `GET reservation/{id}`                                                                                        | read around the confirm, release, recovery, reconcile                         |
+| `PUT reservation/{id}`                                                                                        | confirm, no body, `sendNotification` only; not exercised live                 |
+| `DELETE reservation/{id}`                                                                                     | release an open or expired option                                             |
+| `GET reservations/{year}?month=`                                                                              | find our own expired option after a failed create                             |
+
+### 10.2 Deliberately not used
+
+| Endpoint                                                                                             | Why                                                                                                                                                              |
+| ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `country/{id}`, `worldRegion/{id}`, `sailingArea/{id}`, `base/{id}`, `company/{id}`, `shipyard/{id}` | the vendor prescribes full dumps; no dangling reference found                                                                                                    |
+| `yacht/{id}`                                                                                         | identical to the list record; used only by `scripts/import-booking-manager-yacht.ts`                                                                             |
+| `yachtsOnSale`                                                                                       | yacht sales, not charter                                                                                                                                         |
+| `specialOffers`, `specialOffers/{offerType}`                                                         | merchandising, not a quote source (§8)                                                                                                                           |
+| `shortAvailability/{year}`                                                                           | `/availability` carries the statuses and bases we need                                                                                                           |
+| `prices?tripDuration=`                                                                               | the guide prescribes Saturday pairs; short charters are priced by `/offers` (remaining-work §2.4 item 14)                                                        |
+| `PUT setWeeklyPrice/{id}`                                                                            | an operator's write, not an agency's                                                                                                                             |
+| `GET crewListLink/{id}`                                                                              | the create's answer already carries `crewListLink`, stored as `booking.crew_list_link`                                                                           |
+| `POST addDocument/{itemType}`                                                                        | nothing of ours to attach; crew data goes through the operator's crew-list page                                                                                  |
+| `GET skippers`                                                                                       | crew profiles are an MVP exclusion (§8)                                                                                                                          |
+| `GET users`, `users/search`, `GET`/`PUT users/{id}`                                                  | no address-book sync is needed                                                                                                                                   |
+| `POST requests` type 1, and deleting a confirmed reservation                                         | the vendor answered that a confirmed booking is cancelled by the operator, not by the API                                                                        |
+| `GET objects/{entity}/properties`, `POST objects/{entity}/search/`                                   | `Resource` returns nothing to an agency key; `Reservation` as a delta is unreliable (non-monotonic sync point, misses cancellations), so reconcile reads each id |
+| search filters on `/offers` (country, sailing area, min/max, kind, flexibility)                      | search runs on the local read model                                                                                                                              |
+| `promoCode` on `/offers`                                                                             | marketplace promos are ours                                                                                                                                      |
+| `GET payments`, `GET payments/{id}`                                                                  | nothing of ours to reconcile until payments are written (10.3)                                                                                                   |
+
+### 10.3 Blocked on the vendor
+
+Numbered as in the audit's question list; each is also in section H of
+[`booking-manager-vendor-questions.md`](./booking-manager-vendor-questions.md).
+
+| Endpoint or behaviour                                          | What waits                                                                                                                                                                                                     | Question |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `PUT reservation/{id}` on a repeat                             | whether a second PUT on a confirmed record answers 200 at `1` or a 4xx, and whether `sendNotification` affects an agency key. Today a `1` read before the PUT counts as confirmed and no second PUT is sent    | 1        |
+| `PUT reservation/{id}` answer                                  | whether it can answer `2`, `3` or `5`, and what each means. Today anything but `1` leaves the booking in CONFIRMING for a person                                                                               | 2        |
+| `Extras.validForBases`, `availableInBase`, `validSailingAreas` | whether our reading as allowed routes and areas matches how `obligatoryExtrasPrice` is computed. Absent on 225, so unmeasured                                                                                  | 4        |
+| `POST reservation` status `9` (OPTION_ON_WAITING)              | whether it is visible on `showOptions` or `reservations/{year}` and deletable. Today a `9` is deleted and the hold refused                                                                                     | 7        |
+| the 20-call account limit                                      | whether it counts per account, key or IP, and what signal precedes the block. Today the budget in §2 assumes one server replica per key                                                                        | 12       |
+| `POST users` + `Reservation.clientId`                          | whether an agency key may create clients. Without it every option lands on one shared charter-side client and the operator sees only `clientName`                                                              | 14       |
+| `POST reservation/{id}/payments`, `PUT`/`DELETE payments/{id}` | whether we may record a payment, on which twin, and how to get a `paymentMethodId` without `objects/PaymentMethod/search/`. Customer money goes through Stripe only; the operator payout is not recorded in BM | 15       |
+| `GET invoices/{invoiceType}`                                   | whether an agency export locks the operator's invoices ("locked and unchangeable"). **Never call it, not even as a probe**, until answered                                                                     | 16       |
+| `POST requests` type 0 (extend an option)                      | how the result becomes visible: on 225 a 200 changed no `expirationDate`                                                                                                                                       | 17       |
+| `Yacht.transitLog`                                             | whether the base collects it (§8)                                                                                                                                                                              | 18       |
+| status `3` "Option expired"                                    | why it keeps blocking the week, and whether our `DELETE` of a `3` frees it. Today ours are deleted on release and a refused delete is listed for a person                                                      | 19       |
+| currency conversion in `/offers`                               | which of the two rates in one converted offer is authoritative for the reservation and the invoice. Every quote is asked in EUR today                                                                          | 20       |
+| `Extras.includedExtras`                                        | what it means and whether a chosen pack's contents leave `obligatoryExtrasPrice`. Today a requested pack is netted by the obligatory extras it contains                                                        | 21       |
+| `/prices` versus `/offers`                                     | whether `/prices` is a list with no promise to sell (one-way pairs, lengths under the minimum, weeks `/offers` never sells). Today it is read that way (§3.3)                                                  | 22       |
+
+Two more wait on a business decision rather than the vendor: whether to publish our own
+agency payment plan in the portal (Q-BM-PAYPLAN, §8b), and what to do with options on
+the agency's list that no booking of ours matches (they cannot be told from ones staff
+make by hand in Booking Manager).
