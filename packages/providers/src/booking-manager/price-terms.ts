@@ -107,3 +107,11 @@ export async function loadBookingManagerPriceTerms(
 
   return found;
 }
+
+/** The product the listing sells for one stored yacht, where its record names any. */
+export async function loadBookingManagerProductName(
+  db: Database,
+  externalYachtId: string,
+): Promise<string | undefined> {
+  return (await loadBookingManagerPriceTerms(db, [externalYachtId])).get(externalYachtId)?.product;
+}

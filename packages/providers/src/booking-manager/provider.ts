@@ -53,7 +53,7 @@ import { log } from "evlog";
 import { streamBookingManagerConfirmedOffers } from "./confirmed-offers";
 import { warmBookingManagerServers } from "./warmup";
 import { createBookingManagerAvailabilitySource } from "./occupancy";
-import { loadBookingManagerPriceTerms } from "./price-terms";
+import { loadBookingManagerPriceTerms, loadBookingManagerProductName } from "./price-terms";
 import { bookingManagerPriceWindow, createBookingManagerSeasonalPriceLoader } from "./prices";
 import { projectBookingManagerCatalogue } from "./projection";
 import { createBookingManagerQuoteService, repriceRequestFor } from "./quote";
@@ -119,6 +119,7 @@ export class BookingManagerInventoryProvider
       loadExtraLabels: (listingId) => loadBookingManagerExtraLabels(this.db, listingId),
       loadDiscountCapPercentage: (externalYachtId) =>
         loadBookingManagerDiscountCap(this.db, externalYachtId),
+      loadProductName: (externalYachtId) => loadBookingManagerProductName(this.db, externalYachtId),
     });
 
     this.seasonalPrices = createBookingManagerSeasonalPriceLoader({
@@ -136,6 +137,7 @@ export class BookingManagerInventoryProvider
       config: this.config,
       db: this.db,
       currency: this.currency,
+      loadProductName: (externalYachtId) => loadBookingManagerProductName(this.db, externalYachtId),
       // The hold re-prices through the same live call the quote used, so a slot
       // that moved between quote and checkout is refused rather than held at a
       // price the vendor will not honour.

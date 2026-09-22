@@ -4,7 +4,7 @@ import { seedSearchWorld } from "@yacht-charter/db/test-support/search-fixture";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { loadBookingManagerPriceTerms } from "./price-terms";
+import { loadBookingManagerPriceTerms, loadBookingManagerProductName } from "./price-terms";
 
 /*
  * `giulia` is company 225's yacht with a non-default Crewed product; `orion` is filed at a
@@ -93,5 +93,16 @@ describe("loadBookingManagerPriceTerms", () => {
 
   it("asks nothing of the database for no yachts", async () => {
     expect(await loadBookingManagerPriceTerms(test.db, [])).toEqual(new Map());
+  });
+});
+
+describe("loadBookingManagerProductName", () => {
+  it("names the default product the quote and the reservation ask for", async () => {
+    expect(await loadBookingManagerProductName(test.db, "orion")).toBe("Bareboat");
+  });
+
+  it("names none where the record states no product, so the vendor's default stands", async () => {
+    expect(await loadBookingManagerProductName(test.db, "bare")).toBeUndefined();
+    expect(await loadBookingManagerProductName(test.db, "unknown")).toBeUndefined();
   });
 });

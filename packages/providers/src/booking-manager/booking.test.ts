@@ -252,6 +252,47 @@ describe("reservation body status", () => {
   });
 });
 
+describe("createOption product", () => {
+  it("names the listing's product on the reservation", async () => {
+    const sent: string[] = [];
+    const client = new BookingManagerClient({
+      config,
+      queue: new SequentialQueue(),
+      retry: { maxAttempts: 1 },
+      fetchImpl: (_url, init) => {
+        const parsed = z
+          .object({ productName: z.string() })
+          .safeParse(init.body === undefined ? undefined : JSON.parse(String(init.body)));
+        if (parsed.success) sent.push(parsed.data.productName);
+        return Promise.resolve({
+          status: 200,
+          text: () =>
+            Promise.resolve(
+              `{"id":${CHARTER_ID},"status":2,"expirationDate":"2027-05-08 12:00:00"}`,
+            ),
+        });
+      },
+    });
+    const asked: string[] = [];
+
+    await createBookingManagerBookingService({
+      client,
+      resolver: fakeResolver(),
+      config,
+      db: fakeDb(),
+      verifyPrice: () => Promise.resolve(PRICE_HASH),
+      recordEvent: () => Promise.resolve(),
+      loadProductName: (externalYachtId) => {
+        asked.push(externalYachtId);
+        return Promise.resolve("Bareboat");
+      },
+    }).createOption(draft);
+
+    expect(asked).toEqual(["978990780000100225"]);
+    expect(sent).toEqual(["Bareboat"]);
+  });
+});
+
 describe("createOption bases", () => {
   function capturing() {
     /* Only the two fields these tests assert on; the vendor sends ids as bare numbers. */

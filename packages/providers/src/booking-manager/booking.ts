@@ -17,7 +17,6 @@ import {
   providerReservationRefSchema,
   providerReservationSchema,
   type BookingDraft,
-  type CrewType,
   type ProviderExtrasMutation,
   type ProviderQuote,
   type ProviderReservation,
@@ -71,8 +70,8 @@ export interface BookingManagerBookingServiceDeps {
    * or the hold prices a different charter.
    */
   currency?: string;
-  /** Same per-yacht product catalogue the quote path resolves against. */
-  productNameFor?: (crewType: CrewType) => string | undefined;
+  /** The listing's product for a vendor yacht; the same loader the quote names it from. */
+  loadProductName?: (externalYachtId: string) => Promise<string | undefined>;
   /**
    * The vendor's own client record id, when the agency keeps one. Left unset the
    * reservation carries only `clientName` (Q-BM-CLIENT: MMK has not confirmed how
@@ -145,7 +144,7 @@ export function createBookingManagerBookingService(
       what: `listing ${draft.listingId}`,
     });
     const baseId = ref.externalBaseId?.trim() || undefined;
-    const productName = draft.crewType ? deps.productNameFor?.(draft.crewType) : undefined;
+    const productName = await deps.loadProductName?.(yachtId);
     const clientId = deps.clientIdFor?.(draft);
 
     const body: ReservationBody = {

@@ -58,11 +58,12 @@ export interface BookingManagerQuoteServiceOptions {
    */
   quoteTtlMs?: number;
   /**
-   * Maps the customer's crew choice to a Booking Manager product name. Products
-   * are per-yacht catalogue data (`yacht.products[].name`), so no static table
-   * can answer this; omitted means the vendor prices its default product.
+   * The product the listing sells for this vendor yacht, off its stored record: the default
+   * one, whose extras, crew and weekly rates the catalogue shows. Named on the call rather than
+   * left to the vendor's default so the quote and the reservation name one product even when
+   * the operator changes its default between the two. Undefined leaves it to the vendor.
    */
-  productNameFor?: (crewType: CrewType) => string | undefined;
+  loadProductName?: (externalYachtId: string) => Promise<string | undefined>;
   /** Resolves a vendor extra id to a customer-facing line label. */
   labelFor?: (externalId: string) => string | undefined;
   /**
@@ -102,7 +103,7 @@ export function createBookingManagerQuoteService(
         provider: "Booking Manager",
         what: "the yacht id",
       });
-      const productName = parsed.crewType ? options.productNameFor?.(parsed.crewType) : undefined;
+      const productName = await options.loadProductName?.(yachtId);
 
       // Midnight is mandatory here, not a placeholder: MMK confirmed the vendor
       // substitutes the base's own check-in/check-out time and returns it on the
@@ -115,7 +116,7 @@ export function createBookingManagerQuoteService(
         passengersOnBoard: parsed.guests,
         // An undefined value is dropped from the query string, so an unnamed
         // product asks for the vendor's default rather than for an empty one.
-        productName: productName || undefined,
+        productName,
       };
 
       const offers = await client.get(
@@ -259,7 +260,13 @@ export function selectOffer(
   )[0];
 }
 
-/** The offers for exactly this charter, narrowed to the product when one was asked for. */
+/**
+ * The offers for exactly this charter, of the product asked for where one was.
+ *
+ * An offer of another product is dropped rather than taken in its place: it is another charter,
+ * with its own crew and extras, and a reservation opened for the product we named would not be
+ * the one priced.
+ */
 function offersForPeriod(
   offers: readonly RestOffer[],
   yachtId: string,
@@ -267,20 +274,15 @@ function offersForPeriod(
   checkOut: string,
   productName: string | undefined,
 ): RestOffer[] {
-  const candidates = offers.filter(
+  return offers.filter(
     (offer) =>
       offer.yachtId === yachtId &&
       offer.dateFrom != null &&
       offer.dateTo != null &&
       parseBookingManagerDate(offer.dateFrom) === checkIn &&
-      parseBookingManagerDate(offer.dateTo) === checkOut,
+      parseBookingManagerDate(offer.dateTo) === checkOut &&
+      (productName === undefined || isSameBookingManagerProduct(offer.product, productName)),
   );
-
-  const ofProduct = productName
-    ? candidates.filter((offer) => isSameBookingManagerProduct(offer.product, productName))
-    : candidates;
-
-  return ofProduct.length > 0 ? ofProduct : candidates;
 }
 
 /**

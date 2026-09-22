@@ -258,6 +258,15 @@ describe("selectOffer", () => {
     expect(chosen?.product).toBe("Crewed");
   });
 
+  it("never prices another product in place of the one asked for", () => {
+    const crewed = restOfferSchema.parse({
+      ...JSON.parse(JSON.stringify(sameBase)),
+      product: "Crewed",
+    });
+
+    expect(selectOffer([crewed], "9001", "2026-09-26", "2026-10-03", "Bareboat")).toBeUndefined();
+  });
+
   /*
    * The Shannon week of 26 September 2026 sells both ends from both bases: Carrick (100) and
    * Portumna (200). Each pair asked for is the pair priced, and a drop-off asked for with its
@@ -645,5 +654,56 @@ describe("getBookingManagerQuote on a pinned route", () => {
     const error = await providerRejection(quoteOn({ startBaseId: "0" }, "[]"));
     expect(error).toBeInstanceOf(SlotUnavailableError);
     expect(refusesOnlyTheRoute(error)).toBe(false);
+  });
+});
+
+/*
+ * Without `productName` the vendor prices its own default, which is the product the catalogue
+ * shows too, until the operator changes it. Named on the call, the quote and the reservation
+ * agree on one product whatever the default is by then.
+ */
+describe("getBookingManagerQuote's product", () => {
+  const offers =
+    `[{"yachtId":${RUMBA_ID},"startBaseId":0,"endBaseId":0,` +
+    '"dateFrom":"2027-06-05 17:00:00","dateTo":"2027-06-12 09:00:00",' +
+    '"product":"Bareboat","price":4600.0,"currency":"EUR","obligatoryExtras":[]}]';
+
+  it("asks /offers for the listing's product", async () => {
+    const { client, asked } = clientAnswering(offers);
+    await createBookingManagerQuoteService({
+      client,
+      resolver: rumbaResolver,
+      config: QUOTE_CONFIG,
+      loadProductName: () => Promise.resolve("Bareboat"),
+    }).getBookingManagerQuote(RUMBA_WEEK);
+
+    expect(asked[0]?.searchParams.get("productName")).toBe("Bareboat");
+  });
+
+  it("leaves the product to the vendor where the listing names none", async () => {
+    const { client, asked } = clientAnswering(offers);
+    await createBookingManagerQuoteService({
+      client,
+      resolver: rumbaResolver,
+      config: QUOTE_CONFIG,
+      loadProductName: () => Promise.resolve(undefined),
+    }).getBookingManagerQuote(RUMBA_WEEK);
+
+    expect(asked[0]?.searchParams.has("productName")).toBe(false);
+  });
+
+  it("refuses an answer for another product", async () => {
+    const { client } = clientAnswering(offers);
+    const error = await providerRejection(
+      createBookingManagerQuoteService({
+        client,
+        resolver: rumbaResolver,
+        config: QUOTE_CONFIG,
+        loadProductName: () => Promise.resolve("Crewed"),
+      }).getBookingManagerQuote(RUMBA_WEEK),
+    );
+
+    expect(error).toBeInstanceOf(SlotUnavailableError);
+    expect(error.providerCode).toBe("NO_OFFER");
   });
 });
