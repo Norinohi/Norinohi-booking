@@ -73,6 +73,11 @@ export interface BookingManagerQuoteServiceOptions {
    * tell they are one charge.
    */
   loadExtraLabels?: (listingId: string) => Promise<ReadonlyMap<string, string>>;
+  /**
+   * The operator's `maxDiscountFromCommissionPercentage` for the listing's yacht, else its
+   * company's, off the stored catalogue. Undefined where neither states one.
+   */
+  loadDiscountCapPercentage?: (listingId: string) => Promise<number | undefined>;
   now?: () => number;
 }
 
@@ -136,7 +141,10 @@ export function createBookingManagerQuoteService(
         );
       }
 
-      const extraLabels = await options.loadExtraLabels?.(parsed.listingId);
+      const [extraLabels, maxDiscountFromCommissionPercentage] = await Promise.all([
+        options.loadExtraLabels?.(parsed.listingId),
+        options.loadDiscountCapPercentage?.(parsed.listingId),
+      ]);
 
       return mapOfferToProviderQuote({
         offer,
@@ -146,6 +154,7 @@ export function createBookingManagerQuoteService(
         guests: parsed.guests,
         crewType: parsed.crewType,
         requestedCurrency: parsed.currency,
+        maxDiscountFromCommissionPercentage,
         expiresAt: new Date(now() + quoteTtlMs).toISOString(),
         /* The catalogue answers first; an extra the sync never recorded falls
            through to whatever the caller knows. */
@@ -324,6 +333,8 @@ export interface OfferMapping {
   /** Every route the vendor offered for this charter; see `routeOptions` on the quote. */
   routeOptions?: ProviderQuote["routeOptions"];
   requestedCurrency: string;
+  /** The operator's bound on our client discount, as a percentage of the commission. */
+  maxDiscountFromCommissionPercentage?: number | undefined;
   expiresAt: string;
   labelFor?: ((externalId: string) => string | undefined) | undefined;
 }
@@ -441,6 +452,13 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
   };
   const commission = commissionOf(offer, currency);
   if (commission) quoteInput.commission = commission;
+  const maxClientDiscount = maxClientDiscountOf(
+    commission?.amount.amountMinor,
+    input.maxDiscountFromCommissionPercentage,
+  );
+  if (maxClientDiscount !== undefined) {
+    quoteInput.maxClientDiscount = { amountMinor: maxClientDiscount, currency };
+  }
   if (securityDeposit) quoteInput.securityDeposit = securityDeposit;
   const times = readOfferTimes(offer);
   if (times.checkInTime) quoteInput.checkInTime = times.checkInTime;
@@ -462,6 +480,28 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
  */
 function customerPriceMinor(offer: RestOffer, price: number, currency: string): number {
   return numberToMinor(price, currency, `offer ${offer.yachtId} price`);
+}
+
+/**
+ * How much of the price we may give away of our own accord, in minor units, or undefined for no
+ * bound.
+ *
+ * Booking Manager states the bound per company and yacht as `maxDiscountFromCommissionPercentage`
+ * (10 on company 225, whose commission is 15; 0 on about 2,900 of 11,400 yachts account-wide).
+ * The spec gives only an example value, so it is read as a share of the commission, the smaller
+ * of the two readings its name allows, until the vendor answers Q2 in
+ * docs/vendor/booking-manager-questions-v2.md: a share of the price would allow over six times
+ * more on 225. Never more than the commission itself, past which we would sell below what we pay
+ * the operator, and a bound stated against a commission the offer did not report allows nothing.
+ */
+function maxClientDiscountOf(
+  commissionMinor: number | undefined,
+  percentage: number | undefined,
+): number | undefined {
+  if (percentage === undefined || !Number.isFinite(percentage)) return commissionMinor;
+  if (commissionMinor === undefined) return 0;
+  const share = Math.min(Math.max(percentage, 0), 100) / 100;
+  return Math.floor(commissionMinor * share);
 }
 
 /**

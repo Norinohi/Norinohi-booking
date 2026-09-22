@@ -321,6 +321,55 @@ describe("an offer on the vendor's short base ids", () => {
   );
 });
 
+/*
+ * Company 225 states maxDiscountFromCommissionPercentage 10 on itself and on all 29 yachts, beside
+ * a commission of 15 percent: Rumba's 690.00 commission leaves 69.00 we may give away.
+ */
+describe("the operator's bound on our client discount", () => {
+  const rumba = restOfferSchema.parse({
+    yachtId: "123325530000100225",
+    dateFrom: "2027-06-05 17:00:00",
+    dateTo: "2027-06-12 09:00:00",
+    price: 4600,
+    currency: "EUR",
+    commissionPercentage: 15,
+    commissionValue: 690,
+  });
+  const capOf = (
+    offer: z.infer<typeof restOfferSchema>,
+    maxDiscountFromCommissionPercentage: number | undefined,
+  ) =>
+    mapOfferToProviderQuote({
+      offer,
+      listingId: "lst_rumba",
+      checkIn: "2027-06-05",
+      checkOut: "2027-06-12",
+      guests: 4,
+      requestedCurrency: "EUR",
+      maxDiscountFromCommissionPercentage,
+      expiresAt: "2027-05-01T00:00:00.000Z",
+    }).maxClientDiscount;
+
+  it("allows the stated share of the commission", () => {
+    expect(capOf(rumba, 10)).toEqual({ amountMinor: 6_900, currency: "EUR" });
+  });
+
+  it("allows nothing where the operator allows nothing", () => {
+    expect(capOf(rumba, 0)?.amountMinor).toBe(0);
+  });
+
+  it("never allows more than the commission", () => {
+    expect(capOf(rumba, 250)?.amountMinor).toBe(69_000);
+    expect(capOf(rumba, undefined)?.amountMinor).toBe(69_000);
+  });
+
+  it("allows nothing against a commission the offer does not report", () => {
+    const silent = restOfferSchema.parse({ ...rumba, commissionValue: null });
+    expect(capOf(silent, 10)?.amountMinor).toBe(0);
+    expect(capOf(silent, undefined)).toBeUndefined();
+  });
+});
+
 describe("repriceRequestFor", () => {
   const draft = (route: { startBaseId?: string; endBaseId?: string } | null) =>
     bookingDraftSchema.parse({

@@ -57,6 +57,7 @@ import { createBookingManagerSeasonalPriceLoader } from "./prices";
 import { projectBookingManagerCatalogue } from "./projection";
 import { createBookingManagerQuoteService, repriceRequestFor } from "./quote";
 import { createBookingManagerBookingService } from "./booking";
+import { loadBookingManagerDiscountCap } from "./discount-cap";
 
 import type { JsonField } from "../shared/json";
 
@@ -115,6 +116,7 @@ export class BookingManagerInventoryProvider
       resolver: this.resolver,
       config: this.config,
       loadExtraLabels: (listingId) => loadBookingManagerExtraLabels(this.db, listingId),
+      loadDiscountCapPercentage: (listingId) => loadBookingManagerDiscountCap(this.db, listingId),
     });
 
     this.seasonalPrices = createBookingManagerSeasonalPriceLoader({
