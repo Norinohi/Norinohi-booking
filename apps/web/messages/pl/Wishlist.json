@@ -5,6 +5,7 @@
   "removed": "Usunięto z ulubionych.",
   "emptyTitle": "Brak zapisanych jachtów",
   "emptyDescription": "Zacznij przeglądać i zapisuj ulubione jachty na później",
+  "emptyAction": "Znajdź jachty",
   "someUnavailable": "Niektóre z zapisanych jachtów nie są już dostępne.",
   "toggleFailed": "Nie udało się zaktualizować ulubionych. Spróbuj ponownie.",
   "merged": "{count, plural, one {Dodano # zapisany jacht} few {Dodano # zapisane jachty} many {Dodano # zapisanych jachtów} other {Dodano # zapisanego jachtu}} do Twojego konta.",

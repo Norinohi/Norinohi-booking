@@ -5,6 +5,7 @@
   "removed": "Eliminado de tus favoritos.",
   "emptyTitle": "Aún no hay yates guardados",
   "emptyDescription": "Empieza a explorar y guarda tus favoritos para más adelante",
+  "emptyAction": "Buscar yates",
   "someUnavailable": "Algunos de tus yates guardados ya no están disponibles.",
   "toggleFailed": "No se pudieron actualizar tus favoritos. Inténtalo de nuevo.",
   "merged": "Se {count, plural, one {añadió # yate guardado} other {añadieron # yates guardados}} a tu cuenta.",

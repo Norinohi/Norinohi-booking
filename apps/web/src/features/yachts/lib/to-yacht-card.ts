@@ -100,6 +100,7 @@ export function toYachtCard(
     badges: unavailable ? [statusBadge] : [statusBadge, ...identity.badges],
     ...(unavailable ? { unavailable } : null),
     imageAlt: t("imageAlt", { name: listing.title, marina: listing.base.name }),
+    operator: listing.operator ? t("operator", { name: listing.operator }) : undefined,
     /* SAFETY: `/yachts/[id]` is a real route; typedRoutes only recognises it when the segment
        is a literal, and nuqs serializes the query string back to a plain string. */
     detailHref: serializeDetailPeriod(`/yachts/${listing.slug}`, {

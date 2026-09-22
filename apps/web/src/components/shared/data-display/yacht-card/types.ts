@@ -51,6 +51,8 @@ export type YachtCardData = {
   badges?: YachtCardBadge[];
   marina: Marina;
   name: string;
+  /** "Charter company: X". Only the row layout prints it; the tiles and map cards have no room. */
+  operator?: string;
   /** Absent for a listing nobody has rated: the chip is dropped rather than showing a zero. */
   rating?: string;
   charterType: string;

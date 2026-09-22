@@ -5,6 +5,7 @@
   "removed": "Fjernet fra ønskelisten din.",
   "emptyTitle": "Ingen lagrede yachter ennå",
   "emptyDescription": "Begynn å utforske og lagre favorittene dine til senere",
+  "emptyAction": "Finn yachter",
   "someUnavailable": "Noen av de lagrede yachtene dine er ikke lenger tilgjengelige.",
   "toggleFailed": "Vi klarte ikke å oppdatere ønskelisten din. Prøv igjen.",
   "merged": "{count, plural, one {# lagret yacht} other {# lagrede yachter}} lagt til på kontoen din.",
