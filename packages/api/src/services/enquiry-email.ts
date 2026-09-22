@@ -7,6 +7,7 @@ import {
   sendStaffAlertEmail,
 } from "@yacht-charter/transactional";
 
+import { emailDay, emailInstant } from "../lib/email-dates";
 import { BOOKING_RECEIVED_STATES, type BookingStatus } from "./booking-state";
 
 /*
@@ -84,25 +85,6 @@ export type EnquiryReceived = {
   holdExpiresAt: Date | null;
 };
 
-function day(date: string): string {
-  return new Intl.DateTimeFormat(LOCALE, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(date));
-}
-
-/* To the minute and in UTC: a hold lapses at an instant, and the mail cannot know the reader's zone. */
-function instant(date: Date): string {
-  return new Intl.DateTimeFormat(LOCALE, {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "UTC",
-    timeZoneName: "short",
-  }).format(date);
-}
-
 export async function notifyEnquiryReceived(enquiry: EnquiryReceived): Promise<void> {
   const cta = answerCta(enquiry.bookingId, enquiry.bookingStatus);
   const holding = BOOKING_RECEIVED_STATES.some((status) => status === enquiry.bookingStatus);
@@ -112,10 +94,11 @@ export async function notifyEnquiryReceived(enquiry: EnquiryReceived): Promise<v
       customerName: enquiry.customerName,
       reference: enquiry.reference,
       yachtName: enquiry.yachtName,
-      checkIn: day(enquiry.checkIn),
-      checkOut: day(enquiry.checkOut),
+      checkIn: emailDay(enquiry.checkIn),
+      checkOut: emailDay(enquiry.checkOut),
       question: enquiry.question,
-      holdExpiresAt: holding && enquiry.holdExpiresAt ? instant(enquiry.holdExpiresAt) : undefined,
+      holdExpiresAt:
+        holding && enquiry.holdExpiresAt ? emailInstant(enquiry.holdExpiresAt) : undefined,
       cta,
     });
   } catch (cause) {

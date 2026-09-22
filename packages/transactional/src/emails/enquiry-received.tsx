@@ -93,10 +93,10 @@ EnquiryReceivedEmail.PreviewProps = {
   customerName: "John",
   reference: "NB-T93Q9JFL",
   yachtName: "Lagoon 42 White Waves",
-  checkIn: "3 Oct 2026",
-  checkOut: "10 Oct 2026",
+  checkIn: "Oct 3, 2026",
+  checkOut: "Oct 10, 2026",
   question: "Do you need to see a sailing licence before departure?",
-  holdExpiresAt: "25 Sept 2026, 00:44 UTC",
+  holdExpiresAt: "Sep 25, 2026, 00:44 UTC",
   cta: { url: "https://example.com/en/bookings/bkg_preview/pay", label: "Complete your payment" },
   replyable: true,
 } satisfies EnquiryReceivedEmailProps;
