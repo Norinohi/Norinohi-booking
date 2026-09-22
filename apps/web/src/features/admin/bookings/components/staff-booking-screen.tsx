@@ -188,6 +188,7 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
   );
 
   const closed = isClosedBooking(booking.status);
+  const settlement = booking.operatorSettlement;
 
   const providerStillHolds =
     RELEASED_BY_US.includes(booking.status) &&
@@ -253,6 +254,11 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
             <span className="block text-sm text-natural-500">
               {booking.providerReservationId ?? t("noReservationId")}
             </span>
+            {booking.providerAgencyReservationId ? (
+              <span className="block text-sm text-natural-500">
+                {t("agencyReservationId", { id: booking.providerAgencyReservationId })}
+              </span>
+            ) : null}
           </Field>
           <Field label={t("fields.total")}>{amount(booking.total)}</Field>
           <Field label={t("fields.collected")}>
@@ -291,6 +297,30 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
               <span className="block text-sm text-natural-500">
                 {t(`commissionSource.${booking.commission.source}`)}
               </span>
+            </Field>
+          ) : null}
+          {settlement ? (
+            <Field label={t("fields.operatorSettlement")}>
+              {settlement.netMinor === null
+                ? "-"
+                : amount({ amountMinor: settlement.netMinor, currency: settlement.currency })}
+              {settlement.plan.map((entry) => (
+                <span
+                  key={`${entry.dueDate}-${entry.amountMinor}`}
+                  className="block text-sm text-natural-500"
+                >
+                  {t("operatorDue", {
+                    amount: amount({
+                      amountMinor: entry.amountMinor,
+                      currency: settlement.currency,
+                    }),
+                    date: day(entry.dueDate),
+                  })}
+                </span>
+              ))}
+              {settlement.terms ? (
+                <span className="block text-sm text-natural-500">{settlement.terms}</span>
+              ) : null}
             </Field>
           ) : null}
           <Field label={t("fields.timeline")}>

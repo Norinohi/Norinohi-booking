@@ -1118,6 +1118,8 @@
     "guestAccount": "Gästkonto",
     "guests": "{count, plural, one {# gäst} other {# gäster}}",
     "noReservationId": "Inget reservations-id än",
+    "agencyReservationId": "Byrå-id {id}",
+    "operatorDue": "{amount} senast {date}",
     "outstanding": "{amount} utestående",
     "dueAtCheckIn": "{amount} betalas i marinan",
     "createdAt": "Skapad {at}",
@@ -1132,7 +1134,8 @@
       "total": "Totalt",
       "collected": "Inbetalt",
       "timeline": "Tidslinje",
-      "commission": "Provision"
+      "commission": "Provision",
+      "operatorSettlement": "Att betala till operatören"
     },
     "invoice": {
       "title": "Fakturaförfrågan",

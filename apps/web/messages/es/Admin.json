@@ -1118,6 +1118,8 @@
     "guestAccount": "Cuenta de invitado",
     "guests": "{count, plural, one {# huésped} other {# huéspedes}}",
     "noReservationId": "Aún sin id de reserva",
+    "agencyReservationId": "Id de agencia {id}",
+    "operatorDue": "{amount} antes del {date}",
     "outstanding": "{amount} pendiente",
     "dueAtCheckIn": "{amount} a pagar en la marina",
     "createdAt": "Creada {at}",
@@ -1132,7 +1134,8 @@
       "total": "Total",
       "collected": "Cobrado",
       "timeline": "Cronología",
-      "commission": "Comisión"
+      "commission": "Comisión",
+      "operatorSettlement": "Adeudado al operador"
     },
     "invoice": {
       "title": "Solicitud de factura",

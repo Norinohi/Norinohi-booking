@@ -1118,6 +1118,8 @@
     "guestAccount": "Compte invité",
     "guests": "{count, plural, one {# passager} other {# passagers}}",
     "noReservationId": "Pas encore d’identifiant de réservation",
+    "agencyReservationId": "Identifiant agence {id}",
+    "operatorDue": "{amount} avant le {date}",
     "outstanding": "{amount} restant dû",
     "dueAtCheckIn": "{amount} à régler à la marina",
     "createdAt": "Créée le {at}",
@@ -1132,7 +1134,8 @@
       "total": "Total",
       "collected": "Encaissé",
       "timeline": "Chronologie",
-      "commission": "Commission"
+      "commission": "Commission",
+      "operatorSettlement": "Dû à l’opérateur"
     },
     "invoice": {
       "title": "Demande de facture",

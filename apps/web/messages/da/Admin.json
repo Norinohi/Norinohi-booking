@@ -1118,6 +1118,8 @@
     "guestAccount": "Gæstekonto",
     "guests": "{count, plural, one {# gæst} other {# gæster}}",
     "noReservationId": "Intet reservations-id endnu",
+    "agencyReservationId": "Agentur-id {id}",
+    "operatorDue": "{amount} senest {date}",
     "outstanding": "{amount} udestår",
     "dueAtCheckIn": "{amount} betales i marinaen",
     "createdAt": "Oprettet {at}",
@@ -1132,7 +1134,8 @@
       "total": "I alt",
       "collected": "Opkrævet",
       "timeline": "Forløb",
-      "commission": "Kommission"
+      "commission": "Kommission",
+      "operatorSettlement": "Skyldes udbyderen"
     },
     "invoice": {
       "title": "Fakturaanmodning",
