@@ -75,6 +75,7 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 // Must sit above the oRPC dispatch below, which matches "/*" and would otherwise
 // swallow this path. Reads the raw body — signature verification is computed over
 // the exact bytes Stripe sent, so it must not be parsed first.
+
 app.post("/api/stripe/webhook", async (c) => {
   const outcome = await handleStripeWebhook(
     db,
