@@ -57,7 +57,8 @@ export interface RawResponseEvent extends ProviderHttpResult {
 export type ResponseClassifier = (
   httpStatus: number,
   body: JsonValue,
-  context: { endpoint: string },
+  /** `text` is the body as it came, for a vendor that refuses in plain text `body` cannot hold. */
+  context: { endpoint: string; text?: string },
 ) => ProviderError | null;
 
 export interface ProviderHttpClientOptions {
@@ -273,7 +274,7 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
     // with the text carried on the error's payload below.
     await onRawResponse?.({ endpoint, ...result });
 
-    const error = classifyResponse(response.status, parsed, { endpoint });
+    const error = classifyResponse(response.status, parsed, { endpoint, text });
     if (error) {
       throw error;
     }

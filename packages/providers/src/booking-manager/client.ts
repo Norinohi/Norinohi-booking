@@ -1,10 +1,16 @@
 import type { z } from "zod";
 
-import { ContractError, describeSchemaIssues } from "../shared/errors";
+import {
+  ContractError,
+  describeSchemaIssues,
+  type ProviderError,
+  SlotUnavailableError,
+} from "../shared/errors";
 import type { JsonRequestValue, JsonValue } from "../shared/json";
 import {
   createProviderHttpClient,
   type FetchLike,
+  httpStatusClassifier,
   type ProviderHttpClient,
   type ProviderRequestOptions,
   type QueryValue,
@@ -15,7 +21,7 @@ import { queueForInterval, SequentialQueue } from "../shared/queue";
 import type { RetryPolicy } from "../shared/retry";
 import { BM_LIVE_LANES } from "./call-budget";
 import type { BookingManagerConfig } from "./config";
-import { bookingManagerEndpoints } from "./endpoints";
+import { bookingManagerEndpoints, reservationRefusalOf } from "./endpoints";
 
 export interface BookingManagerClientOptions {
   config: BookingManagerConfig;
@@ -62,10 +68,44 @@ function retryOptionsFor(endpoint: string): ProviderRequestOptions | undefined {
 }
 
 /**
+ * Real HTTP statuses, as the shared classifier reads them, except where the vendor's plain-text
+ * refusal says more than its status: a `400` on `POST /reservation` that opens with "Yacht is
+ * not available" is the charter being unavailable, not a body we got wrong, so it is a
+ * `SlotUnavailableError` whose `providerCode` says which refusal it was. Any other 4xx keeps the
+ * vendor's sentence on the error, which is where the event log and support read it.
+ */
+export function classifyBookingManagerResponse(
+  httpStatus: number,
+  body: JsonValue,
+  context: { endpoint: string; text?: string },
+): ProviderError | null {
+  const text = context.text?.trim() ?? "";
+  if (httpStatus === 400 && context.endpoint === bookingManagerEndpoints.reservation) {
+    const refusal = reservationRefusalOf(text);
+    if (refusal) {
+      return new SlotUnavailableError(`Booking Manager refused the reservation: ${text}`, {
+        endpoint: context.endpoint,
+        providerCode: refusal,
+        payload: { httpStatus, text },
+      });
+    }
+  }
+
+  const error = httpStatusClassifier(httpStatus, body, context);
+  if (!(error instanceof ContractError) || body !== null || text === "") return error;
+  return new ContractError(`${error.message}: ${text.slice(0, 200)}`, {
+    endpoint: context.endpoint,
+    providerCode: error.providerCode,
+    payload: { httpStatus, text: text.slice(0, 500) },
+  });
+}
+
+/**
  * Unlike NauSYS, Booking Manager signals failure with real HTTP status codes
- * (400/401/404/422), so the shared `httpStatusClassifier` default needs no
- * override. 422 falls through to ContractError, which is right: an unprocessable
- * obligatory field is a payload we got wrong, not something a retry fixes.
+ * (400/401/404/422), so `classifyBookingManagerResponse` defers to the shared
+ * classifier for everything but the reservation refusals. 422 falls through to
+ * ContractError, which is right: an unprocessable obligatory field is a payload we
+ * got wrong, not something a retry fixes.
  */
 export class BookingManagerClient {
   readonly config: BookingManagerConfig;
@@ -85,6 +125,7 @@ export class BookingManagerClient {
       // Without this the vendor's 19-digit ids are rounded before anything sees them,
       // and the id we send back on a quote or a booking is one we invented.
       parseJson: parseExactJson,
+      classifyResponse: classifyBookingManagerResponse,
       fetchImpl: options.fetchImpl,
       retry: options.retry,
     });

@@ -3,7 +3,13 @@ import { z } from "zod";
 
 import type { Database } from "../registry";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
-import { ContractError, ProviderError } from "../shared/errors";
+import {
+  ContractError,
+  OWN_OPTION_HELD,
+  PRODUCT_NOT_OFFERED,
+  ProviderError,
+  SlotUnavailableError,
+} from "../shared/errors";
 import { exactJsonNumber } from "../shared/exact-json";
 import { thrownFields } from "../shared/log-fields";
 import { toExactPositiveIntId } from "../shared/projection-helpers";
@@ -34,6 +40,7 @@ import {
 } from "./dates";
 import { numberToMinor } from "./money";
 import {
+  BM_RESERVATION_REFUSAL,
   BM_RESERVATION_STATUS,
   BM_RESERVATION_STATUS_NAMES,
   bookingManagerEndpoints,
@@ -252,11 +259,16 @@ export function createBookingManagerBookingService(
     }
 
     const { body, terms } = await reservationRequest(parsed);
-    const response = await client.post(
-      bookingManagerEndpoints.reservation,
-      restReservationSchema,
-      body,
-    );
+    let response: RestReservation;
+    try {
+      response = await client.post(
+        bookingManagerEndpoints.reservation,
+        restReservationSchema,
+        body,
+      );
+    } catch (cause) {
+      throw cause instanceof SlotUnavailableError ? refusalInOurTerms(cause, terms) : cause;
+    }
 
     await logEvent(parsed.quoteId, "option_created", response);
 
@@ -519,6 +531,34 @@ export function createBookingManagerBookingService(
 }
 
 /* ------------------------------------------------------------------ internals */
+
+/**
+ * A POST refusal restated in the taxonomy the booking chain reads.
+ *
+ * "Price not defined" answers a product the vendor does not price for the charter, and the
+ * product is ours, from the last catalogue sync, so with one named it is a refusal of our terms
+ * rather than of the week. "Own option exists" is our own hold on the slot, which no one else
+ * has bought.
+ */
+function refusalInOurTerms(
+  cause: SlotUnavailableError,
+  terms: ReservationTerms,
+): SlotUnavailableError {
+  const restated = (providerCode: string) =>
+    new SlotUnavailableError(cause.message, {
+      endpoint: cause.endpoint,
+      providerCode,
+      payload: { refusal: cause.providerCode },
+      cause,
+    });
+  if (cause.providerCode === BM_RESERVATION_REFUSAL.OWN_OPTION_EXISTS) {
+    return restated(OWN_OPTION_HELD);
+  }
+  if (cause.providerCode === BM_RESERVATION_REFUSAL.PRICE_NOT_DEFINED && terms.productName) {
+    return restated(PRODUCT_NOT_OFFERED);
+  }
+  return cause;
+}
 
 /** The day of a vendor timestamp, or the text as sent where it is not one, which then differs. */
 function calendarDateOf(value: string | null | undefined): string | undefined {

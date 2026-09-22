@@ -8,8 +8,10 @@ vi.hoisted(() => {
 
 import type { FetchLike } from "../shared/http-client";
 import { SequentialQueue } from "../shared/queue";
+import { ContractError, SlotUnavailableError } from "../shared/errors";
+import { providerRejection } from "../testing/contracts";
 import { BookingManagerClient } from "./client";
-import { bookingManagerEndpoints } from "./endpoints";
+import { BM_RESERVATION_REFUSAL, bookingManagerEndpoints } from "./endpoints";
 import { type BookingManagerEnvSource, resolveBookingManagerConfig } from "./config";
 
 const source: BookingManagerEnvSource = {
@@ -124,5 +126,46 @@ describe("BookingManagerClient retries", () => {
     await client.post(bookingManagerEndpoints.offers, z.unknown(), {});
 
     expect(attempts).toBe(3);
+  });
+});
+
+/*
+ * POST /reservation refuses in plain text, which the JSON parse cannot hold, and the text is
+ * the only thing that tells a slot taken by someone else from our own option already on it.
+ * The bodies are company 225's answers on 2026-09-22.
+ */
+describe("BookingManagerClient reservation refusals", () => {
+  const refusing = (status: number, text: string) =>
+    clientWith(async () => new Response(text, { status }));
+  const post = (client: BookingManagerClient) =>
+    providerRejection(client.post(bookingManagerEndpoints.reservation, z.unknown(), {}));
+
+  it.each([
+    ["Yacht is not available, own Option exists.", BM_RESERVATION_REFUSAL.OWN_OPTION_EXISTS],
+    ["Yacht is not available, price not defined.", BM_RESERVATION_REFUSAL.PRICE_NOT_DEFINED],
+    ["Yacht is not available.", BM_RESERVATION_REFUSAL.NOT_AVAILABLE],
+  ])("reads %j as the charter being unavailable", async (text, code) => {
+    const error = await post(refusing(400, text));
+
+    expect(error).toBeInstanceOf(SlotUnavailableError);
+    expect(error.providerCode).toBe(code);
+    expect(error.message).toContain(text);
+  });
+
+  it("keeps any other 400 a contract failure, with the vendor's sentence on it", async () => {
+    const error = await post(refusing(400, "Error creating entity."));
+
+    expect(error).toBeInstanceOf(ContractError);
+    expect(error.message).toBe("Provider returned HTTP 400: Error creating entity.");
+  });
+
+  it("reads the same sentence elsewhere as nothing special", async () => {
+    const client = refusing(400, "Yacht is not available, own Option exists.");
+
+    const error = await providerRejection(
+      client.put(bookingManagerEndpoints.reservationById("1"), z.unknown()),
+    );
+
+    expect(error).toBeInstanceOf(ContractError);
   });
 });

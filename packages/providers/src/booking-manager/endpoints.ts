@@ -152,6 +152,34 @@ export const BM_RESERVATION_STATUS_NAMES = new Map<number, string>([
 ]);
 
 /**
+ * Why `POST /reservation` refused, read off its `400`. The body is plain text, not JSON, and
+ * every refusal of the charter opens with "Yacht is not available"; what follows says which
+ * one it is. Measured on company 225, 2026-09-22 (`live/lifecycle/03-post-dup.json`,
+ * `19-post-option2.json`):
+ *
+ * - `OWN_OPTION_EXISTS`: "Yacht is not available, own Option exists." An option this agency
+ *   already holds on the slot, typically one a create that timed out opened after all.
+ * - `PRICE_NOT_DEFINED`: "Yacht is not available, price not defined." Nothing priced for what
+ *   was asked, measured with a product the yacht does not sell.
+ * - `NOT_AVAILABLE`: any other text after the same opening, the slot being taken.
+ */
+export const BM_RESERVATION_REFUSAL = {
+  OWN_OPTION_EXISTS: "OWN_OPTION_EXISTS",
+  PRICE_NOT_DEFINED: "PRICE_NOT_DEFINED",
+  NOT_AVAILABLE: "NOT_AVAILABLE",
+} as const;
+
+export type BookingManagerReservationRefusal =
+  (typeof BM_RESERVATION_REFUSAL)[keyof typeof BM_RESERVATION_REFUSAL];
+
+export function reservationRefusalOf(text: string): BookingManagerReservationRefusal | undefined {
+  if (!/^\s*yacht is not available/i.test(text)) return undefined;
+  if (/own option exists/i.test(text)) return BM_RESERVATION_REFUSAL.OWN_OPTION_EXISTS;
+  if (/price not defined/i.test(text)) return BM_RESERVATION_REFUSAL.PRICE_NOT_DEFINED;
+  return BM_RESERVATION_REFUSAL.NOT_AVAILABLE;
+}
+
+/**
  * Whether two `ProductEnum` values name the same product. The spec spells them
  * lowercase (`bareboat`), the vendor answers `Bareboat`, and it accepts either when
  * asked, so a strict comparison between what we send and what comes back never

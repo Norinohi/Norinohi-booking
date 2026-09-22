@@ -169,11 +169,19 @@ export const ROUTE_NOT_OFFERED = "ROUTE_NOT_OFFERED";
  */
 export const PRODUCT_NOT_OFFERED = "PRODUCT_NOT_OFFERED";
 
-/** A refusal of the terms we asked on, while the period itself stays on sale. */
+/**
+ * The `providerCode` of a `SlotUnavailableError` for a period an option of our own already holds.
+ * Nobody else has bought it: taking it off the card would outlive our hold.
+ */
+export const OWN_OPTION_HELD = "OWN_OPTION_HELD";
+
+/** A refusal that says nothing about the period being sold to anyone else. */
 export function refusesOnlyTheTerms(error: Error | null): boolean {
   return (
     error instanceof SlotUnavailableError &&
-    (error.providerCode === ROUTE_NOT_OFFERED || error.providerCode === PRODUCT_NOT_OFFERED)
+    (error.providerCode === ROUTE_NOT_OFFERED ||
+      error.providerCode === PRODUCT_NOT_OFFERED ||
+      error.providerCode === OWN_OPTION_HELD)
   );
 }
 

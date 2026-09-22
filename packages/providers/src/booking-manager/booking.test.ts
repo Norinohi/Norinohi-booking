@@ -5,7 +5,13 @@ import { z } from "zod";
 import type { Database } from "../registry";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { unscopedCompanies } from "../shared/company-scope";
-import { ContractError } from "../shared/errors";
+import {
+  ContractError,
+  OWN_OPTION_HELD,
+  PRODUCT_NOT_OFFERED,
+  refusesOnlyTheTerms,
+  SlotUnavailableError,
+} from "../shared/errors";
 import { SequentialQueue } from "../shared/queue";
 import { providerRejection } from "../testing/contracts";
 import type { BookingDraft, Money } from "../types";
@@ -648,5 +654,51 @@ describe("cancelOption on an expired option", () => {
     const error = await providerRejection(service.cancelOption(ref));
 
     expect(error.retryable).toBe(true);
+  });
+});
+
+/*
+ * POST /reservation's plain-text 400s on company 225, 2026-09-22. Each says the charter cannot
+ * be opened, and which reason decides whether the week may come off the card for everyone.
+ */
+describe("createOption refusals", () => {
+  const refusing = (text: string, productName?: string) =>
+    scriptedService(
+      { POST: [{ status: 400, body: text }] },
+      { loadProductName: () => Promise.resolve(productName) },
+    ).service.createOption(draft);
+
+  it("reads our own option on the slot as ours, not as the week sold", async () => {
+    const error = await providerRejection(
+      refusing("Yacht is not available, own Option exists.", "Bareboat"),
+    );
+
+    expect(error).toBeInstanceOf(SlotUnavailableError);
+    expect(error.providerCode).toBe(OWN_OPTION_HELD);
+    expect(refusesOnlyTheTerms(error)).toBe(true);
+  });
+
+  it("reads no price for the product we named as a refusal of the product", async () => {
+    const error = await providerRejection(
+      refusing("Yacht is not available, price not defined.", "Crewed"),
+    );
+
+    expect(error.providerCode).toBe(PRODUCT_NOT_OFFERED);
+    expect(refusesOnlyTheTerms(error)).toBe(true);
+  });
+
+  it("reads no price with no product named as the charter not on sale", async () => {
+    const error = await providerRejection(refusing("Yacht is not available, price not defined."));
+
+    expect(error).toBeInstanceOf(SlotUnavailableError);
+    expect(refusesOnlyTheTerms(error)).toBe(false);
+  });
+
+  it("reads any other unavailability as the slot taken", async () => {
+    const error = await providerRejection(refusing("Yacht is not available.", "Bareboat"));
+
+    expect(error).toBeInstanceOf(SlotUnavailableError);
+    expect(error.providerCode).toBe("NOT_AVAILABLE");
+    expect(refusesOnlyTheTerms(error)).toBe(false);
   });
 });
