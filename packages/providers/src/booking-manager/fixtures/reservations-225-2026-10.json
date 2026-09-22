@@ -1,0 +1,108 @@
+[
+  {
+    "id": 8192658760000107113,
+    "charterReservationId": 8192659040000100225,
+    "reservationCode": "26-00674",
+    "dateFrom": "2026-10-31 17:00:00",
+    "dateTo": "2026-11-07 09:00:00",
+    "expirationDate": "2026-09-01 11:59:31",
+    "creationDate": "2026-08-25 18:19:31",
+    "confirmationDate": "2026-08-25 00:00:00",
+    "yachtId": 978990020000100225,
+    "status": 3,
+    "productName": "Bareboat",
+    "baseFromId": 194,
+    "baseToId": 194,
+    "clientName": "Test Client",
+    "currency": "EUR",
+    "termsOfPayment": "  ",
+    "basePrice": 1.0,
+    "discount": 0.0,
+    "commission": 0.0,
+    "finalPrice": 501.0,
+    "clientPrice": 501.0,
+    "securityDeposit": 1500.0,
+    "items": [],
+    "paymentPlan": [
+      {
+        "date": "2026-09-01 00:00:00",
+        "amount": 250.5
+      },
+      {
+        "date": "2026-10-01 17:00:00",
+        "amount": 250.5
+      }
+    ],
+    "remarks": "",
+    "internalRemarks": ""
+  },
+  {
+    "id": 8192654930000107113,
+    "charterReservationId": 8192655130000100225,
+    "reservationCode": "26-00672",
+    "dateFrom": "2026-10-31 17:00:00",
+    "dateTo": "2026-11-07 09:00:00",
+    "creationDate": "2026-08-25 18:18:16",
+    "confirmationDate": "2026-08-25 00:00:00",
+    "yachtId": 7078642060000100225,
+    "status": 1,
+    "productName": "Bareboat",
+    "baseFromId": 3929137120000100000,
+    "baseToId": 3929137120000100000,
+    "clientName": "Test Client",
+    "currency": "EUR",
+    "termsOfPayment": "  ",
+    "basePrice": 1600.0,
+    "discount": 0.0,
+    "commission": 0.0,
+    "finalPrice": 1600.0,
+    "clientPrice": 1600.0,
+    "securityDeposit": 0.0,
+    "items": [],
+    "paymentPlan": [
+      {
+        "date": "2026-09-01 00:00:00",
+        "amount": 800.0
+      },
+      {
+        "date": "2026-10-01 17:00:00",
+        "amount": 800.0
+      }
+    ],
+    "remarks": "",
+    "internalRemarks": ""
+  },
+  {
+    "id": 8295147120000107113,
+    "charterReservationId": 8295147330000100225,
+    "reservationCode": "26-00751",
+    "dateFrom": "2026-10-17 17:00:00",
+    "dateTo": "2026-10-24 09:00:00",
+    "expirationDate": "2026-09-25 11:59:25",
+    "creationDate": "2026-09-22 00:18:25",
+    "confirmationDate": "2026-09-22 00:00:00",
+    "yachtId": 207160073500225,
+    "status": 2,
+    "productName": "Bareboat",
+    "baseFromId": 127,
+    "baseToId": 127,
+    "clientName": "Test Client",
+    "currency": "EUR",
+    "termsOfPayment": "  ",
+    "basePrice": 1700.0,
+    "discount": 0.0,
+    "commission": 0.0,
+    "finalPrice": 1700.0,
+    "clientPrice": 1700.0,
+    "securityDeposit": 1500.0,
+    "items": [],
+    "paymentPlan": [
+      {
+        "date": "2026-09-29 00:00:00",
+        "amount": 1700.0
+      }
+    ],
+    "remarks": "",
+    "internalRemarks": ""
+  }
+]

@@ -51,9 +51,9 @@ export interface BookingManagerClientOptions {
  * for that to be reachable: 504s with an HTML body under load, and a cold start
  * near 30 s on each of the vendor's six servers.
  *
- * So a create is attempted once and a timeout surfaces as an indeterminate state
- * for `reservation-reconcile` to settle against the vendor's own record, which is
- * the only place the truth exists.
+ * So a create is attempted once, and a timeout is settled by asking the vendor
+ * whether an option of ours now sits on the slot (`recoverOwnOption` in
+ * `booking.ts`) rather than by sending it again.
  *
  * This is enforced here rather than left to the call site because the hazard is
  * precisely that someone wires the endpoint up and does not know about it.
@@ -63,8 +63,18 @@ const NON_IDEMPOTENT_ENDPOINTS = new Set<string>([
   bookingManagerEndpoints.reservation,
 ]);
 
-function retryOptionsFor(endpoint: string): ProviderRequestOptions | undefined {
-  return NON_IDEMPOTENT_ENDPOINTS.has(endpoint) ? { retry: { maxAttempts: 1 } } : undefined;
+/**
+ * A write tried once also gets the long ceiling rather than the quote's. The vendor's cold start
+ * runs near 30 s, the quote's ceiling, and a create abandoned there may still land, leaving an
+ * option nobody knows is ours; waiting longer is the cheaper side of that trade.
+ */
+function writeOptionsFor(
+  endpoint: string,
+  config: BookingManagerConfig,
+): ProviderRequestOptions | undefined {
+  return NON_IDEMPOTENT_ENDPOINTS.has(endpoint)
+    ? { retry: { maxAttempts: 1 }, timeoutMs: config.syncTimeoutMs }
+    : undefined;
 }
 
 /**
@@ -186,7 +196,7 @@ export class BookingManagerClient {
     schema: z.ZodType<TOut>,
     body: JsonRequestValue,
   ): Promise<TOut> {
-    const response = await this.http.post(endpoint, body, retryOptionsFor(endpoint));
+    const response = await this.http.post(endpoint, body, writeOptionsFor(endpoint, this.config));
     return this.parse(endpoint, schema, response.body);
   }
 

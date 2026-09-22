@@ -13,6 +13,7 @@ import {
   PRODUCT_NOT_OFFERED,
   refusesOnlyTheTerms,
   SlotUnavailableError,
+  TransientError,
 } from "../shared/errors";
 import { SequentialQueue } from "../shared/queue";
 import { providerRejection } from "../testing/contracts";
@@ -819,5 +820,226 @@ describe("confirmBooking keeps what the answer says", () => {
 
     expect(reservation.providerAgencyReservationId).toBe(AGENCY_ID);
     expect(reservation.crewListLink).toContain(`reservation_id=${CHARTER_ID}`);
+  });
+});
+
+/**
+ * A client answering by method and path, for a lifecycle that reads several records. `answer`
+ * gets the call number per method, so a second POST can answer differently from the first.
+ */
+function routedService(
+  answer: (method: string, path: string, nth: number) => Scripted,
+  overrides: Partial<Parameters<typeof createBookingManagerBookingService>[0]> = {},
+) {
+  const calls: { method: string; path: string }[] = [];
+  const counts = new Map<string, number>();
+  const client = new BookingManagerClient({
+    config,
+    queue: new SequentialQueue(),
+    retry: { maxAttempts: 1 },
+    fetchImpl: (url, init) => {
+      const method = init.method ?? "GET";
+      const path = String(url).slice(config.baseUrl.length + 1);
+      calls.push({ method, path });
+      const nth = (counts.get(method) ?? 0) + 1;
+      counts.set(method, nth);
+      const { status, body } = answer(method, path, nth);
+      return Promise.resolve({ status, text: () => Promise.resolve(body) });
+    },
+  });
+  const service = createBookingManagerBookingService({
+    client,
+    resolver: pipoResolver,
+    config,
+    db: fakeDb(),
+    verifyPrice: () =>
+      Promise.resolve({ hash: PRICE_HASH, clientPrice: { amountMinor: 170_000, currency: "EUR" } }),
+    recordEvent: () => Promise.resolve(),
+    loadProductName: () => Promise.resolve("Bareboat"),
+    bookingHolding: () => Promise.resolve(undefined),
+    ...overrides,
+  });
+  return { calls, service };
+}
+
+/*
+ * The 225 lifecycle run: option #1 on Pipo, charter side 8295147330000100225, agency twin
+ * 8295147120000107113, which `showOptions` named as `myReservationId`.
+ */
+const PIPO_CHARTER = "8295147330000100225";
+const PIPO_AGENCY = "8295147120000107113";
+const PIPO_SHOW_OPTIONS =
+  `[{"yachtId":207160073500225,"startBaseId":127,"endBaseId":127,"dateFrom":"2026-10-17 17:00:00",` +
+  `"dateTo":"2026-10-24 09:00:00","status":2,"product":"Bareboat","price":1700.0,"currency":"EUR",` +
+  `"myReservationId":${PIPO_AGENCY}}]`;
+const PIPO_TWIN = `{"id":${PIPO_AGENCY},"charterReservationId":${PIPO_CHARTER},"status":2,"yachtId":207160073500225}`;
+const auditDraft: BookingDraft = {
+  ...pipoOptionDraft,
+  customer: { name: "Test Norinohi", surname: "Audit", email: "audit@example.com" },
+};
+
+function pipoVendor(post: (nth: number) => Scripted) {
+  return (method: string, path: string, nth: number): Scripted => {
+    if (method === "POST") return post(nth);
+    if (method === "DELETE") return { status: 200, body: `{"id":${PIPO_AGENCY},"status":5}` };
+    if (path.startsWith("offers?")) return { status: 200, body: PIPO_SHOW_OPTIONS };
+    if (path === `reservation/${PIPO_AGENCY}`) return { status: 200, body: PIPO_TWIN };
+    if (path === `reservation/${PIPO_CHARTER}`) return { status: 200, body: OPTION_ANSWER };
+    return { status: 404, body: "" };
+  };
+}
+
+describe("createOption after a create that did not answer", () => {
+  it("takes over the option the lost create opened for this customer", async () => {
+    const { calls, service } = routedService(
+      pipoVendor(() => ({ status: 504, body: "<html>Gateway Time-out</html>" })),
+    );
+
+    const reservation = await service.createOption(auditDraft);
+
+    expect(reservation).toMatchObject({
+      status: "option_held",
+      providerReservationId: PIPO_CHARTER,
+      providerAgencyReservationId: PIPO_AGENCY,
+    });
+    expect(calls.map((call) => `${call.method} ${call.path.split("?")[0]}`)).toEqual([
+      "POST reservation",
+      "GET offers",
+      `GET reservation/${PIPO_AGENCY}`,
+      `GET reservation/${PIPO_CHARTER}`,
+    ]);
+    expect(calls[1]?.path).toContain("showOptions=true");
+  });
+
+  it("releases an orphan held for someone else and opens the option afresh", async () => {
+    const { calls, service } = routedService(
+      pipoVendor((nth) =>
+        nth === 1 ? { status: 504, body: "" } : { status: 201, body: OPTION_ANSWER },
+      ),
+    );
+
+    await service.createOption({
+      ...auditDraft,
+      customer: { name: "Ana", surname: "Horvat", email: "a@example.com" },
+    });
+
+    expect(calls.map((call) => call.method)).toEqual([
+      "POST",
+      "GET",
+      "GET",
+      "GET",
+      "DELETE",
+      "POST",
+    ]);
+    expect(calls[4]?.path).toBe(`reservation/${PIPO_CHARTER}`);
+  });
+
+  it("refuses the slot where a live booking of ours holds the option", async () => {
+    const { calls, service } = routedService(
+      pipoVendor(() => ({ status: 400, body: "Yacht is not available, own Option exists." })),
+      {
+        bookingHolding: (ids) =>
+          Promise.resolve(ids.includes(PIPO_CHARTER) ? "bkg_other" : undefined),
+      },
+    );
+
+    const error = await providerRejection(service.createOption(auditDraft));
+
+    expect(error.providerCode).toBe(OWN_OPTION_HELD);
+    expect(error.message).toContain("bkg_other");
+    expect(calls.map((call) => call.method)).not.toContain("DELETE");
+  });
+
+  it("keeps the timeout where no option of ours is on the slot", async () => {
+    const { service } = routedService((method, path) =>
+      method === "POST"
+        ? { status: 504, body: "" }
+        : path.startsWith("offers?")
+          ? { status: 200, body: "[]" }
+          : { status: 200, body: "[]" },
+    );
+
+    const error = await providerRejection(service.createOption(auditDraft));
+
+    expect(error).toBeInstanceOf(TransientError);
+  });
+
+  it("keeps the timeout where the lookup cannot be made", async () => {
+    const { service } = routedService((method) =>
+      method === "POST" ? { status: 504, body: "" } : { status: 503, body: "down" },
+    );
+
+    const error = await providerRejection(service.createOption(auditDraft));
+
+    expect(error).toBeInstanceOf(TransientError);
+    expect(error.endpoint).toBe("reservation");
+  });
+});
+
+/*
+ * An expired option still blocks its slot, and `showOptions` does not list it: on 225, option
+ * 8192658760000107113 (charter 8192659040000100225) on 978990020000100225 for 31.10.2026 read
+ * status 3 three weeks after it lapsed, and only `/reservations/2026?month=10` named it.
+ */
+describe("createOption on a slot our expired option still blocks", () => {
+  const LIST = readFileSync(
+    new URL("./fixtures/reservations-225-2026-10.json", import.meta.url),
+    "utf8",
+  );
+  const EXPIRED_CHARTER = "8192659040000100225";
+  const expiredDraft: BookingDraft = {
+    ...auditDraft,
+    checkIn: "2026-10-31",
+    checkOut: "2026-11-07",
+    route: { startBaseId: "194", endBaseId: "194" },
+  };
+  const resolver = {
+    ...fakeResolver(),
+    toExternalListing: () =>
+      Promise.resolve({
+        externalYachtId: "978990020000100225",
+        externalCompanyId: "225",
+        externalBaseId: "194",
+        listingSourceId: "lsrc_expired",
+      }),
+  };
+  const fresh =
+    `{"id":8300000000000100225,"status":2,"yachtId":978990020000100225,"dateFrom":"2026-10-31 17:00:00",` +
+    `"dateTo":"2026-11-07 09:00:00","expirationDate":"2026-10-01 12:00:00","baseFromId":194,"baseToId":194,` +
+    `"productName":"Bareboat","currency":"EUR"}`;
+
+  it("finds it in the month's reservations, deletes it and opens ours", async () => {
+    const { calls, service } = routedService(
+      (method, path, nth) => {
+        if (method === "POST") {
+          return nth === 1
+            ? { status: 400, body: "Yacht is not available, own Option exists." }
+            : { status: 201, body: fresh };
+        }
+        if (method === "DELETE") return { status: 200, body: '{"status":5}' };
+        if (path.startsWith("offers?")) return { status: 200, body: "[]" };
+        if (path === "reservations/2026?month=10") return { status: 200, body: LIST };
+        if (path === `reservation/${EXPIRED_CHARTER}`) {
+          return {
+            status: 200,
+            body: `{"id":${EXPIRED_CHARTER},"status":3,"yachtId":978990020000100225,"clientName":"Test Norinohi Audit"}`,
+          };
+        }
+        return { status: 404, body: "" };
+      },
+      { resolver, verifyPrice: () => Promise.resolve({ hash: PRICE_HASH }) },
+    );
+
+    const reservation = await service.createOption(expiredDraft);
+
+    expect(reservation.providerReservationId).toBe("8300000000000100225");
+    expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([
+      "POST reservation",
+      expect.stringMatching(/^GET offers\?.*showOptions=true/),
+      "GET reservations/2026?month=10",
+      `GET reservation/${EXPIRED_CHARTER}`,
+      `DELETE reservation/${EXPIRED_CHARTER}`,
+      "POST reservation",
+    ]);
   });
 });

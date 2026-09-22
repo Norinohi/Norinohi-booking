@@ -1,3 +1,5 @@
+import { booking, SLOT_HOLDING_STATUSES } from "@yacht-charter/db/schema/booking";
+import { and, eq, inArray, or } from "drizzle-orm";
 import { log, parseError } from "evlog";
 import { z } from "zod";
 
@@ -9,6 +11,7 @@ import {
   PRODUCT_NOT_OFFERED,
   ProviderError,
   SlotUnavailableError,
+  TransientError,
 } from "../shared/errors";
 import { crewListLinkFrom } from "../shared/crew-list-link";
 import { exactJsonNumber } from "../shared/exact-json";
@@ -47,6 +50,8 @@ import {
   BM_RESERVATION_STATUS_NAMES,
   bookingManagerEndpoints,
   isSameBookingManagerProduct,
+  restOfferListSchema,
+  restReservationListSchema,
   restReservationSchema,
   type RestReservation,
 } from "./endpoints";
@@ -98,6 +103,12 @@ export interface BookingManagerBookingServiceDeps {
   currency?: string;
   /** The listing's product for a vendor yacht; the same loader the quote names it from. */
   loadProductName?: (externalYachtId: string) => Promise<string | undefined>;
+  /**
+   * Which of our live bookings, if any, holds a reservation known by any of these ids. Asked
+   * before an option of ours found on the slot is released or taken over, since it may be
+   * another customer's hold. Defaults to reading `booking`.
+   */
+  bookingHolding?: (reservationIds: readonly string[]) => Promise<string | undefined>;
   /**
    * The vendor's own client record id, when the agency keeps one. Left unset the
    * reservation carries only `clientName` (Q-BM-CLIENT: MMK has not confirmed how
@@ -162,6 +173,7 @@ export function createBookingManagerBookingService(
   const recordEvent = deps.recordEvent ?? createReservationEventRecorder(db, PROVIDER);
   const currency = deps.currency ?? "EUR";
   const sendNotification = deps.sendNotification ?? false;
+  const bookingHolding = deps.bookingHolding ?? ((ids) => liveBookingHolding(db, ids));
 
   /**
    * The reservation body, built the same way for the create and the update. PUT
@@ -260,16 +272,24 @@ export function createBookingManagerBookingService(
       );
     }
 
-    const { body, terms } = await reservationRequest(parsed);
+    const request = await reservationRequest(parsed);
+    const { terms } = request;
     let response: RestReservation;
+    let agencyId: string | undefined;
     try {
       response = await client.post(
         bookingManagerEndpoints.reservation,
         restReservationSchema,
-        body,
+        request.body,
       );
     } catch (cause) {
-      throw cause instanceof SlotUnavailableError ? refusalInOurTerms(cause, terms) : cause;
+      const ownOption =
+        cause instanceof SlotUnavailableError &&
+        cause.providerCode === BM_RESERVATION_REFUSAL.OWN_OPTION_EXISTS;
+      if (!ownOption && !(cause instanceof TransientError)) {
+        throw cause instanceof SlotUnavailableError ? refusalInOurTerms(cause, terms) : cause;
+      }
+      ({ response, agencyId } = await settleOwnOption(request, current, cause));
     }
 
     await logEvent(parsed.quoteId, "option_created", response);
@@ -279,11 +299,183 @@ export function createBookingManagerBookingService(
     const substituted = substitutionsIn(response, terms, current.clientPrice);
     if (substituted.length > 0) await refuseSubstituted(response, substituted);
 
-    return heldOption(parsed, response);
+    return heldOption(parsed, response, agencyId);
+  }
+
+  /**
+   * What to do once the vendor may already hold an option of ours on the slot: after POST
+   * answered "own Option exists", or did not answer at all, which with no idempotency key (Q10)
+   * leaves an option it opened unreported.
+   *
+   * The option is looked up rather than the create sent again. One no live booking of ours holds
+   * is an orphan: taken over when it is open and on exactly our terms for this customer, which
+   * is the create that timed out, and otherwise released and the create sent once more. One a
+   * live booking holds is that booking's, and the slot is refused. Where nothing is found, or the
+   * lookup fails, the original refusal stands.
+   */
+  async function settleOwnOption(
+    request: { body: ReservationBody; terms: ReservationTerms },
+    verified: VerifiedPrice,
+    cause: ProviderError,
+  ): Promise<{ response: RestReservation; agencyId: string | undefined }> {
+    const { body, terms } = request;
+    const original =
+      cause instanceof SlotUnavailableError ? refusalInOurTerms(cause, terms) : cause;
+    const trigger = cause instanceof TransientError ? "no_answer" : "own_option_exists";
+
+    let found: OwnOption | undefined;
+    try {
+      found = await findOwnOption(terms);
+    } catch (lookup) {
+      log.warn({
+        action: "booking_manager.reservation.own_option_lookup_failed",
+        yachtId: terms.yachtId,
+        checkIn: terms.checkIn,
+        trigger,
+        ...thrownFields(parseError(lookup)),
+      });
+      throw original;
+    }
+    if (!found) {
+      log.warn({
+        action: "booking_manager.reservation.own_option_not_found",
+        yachtId: terms.yachtId,
+        checkIn: terms.checkIn,
+        trigger,
+      });
+      throw original;
+    }
+
+    const ids = [found.charterId, found.agencyId].filter((id): id is string => id !== undefined);
+    const holder = await bookingHolding(ids);
+    if (holder) {
+      throw new SlotUnavailableError(
+        `Booking Manager slot for yacht ${terms.yachtId} from ${terms.checkIn} is held by our own option ${ids.join("/")}, which booking ${holder} holds`,
+        {
+          endpoint: bookingManagerEndpoints.reservation,
+          providerCode: OWN_OPTION_HELD,
+          payload: { reservationIds: ids, bookingId: holder },
+        },
+      );
+    }
+
+    const record = found.record;
+    const adoptable =
+      record.status === BM_RESERVATION_STATUS.OPTION &&
+      sameClientName(record.clientName, body.clientName) &&
+      substitutionsIn(record, terms, verified.clientPrice).length === 0;
+    if (adoptable) {
+      log.warn({
+        action: "booking_manager.reservation.own_option_adopted",
+        reservationId: String(record.id),
+        agencyReservationId: found.agencyId,
+        trigger,
+      });
+      return { response: record, agencyId: found.agencyId };
+    }
+
+    const orphan = found.charterId ?? String(record.id);
+    const released = await releaseQuietly(orphan, "orphaned");
+    log.warn({
+      action: "booking_manager.reservation.own_option_released",
+      reservationId: orphan,
+      agencyReservationId: found.agencyId,
+      status: record.status ?? null,
+      released,
+      trigger,
+    });
+    if (!released) throw original;
+
+    try {
+      return {
+        response: await client.post(
+          bookingManagerEndpoints.reservation,
+          restReservationSchema,
+          body,
+        ),
+        agencyId: undefined,
+      };
+    } catch (again) {
+      throw again instanceof SlotUnavailableError ? refusalInOurTerms(again, terms) : again;
+    }
+  }
+
+  /**
+   * The option this agency holds on the yacht for the charter, charter-side record first.
+   *
+   * `showOptions` names an open one by its agency-side id; an expired one (`3`) it leaves out
+   * altogether although it still blocks the slot, so `/reservations/{year}` for the month the
+   * charter starts in is asked next, where agency records carry `charterReservationId`. The
+   * charter-side record is what POST would have answered with, and the only one carrying the
+   * price, the plan and the crew link.
+   */
+  async function findOwnOption(terms: ReservationTerms): Promise<OwnOption | undefined> {
+    const offers = await client.get(
+      bookingManagerEndpoints.offers,
+      restOfferListSchema,
+      {
+        dateFrom: formatBookingManagerDateTime(terms.checkIn),
+        dateTo: formatBookingManagerDateTime(terms.checkOut),
+        yachtId: [terms.yachtId],
+        showOptions: true,
+      },
+      client.liveLane(),
+    );
+    let agencyId = offers.find(
+      (offer) =>
+        offer.yachtId === terms.yachtId &&
+        offer.myReservationId != null &&
+        calendarDateOf(offer.dateFrom) === terms.checkIn &&
+        calendarDateOf(offer.dateTo) === terms.checkOut,
+    )?.myReservationId;
+    let charterId: string | undefined;
+
+    if (agencyId == null) {
+      const listed = await client.get(
+        bookingManagerEndpoints.reservationsByYear(Number(terms.checkIn.slice(0, 4))),
+        restReservationListSchema,
+        { month: Number(terms.checkIn.slice(5, 7)) },
+        client.liveLane(),
+      );
+      const ours = listed.find(
+        (row) =>
+          row.yachtId === terms.yachtId &&
+          (row.status === BM_RESERVATION_STATUS.OPTION ||
+            row.status === BM_RESERVATION_STATUS.OPTION_EXPIRED) &&
+          calendarDateOf(row.dateFrom) === terms.checkIn &&
+          calendarDateOf(row.dateTo) === terms.checkOut,
+      );
+      if (!ours) return undefined;
+      agencyId = ours.id;
+      charterId = ours.charterReservationId ?? undefined;
+    }
+
+    if (charterId === undefined) {
+      const twin = await client.get(
+        bookingManagerEndpoints.reservationById(agencyId),
+        restReservationSchema,
+        undefined,
+        client.liveLane(),
+      );
+      charterId = twin.charterReservationId ?? undefined;
+      if (charterId === undefined) return { agencyId, record: twin };
+    }
+
+    const record = await client.get(
+      bookingManagerEndpoints.reservationById(charterId),
+      restReservationSchema,
+      undefined,
+      client.liveLane(),
+    );
+    return { charterId, agencyId, record };
   }
 
   /** An open option the vendor answered with, in our terms. */
-  function heldOption(draft: BookingDraft, response: RestReservation): ProviderReservation {
+  function heldOption(
+    draft: BookingDraft,
+    response: RestReservation,
+    agencyId?: string,
+  ): ProviderReservation {
     const reservationId = String(response.id);
     const settlement = operatorSettlementOf(response);
     const crewListLink = crewListLinkFrom(response.crewListLink);
@@ -301,6 +493,7 @@ export function createBookingManagerBookingService(
       holdExpiresAt: holdExpiresAt(response),
       checkInTime: wallClockTime(response.dateFrom),
       checkOutTime: wallClockTime(response.dateTo),
+      ...(agencyId ? { providerAgencyReservationId: agencyId } : null),
       ...(crewListLink ? { crewListLink } : null),
       ...(settlement ? { operatorSettlement: settlement } : null),
     });
@@ -577,6 +770,44 @@ export function createBookingManagerBookingService(
 }
 
 /* ------------------------------------------------------------------ internals */
+
+/** An option of ours found on a slot; `charterId` is absent where the vendor named no twin. */
+interface OwnOption {
+  charterId?: string;
+  agencyId: string;
+  record: RestReservation;
+}
+
+/** The booking of ours still holding a reservation known by any of these ids. */
+export async function liveBookingHolding(
+  db: Database,
+  reservationIds: readonly string[],
+): Promise<string | undefined> {
+  if (reservationIds.length === 0) return undefined;
+  const ids = [...reservationIds];
+  const [row] = await db
+    .select({ id: booking.id })
+    .from(booking)
+    .where(
+      and(
+        eq(booking.provider, PROVIDER),
+        inArray(booking.status, [...SLOT_HOLDING_STATUSES]),
+        or(
+          inArray(booking.providerReservationId, ids),
+          inArray(booking.providerOptionId, ids),
+          inArray(booking.providerAgencyReservationId, ids),
+        ),
+      ),
+    )
+    .limit(1);
+  return row?.id;
+}
+
+/** `clientName` is all the vendor keeps of the customer, so it is what tells two holds apart. */
+function sameClientName(held: string | null | undefined, ours: string): boolean {
+  const normal = (name: string) => name.trim().replace(/\s+/g, " ").toLowerCase();
+  return held != null && normal(held) === normal(ours);
+}
 
 /**
  * A POST refusal restated in the taxonomy the booking chain reads.

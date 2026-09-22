@@ -210,6 +210,16 @@ ours) with `charterReservationId` pointing back. `booking.provider_agency_reserv
 the twin's id once we learn it (the confirming PUT, or recovering an option), and anything that
 matches a vendor list back to a booking goes through `charterReservationId`.
 
+A create is sent once (there is no idempotency key, Q10) with the long sync ceiling, since the
+vendor's cold start sits near the quote's 30 s. When it does not answer, or answers `400 Yacht is
+not available, own Option exists.`, the adapter looks for our option on the slot instead of
+sending it again: `offers?showOptions=true` for an open one (`myReservationId`, agency side),
+then `reservations/{year}?month=` for an expired one, which `showOptions` omits although it
+still blocks the week, then the charter-side record. An option a live booking of ours holds
+refuses the slot (`OWN_OPTION_HELD`, never learned as the week sold). An orphan is taken over
+when it is open, for this customer and on exactly our terms (the create that timed out), and
+otherwise deleted and the create sent once more.
+
 What the hold keeps off the option (measured on company 225, 2026-09-22):
 
 - `crewListLink`: the operator's hosted crew-list page, already present on the option, on both
