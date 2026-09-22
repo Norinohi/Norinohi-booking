@@ -112,7 +112,7 @@ function serviceAnswering(body: string) {
     resolver: fakeResolver(),
     config,
     db: fakeDb(),
-    verifyPrice: () => Promise.resolve(PRICE_HASH),
+    verifyPrice: () => Promise.resolve({ hash: PRICE_HASH }),
     recordEvent: () => Promise.resolve(),
   });
 }
@@ -222,7 +222,7 @@ describe("reservation body status", () => {
       resolver: fakeResolver(),
       config,
       db: fakeDb(),
-      verifyPrice: () => Promise.resolve(PRICE_HASH),
+      verifyPrice: () => Promise.resolve({ hash: PRICE_HASH }),
       recordEvent: () => Promise.resolve(),
     });
 
@@ -280,7 +280,7 @@ describe("createOption product", () => {
       resolver: fakeResolver(),
       config,
       db: fakeDb(),
-      verifyPrice: () => Promise.resolve(PRICE_HASH),
+      verifyPrice: () => Promise.resolve({ hash: PRICE_HASH }),
       recordEvent: () => Promise.resolve(),
       loadProductName: (externalYachtId) => {
         asked.push(externalYachtId);
@@ -324,7 +324,7 @@ describe("createOption bases", () => {
       resolver: fakeResolver(),
       config,
       db: fakeDb(),
-      verifyPrice: () => Promise.resolve(PRICE_HASH),
+      verifyPrice: () => Promise.resolve({ hash: PRICE_HASH }),
       recordEvent: () => Promise.resolve(),
     });
 
@@ -368,5 +368,144 @@ describe("createOption bases", () => {
 
     expect(sent[0]?.baseFromId).toBe(194);
     expect(sent[0]?.baseToId).toBe(194);
+  });
+});
+
+/*
+ * What POST /reservation answered on company 225 on 22 September 2026, trimmed of the client's
+ * name, the crew-list link and the bank details. Asked for Pipo 127 to 136 in EUR, it opened
+ * 127 to 127 without a word; asked in USD, it opened the same charter in EUR.
+ */
+const PIPO = "207160073500225";
+const PIPO_OPTION = "8295148140000100225";
+const pipoAnswer = (overrides = "") =>
+  `{"id":${PIPO_OPTION},"reservationCode":"26-01251","dateFrom":"2026-10-17 17:00:00",` +
+  `"dateTo":"2026-10-24 09:00:00","expirationDate":"2026-09-25 11:59:09","yachtId":${PIPO},` +
+  `"status":2,"productName":"Bareboat","baseFromId":127,"baseToId":127,"currency":"EUR",` +
+  `"basePrice":1700.0,"discount":0.0,"commission":255.0,"finalPrice":1445.0,"clientPrice":1700.0` +
+  `${overrides}}`;
+
+const pipoDraft: BookingDraft = {
+  ...draft,
+  checkIn: "2026-10-17",
+  checkOut: "2026-10-24",
+  guests: 2,
+  currency: "EUR",
+  route: { startBaseId: "127", endBaseId: "127" },
+};
+
+function substitutionService(answer: string, options: { deleteFails?: boolean } = {}) {
+  const calls: { method: string; url: string; body: string | undefined }[] = [];
+  const client = new BookingManagerClient({
+    config,
+    queue: new SequentialQueue(),
+    retry: { maxAttempts: 1 },
+    fetchImpl: (url, init) => {
+      const method = init.method ?? "GET";
+      calls.push({
+        method,
+        url: String(url),
+        body: init.body === undefined ? undefined : String(init.body),
+      });
+      if (method === "DELETE" && options.deleteFails) {
+        return Promise.resolve({ status: 500, text: () => Promise.resolve("down") });
+      }
+      return Promise.resolve({
+        status: method === "POST" ? 201 : 200,
+        text: () =>
+          Promise.resolve(method === "POST" ? answer : `{"id":${PIPO_OPTION},"status":5}`),
+      });
+    },
+  });
+  const service = createBookingManagerBookingService({
+    client,
+    resolver: {
+      ...fakeResolver(),
+      toExternalListing: () =>
+        Promise.resolve({
+          externalYachtId: PIPO,
+          externalCompanyId: "225",
+          externalBaseId: "127",
+          listingSourceId: "lsrc_pipo",
+        }),
+    },
+    config,
+    db: fakeDb(),
+    verifyPrice: () =>
+      Promise.resolve({
+        hash: PRICE_HASH,
+        charterPrice: { amountMinor: 170_000, currency: "EUR" },
+      }),
+    recordEvent: () => Promise.resolve(),
+    loadProductName: () => Promise.resolve("Bareboat"),
+  });
+  return { calls, service };
+}
+
+describe("createOption against what the vendor opened", () => {
+  it("keeps an option opened exactly as asked", async () => {
+    const { calls, service } = substitutionService(pipoAnswer());
+
+    const reservation = await service.createOption(pipoDraft);
+
+    expect(reservation.providerReservationId).toBe(PIPO_OPTION);
+    expect(calls.map((call) => call.method)).toEqual(["POST"]);
+  });
+
+  it("releases and refuses a one-way the vendor opened as a round trip", async () => {
+    const { calls, service } = substitutionService(pipoAnswer());
+
+    const error = await providerRejection(
+      service.createOption({ ...pipoDraft, route: { startBaseId: "127", endBaseId: "136" } }),
+    );
+
+    expect(error).toBeInstanceOf(ContractError);
+    expect(error.providerCode).toBe("RESERVATION_SUBSTITUTED");
+    expect(error.message).toMatch(/baseToId 136 became 127/);
+    expect(calls.map((call) => call.method)).toEqual(["POST", "DELETE"]);
+    expect(calls[1]?.url).toContain(`/reservation/${PIPO_OPTION}`);
+  });
+
+  it("sends the quote's currency, and refuses the option opened in another", async () => {
+    const { calls, service } = substitutionService(pipoAnswer());
+
+    const error = await providerRejection(service.createOption({ ...pipoDraft, currency: "USD" }));
+
+    expect(JSON.parse(calls[0]?.body ?? "{}")).toMatchObject({ currency: "USD" });
+    expect(error.message).toMatch(/currency USD became EUR/);
+    expect(calls.map((call) => call.method)).toEqual(["POST", "DELETE"]);
+  });
+
+  it("refuses an option priced other than the charter it re-priced", async () => {
+    const { service } = substitutionService(
+      pipoAnswer().replace('"clientPrice":1700.0', '"clientPrice":1850.0'),
+    );
+
+    const error = await providerRejection(service.createOption(pipoDraft));
+
+    expect(error.message).toMatch(/clientPrice 170000 became 185000/);
+  });
+
+  it("refuses another product whatever case it is spelled in", async () => {
+    const same = substitutionService(pipoAnswer().replace('"Bareboat"', '"BAREBOAT"'));
+    await expect(same.service.createOption(pipoDraft)).resolves.toMatchObject({
+      providerReservationId: PIPO_OPTION,
+    });
+
+    const other = substitutionService(pipoAnswer().replace('"Bareboat"', '"Crewed"'));
+    const error = await providerRejection(other.service.createOption(pipoDraft));
+    expect(error.message).toMatch(/productName Bareboat became Crewed/);
+  });
+
+  it("still refuses where the release fails, so the option can only lapse", async () => {
+    const { calls, service } = substitutionService(pipoAnswer(), { deleteFails: true });
+
+    const error = await providerRejection(
+      service.createOption({ ...pipoDraft, route: { startBaseId: "127", endBaseId: "136" } }),
+    );
+
+    expect(error.providerCode).toBe("RESERVATION_SUBSTITUTED");
+    expect(error.message).toMatch(/baseToId/);
+    expect(calls.map((call) => call.method)).toEqual(["POST", "DELETE"]);
   });
 });

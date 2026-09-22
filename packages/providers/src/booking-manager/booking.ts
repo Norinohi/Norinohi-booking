@@ -1,9 +1,11 @@
+import { log, parseError } from "evlog";
 import { z } from "zod";
 
 import type { Database } from "../registry";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { ContractError } from "../shared/errors";
 import { exactJsonNumber } from "../shared/exact-json";
+import { thrownFields } from "../shared/log-fields";
 import { toExactPositiveIntId } from "../shared/projection-helpers";
 import { wallClockTime } from "../shared/wall-clock";
 import {
@@ -17,6 +19,7 @@ import {
   providerReservationRefSchema,
   providerReservationSchema,
   type BookingDraft,
+  type Money,
   type ProviderExtrasMutation,
   type ProviderQuote,
   type ProviderReservation,
@@ -24,11 +27,17 @@ import {
 } from "../types";
 import type { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
-import { formatBookingManagerDateTime, parseBookingManagerDateTime } from "./dates";
+import {
+  formatBookingManagerDateTime,
+  parseBookingManagerDate,
+  parseBookingManagerDateTime,
+} from "./dates";
+import { numberToMinor } from "./money";
 import {
   BM_RESERVATION_STATUS,
   BM_RESERVATION_STATUS_NAMES,
   bookingManagerEndpoints,
+  isSameBookingManagerProduct,
   restReservationSchema,
   type RestReservation,
 } from "./endpoints";
@@ -54,8 +63,16 @@ const cancelResponseSchema = z.union([restReservationSchema, z.null(), z.looseOb
  * what is on offer right now. Injected rather than imported so this file stays
  * independent of the quote module, and so the refusal path is testable without a
  * second endpoint in play.
+ *
+ * `charterPrice` is the charter alone, net of the vendor's discounts and without extras,
+ * which is the figure the reservation answers as `clientPrice`.
  */
-export type VerifyPrice = (draft: BookingDraft) => Promise<string>;
+export type VerifyPrice = (draft: BookingDraft) => Promise<VerifiedPrice>;
+
+export interface VerifiedPrice {
+  hash: string;
+  charterPrice?: Money;
+}
 
 export interface BookingManagerBookingServiceDeps {
   client: BookingManagerClient;
@@ -65,9 +82,9 @@ export interface BookingManagerBookingServiceDeps {
   verifyPrice: VerifyPrice;
   recordEvent?: ReservationEventRecorder;
   /**
-   * `BookingDraft` carries no currency, and the vendor prices per currency. This
-   * is the account's billing currency; it must match what the quote was read in
-   * or the hold prices a different charter.
+   * The account's billing currency, for a draft that carries none. A draft's own currency is
+   * the quote's, and wins: the vendor prices per currency, so any other one holds a different
+   * figure from the one the customer accepted.
    */
   currency?: string;
   /** The listing's product for a vendor yacht; the same loader the quote names it from. */
@@ -91,6 +108,20 @@ export interface BookingManagerBookingService {
   confirmBooking(draft: BookingDraft): Promise<ProviderReservation>;
   cancelOption(ref: ProviderReservationRef): Promise<ProviderReservation>;
   addOrUpdateExtras(input: ProviderExtrasMutation): Promise<ProviderQuote>;
+}
+
+/**
+ * What the reservation was asked to be, in the terms the vendor answers with, so the answer can be
+ * checked against it. Bases and product are what we sent; undefined is something we left to it.
+ */
+export interface ReservationTerms {
+  yachtId: string;
+  checkIn: string;
+  checkOut: string;
+  startBaseId: string | undefined;
+  endBaseId: string | undefined;
+  productName: string | undefined;
+  currency: string;
 }
 
 /**
@@ -138,6 +169,13 @@ export function createBookingManagerBookingService(
    * place the value carries meaning.
    */
   async function reservationBody(draft: BookingDraft, status?: number): Promise<ReservationBody> {
+    return (await reservationRequest(draft, status)).body;
+  }
+
+  async function reservationRequest(
+    draft: BookingDraft,
+    status?: number,
+  ): Promise<{ body: ReservationBody; terms: ReservationTerms }> {
     const ref = await resolver.toExternalListing(draft.listingId);
     const yachtId = toExactPositiveIntId(ref.externalYachtId, {
       provider: "Booking Manager",
@@ -157,7 +195,7 @@ export function createBookingManagerBookingService(
       yachtId: exactJsonNumber(yachtId),
       clientName: fullName(draft.customer),
       passengersOnBoard: draft.guests,
-      currency,
+      currency: draft.currency ?? currency,
       sendNotification,
     };
     if (status !== undefined) body.status = status;
@@ -174,14 +212,25 @@ export function createBookingManagerBookingService(
      */
     const startBase = draft.route?.startBaseId?.trim() || baseId;
     const endBase = draft.route?.endBaseId?.trim() || startBase;
+    const terms: ReservationTerms = {
+      yachtId,
+      checkIn: draft.checkIn,
+      checkOut: draft.checkOut,
+      startBaseId: undefined,
+      endBaseId: undefined,
+      productName,
+      currency: body.currency,
+    };
     if (startBase !== undefined && BASE_ID.test(startBase)) {
       body.baseFromId = exactJsonNumber(startBase);
+      terms.startBaseId = startBase;
     }
     if (endBase !== undefined && BASE_ID.test(endBase)) {
       body.baseToId = exactJsonNumber(endBase);
+      terms.endBaseId = endBase;
     }
     if (clientId !== undefined) body.clientId = clientId;
-    return body;
+    return { body, terms };
   }
 
   async function createOption(draft: BookingDraft): Promise<ProviderReservation> {
@@ -191,24 +240,28 @@ export function createBookingManagerBookingService(
     // this hash is the only link between the price the customer accepted and the
     // reservation about to be opened.
     const current = await verifyPrice(parsed);
-    if (current !== parsed.priceSourceHash) {
+    if (current.hash !== parsed.priceSourceHash) {
       throw new ContractError(
         "PRICE_CHANGED: the Booking Manager price moved between the quote and the hold",
         {
           endpoint: bookingManagerEndpoints.reservation,
           providerCode: "PRICE_CHANGED",
-          payload: { expected: parsed.priceSourceHash, actual: current },
+          payload: { expected: parsed.priceSourceHash, actual: current.hash },
         },
       );
     }
 
+    const { body, terms } = await reservationRequest(parsed);
     const response = await client.post(
       bookingManagerEndpoints.reservation,
       restReservationSchema,
-      await reservationBody(parsed),
+      body,
     );
 
     await logEvent(parsed.quoteId, "option_created", response);
+
+    const substituted = substitutionsIn(response, terms, current.charterPrice);
+    if (substituted.length > 0) await refuseSubstituted(response, substituted);
 
     const reservationId = String(response.id);
 
@@ -375,6 +428,49 @@ export function createBookingManagerBookingService(
     );
   }
 
+  /**
+   * Releases an option the vendor opened on terms other than ours, and refuses it.
+   *
+   * POST answers 201 whatever it made of the body: measured on company 225, a drop-off it does
+   * not sell (136) came back as the home base (127), USD came back as EUR, and a body with no
+   * product took the default. Kept, that is a charter at another marina, in another currency or
+   * of another product than the one the customer paid for. The release is best effort: an option
+   * it fails to free lapses at its own expiry, and the event says which one to look at.
+   */
+  async function refuseSubstituted(
+    response: RestReservation,
+    substituted: readonly Substitution[],
+  ): Promise<never> {
+    const endpoint = bookingManagerEndpoints.reservationById(String(response.id));
+    let released = true;
+    try {
+      await client.del(endpoint, cancelResponseSchema);
+    } catch (cause) {
+      released = false;
+      log.error({
+        action: "booking_manager.reservation.substitute_not_released",
+        reservationId: String(response.id),
+        ...thrownFields(parseError(cause)),
+      });
+    }
+    log.warn({
+      action: "booking_manager.reservation.substituted",
+      reservationId: String(response.id),
+      released,
+      fields: substituted.map((entry) => entry.field).join(","),
+    });
+    throw new ContractError(
+      `Booking Manager opened reservation ${response.id} on other terms than asked: ${substituted
+        .map((entry) => `${entry.field} ${entry.asked} became ${entry.answered}`)
+        .join("; ")}`,
+      {
+        endpoint: bookingManagerEndpoints.reservation,
+        providerCode: "RESERVATION_SUBSTITUTED",
+        payload: { id: response.id, released, substituted },
+      },
+    );
+  }
+
   function holdExpiresAt(response: RestReservation): string {
     if (!response.expirationDate) {
       // Without the vendor's own expiry we cannot know when it drops the option,
@@ -408,6 +504,80 @@ export function createBookingManagerBookingService(
 }
 
 /* ------------------------------------------------------------------ internals */
+
+/** The day of a vendor timestamp, or the text as sent where it is not one, which then differs. */
+function calendarDateOf(value: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  try {
+    return parseBookingManagerDate(value);
+  } catch {
+    return value;
+  }
+}
+
+export interface Substitution {
+  field:
+    | "yachtId"
+    | "dateFrom"
+    | "dateTo"
+    | "baseFromId"
+    | "baseToId"
+    | "productName"
+    | "currency"
+    | "clientPrice";
+  asked: string;
+  answered: string;
+}
+
+/**
+ * Every term the reservation came back with that is not the one asked for. A term the answer
+ * leaves out is not a substitution: the check is on what the vendor says it made.
+ */
+export function substitutionsIn(
+  response: RestReservation,
+  terms: ReservationTerms,
+  charterPrice: Money | undefined,
+): Substitution[] {
+  const found: Substitution[] = [];
+  const differs = (
+    field: Substitution["field"],
+    asked: string | undefined,
+    answered: string | null | undefined,
+    same: (left: string, right: string) => boolean = (left, right) => left === right,
+  ) => {
+    if (asked === undefined || answered == null) return;
+    if (!same(asked, answered)) found.push({ field, asked, answered });
+  };
+  const sameText = (left: string, right: string) =>
+    left.trim().toUpperCase() === right.trim().toUpperCase();
+
+  differs("yachtId", terms.yachtId, response.yachtId);
+  differs("dateFrom", terms.checkIn, calendarDateOf(response.dateFrom));
+  differs("dateTo", terms.checkOut, calendarDateOf(response.dateTo));
+  differs("baseFromId", terms.startBaseId, response.baseFromId);
+  differs("baseToId", terms.endBaseId, response.baseToId);
+  differs("productName", terms.productName, response.productName, isSameBookingManagerProduct);
+  differs("currency", terms.currency, response.currency, sameText);
+
+  /* The price is only comparable in the money it was quoted in; a currency swap is reported above. */
+  const currency = response.currency?.trim();
+  if (
+    charterPrice !== undefined &&
+    response.clientPrice != null &&
+    currency !== undefined &&
+    sameText(currency, charterPrice.currency)
+  ) {
+    const answeredMinor = numberToMinor(response.clientPrice, currency, "clientPrice");
+    if (Math.abs(answeredMinor - charterPrice.amountMinor) > 1) {
+      found.push({
+        field: "clientPrice",
+        asked: String(charterPrice.amountMinor),
+        answered: String(answeredMinor),
+      });
+    }
+  }
+  return found;
+}
 
 /**
  * The vendor takes a single `clientName`, checkout collects a given name and an

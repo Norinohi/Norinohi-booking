@@ -199,20 +199,35 @@ export function createBookingManagerQuoteService(
  * `selectOffer` narrows to a pair only when it is given one, so a re-price that drops the
  * customer's drop-off prices the same-base return `rankOffers` puts first - and refuses every
  * one-way with PRICE_CHANGED for a price that never moved.
+ *
+ * The currency is the quote's for the same reason: `/offers` converts to whatever it is asked
+ * for, so a quote read in GBP and re-priced in the account's EUR compares two different figures.
+ * `fallbackCurrency` stands only for a draft that carries none.
  */
-export function repriceRequestFor(draft: BookingDraft, currency: string): QuoteRequest {
+export function repriceRequestFor(draft: BookingDraft, fallbackCurrency: string): QuoteRequest {
   const request: QuoteRequest = {
     listingId: draft.listingId,
     checkIn: draft.checkIn,
     checkOut: draft.checkOut,
     guests: draft.guests,
     extras: draft.extras,
-    currency,
+    currency: draft.currency ?? fallbackCurrency,
   };
   if (draft.crewType) request.crewType = draft.crewType;
   if (draft.route?.startBaseId) request.startBaseId = draft.route.startBaseId;
   if (draft.route?.endBaseId) request.endBaseId = draft.route.endBaseId;
   return request;
+}
+
+/**
+ * The charter alone, net of the vendor's discounts and without extras: the figure a reservation
+ * answers as `clientPrice`. The quote's discount lines are all the vendor's; ours are applied later.
+ */
+export function charterPriceOf(quote: ProviderQuote): Money {
+  const amountMinor = quote.lines
+    .filter((line) => line.kind === "base" || line.kind === "discount")
+    .reduce((total, line) => total + line.amount.amountMinor, 0);
+  return { amountMinor, currency: quote.currency };
 }
 
 /** The base pair a quote request pinned; either end left undefined is the adapter's to pick. */

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 import type { z } from "zod";
 
@@ -13,6 +15,7 @@ import type { BookingManagerConfig } from "./config";
 import { restExtrasSchema, restOfferListSchema, restOfferSchema } from "./endpoints";
 import {
   createBookingManagerQuoteService,
+  charterPriceOf,
   mapOfferToProviderQuote,
   type OfferMapping,
   repriceRequestFor,
@@ -551,6 +554,11 @@ describe("repriceRequestFor", () => {
     );
   });
 
+  it("re-prices in the currency the quote was read in", () => {
+    expect(repriceRequestFor({ ...draft(null), currency: "GBP" }, "EUR").currency).toBe("GBP");
+    expect(repriceRequestFor(draft(null), "EUR").currency).toBe("EUR");
+  });
+
   it("asks unfiltered where the provider named no bases", () => {
     const request = repriceRequestFor(draft(null), "EUR");
     expect(request).not.toHaveProperty("startBaseId");
@@ -782,5 +790,51 @@ describe("getBookingManagerQuote's product", () => {
 
     expect(error).toBeInstanceOf(SlotUnavailableError);
     expect(error.providerCode).toBe("NO_OFFER");
+  });
+});
+
+/*
+ * West Wind on company 225, week of 5 June 2027, asked in GBP. The vendor converts the charter,
+ * its plan and its discount at one rate (0.8698) and the extras and the deposit at another
+ * (0.8454), so every total is built from the lines it returned and nothing is converted here.
+ */
+describe("a quote the vendor converted", () => {
+  const [westWind] = restOfferListSchema.parse(
+    parseExactJson(
+      readFileSync(new URL("fixtures/offers-225-2027-06-05-gbp.json", import.meta.url), "utf8"),
+    ),
+  );
+  if (westWind === undefined) throw new Error("fixture did not parse");
+  const quote = mapOfferToProviderQuote({
+    offer: westWind,
+    listingId: "lst_west_wind",
+    checkIn: "2027-06-05",
+    checkOut: "2027-06-12",
+    guests: 2,
+    requestedCurrency: "GBP",
+    expiresAt: "2027-05-01T00:00:00.000Z",
+  });
+
+  it("prices every line in the money it was asked in", () => {
+    expect(quote.currency).toBe("GBP");
+    expect(new Set(quote.lines.map((line) => line.amount.currency))).toEqual(new Set(["GBP"]));
+  });
+
+  it("totals the charter and the extras as the vendor stated them", () => {
+    expect(quote.total.amountMinor).toBe(480_100 + 152_764);
+    expect(quote.total.amountMinor).toBe(
+      quote.lines.reduce((sum, line) => sum + line.amount.amountMinor, 0),
+    );
+  });
+
+  it("takes the deposit off the plan, which follows the charter's rate", () => {
+    expect(quote.deposit).toEqual({ amountMinor: 240_050, currency: "GBP" });
+    expect(quote.paymentPolicy).toMatchObject({ mode: "deposit", depositPct: 0.5 });
+  });
+
+  it("drops a discount whose steps were rounded at another rate than the price", () => {
+    // 8% of 5,219 is 417.52, while the rounded price leaves 418 between the two figures.
+    expect(quote.lines.filter((line) => line.kind === "discount")).toEqual([]);
+    expect(charterPriceOf(quote)).toEqual({ amountMinor: 480_100, currency: "GBP" });
   });
 });

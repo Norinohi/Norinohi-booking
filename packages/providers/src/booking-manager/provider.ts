@@ -56,7 +56,7 @@ import { createBookingManagerAvailabilitySource } from "./occupancy";
 import { loadBookingManagerPriceTerms, loadBookingManagerProductName } from "./price-terms";
 import { bookingManagerPriceWindow, createBookingManagerSeasonalPriceLoader } from "./prices";
 import { projectBookingManagerCatalogue } from "./projection";
-import { createBookingManagerQuoteService, repriceRequestFor } from "./quote";
+import { charterPriceOf, createBookingManagerQuoteService, repriceRequestFor } from "./quote";
 import { createBookingManagerBookingService } from "./booking";
 import { loadBookingManagerDiscountCap } from "./discount-cap";
 
@@ -145,7 +145,7 @@ export class BookingManagerInventoryProvider
         const quote = await this.quotes.getBookingManagerQuote(
           repriceRequestFor(draft, this.currency),
         );
-        return quote.priceSourceHash;
+        return { hash: quote.priceSourceHash, charterPrice: charterPriceOf(quote) };
       },
     });
   }
