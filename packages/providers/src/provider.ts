@@ -1,7 +1,7 @@
 import type { JsonValue } from "./shared/json";
 import type { SweepPeriod } from "./shared/sweep-periods";
 import type { AvailabilitySource } from "./sync/availability-writer";
-import type { SeasonalPrice } from "./sync/price-writer";
+import type { PriceWindow, SeasonalPrice } from "./sync/price-writer";
 import type { CatalogueSyncSource } from "./sync/runner";
 import type {
   AvailabilityCalendar,
@@ -119,6 +119,12 @@ export interface InventoryProvider {
    * dump at all, in which case the quote path is the only thing that prices its listings.
    */
   loadSeasonalPrices?(listingIds: string[]): Promise<Map<string, SeasonalPrice[]>>;
+  /**
+   * The weeks `loadSeasonalPrices` answers for in full, so that a week it leaves out of a
+   * listing's list is one the provider stopped pricing and its stored rate can go. Absent where
+   * the loader's silence says nothing, which is the NauSYS reading of a stored price list.
+   */
+  seasonalPricesCompleteWithin?(): PriceWindow | undefined;
   capabilities(): ProviderCapabilities;
 }
 

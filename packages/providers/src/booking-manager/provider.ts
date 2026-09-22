@@ -27,7 +27,7 @@ import type {
 } from "../types";
 import type { CatalogueSyncSource } from "../sync/runner";
 import type { AvailabilitySource, AvailabilitySyncProvider } from "../sync/availability-writer";
-import type { SeasonalPrice } from "../sync/price-writer";
+import type { PriceWindow, SeasonalPrice } from "../sync/price-writer";
 import {
   type BookingManagerCatalogueCursor,
   bookingManagerCatalogueSource,
@@ -54,7 +54,7 @@ import { streamBookingManagerConfirmedOffers } from "./confirmed-offers";
 import { warmBookingManagerServers } from "./warmup";
 import { createBookingManagerAvailabilitySource } from "./occupancy";
 import { loadBookingManagerPriceTerms } from "./price-terms";
-import { createBookingManagerSeasonalPriceLoader } from "./prices";
+import { bookingManagerPriceWindow, createBookingManagerSeasonalPriceLoader } from "./prices";
 import { projectBookingManagerCatalogue } from "./projection";
 import { createBookingManagerQuoteService, repriceRequestFor } from "./quote";
 import { createBookingManagerBookingService } from "./booking";
@@ -331,6 +331,15 @@ export class BookingManagerInventoryProvider
    */
   loadSeasonalPrices(listingIds: string[]): Promise<Map<string, SeasonalPrice[]>> {
     return this.seasonalPrices(listingIds);
+  }
+
+  /*
+   * The sweep asks every charter week of `years` for the whole scope, and a sweep that fails
+   * part way throws rather than answering short, so a week missing from a listing's rates is
+   * one `/prices` no longer prices for it.
+   */
+  seasonalPricesCompleteWithin(): PriceWindow | undefined {
+    return bookingManagerPriceWindow(this.years, this.today);
   }
 }
 

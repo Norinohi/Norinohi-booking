@@ -1,6 +1,6 @@
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { fixedLimit, orderedWindow } from "../shared/ordered-window";
-import type { SeasonalPrice } from "../sync/price-writer";
+import type { PriceWindow, SeasonalPrice } from "../sync/price-writer";
 import type { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
 import {
@@ -332,6 +332,19 @@ export function charterSaturdays(years: number[]): string[] {
     saturdays.push(new Date(cursor).toISOString().slice(0, 10));
   }
   return saturdays;
+}
+
+/**
+ * The weeks one sweep asks about for the whole scope, from today: every charter Saturday of
+ * `years`, whose weekly rows are then the vendor's full answer for each. Past weeks are left out
+ * because nothing sells them and their rates are history, not a claim about today.
+ */
+export function bookingManagerPriceWindow(years: number[], today: string): PriceWindow | undefined {
+  const saturdays = charterSaturdays(years);
+  const first = saturdays[0];
+  const last = saturdays.at(-1);
+  if (first === undefined || last === undefined) return undefined;
+  return { start: first > today ? first : today, end: addDays(last, 7) };
 }
 
 function addDays(date: string, days: number): string {

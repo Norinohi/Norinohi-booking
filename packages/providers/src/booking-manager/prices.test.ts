@@ -16,6 +16,7 @@ import { restPriceListSchema, restYachtSchema, type RestPrice } from "./endpoint
 import { type BookingManagerPriceTerms, priceTermsOf } from "./price-terms";
 import {
   type BookingManagerPriceCandidate,
+  bookingManagerPriceWindow,
   charterSaturdays,
   createBookingManagerSeasonalPriceLoader,
   mapBookingManagerPriceCandidate,
@@ -566,5 +567,25 @@ describe("createBookingManagerSeasonalPriceLoader with price terms", () => {
       ]),
     );
     expect(asked).toEqual([[giulia]]);
+  });
+});
+
+describe("bookingManagerPriceWindow", () => {
+  it("runs from today to the end of the last week the sweep asks about", () => {
+    expect(bookingManagerPriceWindow([2026, 2027], "2026-09-22")).toEqual({
+      start: "2026-09-22",
+      end: "2028-01-01",
+    });
+  });
+
+  it("starts at the first charter Saturday when today is before it", () => {
+    expect(bookingManagerPriceWindow([2027], "2026-09-22")).toEqual({
+      start: "2027-01-02",
+      end: "2028-01-01",
+    });
+  });
+
+  it("vouches for nothing with no years", () => {
+    expect(bookingManagerPriceWindow([], "2026-09-22")).toBeUndefined();
   });
 });

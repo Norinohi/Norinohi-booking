@@ -1015,6 +1015,7 @@ export async function runCatalogueSyncJob(
         store: createDrizzlePricePeriodStore({ db, providerId }),
         listingIds: written.touchedListingIds,
         loadSeasonalPrices: (listingIds) => provider.loadSeasonalPrices(listingIds),
+        completeWithin: provider.seasonalPricesCompleteWithin?.(),
       });
     } catch (error) {
       priceFailures = 1;

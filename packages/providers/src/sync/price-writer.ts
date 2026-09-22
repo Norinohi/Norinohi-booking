@@ -3,7 +3,7 @@ import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
 import { MAX_MONEY_MINOR } from "@yacht-charter/db/schema/_shared";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { providerRecord } from "@yacht-charter/db/schema/provider";
-import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, lt, sql } from "drizzle-orm";
 import { log } from "evlog";
 import { z } from "zod";
 
@@ -46,6 +46,12 @@ const PRICE_ROW_CHUNK = 4000;
  * on a price list.
  */
 const PRICE_WRITE_CONCURRENCY = 4;
+
+/**
+ * Offers per prune statement. Their fresh weeks travel as one jsonb parameter, so this bounds
+ * the statement's size rather than a bind-parameter count.
+ */
+const PRUNE_OFFER_CHUNK = 500;
 
 const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected an ISO yyyy-MM-dd date");
 
@@ -137,11 +143,26 @@ export function dedupePricePeriodRows(writes: readonly PricePeriodWrite[]): Pric
   return { rows: [...unique.values()], rejected };
 }
 
+/** Weekly periods starting on or after `start` and before `end`. */
+export interface PriceWindow {
+  start: string;
+  end: string;
+}
+
 export interface PricePeriodStore {
   /** The provider's active offer per listing, which is what a rate belongs to. */
   loadSourceIds(listingIds: readonly string[]): Promise<Map<string, OfferRef>>;
   /** Returns the number of distinct periods written. */
   writePricePeriods(writes: readonly PricePeriodWrite[]): Promise<number>;
+  /**
+   * Deletes every weekly period of these offers starting inside `window` that the fresh price
+   * list does not restate, and returns how many went.
+   */
+  prunePricePeriods(
+    offers: readonly OfferRef[],
+    window: PriceWindow,
+    kept: readonly PricePeriodWrite[],
+  ): Promise<number>;
 }
 
 export interface WriteSeasonalPricesOptions {
@@ -149,6 +170,11 @@ export interface WriteSeasonalPricesOptions {
   /** The listings this catalogue run refreshed; nothing else is repriced. */
   listingIds: readonly string[];
   loadSeasonalPrices(listingIds: string[]): Promise<Map<string, SeasonalPrice[]>>;
+  /**
+   * Where the loader's answer is the provider's whole price list, so a week it leaves out is a
+   * week the provider no longer prices. Absent for a loader that cannot say so.
+   */
+  completeWithin?: PriceWindow;
 }
 
 export async function writeSeasonalPrices(options: WriteSeasonalPricesOptions): Promise<number> {
@@ -161,13 +187,15 @@ export async function writeSeasonalPrices(options: WriteSeasonalPricesOptions): 
   ]);
 
   const writes: PricePeriodWrite[] = [];
+  const answered: OfferRef[] = [];
   for (const listingId of listingIds) {
-    const listingPrices = prices.get(listingId);
-    // A listing the provider published no rates for keeps whatever it has rather
-    // than being emptied: absent is not the same statement as "no longer priced",
-    // and only the vendor can make the second one.
-    if (!listingPrices?.length) continue;
     const ref = sourceIds.get(listingId);
+    if (ref) answered.push(ref);
+    const listingPrices = prices.get(listingId);
+    // Without `completeWithin`, a listing the provider published no rates for keeps
+    // whatever it has rather than being emptied: absent is not the same statement as
+    // "no longer priced", and only the vendor can make the second one.
+    if (!listingPrices?.length) continue;
     /*
      * A rate with no offer to hang on cannot be stored at all: the column is NOT NULL, and it
      * would be a price nobody could be asked to honour. Skipped rather than written null.
@@ -181,7 +209,28 @@ export async function writeSeasonalPrices(options: WriteSeasonalPricesOptions): 
     });
   }
 
-  return options.store.writePricePeriods(writes);
+  const written = await options.store.writePricePeriods(writes);
+
+  /*
+   * After the write, so a failure between the two leaves stale rates rather than none. Only the
+   * offers this run resolved, and only inside the window the loader vouches for: a rate that
+   * outlives its week in the vendor's list otherwise keeps opening a season nobody sells and
+   * keeps the card's "from" figure at a price nobody quotes.
+   */
+  if (options.completeWithin && answered.length > 0) {
+    const pruned = await options.store.prunePricePeriods(answered, options.completeWithin, writes);
+    if (pruned > 0) {
+      log.info({
+        action: "prices.periods_pruned",
+        reason: "no longer in the provider's price list",
+        pruned,
+        from: options.completeWithin.start,
+        to: options.completeWithin.end,
+      });
+    }
+  }
+
+  return written;
 }
 
 export function createDrizzlePricePeriodStore(options: {
@@ -228,6 +277,60 @@ export function createDrizzlePricePeriodStore(options: {
       });
 
       return found;
+    },
+
+    async prunePricePeriods(offers, window, kept) {
+      const keptByOffer = new Map<string, SeasonalPrice[]>();
+      for (const write of kept) {
+        keptByOffer.set(write.listingOfferId, [
+          ...(keptByOffer.get(write.listingOfferId) ?? []),
+          ...write.prices,
+        ]);
+      }
+
+      let pruned = 0;
+      const offerIds = [...new Set(offers.map((offer) => offer.listingOfferId))];
+      /*
+       * Each chunk names its own offers' fresh periods and nothing else, so the kept list bound
+       * into one statement is a few hundred offers' weeks rather than the fleet's million.
+       */
+      await runPooled(
+        chunked(offerIds, PRUNE_OFFER_CHUNK),
+        PRICE_WRITE_CONCURRENCY,
+        async (chunk) => {
+          const keys = chunk.flatMap((offerId) =>
+            (keptByOffer.get(offerId) ?? []).map(({ startDate, endDate }) => ({
+              offerId,
+              startDate,
+              endDate,
+            })),
+          );
+          const rows = await db
+            .delete(listingPricePeriod)
+            .where(
+              and(
+                inArray(listingPricePeriod.listingOfferId, chunk),
+                eq(listingPricePeriod.kind, "weekly"),
+                gte(listingPricePeriod.startDate, window.start),
+                lt(listingPricePeriod.startDate, window.end),
+                keys.length === 0
+                  ? undefined
+                  : sql`not exists (
+                    select 1
+                    from jsonb_to_recordset(${JSON.stringify(keys)}::jsonb)
+                      as kept("offerId" text, "startDate" date, "endDate" date)
+                    where kept."offerId" = ${listingPricePeriod.listingOfferId}
+                      and kept."startDate" = ${listingPricePeriod.startDate}
+                      and kept."endDate" = ${listingPricePeriod.endDate}
+                  )`,
+              ),
+            )
+            .returning({ listingOfferId: listingPricePeriod.listingOfferId });
+          pruned += rows.length;
+        },
+      );
+
+      return pruned;
     },
 
     async writePricePeriods(writes) {
