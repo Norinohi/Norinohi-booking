@@ -53,7 +53,7 @@ export interface BookingManagerClientOptions {
  * near 30 s on each of the vendor's six servers.
  *
  * So a create is attempted once, and a timeout is settled by asking the vendor
- * whether an option of ours now sits on the slot (`recoverOwnOption` in
+ * whether an option of ours now sits on the slot (`settleOwnOption` in
  * `booking.ts`) rather than by sending it again.
  *
  * This is enforced here rather than left to the call site because the hazard is
