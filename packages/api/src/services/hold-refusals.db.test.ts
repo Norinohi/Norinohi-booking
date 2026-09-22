@@ -1,11 +1,21 @@
 import "../test-support/checkout-env";
 
-import { booking, listingOffer, quote, availabilitySlot } from "@yacht-charter/db/schema/index";
+import {
+  availabilitySlot,
+  booking,
+  listingOffer,
+  listingRefusedPeriod,
+  quote,
+} from "@yacht-charter/db/schema/index";
 import { createTestDatabase, type TestDatabase } from "@yacht-charter/db/test-support/database";
 import type { MockInventoryProvider } from "@yacht-charter/providers/mock/provider";
-import { ContractError, SlotUnavailableError } from "@yacht-charter/providers/shared/errors";
+import {
+  ContractError,
+  ROUTE_NOT_OFFERED,
+  SlotUnavailableError,
+} from "@yacht-charter/providers/shared/errors";
 import { eq } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
   bookingState,
@@ -14,10 +24,12 @@ import {
   seedBookingWorld,
   seedCustomer,
   seedYacht,
+  WEEK_START,
   weekOnSale,
 } from "../test-support/booking-world";
 import { installFakeStripe, type FakeStripe } from "../test-support/fake-stripe";
 import { confirmCheckout } from "./payment";
+import { repriceQuote } from "./quote";
 
 /*
  * Every way the chain refuses before money moves, and what each refusal leaves behind.
@@ -157,6 +169,92 @@ describe("provider refuses the hold", () => {
 
     const [row] = await db.select().from(booking).where(eq(booking.quoteId, quoteId));
     expect(row?.status).toBe("PROVIDER_REJECTED");
+  });
+});
+
+/*
+ * A vendor that sells the week, only not on the base pair the customer pinned, has not sold the
+ * week: refusing the pair must not take it off the card for everyone else.
+ *
+ * The world quotes four guests, so a refusal that is learned from first asks the vendor again for
+ * two. Each refusal therefore stands for every quote in the test, and neither the probe nor a
+ * refused period may follow a route refusal.
+ */
+describe("provider refuses only the pinned route", () => {
+  const routeRefused = () =>
+    new SlotUnavailableError("sold from another base pair", { providerCode: ROUTE_NOT_OFFERED });
+  const weekGone = () =>
+    new SlotUnavailableError("no offer for that week", { providerCode: "NO_OFFER" });
+  const refusedPeriods = (listingId: string) =>
+    test.db
+      .select({ startDate: listingRefusedPeriod.startDate })
+      .from(listingRefusedPeriod)
+      .where(eq(listingRefusedPeriod.listingId, listingId));
+  const spies: { mockRestore(): void }[] = [];
+  const refuse = (method: "createOption" | "getQuote", error: () => Error) => {
+    const spy = vi.spyOn(inventory, method).mockRejectedValue(error());
+    spies.push(spy);
+    return spy;
+  };
+
+  afterEach(() => {
+    for (const spy of spies.splice(0)) spy.mockRestore();
+  });
+
+  it("writes no refusal when the hold is refused for the route", async () => {
+    const { db } = test;
+    const { listingId, userId, quoteId } = await quoteOn("route-hold");
+    refuse("createOption", routeRefused);
+    const getQuote = refuse("getQuote", routeRefused);
+
+    await expect(holdQuote(db, inventory, userId, quoteId)).rejects.toMatchObject({
+      kind: "CONFLICT",
+      data: { code: "SLOT_GONE" },
+    });
+
+    expect(getQuote).not.toHaveBeenCalled();
+    expect(await refusedPeriods(listingId)).toEqual([]);
+  });
+
+  it("writes the week down as refused when the hold is refused for the week", async () => {
+    const { db } = test;
+    const { listingId, userId, quoteId } = await quoteOn("gone-hold");
+    refuse("createOption", weekGone);
+    const getQuote = refuse("getQuote", weekGone);
+
+    await expect(holdQuote(db, inventory, userId, quoteId)).rejects.toMatchObject({
+      kind: "CONFLICT",
+      data: { code: "SLOT_GONE" },
+    });
+
+    expect(getQuote).toHaveBeenCalledWith(expect.objectContaining({ guests: 2 }));
+    expect(await refusedPeriods(listingId)).toEqual([{ startDate: WEEK_START }]);
+  });
+
+  it("writes no refusal when a re-price is refused for the route", async () => {
+    const { db } = test;
+    const { listingId, userId, quoteId } = await quoteOn("route-reprice");
+    const getQuote = refuse("getQuote", routeRefused);
+
+    await expect(repriceQuote(db, inventory, quoteId, userId, { guests: 3 })).rejects.toMatchObject(
+      { kind: "CONFLICT", message: "Requested slot is not available" },
+    );
+
+    expect(getQuote).toHaveBeenCalledTimes(1);
+    expect(await refusedPeriods(listingId)).toEqual([]);
+  });
+
+  it("writes the week down as refused when a re-price is refused for the week", async () => {
+    const { db } = test;
+    const { listingId, userId, quoteId } = await quoteOn("gone-reprice");
+    const getQuote = refuse("getQuote", weekGone);
+
+    await expect(repriceQuote(db, inventory, quoteId, userId, { guests: 3 })).rejects.toMatchObject(
+      { kind: "CONFLICT", message: "Requested slot is not available" },
+    );
+
+    expect(getQuote).toHaveBeenCalledTimes(2);
+    expect(await refusedPeriods(listingId)).toEqual([{ startDate: WEEK_START }]);
   });
 });
 
