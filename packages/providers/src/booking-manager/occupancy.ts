@@ -164,12 +164,12 @@ export function mapBookingManagerAvailability(
   // is not malformed, so it must not fail the scope. The writer's intervals are
   // half-open, where startDate === endDate would overlap nothing and quietly
   // advertise the day as free, so it is widened to the one day it describes.
-  // Q-BM-DATETO, and the evidence now leans our way: the SOAP manual
-  // (availability_service_description v1.26, 1.4 getBookingSheet) documents the
-  // same field on the same data as "dateto - date of the checkout", which is the
-  // exclusive reading assumed here. Not a REST statement and not conclusive, so
-  // the question stays open - if it were the inclusive last day, every interval
-  // would be a night short.
+  // `dateTo` is the check-out day, exclusive (Q-BM-DATETO, closed by measurement on
+  // company 225, 2026-09-22): Queen II's row 26.12-31.12.2026 leaves 31 December
+  // free in `/shortAvailability` format 3, and its row 27.12.2025-03.01.2026 leaves
+  // the 3rd free. The SOAP manual says the same ("dateto - date of the checkout").
+  // A row across the year arrives with its full dates in each year's dump, and the
+  // writer clips it to the windows it fetched.
   const endDate = rawEndDate === startDate ? addOneDay(startDate) : rawEndDate;
 
   const status = row.status ?? null;

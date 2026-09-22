@@ -1,8 +1,12 @@
-import { availabilitySlot, listingRefusedPeriod } from "@yacht-charter/db/schema/availability";
+import {
+  availabilitySlot,
+  listingFreePeriod,
+  listingRefusedPeriod,
+} from "@yacht-charter/db/schema/availability";
 import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
 import { createTestDatabase, type TestDatabase } from "@yacht-charter/db/test-support/database";
 import { seedListing, seedSearchWorld } from "@yacht-charter/db/test-support/search-fixture";
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { log } from "evlog";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -489,5 +493,77 @@ describe("replaceRefusedPeriods", () => {
 
     const [row] = await refusalsOf(offer.offerId);
     expect(Date.now() - (row?.updatedAt.getTime() ?? 0)).toBeLessThan(DAY);
+  });
+});
+
+describe("writeFreePeriods", () => {
+  async function seedFree(slug: string, periods: [string, string][]) {
+    const ref = await refOf(slug);
+    await test.db.delete(listingFreePeriod).where(eq(listingFreePeriod.listingId, ref.listingId));
+    await test.db.insert(listingFreePeriod).values(
+      periods.map(([startDate, endDate]) => ({
+        listingId: ref.listingId,
+        listingSourceId: ref.listingSourceId,
+        listingOfferId: ref.listingOfferId,
+        startDate,
+        endDate,
+      })),
+    );
+    return ref;
+  }
+
+  async function freeOf(offerId: string) {
+    const rows = await test.db
+      .select({ startDate: listingFreePeriod.startDate, endDate: listingFreePeriod.endDate })
+      .from(listingFreePeriod)
+      .where(eq(listingFreePeriod.listingOfferId, offerId))
+      .orderBy(asc(listingFreePeriod.startDate));
+    return rows.map((row) => `${row.startDate}..${row.endDate}`);
+  }
+
+  it("keeps the half of a period across New Year that lies in a year it did not fetch", async () => {
+    const ref = await seedFree("free_head", [
+      ["2026-10-03", "2027-03-06"],
+      ["2027-04-03", "2027-05-01"],
+    ]);
+
+    await store().writeFreePeriods(
+      [{ ref, periods: [{ startDate: "2026-09-22", endDate: "2027-01-01" }] }],
+      [2026],
+    );
+
+    expect(await freeOf(ref.listingOfferId)).toEqual([
+      "2026-09-22..2027-01-01",
+      "2027-01-01..2027-03-06",
+      "2027-04-03..2027-05-01",
+    ]);
+  });
+
+  it("restates the clean year's half of a period that began in one it did not fetch", async () => {
+    const ref = await seedFree("free_tail", [["2026-12-19", "2027-03-06"]]);
+
+    await store().writeFreePeriods(
+      [{ ref, periods: [{ startDate: "2027-01-01", endDate: "2027-02-06" }] }],
+      [2027],
+    );
+
+    expect(await freeOf(ref.listingOfferId)).toEqual([
+      "2026-12-19..2027-01-01",
+      "2027-01-01..2027-02-06",
+    ]);
+  });
+
+  it("replaces a period across New Year whole when both years are clean", async () => {
+    const ref = await seedFree("free_both", [
+      ["2026-10-03", "2026-12-31"],
+      ["2027-01-01", "2027-03-06"],
+    ]);
+
+    await store().writeFreePeriods(
+      [{ ref, periods: [{ startDate: "2026-09-22", endDate: "2027-09-22" }] }],
+      [2026, 2027],
+    );
+
+    expect(await freeOf(ref.listingOfferId)).toEqual(["2026-09-22..2027-09-22"]);
   });
 });

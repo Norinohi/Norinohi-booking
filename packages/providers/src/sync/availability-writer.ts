@@ -9,7 +9,7 @@ import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { providerRecord, syncError, syncRun } from "@yacht-charter/db/schema/provider";
 import { MAX_MONEY_MINOR } from "@yacht-charter/db/schema/_shared";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
-import { and, eq, gte, inArray, isNotNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, isNotNull, lt, lte, or, sql } from "drizzle-orm";
 import { log } from "evlog";
 import { z } from "zod";
 
@@ -443,8 +443,37 @@ function clip(window: DateWindow, other: DateWindow): DateWindow | null {
   return start <= end ? { start, end } : null;
 }
 
+/*
+ * Half-open like every other range here, so the year runs to the next one's first day. Ending it
+ * on 31 December left that night outside every window, and no free period ever covered New Year:
+ * on company 225 `/offers` sold the week of 26 December for 26 yachts while every free period
+ * stopped the day before.
+ */
 function yearWindow(year: number): DateWindow {
-  return { start: `${year}-01-01`, end: `${year}-12-31` };
+  return { start: `${year}-01-01`, end: `${year + 1}-01-01` };
+}
+
+/**
+ * The windows as few stretches as they make. Two clean years side by side are one calendar, and
+ * cut at the boundary they published two free periods meeting on 1 January, which no charter
+ * across it fits inside.
+ */
+export function mergeWindows(windows: readonly DateWindow[]): DateWindow[] {
+  const merged: DateWindow[] = [];
+  for (const window of [...windows].sort((a, b) => a.start.localeCompare(b.start))) {
+    const last = merged.at(-1);
+    if (last && window.start <= last.end) {
+      if (window.end > last.end) last.end = window.end;
+    } else {
+      merged.push({ ...window });
+    }
+  }
+  return merged;
+}
+
+/** The clean years as the date ranges they cover, consecutive years joined. */
+export function yearRanges(years: readonly number[]): DateWindow[] {
+  return mergeWindows(years.map(yearWindow));
 }
 
 /* ---------------------------------------------------------------- the sync */
@@ -732,9 +761,11 @@ export async function runAvailabilitySync(
       }
 
       const listingRefs = [...listings.values()];
-      const windows = cleanYears
-        .map((year) => clip(horizon, yearWindow(year)))
-        .filter((window): window is DateWindow => window !== null);
+      const windows = mergeWindows(
+        cleanYears
+          .map((year) => clip(horizon, yearWindow(year)))
+          .filter((window): window is DateWindow => window !== null),
+      );
 
       const freeWrites: FreePeriodWrite[] = [];
 
@@ -1162,12 +1193,15 @@ export function createDrizzleAvailabilitySyncStore(
        * Replace within the years the dump covered, never outside them. A year whose fetch
        * failed keeps whatever it had: deleting there would erase availability on the
        * strength of a request that never completed.
+       *
+       * A stored period can straddle that edge now that clean years side by side publish one
+       * period across New Year. So every period overlapping a clean range goes, and the part of
+       * it outside the range is put back: the unclean year keeps its half, and the clean one is
+       * restated from the dump rather than left holding a stale claim across the boundary.
        */
-      const inAnyCleanYear = years.map((year) =>
-        and(
-          gte(listingFreePeriod.startDate, `${year}-01-01`),
-          lte(listingFreePeriod.startDate, `${year}-12-31`),
-        ),
+      const ranges = yearRanges(years);
+      const overlapsAnyRange = ranges.map((range) =>
+        and(lt(listingFreePeriod.startDate, range.end), gt(listingFreePeriod.endDate, range.start)),
       );
 
       /*
@@ -1180,14 +1214,33 @@ export function createDrizzleAvailabilitySyncStore(
       );
       if (offerIds.length === 0) return;
 
+      const outside: (typeof listingFreePeriod.$inferInsert)[] = [];
+
       // One DELETE per chunk of listings covering every clean year, rather than one
       // statement per listing per year. The whole fleet arrives in a single call under
       // an account-wide scope, so this is the difference between two round-trips and
       // tens of thousands.
       for (const chunk of chunked(offerIds)) {
-        await db
+        const deleted = await db
           .delete(listingFreePeriod)
-          .where(and(inArray(listingFreePeriod.listingOfferId, [...chunk]), or(...inAnyCleanYear)));
+          .where(
+            and(inArray(listingFreePeriod.listingOfferId, [...chunk]), or(...overlapsAnyRange)),
+          )
+          .returning({
+            listingId: listingFreePeriod.listingId,
+            listingSourceId: listingFreePeriod.listingSourceId,
+            listingOfferId: listingFreePeriod.listingOfferId,
+            startDate: listingFreePeriod.startDate,
+            endDate: listingFreePeriod.endDate,
+          });
+        for (const period of deleted) {
+          for (const kept of freePeriodsFrom({
+            windows: [{ start: period.startDate, end: period.endDate }],
+            occupied: ranges.map((range) => ({ startDate: range.start, endDate: range.end })),
+          })) {
+            outside.push({ ...period, ...kept });
+          }
+        }
       }
 
       const rows = writes.flatMap((write) => {
@@ -1204,7 +1257,7 @@ export function createDrizzleAvailabilitySyncStore(
 
       // Chunked by row, not by listing: how many periods a boat has is the provider's
       // business, and the bind-parameter ceiling is per statement.
-      for (const chunk of chunked(rows, ROW_CHUNK)) {
+      for (const chunk of chunked([...outside, ...rows], ROW_CHUNK)) {
         await db.insert(listingFreePeriod).values(chunk).onConflictDoNothing();
       }
     },

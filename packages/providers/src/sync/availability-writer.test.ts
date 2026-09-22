@@ -8,6 +8,8 @@ import {
   dedupeSlotsByPeriod,
   freePeriodsFrom,
   isFatalAuthOnly,
+  mergeWindows,
+  yearRanges,
   runAvailabilitySync,
   storableMinor,
   type AvailabilityScope,
@@ -339,6 +341,36 @@ describe("freePeriodsFrom", () => {
   });
 });
 
+describe("mergeWindows", () => {
+  it("joins windows that touch or overlap, in date order", () => {
+    expect(
+      mergeWindows([
+        { start: "2027-01-01", end: "2027-06-01" },
+        { start: "2026-06-01", end: "2027-01-01" },
+        { start: "2027-07-01", end: "2027-08-01" },
+      ]),
+    ).toEqual([
+      { start: "2026-06-01", end: "2027-06-01" },
+      { start: "2027-07-01", end: "2027-08-01" },
+    ]);
+  });
+
+  it("does not change the windows it was given", () => {
+    const first = { start: "2026-01-01", end: "2026-02-01" };
+    mergeWindows([first, { start: "2026-01-15", end: "2026-03-01" }]);
+    expect(first).toEqual({ start: "2026-01-01", end: "2026-02-01" });
+  });
+});
+
+describe("yearRanges", () => {
+  it("runs each year to the next one's first day and joins consecutive years", () => {
+    expect(yearRanges([2027, 2026, 2029])).toEqual([
+      { start: "2026-01-01", end: "2028-01-01" },
+      { start: "2029-01-01", end: "2030-01-01" },
+    ]);
+  });
+});
+
 describe("storableMinor", () => {
   it("accepts a null, which is a slot with no rate rather than a bad one", () => {
     expect(storableMinor(null)).toBe(true);
@@ -424,10 +456,93 @@ describe("runAvailabilitySync", () => {
     /* The booking runs 2026-06-27 to 2026-07-04, so the free time is split either side. */
     expect(free).toEqual([
       { startDate: "2026-06-01", endDate: "2026-06-27" },
-      { startDate: "2026-07-04", endDate: "2026-12-31" },
+      { startDate: "2026-07-04", endDate: "2027-01-01" },
     ]);
     /* Availability is no longer asserted as charters, so no slot claims to be one. */
     expect(store.listOf("ylst_marlin", "available")).toEqual([]);
+  });
+
+  /*
+   * Company 225, 2026: no /availability row covers the night of 31 December and /offers sold the
+   * week of 26 December for 26 yachts, yet every free period stopped on the 31st, so no charter
+   * across New Year could be found. Two clean years are one calendar.
+   */
+  it("publishes one free stretch across New Year when both years are clean", async () => {
+    const store = fakeStore({
+      yachts: { "4711001": MARLIN },
+      listings: { "102701": [MARLIN] },
+    });
+
+    await runAvailabilitySync({
+      store: store.store,
+      source: source({
+        scopes: [
+          { scopeKey: "102701", year: 2026 },
+          { scopeKey: "102701", year: 2027 },
+        ],
+      }),
+      now: () => RUN_AT,
+    });
+
+    expect(store.freeOf("ylst_marlin")).toEqual([
+      { startDate: "2026-06-01", endDate: "2027-06-01" },
+    ]);
+  });
+
+  /*
+   * The 2026 dump carries a row 2025-12-27..2026-01-03 with its full dates, so a booking across
+   * the boundary arrives whole in both years' dumps and must block both sides of it.
+   */
+  it("blocks both sides of a booking that crosses the year", async () => {
+    const store = fakeStore({
+      yachts: { "4711001": MARLIN },
+      listings: { "102701": [MARLIN] },
+    });
+    const crossing = occupied({ startDate: "2026-12-26", endDate: "2027-01-02" });
+
+    await runAvailabilitySync({
+      store: store.store,
+      source: source({
+        scopes: [
+          { scopeKey: "102701", year: 2026 },
+          { scopeKey: "102701", year: 2027 },
+        ],
+        fetchOccupancy: () => Promise.resolve([crossing]),
+      }),
+      now: () => RUN_AT,
+    });
+
+    expect(store.freeOf("ylst_marlin")).toEqual([
+      { startDate: "2026-06-01", endDate: "2026-12-26" },
+      { startDate: "2027-01-02", endDate: "2027-06-01" },
+    ]);
+  });
+
+  it("stops at the boundary of a clean year beside one whose dump failed", async () => {
+    const store = fakeStore({
+      yachts: { "4711001": MARLIN },
+      listings: { "102701": [MARLIN] },
+    });
+
+    await runAvailabilitySync({
+      store: store.store,
+      source: source({
+        scopes: [
+          { scopeKey: "102701", year: 2026 },
+          { scopeKey: "102701", year: 2027 },
+        ],
+        fetchOccupancy: (scope) =>
+          scope.year === 2027
+            ? Promise.reject(new TransientError("availability timed out"))
+            : Promise.resolve([]),
+        isFatal: () => false,
+      }),
+      now: () => RUN_AT,
+    });
+
+    expect(store.freeOf("ylst_marlin")).toEqual([
+      { startDate: "2026-06-01", endDate: "2027-01-01" },
+    ]);
   });
 
   /* A boat with nothing left to sell has to lose the free periods it used to have. */
@@ -441,7 +556,7 @@ describe("runAvailabilitySync", () => {
       store: store.store,
       source: source({
         fetchOccupancy: () =>
-          Promise.resolve([occupied({ startDate: "2026-01-01", endDate: "2026-12-31" })]),
+          Promise.resolve([occupied({ startDate: "2026-01-01", endDate: "2027-01-01" })]),
       }),
       now: () => RUN_AT,
     });

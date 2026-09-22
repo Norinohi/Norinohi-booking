@@ -74,6 +74,8 @@ Ordered by what it costs us to be wrong.
    `dateFrom=Sat, dateTo=next Sat`. If it is inclusive, every occupied period we
    store is one night short, which is exactly the case that oversells a
    turnaround day.
+   _Answered by measurement on company 225, 2026-09-22:_ exclusive. A row
+   26.12-31.12.2026 leaves 31 December free in `/shortAvailability` format 3.
 
 7. **Is the reservation `status` enum closed at 4?** (`Q-BM-STATUS`) Documented:
    1 Reservation, 2 Option, 3 Option in expiration, 4 Service.
