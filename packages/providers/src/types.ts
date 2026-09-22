@@ -130,6 +130,16 @@ export const quoteRequestSchema = z.object({
    * and lands the customer in a different town, so it has to be something they chose.
    */
   endBaseId: z.string().optional(),
+  /**
+   * Provider-side base the charter was quoted from, pinned so a re-price answers the same
+   * charter. A week can be sold from two bases, and a drop-off asked for alone matches both a
+   * one-way from the quoted start and a round trip from the other base, which the ranking
+   * prefers: the customer asked to finish elsewhere and was re-quoted a pickup they never chose.
+   *
+   * Omitted leaves the start to the adapter, which is right only while nothing about the
+   * charter has been chosen yet.
+   */
+  startBaseId: z.string().optional(),
   currency: z.string().length(3).default("EUR"),
 });
 

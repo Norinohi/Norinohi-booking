@@ -26,6 +26,7 @@ import type {
 } from "@yacht-charter/providers";
 import {
   NotFoundError as ProviderNotFoundError,
+  refusesOnlyTheRoute,
   SlotUnavailableError,
 } from "@yacht-charter/providers/shared/errors";
 
@@ -44,6 +45,7 @@ import { classifyRefusal } from "../lib/refusal-report";
 import { netOfBundles } from "../lib/bundled-extras";
 import { requestedExtraAmountMinor } from "../lib/requested-extra-amount";
 import { saysSlotIsGone } from "../lib/provider-failure";
+import { repriceRoute } from "../lib/reprice-route";
 import { onlyVendorFailures } from "../lib/vendor-outage";
 
 import type { Database, DatabaseExecutor } from "../context";
@@ -109,6 +111,8 @@ export type RepriceChanges = {
   crewType?: CrewType;
   /** Null clears a one-way and prices the charter back to its own base. */
   endBaseId?: string | null;
+  /** The base the charter starts from. Omitted keeps the quoted one; null frees it. */
+  startBaseId?: string | null;
   discountCode?: string | null;
   applyCredit?: boolean;
 };
@@ -483,7 +487,7 @@ export async function learnFromProviderRefusal(
   priced: typeof quote.$inferSelect,
   error: Error | null,
 ): Promise<void> {
-  if (!saysSlotIsGone(error) || !priced.listingOfferId) return;
+  if (!saysSlotIsGone(error) || refusesOnlyTheRoute(error) || !priced.listingOfferId) return;
 
   const input: QuoteRequest = {
     listingId: priced.listingId,
@@ -560,14 +564,7 @@ export async function repriceQuote(
     );
   }
   const requestedCrewType = changes.crewType ?? asCrewType(existing.crewType);
-  /*
-   * Distinguishes "not mentioned" from "cleared". Omitted keeps the drop-off the customer
-   * already chose, so changing guests does not silently turn their one-way into a return;
-   * null is the control being switched back and has to survive the `??` that carries values
-   * forward.
-   */
-  const requestedEndBaseId =
-    changes.endBaseId === undefined ? existing.route?.endBaseId : (changes.endBaseId ?? undefined);
+  const requestedRoute = repriceRoute(existing, changes);
   const discountCode =
     changes.discountCode === undefined ? existing.discountCode : changes.discountCode;
 
@@ -581,7 +578,8 @@ export async function repriceQuote(
   };
 
   if (requestedCrewType) request.crewType = requestedCrewType;
-  if (requestedEndBaseId) request.endBaseId = requestedEndBaseId;
+  if (requestedRoute.startBaseId) request.startBaseId = requestedRoute.startBaseId;
+  if (requestedRoute.endBaseId) request.endBaseId = requestedRoute.endBaseId;
 
   const priced = await priceOrConflict(db, provider, request, existing.listingOfferId);
 
@@ -867,7 +865,10 @@ async function priceOrConflict(
        * is paying for. Logging it and moving on left the card advertising that week until the
        * sync came round, and the next visitor met the same refusal.
        */
-      if (listingOfferId) await learnFromRefusal(db, provider, input, attempts);
+      /* Not where only the pinned base pair was refused: the week is still on sale. */
+      if (listingOfferId && !refusesOnlyTheRoute(error)) {
+        await learnFromRefusal(db, provider, input, attempts);
+      }
       throw new ConflictError({ message: "Requested slot is not available" });
     }
     throw error;

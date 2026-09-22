@@ -111,6 +111,11 @@ export const repriceInputSchema = z
      * previous quote's choice; pass null to go back to finishing where the charter started.
      */
     endBaseId: z.string().min(1).nullable().optional(),
+    /**
+     * The base the quoted charter starts from, sent beside a drop-off so the pair the customer
+     * chose is the pair priced. Omitted keeps the previous quote's start; null frees it.
+     */
+    startBaseId: z.string().min(1).nullable().optional(),
     /** Pass null to clear a previously applied code. */
     discountCode: z.string().trim().max(64).nullable().optional(),
     /** Spend available referral credit. Ignored for anonymous visitors. */

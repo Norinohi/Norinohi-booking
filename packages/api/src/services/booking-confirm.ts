@@ -86,6 +86,9 @@ export async function confirmBookingWithProvider(
       extras: priced.extras,
       currency: priced.currency,
       priceSourceHash: priced.priceSourceHash,
+      /* Booking Manager's confirming PUT replaces the reservation, so a pair it is not given
+         falls back to the listing's own base and rewrites a one-way the option opened. */
+      route: priced.route,
       customer: {
         name: row.guestFullName ?? "Guest",
         email: row.guestEmail ?? "unknown@example.com",

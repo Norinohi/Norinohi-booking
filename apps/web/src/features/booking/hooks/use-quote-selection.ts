@@ -74,10 +74,11 @@ export function useQuoteSelection(
   /*
    * Re-prices rather than adjusting a total, because a one-way is a different charter: the
    * vendor quotes it as its own offer with its own directional fee, and only it knows which
-   * pairings it will sell that week.
+   * pairings it will sell that week. The start goes with it: the choices on offer are the ones
+   * from this start, and a drop-off sent alone could be priced from another base.
    */
   function setDropOff(endBaseId: string | null) {
-    if (quote) void repriceWith({ endBaseId });
+    if (quote) void repriceWith({ endBaseId, startBaseId: quote.route?.startBaseId ?? null });
   }
 
   function setGuests(next: number) {

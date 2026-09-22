@@ -1,8 +1,10 @@
 import "../test-support/checkout-env";
 
+import { quote as quoteTable } from "@yacht-charter/db/schema/quote";
 import { createTestDatabase, type TestDatabase } from "@yacht-charter/db/test-support/database";
 import { SlotUnavailableError, TransientError } from "@yacht-charter/providers/shared/errors";
 import type { MockInventoryProvider } from "@yacht-charter/providers/mock/provider";
+import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
@@ -150,6 +152,10 @@ describe("happy path: quote, hold, checkout, webhook, confirmation", () => {
     const { db } = test;
     const confirm = vi.spyOn(inventory, "confirmBooking");
     stripe.capture.mockClear();
+    /* Booking Manager's confirming PUT replaces the reservation, bases included. */
+    const route = { startBaseId: "31404981", endBaseId: "2206479" };
+    const quoteId = (await bookingState(db, bookingId)).quote?.id ?? "";
+    await db.update(quoteTable).set({ route }).where(eq(quoteTable.id, quoteId));
 
     const body = eventBody(
       "payment_intent.amount_capturable_updated",
@@ -164,6 +170,7 @@ describe("happy path: quote, hold, checkout, webhook, confirmation", () => {
       note: undefined,
     });
     expect(confirm).toHaveBeenCalledTimes(1);
+    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({ route }));
     expect(stripe.capture).toHaveBeenCalledWith(intentId, undefined, {
       idempotencyKey: `capture:${intentId}`,
     });

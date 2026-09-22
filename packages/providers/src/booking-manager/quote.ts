@@ -1,7 +1,7 @@
 import type { z } from "zod";
 
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
-import { ContractError, SlotUnavailableError } from "../shared/errors";
+import { ContractError, ROUTE_NOT_OFFERED, SlotUnavailableError } from "../shared/errors";
 import { formatExtraCode } from "../shared/extra-code";
 import { toExactPositiveIntId } from "../shared/projection-helpers";
 import { stableSourceHash } from "../shared/raw-retention";
@@ -126,15 +126,28 @@ export function createBookingManagerQuoteService(
         client.liveLane(),
       );
 
+      const route: RequestedRoute = {
+        startBaseId: parsed.startBaseId,
+        endBaseId: parsed.endBaseId,
+      };
       const offer = selectOffer(
         offers,
         yachtId,
         parsed.checkIn,
         parsed.checkOut,
         productName,
-        parsed.endBaseId,
+        route,
       );
       if (!offer) {
+        const onSaleElsewhere =
+          (route.startBaseId !== undefined || route.endBaseId !== undefined) &&
+          selectOffer(offers, yachtId, parsed.checkIn, parsed.checkOut, productName) !== undefined;
+        if (onSaleElsewhere) {
+          throw new SlotUnavailableError(
+            `Booking Manager sells yacht ${yachtId} from ${parsed.checkIn} to ${parsed.checkOut}, but not from base ${route.startBaseId ?? "any"} to base ${route.endBaseId ?? "any"}`,
+            { endpoint: bookingManagerEndpoints.offers, providerCode: ROUTE_NOT_OFFERED },
+          );
+        }
         throw new SlotUnavailableError(
           `Booking Manager has no offer for yacht ${yachtId} from ${parsed.checkIn} to ${parsed.checkOut}`,
           { endpoint: bookingManagerEndpoints.offers, providerCode: "NO_OFFER" },
@@ -195,8 +208,15 @@ export function repriceRequestFor(draft: BookingDraft, currency: string): QuoteR
     currency,
   };
   if (draft.crewType) request.crewType = draft.crewType;
+  if (draft.route?.startBaseId) request.startBaseId = draft.route.startBaseId;
   if (draft.route?.endBaseId) request.endBaseId = draft.route.endBaseId;
   return request;
+}
+
+/** The base pair a quote request pinned; either end left undefined is the adapter's to pick. */
+export interface RequestedRoute {
+  startBaseId?: string | undefined;
+  endBaseId?: string | undefined;
 }
 
 /**
@@ -214,6 +234,12 @@ export function repriceRequestFor(draft: BookingDraft, currency: string): QuoteR
  * the request said one-way: this listing publishes no `listing_one_way_rule`, so the booking
  * flow has no drop-off control at all and the customer could not have asked for it. We were
  * charging for a route chosen by array order.
+ *
+ * A pinned end narrows rather than ranks, and an empty result is not silently widened: pricing
+ * a return charter for someone who asked to finish elsewhere would quote a trip they did not ask
+ * for. The start is pinned beside it for the same reason. Narrowed by the drop-off alone, a week
+ * sold from Carrick and Portumna answered "Carrick to Portumna" with "Portumna to Portumna",
+ * because a round trip ranks first.
  */
 export function selectOffer(
   offers: readonly RestOffer[],
@@ -221,20 +247,16 @@ export function selectOffer(
   checkIn: string,
   checkOut: string,
   productName: string | undefined,
-  endBaseId?: string,
+  route: RequestedRoute = {},
 ): RestOffer | undefined {
-  const ofProduct = offersForPeriod(offers, yachtId, checkIn, checkOut, productName);
-
-  /*
-   * A chosen drop-off narrows rather than ranks, and an empty result is not silently widened:
-   * pricing a return charter for someone who asked to finish elsewhere would quote a trip they
-   * did not ask for, and the caller reads "no offer" as the vendor declining, which it did.
-   */
-  if (endBaseId !== undefined) {
-    return rankOffers(ofProduct.filter((offer) => offer.endBaseId === endBaseId))[0];
-  }
-
-  return rankOffers(ofProduct)[0];
+  const { startBaseId, endBaseId } = route;
+  return rankOffers(
+    offersForPeriod(offers, yachtId, checkIn, checkOut, productName).filter(
+      (offer) =>
+        (startBaseId === undefined || offer.startBaseId === startBaseId) &&
+        (endBaseId === undefined || offer.endBaseId === endBaseId),
+    ),
+  )[0];
 }
 
 /** The offers for exactly this charter, narrowed to the product when one was asked for. */

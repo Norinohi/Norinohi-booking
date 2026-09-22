@@ -4,7 +4,9 @@ import type { z } from "zod";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { unscopedCompanies } from "../shared/company-scope";
 import { parseExactJson } from "../shared/exact-json";
+import { refusesOnlyTheRoute, SlotUnavailableError } from "../shared/errors";
 import { SequentialQueue } from "../shared/queue";
+import { providerRejection } from "../testing/contracts";
 import { bookingDraftSchema } from "../types";
 import { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
@@ -256,6 +258,48 @@ describe("selectOffer", () => {
     expect(chosen?.product).toBe("Crewed");
   });
 
+  /*
+   * The Shannon week of 26 September 2026 sells both ends from both bases: Carrick (100) and
+   * Portumna (200). Each pair asked for is the pair priced, and a drop-off asked for with its
+   * start never comes back as the round trip from the other base, which ranks first.
+   */
+  describe("on a week sold from two bases", () => {
+    const pairs = [
+      pair("100", "100", 150),
+      pair("100", "200", 305),
+      pair("200", "200", 120),
+      pair("200", "100", 305),
+    ];
+    const pick = (route: { startBaseId?: string; endBaseId?: string }) => {
+      const chosen = selectOffer(pairs, "9001", "2026-09-26", "2026-10-03", undefined, route);
+      return chosen && `${chosen.startBaseId}>${chosen.endBaseId}`;
+    };
+
+    it.each([
+      ["100", "100"],
+      ["100", "200"],
+      ["200", "200"],
+      ["200", "100"],
+    ])("prices %s to %s when that pair is asked for", (startBaseId, endBaseId) => {
+      expect(pick({ startBaseId, endBaseId })).toBe(`${startBaseId}>${endBaseId}`);
+    });
+
+    it("keeps a one-way from the quoted start rather than the other base's round trip", () => {
+      expect(pick({ startBaseId: "100", endBaseId: "200" })).toBe("100>200");
+      // What the drop-off alone used to answer: the cheaper round trip from the other base.
+      expect(pick({ endBaseId: "200" })).toBe("200>200");
+    });
+
+    it("returns to the pinned start when no drop-off is asked for", () => {
+      expect(pick({ startBaseId: "100" })).toBe("100>100");
+      expect(pick({ startBaseId: "200" })).toBe("200>200");
+    });
+
+    it("answers nothing for a pair the week does not sell", () => {
+      expect(pick({ startBaseId: "100", endBaseId: "300" })).toBeUndefined();
+    });
+  });
+
   it("ignores offers the vendor echoed for other dates", () => {
     const otherWeek = restOfferSchema.parse({
       ...JSON.parse(JSON.stringify(sameBase)),
@@ -294,7 +338,9 @@ describe("an offer on the vendor's short base ids", () => {
   });
 
   it("finds the offer when the drop-off asked for is base 0", () => {
-    expect(selectOffer([rumba], yachtId, "2027-06-05", "2027-06-12", undefined, "0")).toBe(rumba);
+    expect(
+      selectOffer([rumba], yachtId, "2027-06-05", "2027-06-12", undefined, { endBaseId: "0" }),
+    ).toBe(rumba);
   });
 
   it("names base 0 on the quote's route", () => {
@@ -401,6 +447,7 @@ describe("repriceRequestFor", () => {
         extras: ["service:77"],
         crewType: "bareboat",
         currency: "EUR",
+        startBaseId: "100",
         endBaseId: "200",
       },
     );
@@ -412,13 +459,16 @@ describe("repriceRequestFor", () => {
     // the same way twice.
     expect(repriceRequestFor(draft({ startBaseId: "100", endBaseId: "100" }), "EUR")).toMatchObject(
       {
+        startBaseId: "100",
         endBaseId: "100",
       },
     );
   });
 
   it("asks unfiltered where the provider named no bases", () => {
-    expect(repriceRequestFor(draft(null), "EUR")).not.toHaveProperty("endBaseId");
+    const request = repriceRequestFor(draft(null), "EUR");
+    expect(request).not.toHaveProperty("startBaseId");
+    expect(request).not.toHaveProperty("endBaseId");
   });
 });
 
@@ -477,74 +527,123 @@ describe("priceSourceHash and the payment plan", () => {
   });
 });
 
+const QUOTE_CONFIG: BookingManagerConfig = {
+  baseUrl: "https://www.booking-manager.com/api/v2",
+  apiToken: "t0ken",
+  timeoutMs: 1000,
+  syncTimeoutMs: 5000,
+  minIntervalMs: 0,
+  sweepConcurrency: 1,
+  priceWeeksConcurrency: 4,
+  optionSafetyMarginMinutes: 15,
+  timeZone: "Europe/Zagreb",
+  companyScope: unscopedCompanies,
+  queueKey: "booking-manager:test",
+};
+
+const RUMBA_ID = "123325530000100225";
+
+const rumbaResolver: CatalogueResolver = {
+  providerId: () => Promise.resolve("prv_booking_manager"),
+  toExternalListing: () =>
+    Promise.resolve({
+      externalYachtId: RUMBA_ID,
+      externalCompanyId: "225",
+      externalBaseId: "0",
+      listingSourceId: "lsrc_rumba",
+    }),
+  toExternalYachtIds: () => Promise.reject(new Error("not used by a quote")),
+  toListingId: () => Promise.reject(new Error("not used by a quote")),
+  toExternalCountryId: () => Promise.reject(new Error("not used by a quote")),
+  loadListingSummary: () => Promise.reject(new Error("not used by a quote")),
+  listExternalCompanyIds: () => Promise.reject(new Error("not used by a quote")),
+  listYachtCompanyScopeKeys: () => Promise.reject(new Error("not used by a quote")),
+};
+
+/** A client answering every `/offers` call with `body`, and the URLs it was asked. */
+function clientAnswering(body: string) {
+  const asked: URL[] = [];
+  const client = new BookingManagerClient({
+    config: QUOTE_CONFIG,
+    queue: new SequentialQueue(),
+    retry: { maxAttempts: 1 },
+    fetchImpl: (url) => {
+      asked.push(new URL(String(url)));
+      return Promise.resolve({ status: 200, text: () => Promise.resolve(body) });
+    },
+  });
+  return { client, asked };
+}
+
+const RUMBA_WEEK = {
+  listingId: "lst_rumba",
+  checkIn: "2027-06-05",
+  checkOut: "2027-06-12",
+  guests: 4,
+  extras: [],
+  currency: "EUR",
+};
+
 /*
  * The listing may keep an older Booking Manager hull beside the one it sells; the bound is looked
  * up by the vendor yacht id `/offers` priced, never by the listing.
  */
 describe("getBookingManagerQuote's discount bound", () => {
-  const yachtId = "123325530000100225";
-  const config: BookingManagerConfig = {
-    baseUrl: "https://www.booking-manager.com/api/v2",
-    apiToken: "t0ken",
-    timeoutMs: 1000,
-    syncTimeoutMs: 5000,
-    minIntervalMs: 0,
-    sweepConcurrency: 1,
-    priceWeeksConcurrency: 4,
-    optionSafetyMarginMinutes: 15,
-    timeZone: "Europe/Zagreb",
-    companyScope: unscopedCompanies,
-    queueKey: "booking-manager:test",
-  };
   const offers =
-    `[{"yachtId":${yachtId},"yacht":"Rumba","startBaseId":0,"endBaseId":0,` +
+    `[{"yachtId":${RUMBA_ID},"yacht":"Rumba","startBaseId":0,"endBaseId":0,` +
     '"dateFrom":"2027-06-05 17:00:00","dateTo":"2027-06-12 09:00:00","status":0,' +
     '"product":"Bareboat","price":4600.0,"currency":"EUR","obligatoryExtras":[],' +
     '"commissionPercentage":15.0,"commissionValue":690.0}]';
-  const resolver: CatalogueResolver = {
-    providerId: () => Promise.resolve("prv_booking_manager"),
-    toExternalListing: () =>
-      Promise.resolve({
-        externalYachtId: yachtId,
-        externalCompanyId: "225",
-        externalBaseId: "0",
-        listingSourceId: "lsrc_rumba",
-      }),
-    toExternalYachtIds: () => Promise.reject(new Error("not used by a quote")),
-    toListingId: () => Promise.reject(new Error("not used by a quote")),
-    toExternalCountryId: () => Promise.reject(new Error("not used by a quote")),
-    loadListingSummary: () => Promise.reject(new Error("not used by a quote")),
-    listExternalCompanyIds: () => Promise.reject(new Error("not used by a quote")),
-    listYachtCompanyScopeKeys: () => Promise.reject(new Error("not used by a quote")),
-  };
 
   it("asks for the bound of the yacht it priced", async () => {
     const asked: string[] = [];
     const service = createBookingManagerQuoteService({
-      client: new BookingManagerClient({
-        config,
-        queue: new SequentialQueue(),
-        retry: { maxAttempts: 1 },
-        fetchImpl: () => Promise.resolve({ status: 200, text: () => Promise.resolve(offers) }),
-      }),
-      resolver,
-      config,
+      client: clientAnswering(offers).client,
+      resolver: rumbaResolver,
+      config: QUOTE_CONFIG,
       loadDiscountCapPercentage: (externalYachtId) => {
         asked.push(externalYachtId);
         return Promise.resolve(10);
       },
     });
 
-    const quote = await service.getBookingManagerQuote({
-      listingId: "lst_rumba",
-      checkIn: "2027-06-05",
-      checkOut: "2027-06-12",
-      guests: 4,
-      extras: [],
-      currency: "EUR",
-    });
+    const quote = await service.getBookingManagerQuote(RUMBA_WEEK);
 
-    expect(asked).toEqual([yachtId]);
+    expect(asked).toEqual([RUMBA_ID]);
     expect(quote.maxClientDiscount).toEqual({ amountMinor: 6_900, currency: "EUR" });
+  });
+});
+
+/*
+ * A pinned pair the week does not sell is the customer's route refused, not the week: the API
+ * takes a week off the card on a plain refusal, which would hide a charter still on sale.
+ */
+describe("getBookingManagerQuote on a pinned route", () => {
+  const offers =
+    `[{"yachtId":${RUMBA_ID},"startBaseId":0,"endBaseId":0,` +
+    '"dateFrom":"2027-06-05 17:00:00","dateTo":"2027-06-12 09:00:00",' +
+    '"product":"Bareboat","price":4600.0,"currency":"EUR","obligatoryExtras":[]}]';
+  const quoteOn = (route: { startBaseId?: string; endBaseId?: string }, body = offers) =>
+    createBookingManagerQuoteService({
+      client: clientAnswering(body).client,
+      resolver: rumbaResolver,
+      config: QUOTE_CONFIG,
+    }).getBookingManagerQuote({ ...RUMBA_WEEK, ...route });
+
+  it("prices the pair asked for", async () => {
+    const quote = await quoteOn({ startBaseId: "0", endBaseId: "0" });
+    expect(quote.route).toEqual({ startBaseId: "0", endBaseId: "0" });
+  });
+
+  it("refuses only the route when the week is sold on another pair", async () => {
+    const error = await providerRejection(quoteOn({ startBaseId: "0", endBaseId: "25" }));
+    expect(error).toBeInstanceOf(SlotUnavailableError);
+    expect(refusesOnlyTheRoute(error)).toBe(true);
+  });
+
+  it("refuses the week when nothing is on sale", async () => {
+    const error = await providerRejection(quoteOn({ startBaseId: "0" }, "[]"));
+    expect(error).toBeInstanceOf(SlotUnavailableError);
+    expect(refusesOnlyTheRoute(error)).toBe(false);
   });
 });

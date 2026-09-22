@@ -155,6 +155,17 @@ export class SlotUnavailableError extends ProviderError {
   readonly retryable = false;
 }
 
+/**
+ * The `providerCode` of a `SlotUnavailableError` for a period that is on sale, only not on the
+ * base pair the request pinned. The customer cannot have that charter, yet the week is not gone,
+ * so nothing may take it off the card for anyone else.
+ */
+export const ROUTE_NOT_OFFERED = "ROUTE_NOT_OFFERED";
+
+export function refusesOnlyTheRoute(error: Error | null): boolean {
+  return error instanceof SlotUnavailableError && error.providerCode === ROUTE_NOT_OFFERED;
+}
+
 const NETWORK_ERROR_NAMES = new Set(["AbortError", "TimeoutError", "FetchError"]);
 
 const NETWORK_ERROR_CODES = new Set([
