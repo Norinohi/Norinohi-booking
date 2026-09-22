@@ -164,6 +164,9 @@ export async function relocateBases(
     await db.execute(
       sql`update suggested_route set base_id = ${mergedInto} where base_id = ${placement.baseId}`,
     );
+    await db.execute(
+      sql`update base_source set base_id = ${mergedInto}, updated_at = now() where base_id = ${placement.baseId}`,
+    );
     await db.execute(sql`delete from base where id = ${placement.baseId}`);
   }
 

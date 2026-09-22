@@ -1058,6 +1058,20 @@
       "when": 1790035991982,
       "tag": "0150_strip_operator_financials",
       "breakpoints": true
+    },
+    {
+      "idx": 151,
+      "version": "7",
+      "when": 1790036406593,
+      "tag": "0151_base_source",
+      "breakpoints": true
+    },
+    {
+      "idx": 152,
+      "version": "7",
+      "when": 1790036420957,
+      "tag": "0152_bind_provider_bases",
+      "breakpoints": true
     }
   ]
 }

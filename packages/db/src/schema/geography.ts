@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import { doublePrecision, index, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core";
 
 import { id, timestamps } from "./_shared";
+import { provider } from "./provider";
 
 /*
  * The natural keys below exist because the catalogue writer resolves these rows
@@ -89,6 +90,32 @@ export const base = pgTable(
   ],
 );
 
+/*
+ * Which base row a provider's own base id stands for. The writer finds a base by location and
+ * name, and Booking Manager's location is inferred from the regions other providers' boats sail
+ * from, so a placement can move under a base that never moved. Found through this binding
+ * instead, the row is moved in place and keeps its id, its boats and its routes, where a lookup
+ * by name would insert a second row at the new place and strand them on the first.
+ */
+export const baseSource = pgTable(
+  "base_source",
+  {
+    id: id("bsrc"),
+    providerId: text("provider_id")
+      .notNull()
+      .references(() => provider.id, { onDelete: "cascade" }),
+    externalId: text("external_id").notNull(),
+    baseId: text("base_id")
+      .notNull()
+      .references(() => base.id, { onDelete: "cascade" }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("base_source_provider_external_uq").on(t.providerId, t.externalId),
+    index("base_source_base_idx").on(t.baseId),
+  ],
+);
+
 export const countryRelations = relations(country, ({ many }) => ({
   regions: many(region),
 }));
@@ -109,9 +136,15 @@ export const locationRelations = relations(location, ({ one, many }) => ({
   bases: many(base),
 }));
 
-export const baseRelations = relations(base, ({ one }) => ({
+export const baseRelations = relations(base, ({ one, many }) => ({
   location: one(location, {
     fields: [base.locationId],
     references: [location.id],
   }),
+  sources: many(baseSource),
+}));
+
+export const baseSourceRelations = relations(baseSource, ({ one }) => ({
+  base: one(base, { fields: [baseSource.baseId], references: [base.id] }),
+  provider: one(provider, { fields: [baseSource.providerId], references: [provider.id] }),
 }));

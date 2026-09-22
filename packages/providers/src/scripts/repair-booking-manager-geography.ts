@@ -16,8 +16,9 @@
  * the search documents of the boats it moved. The dry run does all of it inside a transaction
  * that is rolled back, so its counts are the real ones.
  *
- * Run it before the first catalogue sync on the new projection, not after: once a sync has made
- * the new base rows there is nothing left here to move.
+ * The catalogue sync now does the same itself for every base bound to a row (`base_source`,
+ * backfilled from the boats by migration 0152), so this only re-places bases now, from the
+ * stored payloads, rather than at the next sync.
  */
 import { db } from "@yacht-charter/db";
 import { listReferenceRegions } from "@yacht-charter/db/geo/reference-regions";

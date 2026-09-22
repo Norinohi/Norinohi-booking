@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   base,
+  baseSource,
   country,
   listing,
   listingOffer,
@@ -94,6 +95,9 @@ describe("relocating Booking Manager bases into the regions NauSYS uses", () => 
     await moor("ns-boat", "prov_ns", "base_ns_trogir");
     await moor("bm-aci", "prov_bm", "base_bm_aci");
     await moor("bm-trogir", "prov_bm", "base_bm_trogir");
+    await db
+      .insert(baseSource)
+      .values({ providerId: "prov_bm", externalId: "194", baseId: "base_bm_trogir" });
     await db.insert(suggestedRoute).values([
       {
         id: "srt_aci",
@@ -192,6 +196,11 @@ describe("relocating Booking Manager bases into the regions NauSYS uses", () => 
       .innerJoin(listingOffer, eq(listingOffer.listingId, listing.id))
       .where(eq(listing.id, "lst_bm-trogir"));
     expect(merged).toEqual({ listing: "base_ns_trogir", offer: "base_ns_trogir" });
+    const [binding] = await test.db
+      .select({ baseId: baseSource.baseId })
+      .from(baseSource)
+      .where(eq(baseSource.externalId, "194"));
+    expect(binding?.baseId).toBe("base_ns_trogir");
     expect(await placeOf("base_bm_trogir")).toBeUndefined();
 
     expect([...report.relocation.affectedListingIds].sort()).toEqual([

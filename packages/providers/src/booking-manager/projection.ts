@@ -199,9 +199,10 @@ type RestExtras = z.infer<typeof restExtrasSchema>;
  * The location is the base's town, which the vendor states and our other vendor does
  * not, so it also fills `location.city`.
  *
- * Bases already written somewhere else are moved by `geography:repair-bm`, which
- * keeps their ids and the routes attached to them. A sync that gets there first
- * creates new base rows instead and strands those routes.
+ * The placement can change under a base that never moved, when the other vendor starts
+ * sailing from a new region. The writer finds a base by its vendor id (`base_source`), not
+ * by this placement, and moves the row in place, so its id and the boats and routes on it
+ * go with it.
  */
 export function projectBookingManagerGeography(
   records: ProviderRecordSet,

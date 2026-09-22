@@ -1,5 +1,10 @@
 import { facetMedia, facetMediaTranslation } from "@yacht-charter/db/schema/facet-media";
-import { base, country, location, region } from "@yacht-charter/db/schema/geography";
+import {
+  pruneEmptyGeography,
+  relocateBases,
+  type BasePlacement,
+} from "@yacht-charter/db/geo/relocate-bases";
+import { base, baseSource, country, location, region } from "@yacht-charter/db/schema/geography";
 import {
   listing,
   listingAmenity,
@@ -274,25 +279,7 @@ export async function writeCanonicalCatalogue(
     if (row) operatorIds.set(item.externalId, row.id);
   }
 
-  const baseIds = new Map<string, string>();
-  for (const item of catalogue.bases) {
-    const locationId = locationIds.get(item.externalLocationId);
-    if (!locationId) continue;
-
-    const id = await ensureBase(db, {
-      locationId,
-      name: item.name,
-      lat: item.lat ?? null,
-      lng: item.lng ?? null,
-      email: item.email ?? null,
-      phone: item.phone ?? null,
-      website: item.website ?? null,
-      address: item.address ?? null,
-      checkInTime: item.checkInTime ?? null,
-      checkOutTime: item.checkOutTime ?? null,
-    });
-    if (id) baseIds.set(item.externalId, id);
-  }
+  const { baseIds, relocatedListingIds } = await writeBases(db, providerId, catalogue, locationIds);
 
   const builderIds = new Map<string, string>();
   for (const item of catalogue.builders) {
@@ -577,7 +564,9 @@ export async function writeCanonicalCatalogue(
   const published = options.autoPublish ? await publishDrafts(db, providerId) : [];
   summary.listingsPublished = published.length;
 
-  summary.rebuildListingIds = [...new Set([...summary.touchedListingIds, ...hidden, ...published])];
+  summary.rebuildListingIds = [
+    ...new Set([...summary.touchedListingIds, ...hidden, ...published, ...relocatedListingIds]),
+  ];
 
   return summary;
 }
@@ -644,6 +633,142 @@ async function ensureLocation(
     .where(and(eq(location.regionId, regionId), eq(location.name, name)))
     .limit(1);
   return found?.id ?? null;
+}
+
+type BaseDetails = Omit<typeof base.$inferInsert, "id" | "locationId" | "name">;
+
+/**
+ * The provider's bases, each on the row it is bound to (`base_source`).
+ *
+ * A bound base is moved in place when the projection now places it elsewhere, keeping its id and
+ * with it every boat and route attached to it; where a base of that name already stands at the
+ * new place the two are one marina and merge (`relocateBases`). Looking a bound base up by
+ * location and name instead is what forked Booking Manager's bases: its region is read off the
+ * boats other providers sail from, so a new region there, or a sync on a fresh database, moved
+ * the placement and the lookup inserted a second row.
+ *
+ * A row another provider is bound to as well is never moved on this provider's say: its boats
+ * would go with it. That base, and every unbound one, is found by location and name as before,
+ * and bound to what it finds.
+ */
+async function writeBases(
+  db: Database,
+  providerId: string,
+  catalogue: CanonicalCatalogue,
+  locationIds: ReadonlyMap<string, string>,
+) {
+  const bindings = await loadBaseBindings(db, providerId);
+  const shared = await loadSharedBaseIds(db, providerId, [...bindings.values()]);
+
+  const countryCodes = new Map(catalogue.countries.map((item) => [item.externalId, item.code]));
+  const regions = new Map(catalogue.regions.map((item) => [item.externalId, item]));
+  const locations = new Map(catalogue.locations.map((item) => [item.externalId, item]));
+  const placementOf = (item: CanonicalCatalogue["bases"][number]) => {
+    const place = locations.get(item.externalLocationId);
+    const area = place === undefined ? undefined : regions.get(place.externalRegionId);
+    const countryCode = area === undefined ? undefined : countryCodes.get(area.externalCountryId);
+    if (place === undefined || area === undefined || countryCode === undefined) return undefined;
+    return {
+      countryCode,
+      regionName: area.name,
+      locationName: place.name,
+      city: place.city ?? null,
+      baseName: item.name,
+    };
+  };
+
+  const baseIds = new Map<string, string>();
+  const placements: BasePlacement[] = [];
+  const moved: { externalId: string; baseId: string; details: BaseDetails }[] = [];
+  const claimed = new Set<string>();
+
+  for (const item of catalogue.bases) {
+    const locationId = locationIds.get(item.externalLocationId);
+    if (!locationId) continue;
+
+    const details: BaseDetails = {
+      lat: item.lat ?? null,
+      lng: item.lng ?? null,
+      email: item.email ?? null,
+      phone: item.phone ?? null,
+      website: item.website ?? null,
+      address: item.address ?? null,
+      checkInTime: item.checkInTime ?? null,
+      checkOutTime: item.checkOutTime ?? null,
+    };
+
+    const boundId = bindings.get(item.externalId);
+    const placement = placementOf(item);
+    // Two vendor bases once merged into one row would otherwise pull it back and forth nightly.
+    const claimable = boundId !== undefined && !shared.has(boundId) && !claimed.has(boundId);
+    if (claimable && placement !== undefined) {
+      claimed.add(boundId);
+      placements.push({ baseId: boundId, ...placement });
+      moved.push({ externalId: item.externalId, baseId: boundId, details });
+      continue;
+    }
+
+    const id = await ensureBase(db, { locationId, name: item.name, ...details });
+    if (!id) continue;
+    baseIds.set(item.externalId, id);
+    if (id !== boundId) await bindBase(db, providerId, item.externalId, id);
+  }
+
+  const relocation = await relocateBases(db, placements);
+  const mergedInto = new Map(
+    relocation.relocations.flatMap((item) =>
+      item.mergedInto === null ? [] : [[item.baseId, item.mergedInto] as const],
+    ),
+  );
+  for (const item of moved) {
+    const id = mergedInto.get(item.baseId) ?? item.baseId;
+    await db.update(base).set(item.details).where(eq(base.id, id));
+    baseIds.set(item.externalId, id);
+  }
+  if (relocation.vacatedLocationIds.length > 0) {
+    await pruneEmptyGeography(db, { regionNames: [], locationIds: relocation.vacatedLocationIds });
+  }
+
+  if (relocation.relocations.length > 0) {
+    log.info({
+      action: "catalogue.bases_relocated",
+      providerId,
+      relocated: relocation.relocations.length,
+      merged: mergedInto.size,
+    });
+  }
+  return { baseIds, relocatedListingIds: relocation.affectedListingIds };
+}
+
+async function loadBaseBindings(db: Database, providerId: string) {
+  const rows = await db
+    .select({ externalId: baseSource.externalId, baseId: baseSource.baseId })
+    .from(baseSource)
+    .where(eq(baseSource.providerId, providerId));
+  return new Map(rows.map((row) => [row.externalId, row.baseId]));
+}
+
+/** The rows among `baseIds` some other provider is bound to as well. */
+async function loadSharedBaseIds(db: Database, providerId: string, baseIds: readonly string[]) {
+  const shared = new Set<string>();
+  for (const ids of chunked(baseIds, ID_CHUNK)) {
+    const rows = await db
+      .selectDistinct({ baseId: baseSource.baseId })
+      .from(baseSource)
+      .where(and(inArray(baseSource.baseId, ids), sql`${baseSource.providerId} <> ${providerId}`));
+    for (const row of rows) shared.add(row.baseId);
+  }
+  return shared;
+}
+
+async function bindBase(db: Database, providerId: string, externalId: string, baseId: string) {
+  await db
+    .insert(baseSource)
+    .values({ providerId, externalId, baseId })
+    .onConflictDoUpdate({
+      target: [baseSource.providerId, baseSource.externalId],
+      set: { baseId, updatedAt: new Date() },
+    });
 }
 
 async function ensureBase(db: Database, values: typeof base.$inferInsert): Promise<string | null> {
