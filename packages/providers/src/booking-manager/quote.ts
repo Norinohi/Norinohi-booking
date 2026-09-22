@@ -1,3 +1,4 @@
+import { log } from "evlog";
 import type { z } from "zod";
 
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
@@ -160,6 +161,15 @@ export function createBookingManagerQuoteService(
         options.loadExtraLabels?.(parsed.listingId),
         options.loadDiscountCapPercentage?.(yachtId),
       ]);
+
+      const instalments = (offer.paymentPlan ?? []).filter((entry) => entry.amount != null);
+      if (instalments.length > 2) {
+        log.info({
+          action: "booking_manager.quote.payment_plan_collapsed",
+          yachtId,
+          instalments: instalments.length,
+        });
+      }
 
       return mapOfferToProviderQuote({
         offer,
@@ -783,6 +793,12 @@ interface ResolvedPaymentPolicy {
  * the deposit is taken from the plan verbatim and the percentage is derived for
  * the canonical policy, never the other way round: rebuilding an amount from a
  * rounded percentage would bill a figure the vendor never asked for.
+ *
+ * A plan of three or more is collapsed on purpose into the first instalment and one balance due
+ * on the second one's date. The policy has room for a deposit and a balance only, as has
+ * everything that collects against it (schedule, reminders, Stripe), and the earliest date is
+ * the safe one: we never owe the operator an instalment we have not yet collected. The service
+ * logs each collapse, so how often it happens is measured rather than guessed.
  */
 function toPaymentPolicy(
   offer: RestOffer,

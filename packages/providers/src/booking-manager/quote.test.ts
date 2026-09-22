@@ -566,6 +566,38 @@ describe("repriceRequestFor", () => {
   });
 });
 
+describe("a payment plan of three instalments", () => {
+  const quote = mapOfferToProviderQuote({
+    offer: restOfferSchema.parse({
+      yachtId: "9001",
+      dateFrom: "2027-06-05 17:00:00",
+      dateTo: "2027-06-12 09:00:00",
+      price: 6000,
+      currency: "EUR",
+      paymentPlan: [
+        { date: "2026-09-29 00:00:00", amount: 1800 },
+        { date: "2027-03-01 00:00:00", amount: 2100 },
+        { date: "2027-05-01 00:00:00", amount: 2100 },
+      ],
+    }),
+    listingId: "lst_1",
+    checkIn: "2027-06-05",
+    checkOut: "2027-06-12",
+    guests: 2,
+    requestedCurrency: "EUR",
+    expiresAt: "2027-05-01T00:00:00.000Z",
+  });
+
+  it("takes the first as the deposit and the rest as one balance due on the second's date", () => {
+    expect(quote.deposit).toEqual({ amountMinor: 180_000, currency: "EUR" });
+    expect(quote.paymentPolicy).toEqual({
+      mode: "deposit",
+      depositPct: 0.3,
+      balanceDueAt: "2027-03-01",
+    });
+  });
+});
+
 describe("priceSourceHash and the payment plan", () => {
   const offerPaying = (plan: { date: string; amount: number }[]) =>
     restOfferSchema.parse({
