@@ -9,7 +9,13 @@ import {
   parseBookingManagerDate,
 } from "./dates";
 import { numberToMinor } from "./money";
-import { bookingManagerEndpoints, restPriceListSchema, type RestPrice } from "./endpoints";
+import {
+  bookingManagerEndpoints,
+  isSameBookingManagerProduct,
+  restPriceListSchema,
+  type RestPrice,
+} from "./endpoints";
+import type { BookingManagerPriceTerms } from "./price-terms";
 
 /**
  * Seasonal prices for the slots the availability sync synthesizes.
@@ -32,6 +38,8 @@ import { bookingManagerEndpoints, restPriceListSchema, type RestPrice } from "./
 
 const DAY_MS = 86_400_000;
 const WEEK_MS = 7 * DAY_MS;
+/** The length every row of this sweep prices, which is what the yacht's bounds are held to. */
+const SWEPT_NIGHTS = 7;
 
 export interface BookingManagerSeasonalPriceLoaderOptions {
   client: BookingManagerClient;
@@ -41,6 +49,18 @@ export interface BookingManagerSeasonalPriceLoaderOptions {
   years: number[];
   /** Asked of the vendor; a row that answers in another currency keeps its own. */
   currency?: string;
+  /** Each yacht's default product, home base and length bounds; see `price-terms.ts`. */
+  loadPriceTerms(
+    externalYachtIds: readonly string[],
+  ): Promise<Map<string, BookingManagerPriceTerms>>;
+}
+
+/** One readable `/prices` row, kept with what decides whether it is the charter `/offers` sells. */
+export interface BookingManagerPriceCandidate {
+  price: SeasonalPrice;
+  product: string | null;
+  startBaseId: string | null;
+  endBaseId: string | null;
 }
 
 export function createBookingManagerSeasonalPriceLoader(
@@ -55,10 +75,10 @@ export function createBookingManagerSeasonalPriceLoader(
       ? [...options.config.companyScope.include]
       : undefined;
 
-  let sweep: Promise<Map<string, SeasonalPrice[]>> | null = null;
+  let sweep: Promise<Map<string, BookingManagerPriceCandidate[]>> | null = null;
 
-  async function runSweep(): Promise<Map<string, SeasonalPrice[]>> {
-    const byYacht = new Map<string, SeasonalPrice[]>();
+  async function runSweep(): Promise<Map<string, BookingManagerPriceCandidate[]>> {
+    const byYacht = new Map<string, BookingManagerPriceCandidate[]>();
     const concurrency = options.config.sweepConcurrency;
 
     /*
@@ -102,24 +122,21 @@ export function createBookingManagerSeasonalPriceLoader(
         // Keyed to the Saturday we asked for rather than the echoed `dateFrom`,
         // because that is the check-in date the writer looks a price up by. The
         // vendor substitutes the base's real handover time into what it echoes.
-        const price = mapBookingManagerPriceRow(row, checkIn, checkOut, options.currency);
+        const candidate = mapBookingManagerPriceCandidate(row, checkIn, checkOut, options.currency);
         // One unreadable row costs that boat that week, not the whole sweep; a
         // failure that matters is the client's throw, which passes straight out.
-        if (!price) continue;
+        if (!candidate) continue;
 
         const yachtId = String(row.yachtId);
         const existing = byYacht.get(yachtId);
         if (existing) {
-          existing.push(price);
+          existing.push(candidate);
         } else {
-          byYacht.set(yachtId, [price]);
+          byYacht.set(yachtId, [candidate]);
         }
       }
     }
 
-    for (const prices of byYacht.values()) {
-      prices.sort((a, b) => a.startDate.localeCompare(b.startDate) || a.priceMinor - b.priceMinor);
-    }
     return byYacht;
   }
 
@@ -143,14 +160,109 @@ export function createBookingManagerSeasonalPriceLoader(
       throw error;
     });
 
+    const terms = await options.loadPriceTerms([...new Set(wanted.values())]);
+
     for (const [listingId, yachtId] of wanted) {
-      const prices = priced.get(yachtId);
-      if (prices && prices.length > 0) {
+      const prices = selectBookingManagerWeeklyPrices(
+        priced.get(yachtId) ?? [],
+        terms.get(yachtId),
+      );
+      if (prices.length > 0) {
         byListing.set(listingId, prices);
       }
     }
     return byListing;
   };
+}
+
+export function mapBookingManagerPriceCandidate(
+  row: RestPrice,
+  checkIn: string,
+  checkOut: string,
+  fallbackCurrency?: string,
+): BookingManagerPriceCandidate | null {
+  const price = mapBookingManagerPriceRow(row, checkIn, checkOut, fallbackCurrency);
+  if (!price) return null;
+  return {
+    price,
+    product: row.product?.trim() || null,
+    startBaseId: row.startBaseId ?? null,
+    endBaseId: row.endBaseId ?? null,
+  };
+}
+
+/**
+ * One rate per week for one yacht, from the rows the vendor listed for it: the charter `/offers`
+ * would sell, or nothing where no row describes one.
+ *
+ * Every row of a week used to be kept, and the writer's last-wins dedupe then stored whichever
+ * sorted last, which was the dearest. A week comes back once per product and once per base pair,
+ * so a yacht selling a bareboat week also carried its crewed price as the "from" figure. The
+ * choice is made the way `/offers` makes it instead:
+ *
+ * - The default product only. `/prices` sometimes lists a second product and sometimes does not
+ *   (Giulia's Crewed at 0.0 on 26.12.2026, absent on 05.06.2027); neither is what is sold. With
+ *   no stored record to name the default, a week is priced only where the rows agree on one.
+ * - A round trip only, at the home base where there is one there. `/prices` lists one-way pairs
+ *   `/offers` refuses, so a week priced only one-way is left unpriced rather than advertised.
+ *   A row with no base pair at all predates 2.2.2 and is read as the round trip it was.
+ * - None at all for a yacht whose bounds refuse a week: a day boat stating a maximum of one
+ *   night has a weekly figure in `/prices` and no weekly charter in `/offers`.
+ *
+ * A week left out here keeps no rate, and the confirming `/offers` sweep still opens it the moment
+ * the vendor prices it as a charter it sells.
+ */
+export function selectBookingManagerWeeklyPrices(
+  candidates: readonly BookingManagerPriceCandidate[],
+  terms: BookingManagerPriceTerms | undefined,
+): SeasonalPrice[] {
+  if (terms?.minNights !== undefined && SWEPT_NIGHTS < terms.minNights) return [];
+  if (terms?.maxNights !== undefined && SWEPT_NIGHTS > terms.maxNights) return [];
+
+  const byWeek = new Map<string, BookingManagerPriceCandidate[]>();
+  for (const candidate of candidates) {
+    const week = byWeek.get(candidate.price.startDate);
+    if (week) week.push(candidate);
+    else byWeek.set(candidate.price.startDate, [candidate]);
+  }
+
+  const prices: SeasonalPrice[] = [];
+  for (const week of byWeek.values()) {
+    const chosen = chooseWeekRow(week, terms);
+    if (chosen) prices.push(chosen.price);
+  }
+  return prices.sort((a, b) => a.startDate.localeCompare(b.startDate));
+}
+
+function chooseWeekRow(
+  week: readonly BookingManagerPriceCandidate[],
+  terms: BookingManagerPriceTerms | undefined,
+): BookingManagerPriceCandidate | undefined {
+  const defaultProduct = terms?.product;
+  let ofProduct: readonly BookingManagerPriceCandidate[];
+  if (defaultProduct) {
+    // A row naming no product is the vendor not distinguishing, which it only does for the one
+    // it sells unasked.
+    ofProduct = week.filter(
+      (row) => row.product === null || isSameBookingManagerProduct(row.product, defaultProduct),
+    );
+  } else {
+    const named = new Set(week.map((row) => row.product?.toLowerCase() ?? null));
+    ofProduct = named.size === 1 ? week : [];
+  }
+
+  const roundTrips = ofProduct.filter(
+    (row) =>
+      row.startBaseId === null || row.endBaseId === null || row.startBaseId === row.endBaseId,
+  );
+  const atHome =
+    terms?.homeBaseId === undefined
+      ? []
+      : roundTrips.filter((row) => row.startBaseId === terms.homeBaseId);
+
+  return [...(atHome.length > 0 ? atHome : roundTrips)].sort(
+    (a, b) => a.price.priceMinor - b.price.priceMinor,
+  )[0];
 }
 
 /**

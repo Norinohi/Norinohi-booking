@@ -733,7 +733,10 @@ function checkinRulesOf(yacht: RestYacht) {
  * A limit below the minimum contradicts it, and no charter at all was priced on those yachts,
  * so the minimum is kept alone rather than publishing a rule nothing can satisfy.
  */
-function maxNightsOf(yacht: RestYacht, minNights: number | undefined): number | undefined {
+export function maxNightsOf(
+  yacht: Pick<RestYacht, "maximumCharterDuration">,
+  minNights: number | undefined,
+): number | undefined {
   const maxNights = positiveInt(yacht.maximumCharterDuration);
   if (maxNights === undefined || (minNights !== undefined && maxNights < minNights)) {
     return undefined;
@@ -1075,7 +1078,7 @@ function obligatoryCrewRoleOf(
  * one (11,218 of 11,218 account-wide, and all 29 on company 225), so the fallback to the
  * first is only for a payload that flags none, where the vendor's own order is all there is.
  */
-function soldProductOf(yacht: RestYacht): RestProduct | undefined {
+export function soldProductOf(yacht: Pick<RestYacht, "products">): RestProduct | undefined {
   const products = yacht.products ?? [];
   return products.find((product) => product.isDefaultProduct === true) ?? products[0];
 }

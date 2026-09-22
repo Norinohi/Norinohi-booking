@@ -347,6 +347,13 @@ UI calls it an API key; the API consumes it as a Bearer token.
    exactly this. It also settles Q-BM-PRICE-DURATION: a row prices the period you
    asked for, so a Saturday-to-Saturday request is a weekly figure by
    construction and nothing is inferred from the span.
+   A week comes back once per product and once per base pair (2.2.2 adds
+   `startBaseId`/`endBaseId`), and `/offers` sells only the default product and,
+   on company 225, only the round trip. So `selectBookingManagerWeeklyPrices`
+   keeps one row per yacht-week: the default product (`price-terms.ts`, off the
+   stored yacht), a round trip at the home base else at any base, never a one-way
+   pair, and no week at all for a yacht whose `minimumCharterDuration` /
+   `maximumCharterDuration` refuse seven nights.
 4. `GET /offers` per Saturday-to-Saturday pair gives real-time availability;
    `/availability` and `/shortAvailability` give booked/free status across a year.
 5. The base to country and sailing-area chain is reconstructed exactly as §3

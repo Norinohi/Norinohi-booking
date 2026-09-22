@@ -1,0 +1,1488 @@
+{
+  "source": "GET /yachts?companyId=225 and GET /prices?companyId=225 for two Saturday weeks, 2026-09-22",
+  "yachts": [
+    {
+      "id": 1188200267800225,
+      "name": "Zaffiro",
+      "homeBaseId": 60,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 1190350267800225,
+      "name": "Beta",
+      "homeBaseId": 12,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 978989560000100225,
+      "name": "Queen II",
+      "homeBaseId": 9,
+      "minimumCharterDuration": 0,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 7078642060000100225,
+      "name": "Franca",
+      "homeBaseId": 3929137120000100000,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 978990780000100225,
+      "name": "Whisper",
+      "homeBaseId": 649427990000100000,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 191880073500225,
+      "name": "Santa Maria",
+      "homeBaseId": 136,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 223430081900225,
+      "name": "Tri Luke",
+      "homeBaseId": 216,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 218990073500225,
+      "name": "Swenha",
+      "homeBaseId": 26,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 7078608780000100225,
+      "name": "Giulia",
+      "homeBaseId": 194,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        },
+        {
+          "name": "Crewed",
+          "isDefaultProduct": false
+        }
+      ]
+    },
+    {
+      "id": 26876440000100225,
+      "name": "Noa",
+      "homeBaseId": 120,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 505550141800225,
+      "name": "Norma",
+      "homeBaseId": 222,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 72857820000100225,
+      "name": "Alien",
+      "homeBaseId": 3,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 218360073500225,
+      "name": "Iraz",
+      "homeBaseId": 25,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 26875680000100225,
+      "name": "Skype",
+      "homeBaseId": 35,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 293830094000225,
+      "name": "Petra R",
+      "homeBaseId": 26380940000100000,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 978989990000100225,
+      "name": "Orion",
+      "homeBaseId": 196,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 216560073500225,
+      "name": "Alpha",
+      "homeBaseId": 9,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 978989630000100225,
+      "name": "West Wind",
+      "homeBaseId": 194,
+      "minimumCharterDuration": 0,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Cabin",
+          "isDefaultProduct": false
+        },
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 978990020000100225,
+      "name": "Escape",
+      "homeBaseId": 194,
+      "minimumCharterDuration": 0,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 597160141800225,
+      "name": "Ante",
+      "homeBaseId": 119,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 1185170267800225,
+      "name": "SS 123",
+      "homeBaseId": 31,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 7078255180000100225,
+      "name": "Artic fun",
+      "homeBaseId": 183988270000100000,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Crewed",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 26876710000100225,
+      "name": "Jack",
+      "homeBaseId": 120,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 223309020000100225,
+      "name": "GS51",
+      "homeBaseId": 26,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 7152104390000100225,
+      "name": "Cicola",
+      "homeBaseId": 3929137120000100000,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 123325530000100225,
+      "name": "Rumba",
+      "homeBaseId": 0,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 201670073500225,
+      "name": "Virgin Mary - Crewed",
+      "homeBaseId": 194,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Crewed",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 207160073500225,
+      "name": "Pipo",
+      "homeBaseId": 127,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    },
+    {
+      "id": 26875490000100225,
+      "name": "Moni",
+      "homeBaseId": 9,
+      "minimumCharterDuration": 7,
+      "maximumCharterDuration": 90,
+      "products": [
+        {
+          "name": "Bareboat",
+          "isDefaultProduct": true
+        }
+      ]
+    }
+  ],
+  "prices": {
+    "2026-12-26": [
+      {
+        "yachtId": 123325530000100225,
+        "startBaseId": 0,
+        "endBaseId": 0,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 4943,
+        "currency": "EUR",
+        "startPrice": 5000,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 26876440000100225,
+        "startBaseId": 120,
+        "endBaseId": 120,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 5536,
+        "currency": "EUR",
+        "startPrice": 5600,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 597160141800225,
+        "startBaseId": 119,
+        "endBaseId": 119,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 8686,
+        "currency": "EUR",
+        "startPrice": 8786,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 216560073500225,
+        "startBaseId": 9,
+        "endBaseId": 9,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 3248,
+        "currency": "EUR",
+        "startPrice": 3286,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 7078608780000100225,
+        "startBaseId": 194,
+        "endBaseId": 194,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 2881,
+        "currency": "EUR",
+        "startPrice": 2914,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 7078608780000100225,
+        "startBaseId": 194,
+        "endBaseId": 194,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Crewed",
+        "price": 0,
+        "currency": "EUR",
+        "startPrice": 0,
+        "discountPercentage": 0
+      },
+      {
+        "yachtId": 1185170267800225,
+        "startBaseId": 25,
+        "endBaseId": 25,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 5931,
+        "currency": "EUR",
+        "startPrice": 6000,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 1185170267800225,
+        "startBaseId": 25,
+        "endBaseId": 31,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 5931,
+        "currency": "EUR",
+        "startPrice": 6000,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 1185170267800225,
+        "startBaseId": 31,
+        "endBaseId": 25,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 5931,
+        "currency": "EUR",
+        "startPrice": 6000,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 1185170267800225,
+        "startBaseId": 31,
+        "endBaseId": 31,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 5931,
+        "currency": "EUR",
+        "startPrice": 6000,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 191880073500225,
+        "startBaseId": 136,
+        "endBaseId": 136,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 5013,
+        "currency": "EUR",
+        "startPrice": 5071,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 1190350267800225,
+        "startBaseId": 12,
+        "endBaseId": 12,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 9391,
+        "currency": "EUR",
+        "startPrice": 9500,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 7078642060000100225,
+        "startBaseId": 3929137120000100000,
+        "endBaseId": 3929137120000100000,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 1497,
+        "currency": "EUR",
+        "startPrice": 1514,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 207160073500225,
+        "startBaseId": 127,
+        "endBaseId": 127,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 1497,
+        "currency": "EUR",
+        "startPrice": 1514,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 978989990000100225,
+        "startBaseId": 196,
+        "endBaseId": 196,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 3983,
+        "currency": "EUR",
+        "startPrice": 4029,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 978989990000100225,
+        "startBaseId": 196,
+        "endBaseId": 3308139130000100000,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 3983,
+        "currency": "EUR",
+        "startPrice": 4029,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 978989990000100225,
+        "startBaseId": 3308139130000100000,
+        "endBaseId": 196,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 3983,
+        "currency": "EUR",
+        "startPrice": 4029,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 978989990000100225,
+        "startBaseId": 3308139130000100000,
+        "endBaseId": 3308139130000100000,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 3983,
+        "currency": "EUR",
+        "startPrice": 4029,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 505550141800225,
+        "startBaseId": 222,
+        "endBaseId": 222,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 2966,
+        "currency": "EUR",
+        "startPrice": 3000,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 7152104390000100225,
+        "startBaseId": 3929137120000100000,
+        "endBaseId": 3929137120000100000,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 2655,
+        "currency": "EUR",
+        "startPrice": 2686,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 110,
+        "endBaseId": 110,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 8403,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 110,
+        "endBaseId": 194,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 8403,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 110,
+        "endBaseId": 216,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 8403,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 194,
+        "endBaseId": 110,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 8403,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 194,
+        "endBaseId": 194,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 8403,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 194,
+        "endBaseId": 216,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 8403,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 216,
+        "endBaseId": 110,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 8403,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 216,
+        "endBaseId": 194,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 8403,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 216,
+        "endBaseId": 216,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 8403,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 978989630000100225,
+        "startBaseId": 194,
+        "endBaseId": 194,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 1554,
+        "currency": "EUR",
+        "startPrice": 1572,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 26875490000100225,
+        "startBaseId": 9,
+        "endBaseId": 9,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 4943,
+        "currency": "EUR",
+        "startPrice": 5000,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 978990780000100225,
+        "startBaseId": 649427990000100000,
+        "endBaseId": 649427990000100000,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 3460,
+        "currency": "EUR",
+        "startPrice": 3500,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 7078255180000100225,
+        "startBaseId": 183988270000100000,
+        "endBaseId": 183988270000100000,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Crewed",
+        "price": 3615,
+        "currency": "EUR",
+        "startPrice": 3657,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 978989560000100225,
+        "startBaseId": 9,
+        "endBaseId": 9,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 1554,
+        "currency": "EUR",
+        "startPrice": 1572,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 218360073500225,
+        "startBaseId": 25,
+        "endBaseId": 25,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 4449,
+        "currency": "EUR",
+        "startPrice": 4500,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 218360073500225,
+        "startBaseId": 25,
+        "endBaseId": 127,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 4449,
+        "currency": "EUR",
+        "startPrice": 4500,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 218360073500225,
+        "startBaseId": 127,
+        "endBaseId": 25,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 4449,
+        "currency": "EUR",
+        "startPrice": 4500,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 218360073500225,
+        "startBaseId": 127,
+        "endBaseId": 127,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 4449,
+        "currency": "EUR",
+        "startPrice": 4500,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 72857820000100225,
+        "startBaseId": 3,
+        "endBaseId": 3,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 4943,
+        "currency": "EUR",
+        "startPrice": 5000,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 201670073500225,
+        "startBaseId": 194,
+        "endBaseId": 194,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Crewed",
+        "price": 4280,
+        "currency": "EUR",
+        "startPrice": 4329,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 978990020000100225,
+        "startBaseId": 194,
+        "endBaseId": 194,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 565,
+        "currency": "EUR",
+        "startPrice": 572,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 218990073500225,
+        "startBaseId": 26,
+        "endBaseId": 26,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 4943,
+        "currency": "EUR",
+        "startPrice": 5000,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 26875680000100225,
+        "startBaseId": 35,
+        "endBaseId": 35,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 5141,
+        "currency": "EUR",
+        "startPrice": 5200,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 1188200267800225,
+        "startBaseId": 60,
+        "endBaseId": 60,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 7697,
+        "currency": "EUR",
+        "startPrice": 7786,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 293830094000225,
+        "startBaseId": 26380940000100000,
+        "endBaseId": 26380940000100000,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 4280,
+        "currency": "EUR",
+        "startPrice": 4329,
+        "discountPercentage": 1.14
+      },
+      {
+        "yachtId": 26876710000100225,
+        "startBaseId": 120,
+        "endBaseId": 120,
+        "dateFrom": "2026-12-26 17:00:00",
+        "dateTo": "2027-01-02 09:00:00",
+        "product": "Bareboat",
+        "price": 4929,
+        "currency": "EUR",
+        "startPrice": 4986,
+        "discountPercentage": 1.14
+      }
+    ],
+    "2027-06-05": [
+      {
+        "yachtId": 123325530000100225,
+        "startBaseId": 0,
+        "endBaseId": 0,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 4600,
+        "currency": "EUR",
+        "startPrice": 5000,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 26876440000100225,
+        "startBaseId": 120,
+        "endBaseId": 120,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 5152,
+        "currency": "EUR",
+        "startPrice": 5600,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 597160141800225,
+        "startBaseId": 119,
+        "endBaseId": 119,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 8740,
+        "currency": "EUR",
+        "startPrice": 9500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 216560073500225,
+        "startBaseId": 9,
+        "endBaseId": 9,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 4600,
+        "currency": "EUR",
+        "startPrice": 5000,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 7078608780000100225,
+        "startBaseId": 194,
+        "endBaseId": 194,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 2392,
+        "currency": "EUR",
+        "startPrice": 2600,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 1185170267800225,
+        "startBaseId": 25,
+        "endBaseId": 25,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 5520,
+        "currency": "EUR",
+        "startPrice": 6000,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 1185170267800225,
+        "startBaseId": 25,
+        "endBaseId": 31,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 5520,
+        "currency": "EUR",
+        "startPrice": 6000,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 1185170267800225,
+        "startBaseId": 31,
+        "endBaseId": 25,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 5520,
+        "currency": "EUR",
+        "startPrice": 6000,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 1185170267800225,
+        "startBaseId": 31,
+        "endBaseId": 31,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 5520,
+        "currency": "EUR",
+        "startPrice": 6000,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 191880073500225,
+        "startBaseId": 136,
+        "endBaseId": 136,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 5980,
+        "currency": "EUR",
+        "startPrice": 6500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 1190350267800225,
+        "startBaseId": 12,
+        "endBaseId": 12,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 8740,
+        "currency": "EUR",
+        "startPrice": 9500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 7078642060000100225,
+        "startBaseId": 3929137120000100000,
+        "endBaseId": 3929137120000100000,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 1380,
+        "currency": "EUR",
+        "startPrice": 1500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 207160073500225,
+        "startBaseId": 127,
+        "endBaseId": 127,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 1380,
+        "currency": "EUR",
+        "startPrice": 1500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 978989990000100225,
+        "startBaseId": 196,
+        "endBaseId": 196,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 4324,
+        "currency": "EUR",
+        "startPrice": 4700,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 978989990000100225,
+        "startBaseId": 196,
+        "endBaseId": 3308139130000100000,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 4324,
+        "currency": "EUR",
+        "startPrice": 4700,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 978989990000100225,
+        "startBaseId": 3308139130000100000,
+        "endBaseId": 196,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 4324,
+        "currency": "EUR",
+        "startPrice": 4700,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 978989990000100225,
+        "startBaseId": 3308139130000100000,
+        "endBaseId": 3308139130000100000,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 4324,
+        "currency": "EUR",
+        "startPrice": 4700,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 505550141800225,
+        "startBaseId": 222,
+        "endBaseId": 222,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 2760,
+        "currency": "EUR",
+        "startPrice": 3000,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 7152104390000100225,
+        "startBaseId": 3929137120000100000,
+        "endBaseId": 3929137120000100000,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 2576,
+        "currency": "EUR",
+        "startPrice": 2800,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 110,
+        "endBaseId": 110,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 7820,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 110,
+        "endBaseId": 194,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 7820,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 110,
+        "endBaseId": 216,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 7820,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 194,
+        "endBaseId": 110,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 7820,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 194,
+        "endBaseId": 194,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 7820,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 194,
+        "endBaseId": 216,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 7820,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 216,
+        "endBaseId": 110,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 7820,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 216,
+        "endBaseId": 194,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 7820,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 223430081900225,
+        "startBaseId": 216,
+        "endBaseId": 216,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 7820,
+        "currency": "EUR",
+        "startPrice": 8500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 978989630000100225,
+        "startBaseId": 194,
+        "endBaseId": 194,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 5520,
+        "currency": "EUR",
+        "startPrice": 6000,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 26875490000100225,
+        "startBaseId": 9,
+        "endBaseId": 9,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 4600,
+        "currency": "EUR",
+        "startPrice": 5000,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 978990780000100225,
+        "startBaseId": 649427990000100000,
+        "endBaseId": 649427990000100000,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 3680,
+        "currency": "EUR",
+        "startPrice": 4000,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 7078255180000100225,
+        "startBaseId": 183988270000100000,
+        "endBaseId": 183988270000100000,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Crewed",
+        "price": 3680,
+        "currency": "EUR",
+        "startPrice": 4000,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 978989560000100225,
+        "startBaseId": 9,
+        "endBaseId": 9,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 5520,
+        "currency": "EUR",
+        "startPrice": 6000,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 218360073500225,
+        "startBaseId": 25,
+        "endBaseId": 25,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 3220,
+        "currency": "EUR",
+        "startPrice": 3500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 218360073500225,
+        "startBaseId": 25,
+        "endBaseId": 127,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 3220,
+        "currency": "EUR",
+        "startPrice": 3500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 218360073500225,
+        "startBaseId": 127,
+        "endBaseId": 25,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 3220,
+        "currency": "EUR",
+        "startPrice": 3500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 218360073500225,
+        "startBaseId": 127,
+        "endBaseId": 127,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 3220,
+        "currency": "EUR",
+        "startPrice": 3500,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 72857820000100225,
+        "startBaseId": 3,
+        "endBaseId": 3,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 4600,
+        "currency": "EUR",
+        "startPrice": 5000,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 201670073500225,
+        "startBaseId": 194,
+        "endBaseId": 194,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Crewed",
+        "price": 5152,
+        "currency": "EUR",
+        "startPrice": 5600,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 978990020000100225,
+        "startBaseId": 194,
+        "endBaseId": 194,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 1840,
+        "currency": "EUR",
+        "startPrice": 2000,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 218990073500225,
+        "startBaseId": 26,
+        "endBaseId": 26,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 4600,
+        "currency": "EUR",
+        "startPrice": 5000,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 26875680000100225,
+        "startBaseId": 35,
+        "endBaseId": 35,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 4784,
+        "currency": "EUR",
+        "startPrice": 5200,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 1188200267800225,
+        "startBaseId": 60,
+        "endBaseId": 60,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 8372,
+        "currency": "EUR",
+        "startPrice": 9100,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 293830094000225,
+        "startBaseId": 26380940000100000,
+        "endBaseId": 26380940000100000,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 5152,
+        "currency": "EUR",
+        "startPrice": 5600,
+        "discountPercentage": 8
+      },
+      {
+        "yachtId": 26876710000100225,
+        "startBaseId": 120,
+        "endBaseId": 120,
+        "dateFrom": "2027-06-05 17:00:00",
+        "dateTo": "2027-06-12 09:00:00",
+        "product": "Bareboat",
+        "price": 5704,
+        "currency": "EUR",
+        "startPrice": 6200,
+        "discountPercentage": 8
+      }
+    ]
+  }
+}

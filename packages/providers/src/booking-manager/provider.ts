@@ -53,6 +53,7 @@ import { log } from "evlog";
 import { streamBookingManagerConfirmedOffers } from "./confirmed-offers";
 import { warmBookingManagerServers } from "./warmup";
 import { createBookingManagerAvailabilitySource } from "./occupancy";
+import { loadBookingManagerPriceTerms } from "./price-terms";
 import { createBookingManagerSeasonalPriceLoader } from "./prices";
 import { projectBookingManagerCatalogue } from "./projection";
 import { createBookingManagerQuoteService, repriceRequestFor } from "./quote";
@@ -126,6 +127,7 @@ export class BookingManagerInventoryProvider
       config: this.config,
       years: this.years,
       currency: this.currency,
+      loadPriceTerms: (externalYachtIds) => loadBookingManagerPriceTerms(this.db, externalYachtIds),
     });
 
     this.bookings = createBookingManagerBookingService({
