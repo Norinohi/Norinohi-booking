@@ -34,7 +34,14 @@ afterAll(async () => {
 });
 
 /** A held booking whose reservation the adapter recorded at yacht 111, 3,500.00 EUR. */
-async function heldBooking(slug: string) {
+async function heldBooking(
+  slug: string,
+  payload: (typeof providerReservationEvent.$inferInsert)["payload"] = {
+    yachtId: 111,
+    clientPrice: "3500.00",
+    currency: "EUR",
+  },
+) {
   const { db } = test;
   const { listingId } = await seedYacht(db, slug);
   const userId = await seedCustomer(db, `usr_${slug}`);
@@ -49,7 +56,7 @@ async function heldBooking(slug: string) {
     kind: "extras_updated",
     provider: state.booking.provider,
     providerReference: reservationId,
-    payload: { yachtId: 111, clientPrice: "3500.00", currency: "EUR" },
+    payload,
   });
 
   return { bookingId: hold.bookingId, reservationId, quote: state.quote };
@@ -116,5 +123,41 @@ describe("reservation reconcile", () => {
     const mine = result.drift.filter((item) => item.providerReservationId === reservationId);
 
     expect(mine.map((item) => item.kind)).toEqual(["cancelled_by_operator"]);
+  });
+
+  it("compares against an event in Booking Manager's shape: a digit-string yacht, a number price", async () => {
+    const { reservationId } = await heldBooking("bm-shaped", {
+      id: "8295147330000100225",
+      status: 2,
+      yachtId: "207160073500225",
+      dateFrom: "2026-10-17 17:00:00",
+      dateTo: "2026-10-24 09:00:00",
+      expirationDate: "2026-09-25 11:59:26",
+      clientPrice: 1700.0,
+      currency: "EUR",
+      reservationCode: null,
+    });
+    feed([
+      {
+        providerReservationId: reservationId,
+        status: "option_held",
+        providerStatus: "OPTION",
+        externalYachtId: "978990020000100225",
+        priceMinor: 180_000,
+        currency: "EUR",
+      },
+    ]);
+
+    const result = await reconcileReservations(
+      test.db,
+      inventory,
+      new Date("2026-09-23T00:00:00Z"),
+    );
+    const mine = result.drift.filter((item) => item.providerReservationId === reservationId);
+
+    expect(mine.map((item) => [item.kind, item.detail])).toEqual([
+      ["yacht_changed", "yacht 207160073500225 -> 978990020000100225"],
+      ["price_changed", "170000 -> 180000 EUR (minor units)"],
+    ]);
   });
 });

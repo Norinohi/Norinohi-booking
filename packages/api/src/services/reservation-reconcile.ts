@@ -3,7 +3,7 @@ import { quote } from "@yacht-charter/db/schema/quote";
 import { provider as providerTable } from "@yacht-charter/db/schema/provider";
 import { readSyncCursor, writeSyncCursor } from "@yacht-charter/providers/sync/cursor";
 import { thrownFields } from "@yacht-charter/providers/shared/log-fields";
-import { decimalStringToMinor } from "@yacht-charter/providers/shared/money";
+import { currencyExponent, decimalStringToMinor } from "@yacht-charter/providers/shared/money";
 import { log, parseError } from "evlog";
 import type { InventoryProvider, ProviderReservationState } from "@yacht-charter/providers";
 import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
@@ -223,11 +223,25 @@ export async function reconcileReservations(
   return result;
 }
 
-/** What the vendor last told us a reservation carried, read off the events the adapter wrote. */
+/**
+ * What the vendor last told us a reservation carried, read off the events the adapter wrote.
+ *
+ * In each vendor's own shape: NauSYS writes its yacht as a number and its price as a decimal
+ * string, Booking Manager its 19-digit yacht id as a digit string (a number would round it) and
+ * its price as a JSON number.
+ */
 const heldEventSchema = z.object({
-  yachtId: z.number().int().optional(),
-  clientPrice: z.string().optional(),
-  currency: z.string().optional(),
+  yachtId: z.union([z.number().int(), z.string().regex(/^\d+$/)]).nullish(),
+  clientPrice: z
+    .union([
+      z.string().transform((value) => ({ exact: true as const, value })),
+      z
+        .number()
+        .finite()
+        .transform((value) => ({ exact: false as const, value })),
+    ])
+    .nullish(),
+  currency: z.string().nullish(),
 });
 
 /**
@@ -254,13 +268,18 @@ async function heldAt(
   for (const event of events) {
     if (found.has(event.bookingId)) continue;
     const parsed = heldEventSchema.safeParse(event.payload);
-    if (!parsed.success || parsed.data.yachtId === undefined) continue;
+    if (!parsed.success || parsed.data.yachtId == null) continue;
 
     const { yachtId, clientPrice, currency } = parsed.data;
     let priceMinor: number | null = null;
-    if (clientPrice !== undefined && currency !== undefined) {
+    if (clientPrice != null && currency != null) {
       try {
-        priceMinor = decimalStringToMinor(clientPrice, currency);
+        priceMinor = decimalStringToMinor(
+          clientPrice.exact
+            ? clientPrice.value
+            : clientPrice.value.toFixed(currencyExponent(currency)),
+          currency,
+        );
       } catch {
         priceMinor = null;
       }
