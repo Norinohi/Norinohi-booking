@@ -6,7 +6,7 @@ import { thrownFields } from "@yacht-charter/providers/shared/log-fields";
 import { currencyExponent, decimalStringToMinor } from "@yacht-charter/providers/shared/money";
 import { log, parseError } from "evlog";
 import type { InventoryProvider, ProviderReservationState } from "@yacht-charter/providers";
-import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Database } from "../context";
@@ -49,6 +49,16 @@ const OPEN: readonly BookingStatus[] = [
   "CONFIRMING",
   "CONFIRMED",
 ];
+
+/**
+ * How long after its check-out a charter is still asked about.
+ *
+ * A charter that is over has nothing left for the operator to change that we could act on, and
+ * `CONFIRMED` never leaves `OPEN` by itself, so without a bound every charter ever sold would be
+ * re-read on every run: one call each for Booking Manager, which is asked by id. The two days
+ * cover a check-out date read in another time zone than the pass's clock.
+ */
+const FINISHED_AFTER_MS = 2 * 24 * 60 * 60 * 1000;
 
 /**
  * How far back the first run looks, and the overlap every later one keeps.
@@ -108,7 +118,13 @@ export async function reconcileReservations(
     })
     .from(booking)
     .innerJoin(quote, eq(quote.id, booking.quoteId))
-    .where(and(inArray(booking.status, OPEN), isNotNull(booking.providerReservationId)));
+    .where(
+      and(
+        inArray(booking.status, OPEN),
+        isNotNull(booking.providerReservationId),
+        gte(quote.checkOut, new Date(now.getTime() - FINISHED_AFTER_MS).toISOString().slice(0, 10)),
+      ),
+    );
 
   const result: ReconcileResult = {
     watched: ours.length,

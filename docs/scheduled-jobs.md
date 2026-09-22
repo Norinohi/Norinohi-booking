@@ -276,9 +276,16 @@ out unless asked for `status=5` on its own, and `/objects/Reservation/search` wi
 `lastSyncPoint` answered the same request differently twice, moved its sync point backwards and
 missed cancellations the single read reported. `5` reads as an operator cancellation. `3`, and a
 `2` past its `expirationDate`, read as a hold that lapsed (`option_lapsed`), which nobody
-cancelled and which Booking Manager keeps blocking the week for until the record is deleted. A
-reservation the vendor cannot find or answers in a shape we cannot read is logged and skipped; a
-vendor that is down or refuses the key leaves the whole provider unreachable for the run.
+cancelled and which Booking Manager keeps blocking the week for until the record is deleted.
+Any other status on a reservation of ours (a service week, an owner's week, a waiting option) is
+reported as `status_drift` with the vendor's word, so the run fails rather than passing over it.
+A reservation the vendor cannot find or answers in a shape we cannot read is logged and skipped
+(whether a `404` can mean a cancelled charter is still with the vendor); a vendor that is down,
+rate-limits the pass or refuses the key leaves the whole provider unreachable for the run.
+
+A booking is asked about only until two days after its check-out. `CONFIRMED` is where a charter
+stays once sold, and a charter that is over has nothing left for the operator to change, so
+without the bound every charter ever sold would cost Booking Manager one call on every run.
 
 `listChangedReservations` is optional on the provider interface and a vendor without one leaves
 its bookings unreconciled rather than blocking the pass.

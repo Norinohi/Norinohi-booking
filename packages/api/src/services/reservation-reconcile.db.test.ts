@@ -1,9 +1,11 @@
 import "../test-support/checkout-env";
 
 import { createTestDatabase, type TestDatabase } from "@yacht-charter/db/test-support/database";
-import { providerReservationEvent } from "@yacht-charter/db/schema/booking";
+import { booking, providerReservationEvent } from "@yacht-charter/db/schema/booking";
+import { quote as quoteTable } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider, ProviderReservationState } from "@yacht-charter/providers";
 import type { MockInventoryProvider } from "@yacht-charter/providers/mock/provider";
+import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
@@ -181,5 +183,39 @@ describe("reservation reconcile", () => {
 
     expect(mine.map((item) => item.kind)).toEqual(["option_lapsed"]);
     expect((await bookingState(test.db, bookingId)).booking.providerStatus).toBe("OPTION_EXPIRED");
+  });
+
+  it("no longer asks about a confirmed charter that is over", async () => {
+    const { db } = test;
+    const ended = await heldBooking("ended");
+    const current = await heldBooking("current");
+    if (!ended.quote) throw new Error("no quote");
+    await db.update(booking).set({ status: "CONFIRMED" }).where(eq(booking.id, ended.bookingId));
+    await db
+      .update(quoteTable)
+      .set({ checkIn: "2026-09-12", checkOut: "2026-09-19" })
+      .where(eq(quoteTable.id, ended.quote.id));
+    const asked = feed([]);
+
+    await reconcileReservations(db, inventory, new Date("2026-09-22T00:00:00Z"));
+
+    expect(asked[0]).toContain(current.reservationId);
+    expect(asked[0]).not.toContain(ended.reservationId);
+  });
+
+  it("still asks about a charter that ended yesterday", async () => {
+    const { db } = test;
+    const ended = await heldBooking("ended-yesterday");
+    if (!ended.quote) throw new Error("no quote");
+    await db.update(booking).set({ status: "CONFIRMED" }).where(eq(booking.id, ended.bookingId));
+    await db
+      .update(quoteTable)
+      .set({ checkIn: "2026-09-14", checkOut: "2026-09-21" })
+      .where(eq(quoteTable.id, ended.quote.id));
+    const asked = feed([]);
+
+    await reconcileReservations(db, inventory, new Date("2026-09-22T00:00:00Z"));
+
+    expect(asked[0]).toContain(ended.reservationId);
   });
 });
