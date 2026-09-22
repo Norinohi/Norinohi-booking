@@ -924,6 +924,65 @@ describe("geography", () => {
     expect(pointOf("4")).toEqual({ lat: -90, lng: 180 });
   });
 
+  describe("with no region of the other vendor's to join", () => {
+    const regionsOf = (bases: Payload[]) =>
+      projectBookingManagerCatalogue(
+        recordSet([
+          [
+            "country",
+            [
+              { id: 250, name: "France", shortName: "FR", worldRegion: 39 },
+              { id: 788, name: "Tunisia", shortName: "TN", worldRegion: 39 },
+              { id: 308, name: "Grenada", shortName: "GD", worldRegion: 39 },
+              { id: 840, name: "U.S.A.", shortName: "US", worldRegion: 39 },
+              { id: 470, name: "Malta", shortName: "MT", worldRegion: 39 },
+            ],
+          ],
+          [
+            "location",
+            [
+              { id: 28, name: "Caribbean Islands" },
+              { id: 30, name: "European Inland" },
+              { id: 44, name: "Malta" },
+              { id: 68, name: "Canal du Midi" },
+            ],
+          ],
+          ["base", bases],
+        ]),
+        { referenceRegions: [] },
+      ).regions.map((item) => item.name);
+
+    it("names what a coarse sailing area covers in the base's country", () => {
+      expect(regionsOf([{ id: 1, name: "Le Boat", countryId: 250, sailingAreas: [30] }])).toEqual([
+        "Inland waterways",
+      ]);
+      expect(regionsOf([{ id: 1, name: "Key West", countryId: 840, sailingAreas: [28] }])).toEqual([
+        "Florida and Gulf Coast",
+      ]);
+    });
+
+    it("files an island nation under itself rather than under its ocean", () => {
+      expect(
+        regionsOf([{ id: 1, name: "Port Louis", countryId: 308, sailingAreas: [28] }]),
+      ).toEqual(["Grenada"]);
+    });
+
+    it("keeps a place's name only in the countries it names a place in", () => {
+      expect(regionsOf([{ id: 1, name: "Monastir", countryId: 788, sailingAreas: [44] }])).toEqual([
+        "Tunisia",
+      ]);
+      expect(regionsOf([{ id: 1, name: "Msida", countryId: 470, sailingAreas: [44] }])).toEqual([
+        "Malta",
+      ]);
+    });
+
+    it("prefers a specific sailing area to a coarse one listed before it", () => {
+      expect(
+        regionsOf([{ id: 1, name: "Castelnaudary", countryId: 250, sailingAreas: [30, 68] }]),
+      ).toEqual(["Canal du Midi"]);
+    });
+  });
+
   it("splits a sailing area that crosses a border by country", () => {
     const { regions } = geographyOf([
       { id: 1, name: "Port Gruž", countryId: 191, sailingAreas: [9] },

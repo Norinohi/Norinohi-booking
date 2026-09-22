@@ -1,0 +1,48 @@
+[
+  {
+    "$comment": "Areas spanning several countries or a whole ocean: never a region name. 'region' names the part of each country they cover, else the country itself.",
+    "sailingArea": 28,
+    "name": "Caribbean Islands",
+    "byCountry": { "US": "Florida and Gulf Coast", "MX": "Riviera Maya" }
+  },
+  { "sailingArea": 30, "name": "European Inland", "region": "Inland waterways" },
+  { "sailingArea": 29, "name": "European Atlantic", "region": "Atlantic coast" },
+  { "sailingArea": 27, "name": "Baltic", "region": "Baltic coast" },
+  { "sailingArea": 31, "name": "North Sea", "region": "North Sea coast" },
+  { "sailingArea": 38, "name": "Black Sea", "region": "Black Sea coast" },
+  { "sailingArea": 59, "name": "West Coast Central America", "region": "Pacific coast" },
+  {
+    "sailingArea": 42,
+    "name": "Eastern Seaboard",
+    "region": "East Coast",
+    "byCountry": { "GL": "Greenland" }
+  },
+  {
+    "sailingArea": 22,
+    "name": "Arctic",
+    "byCountry": { "NO": "Northern Norway" }
+  },
+  { "sailingArea": 37, "name": "Indian Ocean" },
+  { "sailingArea": 34, "name": "SE Asia" },
+  { "sailingArea": 33, "name": "Oceania" },
+  { "sailingArea": 32, "name": "Polynesia" },
+  { "sailingArea": 12, "name": "Eastern Mediterranean" },
+  { "sailingArea": 39, "name": "Arabian Sea" },
+  {
+    "$comment": "Areas named after a place in one or two countries, which the vendor also files a base across the border under: the name holds only in 'countries', and elsewhere the country stands in.",
+    "sailingArea": 1,
+    "name": "Istria / Kvarner",
+    "countries": ["HR", "SI"]
+  },
+  { "sailingArea": 6, "name": "Dubrovnik / Montenegro", "countries": ["HR", "ME"] },
+  { "sailingArea": 9, "name": "Dodecanese", "countries": ["GR"] },
+  { "sailingArea": 47, "name": "North East Aegean", "countries": ["GR"] },
+  { "sailingArea": 14, "name": "Canary Islands", "countries": ["ES"] },
+  { "sailingArea": 15, "name": "French Riviera (Côte d'Azur)", "countries": ["FR", "MC"] },
+  { "sailingArea": 21, "name": "Sardinia / Corsica", "countries": ["IT", "FR"] },
+  { "sailingArea": 40, "name": "South Africa", "countries": ["ZA"] },
+  { "sailingArea": 43, "name": "Andalusia", "countries": ["ES"] },
+  { "sailingArea": 44, "name": "Malta", "countries": ["MT"] },
+  { "sailingArea": 56, "name": "Ijsselmeer & Markermeer", "countries": ["NL"] },
+  { "sailingArea": 82, "name": "Shannon", "countries": ["IE"] }
+]

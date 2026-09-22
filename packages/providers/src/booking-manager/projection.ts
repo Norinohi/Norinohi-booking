@@ -2,7 +2,7 @@ import type { z } from "zod";
 
 import type { JsonField } from "../shared/json";
 import { parseBookingManagerDate } from "./dates";
-import { regionFor } from "./geography";
+import { coarseAreaRegion, placeNamingAreas, regionFor, type SailingArea } from "./geography";
 import { crewRoleOf } from "../shared/crew-role";
 import { stripHtml } from "../shared/html-text";
 import { decimalStringToMinor } from "../shared/money";
@@ -248,28 +248,31 @@ export function projectBookingManagerGeography(
     const lat = point?.lat;
     const lng = point?.lng;
 
-    const sailingAreaNames = (item.sailingAreas ?? [])
-      .map((value) => {
-        const id = idOf(value);
-        return id === null ? undefined : sailingAreaNameById.get(id);
-      })
-      .filter((name): name is string => name !== undefined);
+    const areas = (item.sailingAreas ?? []).flatMap((value): SailingArea[] => {
+      const id = idOf(value);
+      const name = id === null ? undefined : sailingAreaNameById.get(id);
+      return id === null || name === undefined ? [] : [{ id, name }];
+    });
+    const countryCode = country === undefined ? undefined : countryCodeOf(country);
+    const namedArea =
+      countryCode === undefined ? areas[0] : placeNamingAreas(areas, countryCode)[0];
 
     const regionName =
-      (country === undefined
+      (countryCode === undefined
         ? undefined
         : regionFor(
             {
-              countryCode: countryCodeOf(country),
-              sailingAreas: sailingAreaNames,
+              countryCode,
+              sailingAreas: areas.map((area) => area.name),
               point: lat === undefined || lng === undefined ? undefined : { lat, lng },
             },
             context.referenceRegions,
           )) ??
-      sailingAreaNames[0] ??
+      namedArea?.name ??
+      (countryCode === undefined ? undefined : coarseAreaRegion(areas, countryCode, countryName)) ??
       countryName;
     const city = text(item.city);
-    const locationName = city ?? sailingAreaNames[0] ?? regionName;
+    const locationName = city ?? namedArea?.name ?? regionName;
 
     // Keyed by name within the country: two sailing areas placed into one region are
     // one region, and a town is one location however many areas list it.

@@ -4,6 +4,7 @@ import { foldedLetters } from "@yacht-charter/db/search/normalize";
 import { z } from "zod";
 
 import aliasesJson from "./sailing-area-aliases.json" with { type: "json" };
+import areaRegionsJson from "./sailing-area-regions.json" with { type: "json" };
 
 /**
  * Names the vendor and our regions spell differently for one place, per country. `place` is a
@@ -12,6 +13,61 @@ import aliasesJson from "./sailing-area-aliases.json" with { type: "json" };
 const SAILING_AREA_ALIASES = z
   .array(z.object({ country: z.string(), place: z.string(), region: z.string() }))
   .parse(aliasesJson);
+
+/**
+ * Sailing areas that do not name a place in every country the vendor files them under, by the
+ * vendor's area id. Without a region of the other vendor's to join, a base used to take its first
+ * area's name as its region, and 53 French canal bases sat in a region called "European Inland",
+ * Grenada's in "Caribbean Islands", a Tunisian marina in "Malta".
+ *
+ * An entry with `countries` is a real place only there. One without is never a place: `byCountry`
+ * or `region` names what it covers in the base's country ("Inland waterways", "Baltic coast"),
+ * and failing both the country is the region, as it is for an island nation in the Caribbean.
+ */
+const SAILING_AREA_REGIONS = new Map(
+  z
+    .array(
+      z.object({
+        sailingArea: z.number().int(),
+        name: z.string(),
+        countries: z.array(z.string()).optional(),
+        region: z.string().optional(),
+        byCountry: z.record(z.string(), z.string()).optional(),
+      }),
+    )
+    .parse(areaRegionsJson)
+    .map((entry) => [String(entry.sailingArea), entry]),
+);
+
+export type SailingArea = { id: string; name: string };
+
+/** The areas whose name is a place in `countryCode`, in the vendor's order. */
+export function placeNamingAreas(
+  areas: readonly SailingArea[],
+  countryCode: string,
+): SailingArea[] {
+  return areas.filter((area) => {
+    const curated = SAILING_AREA_REGIONS.get(area.id);
+    return curated === undefined || (curated.countries?.includes(countryCode) ?? false);
+  });
+}
+
+/**
+ * The region a base goes in when its areas name no place in its country, or undefined when none
+ * of them is curated. The first curated area decides, in the vendor's order.
+ */
+export function coarseAreaRegion(
+  areas: readonly SailingArea[],
+  countryCode: string,
+  countryName: string,
+): string | undefined {
+  for (const area of areas) {
+    const curated = SAILING_AREA_REGIONS.get(area.id);
+    if (curated === undefined || curated.countries?.includes(countryCode)) continue;
+    return curated.byCountry?.[countryCode] ?? curated.region ?? countryName;
+  }
+  return undefined;
+}
 
 /*
  * How much farther than the nearest region a named one may be and still win. The vendor files
