@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import type { Database } from "../registry";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
-import { ContractError } from "../shared/errors";
+import { ContractError, ProviderError } from "../shared/errors";
 import { exactJsonNumber } from "../shared/exact-json";
 import { thrownFields } from "../shared/log-fields";
 import { toExactPositiveIntId } from "../shared/projection-helpers";
@@ -362,6 +362,12 @@ export function createBookingManagerBookingService(
    * claim we cannot support. Wiring it up needs the vendor to say who approves,
    * which status an approval lands on, and what it costs the guest; those are
    * open questions in `docs/vendor/booking-manager-reply-2026-08-25.md`.
+   *
+   * An expired option (`3`) is deleted like a live one. Expiry does not free the week: the
+   * vendor keeps it out of `/offers` for as long as the record stands, so a lapsed hold of
+   * ours left alone is a boat nobody can sell. Whether the vendor accepts that DELETE is
+   * unmeasured (Q19), so a refusal is reported as a release that did not land rather than as
+   * a cancelled option.
    */
   async function cancelOption(ref: ProviderReservationRef): Promise<ProviderReservation> {
     const parsed = providerReservationRefSchema.parse(ref);
@@ -386,7 +392,16 @@ export function createBookingManagerBookingService(
       );
     }
 
-    await client.del(endpoint, cancelResponseSchema);
+    try {
+      await client.del(endpoint, cancelResponseSchema);
+    } catch (cause) {
+      if (existing.status !== BM_RESERVATION_STATUS.OPTION_EXPIRED) throw cause;
+      if (cause instanceof ProviderError && cause.retryable) throw cause;
+      throw new ContractError(
+        `Booking Manager option ${id} has expired and still blocks its week, and the vendor refused to delete it; the operator has to release it`,
+        { endpoint, providerCode: "EXPIRED_OPTION_NOT_RELEASED", cause },
+      );
+    }
 
     const listingId =
       existing.yachtId == null
@@ -590,10 +605,12 @@ function fullName(customer: BookingDraft["customer"]): string {
 }
 
 /**
- * `3` (OPTION_IN_EXPIRATION) is still a live hold, so it maps to the same
- * canonical state as `2`. An absent or unknown status is refused rather than
- * assumed: reading a confirmed reservation as a hold would let the sweeper
- * release a sold charter.
+ * An absent or unknown status is refused rather than assumed: reading a confirmed
+ * reservation as a hold would let the sweeper release a sold charter.
+ *
+ * `3` (OPTION_EXPIRED) is a hold that is over, so it reads as closed beside `5`,
+ * although the vendor goes on blocking the week until the record is deleted; see
+ * `cancelOption`.
  *
  * `5` (CANCELLED) is undocumented and is what every successful DELETE answers
  * with - the vendor transitions the record instead of removing it. Throwing on it
@@ -607,8 +624,8 @@ function toCanonicalStatus(
     case BM_RESERVATION_STATUS.RESERVATION:
       return "confirmed";
     case BM_RESERVATION_STATUS.OPTION:
-    case BM_RESERVATION_STATUS.OPTION_IN_EXPIRATION:
       return "option_held";
+    case BM_RESERVATION_STATUS.OPTION_EXPIRED:
     case BM_RESERVATION_STATUS.CANCELLED:
       return "cancelled";
     default:

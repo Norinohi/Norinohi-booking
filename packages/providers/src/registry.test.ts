@@ -85,6 +85,8 @@ describe("booking manager capabilities", () => {
       supportsOptions: true,
       supportsWebhooks: false,
       optionExpiryOwnedByProvider: true,
+      // Status 3, "Option expired", keeps the week out of /offers until it is deleted.
+      lapsedOptionHoldsSlot: true,
       // bm-api v2.1.4 exposes no reservation-extras endpoint, so the booking
       // service refuses rather than pretending.
       supportsExtrasMutation: false,

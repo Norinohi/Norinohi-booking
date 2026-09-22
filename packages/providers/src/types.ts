@@ -582,6 +582,12 @@ export const providerCapabilitiesSchema = z.object({
    * adding one means implementing that branch, not just the adapter.
    */
   optionExpiryOwnedByProvider: z.boolean(),
+  /**
+   * Whether an option past its deadline still keeps the period off sale until it is released.
+   * Booking Manager's does (status 3, "Option expired"); NauSYS drops its own. Absent means the
+   * lapse frees the period.
+   */
+  lapsedOptionHoldsSlot: z.boolean().optional(),
   supportsExtrasMutation: z.boolean(),
   supportsLiveQuote: z.boolean(),
   /** Shortest hold the provider grants, when it owns the expiry. */

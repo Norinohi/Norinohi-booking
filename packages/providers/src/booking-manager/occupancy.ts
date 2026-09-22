@@ -53,14 +53,14 @@ import {
  * Every documented state occupies the boat. `SERVICE` is the vendor's maintenance
  * or delivery block, so it is `blocked` and never a sale; the NauSYS import had to
  * make exactly this distinction (0d9a822) after treating one as inventory sold.
- * `OPTION_IN_EXPIRATION` stays an option: it is still holding the week, and the
- * difference from `OPTION` is how close its deadline is, which the slot keeps in
- * `option_expires_at` anyway.
+ * `OPTION_EXPIRED` is `blocked` rather than an option: its deadline has passed, yet the
+ * vendor keeps the week out of `/offers` until someone deletes it, so there is no
+ * expiry left to show and no reason to expect the week back on its own.
  */
 const OCCUPANCY_STATUS = new Map<number, OccupiedInterval["status"]>([
   [BM_RESERVATION_STATUS.RESERVATION, "occupied"],
   [BM_RESERVATION_STATUS.OPTION, "option"],
-  [BM_RESERVATION_STATUS.OPTION_IN_EXPIRATION, "option"],
+  [BM_RESERVATION_STATUS.OPTION_EXPIRED, "blocked"],
   [BM_RESERVATION_STATUS.SERVICE, "blocked"],
   // Named unavailable by the vendor on 2026-08-25. They would land on
   // UNKNOWN_STATUS anyway; listing them means a reader can tell a deliberate

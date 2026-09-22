@@ -562,3 +562,91 @@ describe("createOption against what the vendor opened", () => {
     expect(calls.map((call) => call.method)).toEqual(["POST", "DELETE"]);
   });
 });
+
+type Scripted = { status: number; body: string };
+
+/**
+ * A client whose answers are scripted per method, in call order, so a lifecycle that makes
+ * several calls can be driven one step at a time. A method asked more often than scripted
+ * answers with its last entry.
+ */
+function scriptedService(
+  script: Partial<Record<string, Scripted[]>>,
+  overrides: Partial<Parameters<typeof createBookingManagerBookingService>[0]> = {},
+) {
+  const calls: { method: string; url: string; body: string | undefined }[] = [];
+  const served = new Map<string, number>();
+  const client = new BookingManagerClient({
+    config,
+    queue: new SequentialQueue(),
+    retry: { maxAttempts: 1 },
+    fetchImpl: (url, init) => {
+      const method = init.method ?? "GET";
+      calls.push({
+        method,
+        url: String(url),
+        body: init.body === undefined ? undefined : String(init.body),
+      });
+      const answers = script[method] ?? [];
+      const index = served.get(method) ?? 0;
+      served.set(method, index + 1);
+      const answer = answers[Math.min(index, answers.length - 1)];
+      if (!answer) return Promise.reject(new Error(`no ${method} scripted`));
+      return Promise.resolve({ status: answer.status, text: () => Promise.resolve(answer.body) });
+    },
+  });
+  const service = createBookingManagerBookingService({
+    client,
+    resolver: fakeResolver(),
+    config,
+    db: fakeDb(),
+    verifyPrice: () => Promise.resolve({ hash: PRICE_HASH }),
+    recordEvent: () => Promise.resolve(),
+    ...overrides,
+  });
+  return { calls, service };
+}
+
+/*
+ * Status 3 is "Option expired", and it keeps the week out of `/offers` until the record is
+ * deleted: option 8192658760000107113 on company 225 lapsed on 2026-09-01 and still blocked
+ * 31.10.2026 three weeks later.
+ */
+describe("cancelOption on an expired option", () => {
+  const expired = `{"id":${CHARTER_ID},"status":3,"yachtId":978990780000100225,"expirationDate":"2026-09-01 11:59:00"}`;
+  const ref = { providerReservationId: CHARTER_ID };
+
+  it("deletes it, since expiry alone does not free the week", async () => {
+    const { calls, service } = scriptedService({
+      GET: [{ status: 200, body: expired }],
+      DELETE: [{ status: 200, body: `{"id":${AGENCY_ID},"status":5}` }],
+    });
+
+    await expect(service.cancelOption(ref)).resolves.toMatchObject({ status: "cancelled" });
+    expect(calls.map((call) => call.method)).toEqual(["GET", "DELETE"]);
+  });
+
+  it("reports a refused delete as a release that did not land", async () => {
+    const { service } = scriptedService({
+      GET: [{ status: 200, body: expired }],
+      DELETE: [{ status: 400, body: "Reservation cannot be cancelled." }],
+    });
+
+    const error = await providerRejection(service.cancelOption(ref));
+
+    expect(error).toBeInstanceOf(ContractError);
+    expect(error.providerCode).toBe("EXPIRED_OPTION_NOT_RELEASED");
+    expect(error.retryable).toBe(false);
+  });
+
+  it("leaves a vendor that did not answer to be asked again", async () => {
+    const { service } = scriptedService({
+      GET: [{ status: 200, body: expired }],
+      DELETE: [{ status: 503, body: "down" }],
+    });
+
+    const error = await providerRejection(service.cancelOption(ref));
+
+    expect(error.retryable).toBe(true);
+  });
+});

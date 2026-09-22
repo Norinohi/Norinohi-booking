@@ -317,6 +317,7 @@ export class BookingManagerInventoryProvider
       supportsOptions: true,
       supportsWebhooks: false,
       optionExpiryOwnedByProvider: true,
+      lapsedOptionHoldsSlot: true,
       // The v2.1.4 spec exposes no reservation-extras mutation, so the booking
       // service refuses rather than pretending. Flipping this on needs a vendor
       // endpoint, not a code change here.

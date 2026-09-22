@@ -207,12 +207,17 @@ our sweeper releases before the vendor does.
 
 `status` on both reservation and availability records:
 
-| Value | Name                   | Meaning                              |
-| ----- | ---------------------- | ------------------------------------ |
-| 1     | `RESERVATION`          | confirmed booking                    |
-| 2     | `OPTION`               | soft hold                            |
-| 3     | `OPTION_IN_EXPIRATION` | hold in its expiry window            |
-| 4     | `SERVICE`              | vendor maintenance or delivery block |
+| Value | Name             | Meaning                              |
+| ----- | ---------------- | ------------------------------------ |
+| 1     | `RESERVATION`    | confirmed booking                    |
+| 2     | `OPTION`         | soft hold                            |
+| 3     | `OPTION_EXPIRED` | lapsed option, still blocks the week |
+| 4     | `SERVICE`        | vendor maintenance or delivery block |
+
+**3 is not a live hold.** The spec calls it "option in expiration"; the vendor's own
+status list names it "Option expired" (`BLOCKS_AVAILABILITY` true), and measured on
+company 225 on 2026-09-22 a lapsed option stays at 3 indefinitely and keeps its week out of
+`/offers`. The adapter reads it as closed and deletes an expired option of ours on release.
 
 **4 is not a sale.** It is the vendor blocking its own boat for maintenance or a
 delivery leg. It must project to **`blocked` inventory**, never to a booking, an

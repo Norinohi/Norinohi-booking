@@ -72,7 +72,7 @@ describe("mapBookingManagerAvailability", () => {
   it.each([
     [BM_RESERVATION_STATUS.RESERVATION, "occupied"],
     [BM_RESERVATION_STATUS.OPTION, "option"],
-    [BM_RESERVATION_STATUS.OPTION_IN_EXPIRATION, "option"],
+    [BM_RESERVATION_STATUS.OPTION_EXPIRED, "blocked"],
     // A vendor maintenance or delivery block is not a sale.
     [BM_RESERVATION_STATUS.SERVICE, "blocked"],
   ])("maps status %i to %s", (status, expected) => {

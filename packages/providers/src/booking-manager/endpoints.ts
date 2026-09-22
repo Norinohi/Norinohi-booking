@@ -101,7 +101,7 @@ export const BM_RESERVATION_STATUS = {
   AVAILABLE: 0,
   RESERVATION: 1,
   OPTION: 2,
-  OPTION_IN_EXPIRATION: 3,
+  OPTION_EXPIRED: 3,
   SERVICE: 4,
   CANCELLED: 5,
   OWNER_WEEK: 6,
@@ -125,6 +125,13 @@ export const BM_RESERVATION_STATUS = {
  *   "second option, becomes active when the first expires".
  * - `11` ran to 388 rows in 2026 and 125 in 2027 (re-counted 2026-08-25), mostly
  *   single days, which fits Sleep Aboard.
+ * - `3` is "Option expired", not an option about to expire: that is its
+ *   `STATUS_TYPE.NAME` in `objects/Reservation/search`, with `BLOCKS_AVAILABILITY`
+ *   true (2026-09-22). Option 8192658760000107113 lapsed on 2026-09-01 and three
+ *   weeks later still read `3` and still kept its week out of `/offers`, even with
+ *   `showOptions`; 42 agency records in `/reservations/2026` sat at `3`, every one
+ *   past its `expirationDate`. Nothing moves it on by itself, so an expired option
+ *   of ours is ours to DELETE.
  *
  * Only `1`, `2`, `3`, `4` and `11` are ever emitted by `/availability`; the other
  * seven describe a free boat or a record the agency feed never carries.
@@ -133,7 +140,7 @@ export const BM_RESERVATION_STATUS_NAMES = new Map<number, string>([
   [BM_RESERVATION_STATUS.AVAILABLE, "AVAILABLE"],
   [BM_RESERVATION_STATUS.RESERVATION, "RESERVATION"],
   [BM_RESERVATION_STATUS.OPTION, "OPTION"],
-  [BM_RESERVATION_STATUS.OPTION_IN_EXPIRATION, "OPTION_IN_EXPIRATION"],
+  [BM_RESERVATION_STATUS.OPTION_EXPIRED, "OPTION_EXPIRED"],
   [BM_RESERVATION_STATUS.SERVICE, "SERVICE"],
   [BM_RESERVATION_STATUS.CANCELLED, "CANCELLED"],
   [BM_RESERVATION_STATUS.OWNER_WEEK, "OWNER_WEEK"],
