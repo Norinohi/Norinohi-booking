@@ -146,6 +146,30 @@ describe("a provider base bound to its row", () => {
     expect(await test.db.select().from(region).where(eq(region.name, "Split"))).toEqual([]);
   });
 
+  it("adopts the one unbound row of its name in the country, rather than writing another", async () => {
+    const [country] = await test.db.select().from(region).limit(1);
+    if (country === undefined) throw new Error("no region to hang the old row off");
+    await test.db
+      .insert(region)
+      .values({ id: "rgn_old", countryId: country.countryId, name: "European Inland" });
+    await test.db.insert(location).values({ id: "loc_old", regionId: "rgn_old", name: "Kastela" });
+    await test.db
+      .insert(base)
+      .values({ id: "base_old", locationId: "loc_old", name: "Kastela / Marina Kastela" });
+
+    await sync(
+      "prov_bm",
+      catalogueWith([
+        { externalId: "194", regionName: "Split region", name: "ACI Marina Split" },
+        { externalId: "25", regionName: "Split region", name: "Kastela / Marina Kastela" },
+      ]),
+    );
+
+    expect(await boundBase("prov_bm", "25")).toBe("base_old");
+    expect(await placeOf("base_old")).toMatchObject({ region: "Split region" });
+    expect(await test.db.select().from(region).where(eq(region.id, "rgn_old"))).toEqual([]);
+  });
+
   it("never moves a row another provider stands on, and binds a row of its own instead", async () => {
     const shared = await boundBase("prov_bm", "194");
     await sync(

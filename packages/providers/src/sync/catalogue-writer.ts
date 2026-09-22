@@ -659,6 +659,7 @@ async function writeBases(
 ) {
   const bindings = await loadBaseBindings(db, providerId);
   const shared = await loadSharedBaseIds(db, providerId, [...bindings.values()]);
+  const unbound = await loadUnboundBases(db, providerId);
 
   const countryCodes = new Map(catalogue.countries.map((item) => [item.externalId, item.code]));
   const regions = new Map(catalogue.regions.map((item) => [item.externalId, item]));
@@ -697,8 +698,12 @@ async function writeBases(
       checkOutTime: item.checkOutTime ?? null,
     };
 
-    const boundId = bindings.get(item.externalId);
     const placement = placementOf(item);
+    const boundId =
+      bindings.get(item.externalId) ??
+      (placement === undefined
+        ? undefined
+        : unbound.get(unboundKey(placement.countryCode, item.name)));
     // Two vendor bases once merged into one row would otherwise pull it back and forth nightly.
     const claimable = boundId !== undefined && !shared.has(boundId) && !claimed.has(boundId);
     if (claimable && placement !== undefined) {
@@ -724,6 +729,7 @@ async function writeBases(
     const id = mergedInto.get(item.baseId) ?? item.baseId;
     await db.update(base).set(item.details).where(eq(base.id, id));
     baseIds.set(item.externalId, id);
+    if (bindings.get(item.externalId) !== id) await bindBase(db, providerId, item.externalId, id);
   }
   if (relocation.vacatedLocationIds.length > 0) {
     await pruneEmptyGeography(db, { regionNames: [], locationIds: relocation.vacatedLocationIds });
@@ -738,6 +744,32 @@ async function writeBases(
     });
   }
   return { baseIds, relocatedListingIds: relocation.affectedListingIds };
+}
+
+const unboundKey = (countryCode: string, name: string) => `${countryCode}\u0000${name}`;
+
+/*
+ * Rows no provider is bound to and no other provider's boat stands on, by country and name, where
+ * the pair names one row. Bindings were backfilled from the boats, so a base no boat stood on is
+ * still unbound, and found by location and name it would be written again at its new place and
+ * leave the old row behind. Its name is the vendor's own, the town included, so within one
+ * country it still finds the row.
+ */
+async function loadUnboundBases(db: Database, providerId: string) {
+  const rows = await db.execute<{ key_country: string; name: string; id: string }>(sql`
+    select c.code as key_country, b.name, min(b.id) as id
+    from base b
+    join location l on l.id = b.location_id
+    join region r on r.id = l.region_id
+    join country c on c.id = r.country_id
+    where not exists (select 1 from base_source s where s.base_id = b.id)
+      and not exists (
+        select 1 from listing_offer o where o.home_base_id = b.id and o.provider_id <> ${providerId}
+      )
+    group by c.code, b.name
+    having count(*) = 1
+  `);
+  return new Map(rows.rows.map((row) => [unboundKey(row.key_country, row.name), row.id]));
 }
 
 async function loadBaseBindings(db: Database, providerId: string) {
