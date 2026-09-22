@@ -24,6 +24,7 @@ import { useInstant } from "../../shared/hooks/use-instant";
 import { useAmount } from "../hooks/use-amount";
 import { useAdminBooking, useSetBookingExcluded } from "../hooks/use-payments";
 import { type BookingAdminDetail } from "../types";
+import { providerStillHolds } from "../lib/provider-hold";
 import { useProviderLabel } from "../../shared/hooks/use-provider-label";
 import AdminCancelBookingDialog from "./admin-cancel-booking-dialog";
 
@@ -72,23 +73,6 @@ const PAYMENT_VARIANTS = {
 function chipVariant(map: Record<string, ChipVariant>, key: string): ChipVariant {
   return map[key] ?? "neutral";
 }
-
-/*
- * The vendor's last word, when it is one that means the boat is still theirs to give back.
- * `cancelled` and a null (a provider that was never asked) are the other side of this.
- *
- * The booking chain writes our canonical words and the reservation reconcile the vendor's own,
- * which for both vendors are `OPTION` and `RESERVATION`. Booking Manager's `OPTION_EXPIRED`
- * belongs here too: it keeps the week blocked until the record is deleted.
- */
-const PROVIDER_HOLDS = ["confirmed", "option_held", "OPTION", "RESERVATION", "OPTION_EXPIRED"];
-
-/*
- * Statuses that say we let the slot go. Cancelling a CONFIRMED booking lands at REFUND_PENDING
- * rather than CANCELLED, so both belong here: the pair with a provider that still holds is
- * exactly the case where money is about to be returned on a charter we are still billed for.
- */
-const RELEASED_BY_US = ["CANCELLED", "REFUND_PENDING"];
 
 /*
  * Where cancelling is refused, so the button is not offered. CONFIRMING is out because the money
@@ -194,14 +178,11 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
   const closed = isClosedBooking(booking.status);
   const settlement = booking.operatorSettlement;
 
-  const providerStillHolds =
-    RELEASED_BY_US.includes(booking.status) &&
-    booking.providerStatus !== null &&
-    PROVIDER_HOLDS.includes(booking.providerStatus);
+  const stillHeld = providerStillHolds(booking.status, booking.providerStatus);
 
   return (
     <>
-      {providerStillHolds ? (
+      {stillHeld ? (
         <section className="flex flex-col gap-1 rounded-2xl border border-error-200 bg-error-50 px-5 py-4">
           <p className="text-sm font-semibold text-error-600">
             {t("providerHold.title", { provider: providerLabel(booking.provider) })}
