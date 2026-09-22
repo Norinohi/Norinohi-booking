@@ -382,7 +382,7 @@ export default function RoutesPanel({
             <IconButton
               variant="subtle"
               size="sm"
-              aria-label={t("closeDetails")}
+              label={t("closeDetails")}
               onClick={() => onCollapsedChange(true)}
             >
               <X />
@@ -410,7 +410,7 @@ export default function RoutesPanel({
                 <IconButton
                   variant="neutral"
                   size="sm"
-                  aria-label={t("hidePanel")}
+                  label={t("hidePanel")}
                   onClick={onClose}
                   className="absolute top-3 right-3 max-md:hidden"
                 >
@@ -488,7 +488,7 @@ export default function RoutesPanel({
                   <IconButton
                     variant="subtle"
                     size="sm"
-                    aria-label={t("hidePanel")}
+                    label={t("hidePanel")}
                     onClick={onClose}
                     className="max-md:hidden"
                   >
@@ -573,7 +573,7 @@ export function RouteFiltersCard({
           {t("clearAll")}
         </button>
         {onClose ? (
-          <IconButton variant="subtle" size="sm" aria-label={t("closeFilters")} onClick={onClose}>
+          <IconButton variant="subtle" size="sm" label={t("closeFilters")} onClick={onClose}>
             <X />
           </IconButton>
         ) : null}

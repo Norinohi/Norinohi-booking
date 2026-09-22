@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@yacht-charter/ui/components/overlay/dropdown-menu";
+import { Hint } from "@yacht-charter/ui/components/overlay/hint";
 import { Check, Globe } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -49,11 +50,13 @@ export default function LanguageSwitcher() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        render={<IconButton variant="subtle" aria-label={t("language")} className="rounded-sm" />}
-      >
-        <Globe className="size-6" />
-      </DropdownMenuTrigger>
+      <Hint label={t("language")}>
+        <DropdownMenuTrigger
+          render={<IconButton variant="subtle" aria-label={t("language")} className="rounded-sm" />}
+        >
+          <Globe className="size-6" />
+        </DropdownMenuTrigger>
+      </Hint>
       <DropdownMenuContent
         align="end"
         className="w-auto min-w-45 gap-2 rounded-lg border border-border bg-card px-4 py-3 shadow-popover ring-0"

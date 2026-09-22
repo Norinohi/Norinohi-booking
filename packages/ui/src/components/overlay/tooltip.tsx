@@ -27,12 +27,19 @@ function TooltipContent({
   align = "center",
   alignOffset = 0,
   backdrop = false,
+  size = "popover",
   children,
   ...props
 }: TooltipPrimitive.Popup.Props &
   Pick<TooltipPrimitive.Positioner.Props, "align" | "alignOffset" | "side" | "sideOffset"> & {
     /** Dims the rest of the page, for tooltips that land on busy surfaces like a map. */
     backdrop?: boolean;
+    /**
+     * `popover` is the Figma explainer, sized for a sentence or two. `label` is the one-line name
+     * of an icon-only control (see `Hint`): the popover's 180px floor and 16px padding turned
+     * "Currency" into a card.
+     */
+    size?: "popover" | "label";
   }) {
   return (
     <TooltipPrimitive.Portal>
@@ -52,7 +59,11 @@ function TooltipContent({
         <TooltipPrimitive.Popup
           data-slot="tooltip-content"
           className={cn(
-            "z-50 min-w-45 max-w-70 origin-(--transform-origin) rounded-md border border-border bg-background p-4 text-sm font-medium leading-[1.3] text-foreground shadow-card data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+            "z-50 origin-(--transform-origin) rounded-md border border-border bg-background font-medium text-foreground shadow-card",
+            size === "popover"
+              ? "min-w-45 max-w-70 p-4 text-sm leading-[1.3]"
+              : "max-w-60 px-2.5 py-1.5 text-xs leading-4",
+            "data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
             className,
           )}
           {...props}

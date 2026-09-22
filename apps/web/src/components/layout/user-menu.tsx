@@ -12,6 +12,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@yacht-charter/ui/components/overlay/dropdown-menu";
+import { Hint } from "@yacht-charter/ui/components/overlay/hint";
 import { User } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
@@ -77,9 +78,11 @@ export default function UserMenu() {
    * depend on the session. */
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<IconButton variant="subtle" aria-label={t("account")} />}>
-        <User className="size-6" />
-      </DropdownMenuTrigger>
+      <Hint label={t("account")}>
+        <DropdownMenuTrigger render={<IconButton variant="subtle" aria-label={t("account")} />}>
+          <User className="size-6" />
+        </DropdownMenuTrigger>
+      </Hint>
       <DropdownMenuContent align="end" sideOffset={8} className={PANEL}>
         {isPending ? (
           <Skeleton className="h-8 w-full" />

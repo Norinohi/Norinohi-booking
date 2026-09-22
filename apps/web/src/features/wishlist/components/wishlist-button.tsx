@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
+import { Hint } from "@yacht-charter/ui/components/overlay/hint";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Bookmark } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -49,22 +50,26 @@ export default function WishlistButton({
     );
   }
 
+  const label = saved ? tCard("remove") : tCard("save");
+
   return (
-    <Button
-      type="button"
-      variant="subtle"
-      size="icon-md"
-      aria-label={saved ? tCard("remove") : tCard("save")}
-      aria-pressed={saved}
-      disabled={disabled}
-      loading={pending}
-      onClick={onClick}
-      className={cn(
-        "shrink-0 bg-black/12 text-white hover:bg-black/25 hover:text-white focus-visible:ring-white/60",
-        className,
-      )}
-    >
-      <Bookmark className={cn(saved && "fill-current")} />
-    </Button>
+    <Hint label={label}>
+      <Button
+        type="button"
+        variant="subtle"
+        size="icon-md"
+        aria-label={label}
+        aria-pressed={saved}
+        disabled={disabled}
+        loading={pending}
+        onClick={onClick}
+        className={cn(
+          "shrink-0 bg-black/12 text-white hover:bg-black/25 hover:text-white focus-visible:ring-white/60",
+          className,
+        )}
+      >
+        <Bookmark className={cn(saved && "fill-current")} />
+      </Button>
+    </Hint>
   );
 }
