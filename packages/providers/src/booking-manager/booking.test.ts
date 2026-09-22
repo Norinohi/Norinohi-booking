@@ -19,7 +19,11 @@ import {
 import { SequentialQueue } from "../shared/queue";
 import { providerRejection } from "../testing/contracts";
 import type { BookingDraft, Money } from "../types";
-import { createBookingManagerBookingService, operatorSettlementOf } from "./booking";
+import {
+  createBookingManagerBookingService,
+  operatorSettlementOf,
+  type FoundOwnOption,
+} from "./booking";
 import { restReservationSchema } from "./endpoints";
 import { parseExactJson } from "../shared/exact-json";
 import { BookingManagerClient } from "./client";
@@ -957,8 +961,8 @@ describe("createOption after a create that did not answer", () => {
     const { calls, service } = routedService(
       pipoVendor(() => ({ status: 400, body: "Yacht is not available, own Option exists." })),
       {
-        bookingHolding: (ids) =>
-          Promise.resolve(ids.includes(PIPO_CHARTER) ? "bkg_other" : undefined),
+        bookingHolding: ({ reservationIds }) =>
+          Promise.resolve(reservationIds.includes(PIPO_CHARTER) ? "bkg_other" : undefined),
       },
     );
 
@@ -967,6 +971,38 @@ describe("createOption after a create that did not answer", () => {
     expect(error.providerCode).toBe(OWN_OPTION_HELD);
     expect(error.message).toContain("bkg_other");
     expect(calls.map((call) => call.method)).not.toContain("DELETE");
+  });
+
+  it("leaves an orphan alone while another checkout of the same week is still in flight", async () => {
+    const asked: FoundOwnOption[] = [];
+    const { calls, service } = routedService(
+      pipoVendor(() => ({ status: 400, body: "Yacht is not available, own Option exists." })),
+      {
+        bookingHolding: (found) => {
+          asked.push(found);
+          return Promise.resolve("bkg_pending");
+        },
+      },
+    );
+
+    const error = await providerRejection(
+      service.createOption({
+        ...auditDraft,
+        customer: { name: "Ana", surname: "Horvat", email: "a@example.com" },
+      }),
+    );
+
+    expect(error.providerCode).toBe(OWN_OPTION_HELD);
+    expect(asked).toEqual([
+      {
+        reservationIds: [PIPO_CHARTER, PIPO_AGENCY],
+        listingId: auditDraft.listingId,
+        checkIn: auditDraft.checkIn,
+        checkOut: auditDraft.checkOut,
+        quoteId: auditDraft.quoteId,
+      },
+    ]);
+    expect(calls.map((call) => call.method)).toEqual(["POST", "GET", "GET", "GET"]);
   });
 
   it("keeps the timeout where no option of ours is on the slot", async () => {

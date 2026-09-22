@@ -1,5 +1,6 @@
 import { booking, SLOT_HOLDING_STATUSES } from "@yacht-charter/db/schema/booking";
-import { and, eq, inArray, or } from "drizzle-orm";
+import { quote } from "@yacht-charter/db/schema/quote";
+import { and, eq, inArray, ne, or } from "drizzle-orm";
 import { log, parseError } from "evlog";
 import { z } from "zod";
 
@@ -105,11 +106,11 @@ export interface BookingManagerBookingServiceDeps {
   /** The listing's product for a vendor yacht; the same loader the quote names it from. */
   loadProductName?: (externalYachtId: string) => Promise<string | undefined>;
   /**
-   * Which of our live bookings, if any, holds a reservation known by any of these ids. Asked
-   * before an option of ours found on the slot is released or taken over, since it may be
-   * another customer's hold. Defaults to reading `booking`.
+   * Which of our live bookings, if any, may hold an option of ours found on the slot. Asked
+   * before that option is released or taken over, since it may be another customer's hold.
+   * Defaults to reading `booking`; see `liveBookingHolding`.
    */
-  bookingHolding?: (reservationIds: readonly string[]) => Promise<string | undefined>;
+  bookingHolding?: (found: FoundOwnOption) => Promise<string | undefined>;
   /**
    * The vendor's own client record id, when the agency keeps one. Left unset the
    * reservation carries only `clientName` (Q-BM-CLIENT: MMK has not confirmed how
@@ -168,7 +169,7 @@ export function createBookingManagerBookingService(
   const recordEvent = deps.recordEvent ?? createReservationEventRecorder(db, PROVIDER);
   const currency = deps.currency ?? "EUR";
   const sendNotification = deps.sendNotification ?? false;
-  const bookingHolding = deps.bookingHolding ?? ((ids) => liveBookingHolding(db, ids));
+  const bookingHolding = deps.bookingHolding ?? ((found) => liveBookingHolding(db, found));
 
   /**
    * The create body. `status` is not sent: POST can only ever open an option, and the vendor
@@ -270,7 +271,7 @@ export function createBookingManagerBookingService(
       if (!ownOption && !(cause instanceof TransientError)) {
         throw cause instanceof SlotUnavailableError ? refusalInOurTerms(cause, terms) : cause;
       }
-      ({ response, agencyId } = await settleOwnOption(request, current, cause));
+      ({ response, agencyId } = await settleOwnOption(parsed, request, current, cause));
     }
 
     await logEvent(parsed.quoteId, "option_created", response);
@@ -291,10 +292,12 @@ export function createBookingManagerBookingService(
    * The option is looked up rather than the create sent again. One no live booking of ours holds
    * is an orphan: taken over when it is open and on exactly our terms for this customer, which
    * is the create that timed out, and otherwise released and the create sent once more. One a
-   * live booking holds is that booking's, and the slot is refused. Where nothing is found, or the
+   * live booking holds, or another checkout of the week may still be waiting on, is that
+   * booking's, and the slot is refused. Where nothing is found, or the
    * lookup fails, the original refusal stands.
    */
   async function settleOwnOption(
+    draft: BookingDraft,
     request: { body: ReservationBody; terms: ReservationTerms },
     verified: VerifiedPrice,
     cause: ProviderError,
@@ -328,7 +331,13 @@ export function createBookingManagerBookingService(
     }
 
     const ids = [found.charterId, found.agencyId].filter((id): id is string => id !== undefined);
-    const holder = await bookingHolding(ids);
+    const holder = await bookingHolding({
+      reservationIds: ids,
+      listingId: draft.listingId,
+      checkIn: draft.checkIn,
+      checkOut: draft.checkOut,
+      quoteId: draft.quoteId,
+    });
     if (holder) {
       throw new SlotUnavailableError(
         `Booking Manager slot for yacht ${terms.yachtId} from ${terms.checkIn} is held by our own option ${ids.join("/")}, which booking ${holder} holds`,
@@ -853,25 +862,54 @@ interface OwnOption {
   record: RestReservation;
 }
 
-/** The booking of ours still holding a reservation known by any of these ids. */
+/** An option of ours found on a slot, and the hold that is asking about it. */
+export interface FoundOwnOption {
+  reservationIds: readonly string[];
+  listingId: string;
+  checkIn: string;
+  checkOut: string;
+  /** The quote being held, whose own booking is the one asking and never counts. */
+  quoteId: string;
+}
+
+/**
+ * The booking of ours that holds, or may hold, the option found on a slot.
+ *
+ * A live booking carrying any of the option's ids holds it. So may another booking still in
+ * OPTION_PENDING on the same listing and dates: its POST can have landed at the vendor while
+ * its answer, and with it the ids, is still on the way, and nothing stops two customers
+ * checking out the same week at once. Releasing that option would hand the first customer a
+ * reservation already deleted, so while such a booking exists the option counts as its.
+ */
 export async function liveBookingHolding(
   db: Database,
-  reservationIds: readonly string[],
+  found: FoundOwnOption,
 ): Promise<string | undefined> {
-  if (reservationIds.length === 0) return undefined;
-  const ids = [...reservationIds];
+  const ids = [...found.reservationIds];
+  const byId =
+    ids.length > 0
+      ? or(
+          inArray(booking.providerReservationId, ids),
+          inArray(booking.providerOptionId, ids),
+          inArray(booking.providerAgencyReservationId, ids),
+        )
+      : undefined;
+  const inFlight = and(
+    eq(booking.status, "OPTION_PENDING"),
+    eq(booking.listingId, found.listingId),
+    ne(booking.quoteId, found.quoteId),
+    eq(quote.checkIn, found.checkIn),
+    eq(quote.checkOut, found.checkOut),
+  );
   const [row] = await db
     .select({ id: booking.id })
     .from(booking)
+    .innerJoin(quote, eq(quote.id, booking.quoteId))
     .where(
       and(
         eq(booking.provider, PROVIDER),
         inArray(booking.status, [...SLOT_HOLDING_STATUSES]),
-        or(
-          inArray(booking.providerReservationId, ids),
-          inArray(booking.providerOptionId, ids),
-          inArray(booking.providerAgencyReservationId, ids),
-        ),
+        byId ? or(byId, inFlight) : inFlight,
       ),
     )
     .limit(1);
