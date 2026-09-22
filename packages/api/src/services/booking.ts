@@ -22,7 +22,7 @@ import {
   type FacetTranslator,
 } from "@yacht-charter/db/search";
 import type { InventoryProvider } from "@yacht-charter/providers";
-import { parseError } from "evlog";
+import { log, parseError } from "evlog";
 import { and, count, desc, eq, gte, inArray, lte, notInArray, sql } from "drizzle-orm";
 import type { z } from "zod";
 
@@ -58,6 +58,7 @@ import { amountDue, atCheckInMinor, outstandingMinor, payableNowFor } from "./ch
 import { enqueueOutbox, kickOutbox } from "./outbox";
 import { redeemDiscount } from "./discount-redemption";
 import { redeemCredit } from "./loyalty";
+import { operatorDueBeforeCustomer, payableNowMinor } from "./pricing";
 import { paginatedQuery, totalFrom } from "./pagination";
 import { recordEvent, releaseProviderOption, type ProviderRelease } from "./provider-option";
 import { isUniqueViolation, violatedConstraint } from "./pg-errors";
@@ -632,6 +633,26 @@ async function holdOption(
     await recordEvent(db, held.id, "option_created", held.provider, reservation.providerOptionId, {
       reservation,
     });
+
+    /* The operator's own plan arrives only now, with the option; a customer schedule that
+       leaves us paying first is ours to cover, so it is said out loud rather than found later. */
+    if (reservation.operatorSettlement) {
+      const exposedOn = operatorDueBeforeCustomer(
+        priced.paymentPolicy,
+        priced.depositMinor,
+        payableNowMinor(priced.lines),
+        reservation.operatorSettlement,
+      );
+      if (exposedOn) {
+        log.warn({
+          action: "booking.operator_due_before_customer",
+          bookingId: held.id,
+          provider: held.provider,
+          operatorDueOn: exposedOn,
+          balanceDueAt: priced.paymentPolicy.balanceDueAt ?? null,
+        });
+      }
+    }
 
     // Only now that the slot is ours.
     await redeem();

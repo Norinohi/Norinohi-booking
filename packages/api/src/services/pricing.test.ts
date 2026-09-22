@@ -2,6 +2,7 @@ import type { QuoteLine, QuotePaymentPolicy } from "@yacht-charter/db/schema/quo
 import { describe, expect, it } from "vitest";
 
 import {
+  operatorDueBeforeCustomer,
   type PriceAdjustment,
   buildPaymentSchedulePreview,
   payableNowMinor,
@@ -437,5 +438,77 @@ describe("perPersonMinor", () => {
 
   it("returns null rather than dividing by zero", () => {
     expect(perPersonMinor(1_000_000, 0)).toBeNull();
+  });
+});
+
+/*
+ * Booking Manager states what we owe the operator only on the option. On company 225 the
+ * customer's plan and the operator's fell due the same day, 2026-09-29.
+ */
+describe("operatorDueBeforeCustomer", () => {
+  const deposit = {
+    mode: "deposit" as const,
+    depositPct: 0.5,
+    balanceDueAt: "2027-05-01",
+    currency: "EUR",
+  };
+  const owing = (plan: { dueDate: string; amountMinor: number }[]) => ({
+    currency: "EUR",
+    netMinor: 340_000,
+    plan,
+  });
+
+  it("stays quiet where the customer pays ahead of every instalment", () => {
+    expect(
+      operatorDueBeforeCustomer(
+        deposit,
+        200_000,
+        400_000,
+        owing([
+          { dueDate: "2026-09-29", amountMinor: 170_000 },
+          { dueDate: "2027-05-08", amountMinor: 170_000 },
+        ]),
+      ),
+    ).toBeUndefined();
+  });
+
+  it("names the day we would owe more than the customer has paid", () => {
+    expect(
+      operatorDueBeforeCustomer(
+        deposit,
+        200_000,
+        400_000,
+        owing([
+          { dueDate: "2026-09-29", amountMinor: 170_000 },
+          { dueDate: "2027-04-20", amountMinor: 170_000 },
+        ]),
+      ),
+    ).toBe("2027-04-20");
+  });
+
+  it("counts an undated balance as not collected", () => {
+    expect(
+      operatorDueBeforeCustomer(
+        { ...deposit, balanceDueAt: undefined },
+        100_000,
+        400_000,
+        owing([{ dueDate: "2027-05-08", amountMinor: 340_000 }]),
+      ),
+    ).toBe("2027-05-08");
+  });
+
+  it("stays quiet where the customer pays in full now, or in another currency", () => {
+    const plan = owing([{ dueDate: "2026-09-29", amountMinor: 340_000 }]);
+    expect(
+      operatorDueBeforeCustomer(
+        { mode: "full", depositPct: 1, currency: "EUR" },
+        400_000,
+        400_000,
+        plan,
+      ),
+    ).toBeUndefined();
+    expect(
+      operatorDueBeforeCustomer({ ...deposit, currency: "GBP" }, 100_000, 400_000, plan),
+    ).toBeUndefined();
   });
 });

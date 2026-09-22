@@ -34,6 +34,13 @@ const source: BookingManagerEnvSource = {
 };
 
 describe("resolveBookingManagerConfig", () => {
+  it("carries the customer's balance lead where one is set", () => {
+    expect(
+      resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_BALANCE_LEAD_DAYS: 10 }),
+    ).toMatchObject({ balanceLeadDays: 10 });
+    expect(resolveBookingManagerConfig(source)).not.toHaveProperty("balanceLeadDays");
+  });
+
   it("refuses a sweep concurrency that could trip the vendor's 20-call ceiling", () => {
     expect(() =>
       resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_SWEEP_CONCURRENCY: 13 }),

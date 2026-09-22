@@ -24,6 +24,11 @@ export interface BookingManagerConfig {
   /** `holdExpiresAt = expirationDate − this`, so our sweeper releases first. */
   optionSafetyMarginMinutes: number;
   /**
+   * How many days before the vendor's balance date the customer's falls due, since that date is
+   * also when we owe the operator. Unset takes `BM_BALANCE_LEAD_DAYS`.
+   */
+  balanceLeadDays?: number;
+  /**
    * Zone the vendor's naked wall-clock datetimes are read in. MMK support
    * confirmed (Aug 2026) they are a fixed CET clock that observes daylight
    * saving, so this must stay a real IANA zone in that offset family; a fixed
@@ -52,6 +57,7 @@ export interface BookingManagerEnvSource {
   BOOKING_MANAGER_SWEEP_CONCURRENCY: number;
   BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY: number;
   BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: number;
+  BOOKING_MANAGER_BALANCE_LEAD_DAYS?: number | undefined;
   BOOKING_MANAGER_TIMEZONE: string;
 }
 
@@ -110,6 +116,9 @@ export function resolveBookingManagerConfig(
     sweepConcurrency: source.BOOKING_MANAGER_SWEEP_CONCURRENCY,
     priceWeeksConcurrency: source.BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY,
     optionSafetyMarginMinutes: source.BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES,
+    ...(source.BOOKING_MANAGER_BALANCE_LEAD_DAYS === undefined
+      ? null
+      : { balanceLeadDays: source.BOOKING_MANAGER_BALANCE_LEAD_DAYS }),
     timeZone: source.BOOKING_MANAGER_TIMEZONE,
     queueKey: bookingManagerQueueKey(apiToken),
   };

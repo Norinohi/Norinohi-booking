@@ -239,6 +239,7 @@ export function createBookingManagerQuoteService(
         requestedCurrency: parsed.currency,
         maxDiscountFromCommissionPercentage,
         expiresAt: new Date(now() + quoteTtlMs).toISOString(),
+        balanceLeadDays: options.config.balanceLeadDays,
         /* The catalogue answers first; an extra the sync never recorded falls
            through to whatever the caller knows. */
         labelFor: (externalId) =>
@@ -453,7 +454,15 @@ export interface OfferMapping {
   maxDiscountFromCommissionPercentage?: number | undefined;
   expiresAt: string;
   labelFor?: ((externalId: string) => string | undefined) | undefined;
+  /** Days before the vendor's balance date that the customer's falls due; see `toPaymentPolicy`. */
+  balanceLeadDays?: number | undefined;
 }
+
+/**
+ * The default for `balanceLeadDays`: a week covers a SEPA transfer and a reminder answered late,
+ * and stays well inside the 4 weeks before the charter where BM plans put their second date.
+ */
+export const BM_BALANCE_LEAD_DAYS = 7;
 
 /** Pure `RestOffer → ProviderQuote`. No I/O, no clock, no vendor field beyond this file. */
 export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
@@ -532,7 +541,12 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
   }
 
   const payableNowMinor = sumMinor(lines.filter((line) => line.payWhen === "now"));
-  const { policy, depositMinor } = toPaymentPolicy(offer, currency, payableNowMinor);
+  const { policy, depositMinor } = toPaymentPolicy(
+    offer,
+    currency,
+    payableNowMinor,
+    input.balanceLeadDays ?? BM_BALANCE_LEAD_DAYS,
+  );
   const priceSourceHash = priceObservationHash(offer, currency);
   const securityDeposit = securityDepositOf(offer, currency);
 
@@ -862,11 +876,18 @@ interface ResolvedPaymentPolicy {
  * everything that collects against it (schedule, reminders, Stripe), and the earliest date is
  * the safe one: we never owe the operator an instalment we have not yet collected. The service
  * logs each collapse, so how often it happens is measured rather than guessed.
+ *
+ * The customer's balance falls due `balanceLeadDays` before the vendor's date, not on it. The
+ * vendor's date is the day we owe the operator too: on company 225 `paymentPlan` and
+ * `agencyPaymentPlan` carried the same date, so a balance due that day leaves nothing for a late
+ * payer or a bank transfer in flight. A balance that would then fall due by the day the plan
+ * opens is taken now, in full.
  */
 function toPaymentPolicy(
   offer: RestOffer,
   currency: string,
   payableNowMinor: number,
+  balanceLeadDays: number,
 ): ResolvedPaymentPolicy {
   const plan = (offer.paymentPlan ?? []).filter((entry) => entry.amount != null);
   const [first, second] = plan;
@@ -896,8 +917,21 @@ function toPaymentPolicy(
     mode: "deposit",
     depositPct: depositMinor / planTotalMinor,
   };
-  if (second?.date) policy.balanceDueAt = parseBookingManagerDate(second.date);
+  if (second?.date) {
+    const balanceDueAt = daysBefore(parseBookingManagerDate(second.date), balanceLeadDays);
+    const opensOn = first.date ? parseBookingManagerDate(first.date) : undefined;
+    if (opensOn !== undefined && balanceDueAt <= opensOn) {
+      return { policy: { mode: "full", depositPct: 1 }, depositMinor: payableNowMinor };
+    }
+    policy.balanceDueAt = balanceDueAt;
+  }
   return { policy, depositMinor };
+}
+
+function daysBefore(date: string, days: number): string {
+  const at = new Date(`${date}T00:00:00Z`);
+  at.setUTCDate(at.getUTCDate() - days);
+  return at.toISOString().slice(0, 10);
 }
 
 /**

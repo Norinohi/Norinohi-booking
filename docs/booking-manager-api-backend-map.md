@@ -424,8 +424,15 @@ our own obligation to the operator, not a schedule we chose. That is conservativ
 on cash flow - we never collect less than we owe - but it lets each operator's
 terms set our customer-facing deposit, and MMK supports entering an agency plan of
 our own in the portal. **Q-BM-PAYPLAN**: decide whether to keep mirroring the
-charter's plan, or publish our own and read the agency plan back after confirm. We
-do not read it back today.
+charter's plan, or publish our own and read the agency plan back after confirm.
+
+What is done meanwhile: the customer's balance falls due `BOOKING_MANAGER_BALANCE_LEAD_DAYS`
+(default 7) before the plan's second date rather than on it, since that is also the day we
+owe the operator (on 225 `paymentPlan` and `agencyPaymentPlan` both fell due 2026-09-29), and
+a balance the lead would put on or before today is taken in full. The option's
+`agencyPaymentPlan` is stored as `booking.operator_settlement`, re-read after confirm, and a
+customer schedule that would leave us paying the operator first is logged as
+`booking.operator_due_before_customer`.
 
 **`showOptions` does not gate the payment plan.** The article's worked example
 passes `showOptions=True`, which reads as though the plan depends on it. Measured

@@ -290,6 +290,9 @@ export const env = createEnv({
     // We must release a hold before the vendor auto-expires it, otherwise we sell
     // a slot Booking Manager has already dropped.
     BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: z.coerce.number().int().nonnegative().default(15),
+    // Days before the vendor's balance date that the customer's balance falls due. The vendor's
+    // date is also the day we owe the operator, so the customer has to pay ahead of it.
+    BOOKING_MANAGER_BALANCE_LEAD_DAYS: z.coerce.number().int().nonnegative().max(60).default(7),
     // MMK support confirmed (Aug 2026) every non-/offers datetime is a fixed CET
     // clock that observes daylight saving, so this must stay a real IANA zone.
     BOOKING_MANAGER_TIMEZONE: z.string().min(1).default("Europe/Zagreb"),

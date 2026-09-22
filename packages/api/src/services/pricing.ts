@@ -1,5 +1,6 @@
 import { priceAdjustmentRule, priceAdjustmentTarget } from "@yacht-charter/db/schema/admin";
 import { listing } from "@yacht-charter/db/schema/listing";
+import type { OperatorSettlement } from "@yacht-charter/db/schema/booking";
 import type { QuoteLine, QuotePaymentPolicy } from "@yacht-charter/db/schema/quote";
 import { and, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
 
@@ -342,6 +343,33 @@ export function resolvePaymentPolicy(
       (mode === "deposit" ? (depositsClose ?? undefined) : undefined),
     currency,
   };
+}
+
+/**
+ * The first date on which we would owe the operator more than the customer has paid us by then,
+ * or undefined where the customer's schedule stays ahead of the operator's. The deposit counts
+ * from the day of booking and the balance from `balanceDueAt`; an undated balance counts as not
+ * collected, since nothing says when it will be. Only comparable in one currency.
+ */
+export function operatorDueBeforeCustomer(
+  policy: QuotePaymentPolicy,
+  depositMinor: number,
+  totalPayableMinor: number,
+  settlement: OperatorSettlement,
+): string | undefined {
+  if (settlement.currency !== policy.currency) return undefined;
+  const collectedBy = (date: string) => {
+    if (policy.mode === "full") return totalPayableMinor;
+    return policy.balanceDueAt !== undefined && policy.balanceDueAt <= date
+      ? totalPayableMinor
+      : depositMinor;
+  };
+  let owed = 0;
+  for (const entry of [...settlement.plan].sort((a, b) => a.dueDate.localeCompare(b.dueDate))) {
+    owed += entry.amountMinor;
+    if (owed > collectedBy(entry.dueDate)) return entry.dueDate;
+  }
+  return undefined;
 }
 
 /** The part of a quote we actually collect up front. */

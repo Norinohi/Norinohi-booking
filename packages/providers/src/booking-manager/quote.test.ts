@@ -588,13 +588,66 @@ describe("a payment plan of three instalments", () => {
     expiresAt: "2027-05-01T00:00:00.000Z",
   });
 
-  it("takes the first as the deposit and the rest as one balance due on the second's date", () => {
+  it("takes the first as the deposit and the rest as one balance due ahead of the second", () => {
     expect(quote.deposit).toEqual({ amountMinor: 180_000, currency: "EUR" });
     expect(quote.paymentPolicy).toEqual({
       mode: "deposit",
       depositPct: 0.3,
-      balanceDueAt: "2027-03-01",
+      balanceDueAt: "2027-02-22",
     });
+  });
+});
+
+/*
+ * The vendor's balance date is the day we owe the operator as well: on company 225 an option's
+ * `paymentPlan` and `agencyPaymentPlan` both fell due 2026-09-29. The customer pays ahead of it.
+ */
+describe("the customer's balance date", () => {
+  const planned = (plan: { date: string; amount: number }[], balanceLeadDays?: number) =>
+    mapOfferToProviderQuote({
+      offer: restOfferSchema.parse({
+        yachtId: "9001",
+        dateFrom: "2027-06-05 17:00:00",
+        dateTo: "2027-06-12 09:00:00",
+        price: 4000,
+        currency: "EUR",
+        paymentPlan: plan,
+      }),
+      listingId: "lst_1",
+      checkIn: "2027-06-05",
+      checkOut: "2027-06-12",
+      guests: 2,
+      requestedCurrency: "EUR",
+      expiresAt: "2026-09-22T12:00:00.000Z",
+      balanceLeadDays,
+    });
+  const halves = [
+    { date: "2026-09-22 00:18:26", amount: 2000 },
+    { date: "2027-05-08 00:00:00", amount: 2000 },
+  ];
+
+  it("falls due a week before the vendor's, by default", () => {
+    expect(planned(halves).paymentPolicy).toMatchObject({
+      mode: "deposit",
+      balanceDueAt: "2027-05-01",
+    });
+  });
+
+  it("follows the configured lead", () => {
+    expect(planned(halves, 14).paymentPolicy.balanceDueAt).toBe("2027-04-24");
+    expect(planned(halves, 0).paymentPolicy.balanceDueAt).toBe("2027-05-08");
+  });
+
+  it("is taken now in full when the lead would put it on or before today", () => {
+    const soon = [
+      { date: "2026-09-22 00:18:26", amount: 2000 },
+      { date: "2026-09-27 00:00:00", amount: 2000 },
+    ];
+
+    const quote = planned(soon);
+
+    expect(quote.paymentPolicy).toEqual({ mode: "full", depositPct: 1 });
+    expect(quote.deposit).toEqual({ amountMinor: 400_000, currency: "EUR" });
   });
 });
 
