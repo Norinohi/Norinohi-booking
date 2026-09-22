@@ -2,7 +2,12 @@ import "../test-support/checkout-env";
 
 import { quote as quoteTable } from "@yacht-charter/db/schema/quote";
 import { createTestDatabase, type TestDatabase } from "@yacht-charter/db/test-support/database";
-import { SlotUnavailableError, TransientError } from "@yacht-charter/providers/shared/errors";
+import {
+  ContractError,
+  OPTION_LAPSED,
+  SlotUnavailableError,
+  TransientError,
+} from "@yacht-charter/providers/shared/errors";
 import type { MockInventoryProvider } from "@yacht-charter/providers/mock/provider";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
@@ -25,6 +30,7 @@ import {
 } from "../test-support/fake-stripe";
 import { getBooking, getCheckoutStatus } from "./booking";
 import { confirmCheckout } from "./payment";
+import { listUnreleasedOptions } from "./provider-option";
 import { handleStripeWebhook } from "./stripe-webhook";
 
 /*
@@ -440,6 +446,94 @@ describe("provider refuses after the card was authorized", () => {
 
     expect((await bookingState(db, hold.bookingId)).booking.status).toBe("REFUNDED");
     expect(await weekOnSale(db, listingId)).toBe(true);
+  });
+});
+
+/*
+ * Booking Manager keeps an expired option (status 3) blocking its week until it is deleted, so a
+ * confirm refused on it has to hand the option back itself: no sweep looks at a refunded booking.
+ */
+describe("provider refuses the confirmation on an option that still blocks the week", () => {
+  async function refusedOnLapsedOption(slug: string) {
+    const { db } = test;
+    const { hold, pi } = await checkoutOn(slug);
+    const { booking } = await bookingState(db, hold.bookingId);
+    vi.spyOn(inventory, "capabilities").mockReturnValue({
+      ...inventory.capabilities(),
+      lapsedOptionHoldsSlot: true,
+    });
+    vi.spyOn(inventory, "confirmBooking").mockRejectedValueOnce(
+      new SlotUnavailableError("Booking Manager option is Option expired", {
+        providerCode: OPTION_LAPSED,
+      }),
+    );
+    return { hold, pi, booking };
+  }
+
+  it("deletes the option after refusing the booking", async () => {
+    const { db } = test;
+    const { hold, pi, booking } = await refusedOnLapsedOption("lapsed-confirm");
+    const cancel = vi.spyOn(inventory, "cancelOption");
+
+    try {
+      await deliver(
+        db,
+        inventory,
+        stripe,
+        eventBody(
+          "payment_intent.amount_capturable_updated",
+          stripe.settle(pi, "requires_capture"),
+        ),
+      );
+    } finally {
+      vi.mocked(inventory.capabilities).mockRestore();
+    }
+
+    expect(cancel).toHaveBeenCalledWith({
+      providerReservationId: booking.providerReservationId,
+      securityToken: booking.providerReservationUuid,
+    });
+    const refused = await bookingState(db, hold.bookingId);
+    expect(refused.booking.status).toBe("REFUND_PENDING");
+    expect(refused.events.map((event) => event.kind)).toEqual([
+      "option_created",
+      "confirm_failed",
+      "cancel_succeeded",
+    ]);
+    cancel.mockRestore();
+  });
+
+  it("lists a delete the vendor refuses for a person to free", async () => {
+    const { db } = test;
+    const { hold, pi } = await refusedOnLapsedOption("lapsed-stuck");
+    const cancel = vi.spyOn(inventory, "cancelOption").mockRejectedValueOnce(
+      new ContractError("the vendor refused to delete it", {
+        providerCode: "EXPIRED_OPTION_NOT_RELEASED",
+      }),
+    );
+
+    try {
+      await deliver(
+        db,
+        inventory,
+        stripe,
+        eventBody(
+          "payment_intent.amount_capturable_updated",
+          stripe.settle(pi, "requires_capture"),
+        ),
+      );
+    } finally {
+      vi.mocked(inventory.capabilities).mockRestore();
+      cancel.mockRestore();
+    }
+
+    expect((await bookingState(db, hold.bookingId)).booking.status).toBe("REFUND_PENDING");
+    expect(await listUnreleasedOptions(db)).toContainEqual(
+      expect.objectContaining({
+        bookingId: hold.bookingId,
+        reason: "the vendor refused to delete it",
+      }),
+    );
   });
 });
 

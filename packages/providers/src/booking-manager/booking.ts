@@ -715,15 +715,9 @@ export function createBookingManagerBookingService(
       );
     }
 
-    try {
-      await client.del(endpoint, cancelResponseSchema);
-    } catch (cause) {
-      if (existing.status !== BM_RESERVATION_STATUS.OPTION_EXPIRED) throw cause;
-      if (cause instanceof ProviderError && cause.retryable) throw cause;
-      throw new ContractError(
-        `Booking Manager option ${id} has expired and still blocks its week, and the vendor refused to delete it; the operator has to release it`,
-        { endpoint, providerCode: "EXPIRED_OPTION_NOT_RELEASED", cause },
-      );
+    /* Measured on 225: a cancelled record no longer blocks /offers, so it is already released. */
+    if (existing.status !== BM_RESERVATION_STATUS.CANCELLED) {
+      await deleteOption(id, endpoint, existing.status);
     }
 
     const listingId =
@@ -741,6 +735,23 @@ export function createBookingManagerBookingService(
       status: "cancelled",
       providerReservationId: String(id),
     });
+  }
+
+  async function deleteOption(
+    id: string,
+    endpoint: string,
+    status: RestReservation["status"],
+  ): Promise<void> {
+    try {
+      await client.del(endpoint, cancelResponseSchema);
+    } catch (cause) {
+      if (status !== BM_RESERVATION_STATUS.OPTION_EXPIRED) throw cause;
+      if (cause instanceof ProviderError && cause.retryable) throw cause;
+      throw new ContractError(
+        `Booking Manager option ${id} has expired and still blocks its week, and the vendor refused to delete it; the operator has to release it`,
+        { endpoint, providerCode: "EXPIRED_OPTION_NOT_RELEASED", cause },
+      );
+    }
   }
 
   /**

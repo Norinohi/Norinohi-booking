@@ -685,6 +685,20 @@ describe("cancelOption on an expired option", () => {
   });
 });
 
+/* A deleted option reads back as status 5, and on 225 its week was on sale again in /offers. */
+describe("cancelOption on an option already cancelled", () => {
+  it("answers released without deleting it a second time", async () => {
+    const { calls, service } = scriptedService({
+      GET: [{ status: 200, body: `{"id":${CHARTER_ID},"status":5,"yachtId":978990780000100225}` }],
+    });
+
+    await expect(
+      service.cancelOption({ providerReservationId: CHARTER_ID }),
+    ).resolves.toMatchObject({ status: "cancelled" });
+    expect(calls.map((call) => call.method)).toEqual(["GET"]);
+  });
+});
+
 /*
  * POST /reservation's plain-text 400s on company 225, 2026-09-22. Each says the charter cannot
  * be opened, and which reason decides whether the week may come off the card for everyone.

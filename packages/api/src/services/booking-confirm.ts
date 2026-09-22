@@ -17,6 +17,7 @@ import { canTransition, type BookingStatus } from "./booking-state";
 import { recordProviderFailure } from "./error-audit";
 import { outstandingMinor } from "./checkout-amounts";
 import { awardReferralCredit } from "./loyalty";
+import { releaseProviderOption } from "./provider-option";
 import { asCrewType, learnFromProviderRefusal } from "./quote";
 
 type ConfirmRequest = Parameters<InventoryProvider["confirmBooking"]>[0];
@@ -185,6 +186,15 @@ export async function confirmBookingWithProvider(
       provider: row.provider,
     });
     await markRejected(db, bookingId, row.provider, failure);
+    /*
+     * A refused confirm leaves our option where it was. Where the vendor keeps a lapsed option
+     * blocking its week until it is deleted, as Booking Manager does with status 3, nothing else
+     * would ever hand it back: the sweeps release held bookings only, and this one is now owed a
+     * refund. A release that does not land is queued or listed there like any other.
+     */
+    if (provider.capabilities().lapsedOptionHoldsSlot) {
+      await releaseProviderOption(db, provider, row);
+    }
     /*
      * And take the week off the card, where the vendor said it is the week that is gone.
      *
