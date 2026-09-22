@@ -3,7 +3,8 @@ import type { z } from "zod";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { ContractError, ROUTE_NOT_OFFERED, SlotUnavailableError } from "../shared/errors";
 import { formatExtraCode } from "../shared/extra-code";
-import { toExactPositiveIntId } from "../shared/projection-helpers";
+import { stripHtml } from "../shared/html-text";
+import { text, toExactPositiveIntId } from "../shared/projection-helpers";
 import { stableSourceHash } from "../shared/raw-retention";
 import { DEFAULT_LINE_LABELS } from "../shared/generic-labels";
 import { wallClockTime } from "../shared/wall-clock";
@@ -568,11 +569,14 @@ function commissionOf(offer: RestOffer, currency: string): ProviderQuoteCommissi
 /* ------------------------------------------------------------------- lines */
 
 /**
- * `price` is already net of `discountPercentage`; `startPrice` is what the same
- * charter costs without it. The discount is shown as its own line only when the
- * two reconcile exactly, so a customer sees where the reduction came from. When
- * they do not, `price` wins and the discount is dropped from the quote rather
- * than guessed at: it is the only number the vendor bills against.
+ * `price` is already net of `discountPercentage`; `startPrice` is what the same charter costs
+ * without it. The reduction is shown as lines of its own only where the vendor accounts for it,
+ * so a customer sees where it came from: one line per `discounts` entry, under the operator's
+ * name for it ("Early booking 2027"), where those add up to `startPrice - price`; else one
+ * unnamed line where `discountPercentage` explains it. Each check allows a cent per figure,
+ * because every figure is rounded on its own (30.000002 percent on one live offer). Where
+ * neither accounts for it, `price` wins and the discount is dropped from the quote rather than
+ * guessed at: it is the only number the vendor bills against.
  */
 function buildCharterLines(offer: RestOffer, currency: string, priceMinor: number): QuoteLine[] {
   const base = (amountMinor: number): QuoteLine => ({
@@ -582,32 +586,66 @@ function buildCharterLines(offer: RestOffer, currency: string, priceMinor: numbe
     payWhen: "now",
     kind: "base",
   });
+  const discount = (code: string, label: string, amountMinor: number): QuoteLine => ({
+    code,
+    label,
+    amount: { amountMinor: -amountMinor, currency },
+    payWhen: "now",
+    kind: "discount",
+  });
 
-  if (offer.startPrice == null || !offer.discountPercentage) {
-    return [base(priceMinor)];
-  }
-
+  if (offer.startPrice == null) return [base(priceMinor)];
   const startPriceMinor = numberToMinor(offer.startPrice, currency, "startPrice");
   const discountMinor = startPriceMinor - priceMinor;
-  if (discountMinor <= 0) {
-    return [base(priceMinor)];
+  if (discountMinor <= 0) return [base(priceMinor)];
+
+  const named = namedDiscounts(offer, currency);
+  const namedMinor = named.reduce((total, entry) => total + entry.amountMinor, 0);
+  if (named.length > 0 && Math.abs(discountMinor - namedMinor) <= named.length) {
+    const largest = named.reduce((top, entry) =>
+      entry.amountMinor > top.amountMinor ? entry : top,
+    );
+    largest.amountMinor += discountMinor - namedMinor;
+    return [
+      base(startPriceMinor),
+      ...named.map((entry) => discount(entry.code, entry.label, entry.amountMinor)),
+    ];
   }
 
-  const expected = Math.round((startPriceMinor * offer.discountPercentage) / 100);
-  if (expected !== discountMinor) {
-    return [base(priceMinor)];
+  if (offer.discountPercentage) {
+    const expected = Math.round((startPriceMinor * offer.discountPercentage) / 100);
+    if (Math.abs(expected - discountMinor) <= 1) {
+      return [
+        base(startPriceMinor),
+        discount("bm-discount", DEFAULT_LABELS.discount, discountMinor),
+      ];
+    }
   }
 
-  return [
-    base(startPriceMinor),
-    {
-      code: "bm-discount",
-      label: DEFAULT_LABELS.discount,
-      amount: { amountMinor: -discountMinor, currency },
-      payWhen: "now",
-      kind: "discount",
-    },
-  ];
+  return [base(priceMinor)];
+}
+
+interface NamedDiscount {
+  code: string;
+  label: string;
+  amountMinor: number;
+}
+
+/** The offer's itemised discounts, or none where any one of them cannot be read as a reduction. */
+function namedDiscounts(offer: RestOffer, currency: string): NamedDiscount[] {
+  const entries = offer.discounts ?? [];
+  const named: NamedDiscount[] = [];
+  for (const [index, entry] of entries.entries()) {
+    if (entry.price == null || (entry.currency && entry.currency !== currency)) return [];
+    const amountMinor = numberToMinor(entry.price, currency, "discounts[].price");
+    if (amountMinor <= 0) return [];
+    named.push({
+      code: `bm-discount-${entry.id ?? index + 1}`,
+      label: entry.name?.trim() || DEFAULT_LABELS.discount,
+      amountMinor,
+    });
+  }
+  return named;
 }
 
 /**
@@ -655,14 +693,17 @@ function toExtraLine(
         { endpoint: bookingManagerEndpoints.offers, providerCode: "PERCENTAGE_EXTRA" },
       );
     }
-    return {
-      code: formatExtraCode(EXTRA_KIND, externalId),
-      label: input.labelFor?.(externalId) ?? extra.name?.trim() ?? DEFAULT_LABELS.extra,
-      amount: { amountMinor: percentageOfCharter(offer, extra.percentage, currency), currency },
-      payWhen: extra.payableInBase ? "at_check_in" : "now",
-      kind: "extra",
-      group: "mandatory",
-    };
+    return withNote(
+      {
+        code: formatExtraCode(EXTRA_KIND, externalId),
+        label: input.labelFor?.(externalId) ?? extra.name?.trim() ?? DEFAULT_LABELS.extra,
+        amount: { amountMinor: percentageOfCharter(offer, extra.percentage, currency), currency },
+        payWhen: extra.payableInBase ? "at_check_in" : "now",
+        kind: "extra",
+        group: "mandatory",
+      },
+      extra,
+    );
   }
   if (extra.price == null) {
     throw new ContractError(
@@ -676,16 +717,29 @@ function toExtraLine(
   // live `/offers` on 2026-08-20 by re-reading one yacht at 1/2/4/6/8 passengers,
   // where a per-person extra came back at 70, 140, 280, 420, 560 while the base
   // price held. Multiplying by `guests` here would double-count the headcount.
-  return {
-    code: formatExtraCode(EXTRA_KIND, externalId),
-    label: input.labelFor?.(externalId) ?? extra.name?.trim() ?? DEFAULT_LABELS.extra,
-    amount: { amountMinor: numberToMinor(extra.price, currency, `extra ${externalId}`), currency },
-    // Settled with the base on arrival: it counts toward the total but never
-    // toward what we collect now.
-    payWhen: extra.payableInBase ? "at_check_in" : "now",
-    kind: "extra",
-    group: "mandatory",
-  };
+  return withNote(
+    {
+      code: formatExtraCode(EXTRA_KIND, externalId),
+      label: input.labelFor?.(externalId) ?? extra.name?.trim() ?? DEFAULT_LABELS.extra,
+      amount: {
+        amountMinor: numberToMinor(extra.price, currency, `extra ${externalId}`),
+        currency,
+      },
+      // Settled with the base on arrival: it counts toward the total but never
+      // toward what we collect now.
+      payWhen: extra.payableInBase ? "at_check_in" : "now",
+      kind: "extra",
+      group: "mandatory",
+    },
+    extra,
+  );
+}
+
+/** The operator's own terms for the charge, as plain text; the catalogue files the same note. */
+function withNote(line: QuoteLine, extra: RestExtras): QuoteLine {
+  const note = stripHtml(text(extra.description));
+  if (note) line.note = note;
+  return line;
 }
 
 function sumMinor(lines: readonly QuoteLine[]): number {

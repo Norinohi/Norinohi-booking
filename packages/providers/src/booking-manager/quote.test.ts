@@ -169,6 +169,22 @@ describe("mapOfferToProviderQuote extras", () => {
     expect(quote.lines.find((line) => line.kind === "extra")?.label).toBe("Final cleaning");
   });
 
+  it("carries the operator's terms for an extra as the line's note, as plain text", () => {
+    const quote = mapOfferToProviderQuote(
+      mappingFor({ ...cleaning, description: "<p>Includes <b>final</b> cleaning &amp; gas</p>" }),
+    );
+
+    expect(quote.lines.find((line) => line.kind === "extra")?.note).toBe(
+      "Includes final cleaning & gas",
+    );
+  });
+
+  it("writes no note where the operator left the description empty", () => {
+    const quote = mapOfferToProviderQuote(mappingFor({ ...cleaning, description: "" }));
+
+    expect(quote.lines.find((line) => line.kind === "extra")).not.toHaveProperty("note");
+  });
+
   it("falls back to the offer's own name when the catalogue does not know the extra", () => {
     const quote = mapOfferToProviderQuote(
       mappingFor({ ...cleaning, name: "Final cleaning" }, () => undefined),
@@ -369,6 +385,48 @@ describe("an offer on the vendor's short base ids", () => {
     expect(
       selectOffer([rumba], yachtId, "2027-06-05", "2027-06-12", undefined, { endBaseId: "0" }),
     ).toBe(rumba);
+  });
+
+  it("names the discount the way the operator does", () => {
+    const quote = mapOfferToProviderQuote({
+      offer: rumba,
+      listingId: "lst_rumba",
+      checkIn: "2027-06-05",
+      checkOut: "2027-06-12",
+      guests: 4,
+      requestedCurrency: "EUR",
+      expiresAt: "2027-05-01T00:00:00.000Z",
+    });
+
+    expect(quote.lines).toEqual([
+      expect.objectContaining({
+        code: "base-charter",
+        amount: { amountMinor: 500_000, currency: "EUR" },
+      }),
+      expect.objectContaining({
+        code: "bm-discount-8294180160000100225",
+        label: "Early booking 2027",
+        kind: "discount",
+        amount: { amountMinor: -40_000, currency: "EUR" },
+      }),
+    ]);
+    expect(quote.total.amountMinor).toBe(460_000);
+  });
+
+  it("names the discount off its percentage where the steps do not add up", () => {
+    const quote = mapOfferToProviderQuote({
+      offer: { ...rumba, discounts: [{ id: "1", name: "Early booking 2027", price: 350 }] },
+      listingId: "lst_rumba",
+      checkIn: "2027-06-05",
+      checkOut: "2027-06-12",
+      guests: 4,
+      requestedCurrency: "EUR",
+      expiresAt: "2027-05-01T00:00:00.000Z",
+    });
+
+    expect(quote.lines.filter((line) => line.kind === "discount")).toEqual([
+      expect.objectContaining({ code: "bm-discount", label: "Charter discount" }),
+    ]);
   });
 
   it("names base 0 on the quote's route", () => {
