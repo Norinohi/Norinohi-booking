@@ -58,7 +58,7 @@ import { amountDue, atCheckInMinor, outstandingMinor, payableNowFor } from "./ch
 import { enqueueOutbox, kickOutbox } from "./outbox";
 import { redeemDiscount } from "./discount-redemption";
 import { redeemCredit } from "./loyalty";
-import { operatorDueBeforeCustomer, payableNowMinor } from "./pricing";
+import { operatorDueBeforeCustomer, payableNowMinor, perPersonMinor } from "./pricing";
 import { paginatedQuery, totalFrom } from "./pagination";
 import { recordEvent, releaseProviderOption, type ProviderRelease } from "./provider-option";
 import { isUniqueViolation, violatedConstraint } from "./pg-errors";
@@ -1241,7 +1241,7 @@ function presentSummary(
     guests: priced.guests,
     total: { amountMinor: row.totalMinor, currency: row.currency },
     perPerson: {
-      amountMinor: priced.guests ? Math.round(row.totalMinor / priced.guests) : row.totalMinor,
+      amountMinor: perPersonMinor(row.totalMinor, priced.guests) ?? row.totalMinor,
       currency: row.currency,
     },
     paidTotal: { amountMinor: paidMinor, currency: row.currency },

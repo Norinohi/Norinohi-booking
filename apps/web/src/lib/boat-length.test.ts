@@ -1,11 +1,9 @@
+import { createFormatter } from "next-intl";
 import { describe, expect, it } from "vitest";
 
 import { formatBoatLength, formatBoatLengthRange } from "./boat-length";
 
-const formatIn = (locale: string) => ({
-  number: (value: number, options?: Intl.NumberFormatOptions) =>
-    new Intl.NumberFormat(locale, options).format(value),
-});
+const formatIn = (locale: "en" | "uk") => createFormatter({ locale });
 
 describe("formatBoatLength", () => {
   it("puts whole feet first and metres to a decimal second", () => {

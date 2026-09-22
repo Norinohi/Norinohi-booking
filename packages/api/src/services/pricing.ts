@@ -372,6 +372,54 @@ export function operatorDueBeforeCustomer(
   return undefined;
 }
 
+/** One unit of the currency in minor units: every currency we price in has cents. */
+const WHOLE_UNIT_MINOR = 100;
+
+export const roundUpToWholeUnit = (amountMinor: number) =>
+  Math.ceil(amountMinor / WHOLE_UNIT_MINOR) * WHOLE_UNIT_MINOR;
+
+/**
+ * Raises what we collect up front to a whole unit of the currency, so a customer is charged
+ * 5,700 rather than 5,699.74. The cents are ours to take, never the base's: lines paid on
+ * arrival stay exactly what the operator asked.
+ *
+ * The rise goes into a line already on the quote rather than a line of its own, so the sidebar
+ * shows no "Rounding +0.26" row and every row it does show stays whole. The line that takes it
+ * is one the rise makes whole - usually the provider's percentage discount, which is where the
+ * cents come from, and which then gives 2,190 rather than 2,190.26 - and failing that the
+ * charter base, which is the line our own price rules already move.
+ */
+export function roundPayableNowUp(lines: readonly QuoteLine[]): QuoteLine[] {
+  const payable = payableNowMinor(lines);
+  const rise = roundUpToWholeUnit(payable) - payable;
+  if (rise === 0) return [...lines];
+
+  const takesItWhole = (line: QuoteLine) =>
+    line.payWhen === "now" && (line.amountMinor + rise) % WHOLE_UNIT_MINOR === 0;
+  const target = [
+    lines.findIndex((line) => line.kind === "discount" && takesItWhole(line)),
+    lines.findIndex(takesItWhole),
+    lines.findIndex((line) => line.kind === "base" && line.payWhen === "now"),
+  ].find((index) => index >= 0);
+
+  if (target === undefined) {
+    return [
+      ...lines,
+      {
+        code: "rounding",
+        label: "Rounding",
+        amountMinor: rise,
+        currency: lines[0]?.currency ?? "EUR",
+        payWhen: "now",
+        kind: "adjustment",
+      },
+    ];
+  }
+  return lines.map((line, index) =>
+    index === target ? { ...line, amountMinor: line.amountMinor + rise } : line,
+  );
+}
+
 /** The part of a quote we actually collect up front. */
 export function payableNowMinor(lines: readonly QuoteLine[]): number {
   return Math.max(
@@ -472,5 +520,5 @@ export function buildPaymentSchedulePreview(input: {
 /** Null rather than a division by zero; a quote always has at least one guest. */
 export function perPersonMinor(totalMinorAmount: number, guests: number): number | null {
   if (!Number.isFinite(guests) || guests <= 0) return null;
-  return Math.round(totalMinorAmount / guests);
+  return roundUpToWholeUnit(totalMinorAmount / guests);
 }

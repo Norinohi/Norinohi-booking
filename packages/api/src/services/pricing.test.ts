@@ -9,6 +9,7 @@ import {
   perPersonMinor,
   resolveAdjustedPrice,
   resolvePaymentPolicy,
+  roundPayableNowUp,
   totalMinor,
 } from "./pricing";
 
@@ -427,13 +428,61 @@ describe("buildPaymentSchedulePreview", () => {
   });
 });
 
+describe("roundPayableNowUp", () => {
+  const line = (over: Partial<QuoteLine>): QuoteLine => ({
+    code: "base-charter",
+    label: "Charter",
+    amountMinor: 789_000,
+    currency: "EUR",
+    payWhen: "now",
+    kind: "base",
+    ...over,
+  });
+  const discount = line({ code: "bm-discount", kind: "discount", amountMinor: -219_026 });
+  const checkInExtras = line({
+    code: "extra:1",
+    kind: "extra",
+    amountMinor: 45_000,
+    payWhen: "at_check_in",
+  });
+
+  it("charges the next whole unit, taking the cents off the discount they came from", () => {
+    const rounded = roundPayableNowUp([line({}), discount, checkInExtras]);
+
+    expect(payableNowMinor(rounded)).toBe(570_000);
+    expect(rounded.map((entry) => entry.amountMinor)).toEqual([789_000, -219_000, 45_000]);
+  });
+
+  it("raises the base when no discount can take the rise whole", () => {
+    const rounded = roundPayableNowUp([line({ amountMinor: 569_974 })]);
+
+    expect(rounded.map((entry) => entry.amountMinor)).toEqual([570_000]);
+  });
+
+  it("leaves what the base collects on arrival exactly as the operator asked", () => {
+    const rounded = roundPayableNowUp([
+      line({}),
+      discount,
+      line({ ...checkInExtras, amountMinor: 931 }),
+    ]);
+
+    expect(rounded.at(-1)?.amountMinor).toBe(931);
+  });
+
+  it("changes nothing on a whole figure", () => {
+    const lines = [line({}), checkInExtras];
+    expect(roundPayableNowUp(lines)).toEqual(lines);
+  });
+});
+
 describe("perPersonMinor", () => {
   it("splits the total across the party", () => {
     expect(perPersonMinor(1_200_000, 6)).toBe(200_000);
   });
 
-  it("rounds to the nearest minor unit", () => {
-    expect(perPersonMinor(1_000_00, 3)).toBe(33_333);
+  it("rounds up to a whole unit, so no share shows cents", () => {
+    expect(perPersonMinor(1_000_00, 3)).toBe(33_400);
+    expect(perPersonMinor(614_974, 2)).toBe(307_500);
   });
 
   it("returns null rather than dividing by zero", () => {
