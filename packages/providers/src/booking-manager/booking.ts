@@ -64,14 +64,14 @@ const cancelResponseSchema = z.union([restReservationSchema, z.null(), z.looseOb
  * independent of the quote module, and so the refusal path is testable without a
  * second endpoint in play.
  *
- * `charterPrice` is the charter alone, net of the vendor's discounts and without extras,
- * which is the figure the reservation answers as `clientPrice`.
+ * `clientPrice` is what the reservation should answer as its own `clientPrice`: the charter net
+ * of the vendor's discounts plus the obligatory extras paid online, which POST adds unasked.
  */
 export type VerifyPrice = (draft: BookingDraft) => Promise<VerifiedPrice>;
 
 export interface VerifiedPrice {
   hash: string;
-  charterPrice?: Money;
+  clientPrice?: Money;
 }
 
 export interface BookingManagerBookingServiceDeps {
@@ -260,7 +260,7 @@ export function createBookingManagerBookingService(
 
     await logEvent(parsed.quoteId, "option_created", response);
 
-    const substituted = substitutionsIn(response, terms, current.charterPrice);
+    const substituted = substitutionsIn(response, terms, current.clientPrice);
     if (substituted.length > 0) await refuseSubstituted(response, substituted);
 
     const reservationId = String(response.id);
@@ -536,7 +536,7 @@ export interface Substitution {
 export function substitutionsIn(
   response: RestReservation,
   terms: ReservationTerms,
-  charterPrice: Money | undefined,
+  clientPrice: Money | undefined,
 ): Substitution[] {
   const found: Substitution[] = [];
   const differs = (
@@ -562,16 +562,16 @@ export function substitutionsIn(
   /* The price is only comparable in the money it was quoted in; a currency swap is reported above. */
   const currency = response.currency?.trim();
   if (
-    charterPrice !== undefined &&
+    clientPrice !== undefined &&
     response.clientPrice != null &&
     currency !== undefined &&
-    sameText(currency, charterPrice.currency)
+    sameText(currency, clientPrice.currency)
   ) {
     const answeredMinor = numberToMinor(response.clientPrice, currency, "clientPrice");
-    if (Math.abs(answeredMinor - charterPrice.amountMinor) > 1) {
+    if (Math.abs(answeredMinor - clientPrice.amountMinor) > 1) {
       found.push({
         field: "clientPrice",
-        asked: String(charterPrice.amountMinor),
+        asked: String(clientPrice.amountMinor),
         answered: String(answeredMinor),
       });
     }

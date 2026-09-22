@@ -15,7 +15,7 @@ import type { BookingManagerConfig } from "./config";
 import { restExtrasSchema, restOfferListSchema, restOfferSchema } from "./endpoints";
 import {
   createBookingManagerQuoteService,
-  charterPriceOf,
+  clientPriceOf,
   mapOfferToProviderQuote,
   type OfferMapping,
   repriceRequestFor,
@@ -867,6 +867,41 @@ describe("a quote the vendor converted", () => {
   it("drops a discount whose steps were rounded at another rate than the price", () => {
     // 8% of 5,219 is 417.52, while the rounded price leaves 418 between the two figures.
     expect(quote.lines.filter((line) => line.kind === "discount")).toEqual([]);
-    expect(charterPriceOf(quote)).toEqual({ amountMinor: 480_100, currency: "GBP" });
+  });
+
+  it("asks the reservation for the charter plus the APA paid online, in the quote's money", () => {
+    const apa = quote.lines.find((line) => line.kind === "extra" && line.payWhen === "now");
+    expect(apa?.amount).toEqual({ amountMinor: 42_270, currency: "GBP" });
+    expect(clientPriceOf(quote)).toEqual({ amountMinor: 480_100 + 42_270, currency: "GBP" });
+  });
+});
+
+/*
+ * The same yacht and week in EUR. A reservation opened on it answers `clientPrice` with the
+ * charter and the 500.00 APA the vendor adds on POST, never the extras settled at the base: on
+ * 225 reservation 8192657220000107113 came back at 501.00 for a 1.00 charter of this hull.
+ */
+describe("the price a reservation answers with", () => {
+  const westWind = restOfferListSchema
+    .parse(
+      parseExactJson(
+        readFileSync(new URL("fixtures/offers-225-2027-06-05.json", import.meta.url), "utf8"),
+      ),
+    )
+    .find((offer) => offer.yachtId === "978989630000100225");
+  if (westWind === undefined) throw new Error("fixture has no West Wind");
+  const quote = mapOfferToProviderQuote({
+    offer: westWind,
+    listingId: "lst_west_wind",
+    checkIn: "2027-06-05",
+    checkOut: "2027-06-12",
+    guests: 2,
+    requestedCurrency: "EUR",
+    expiresAt: "2027-05-01T00:00:00.000Z",
+  });
+
+  it("is the charter and the extras paid online, not those paid at the base", () => {
+    expect(quote.total.amountMinor).toBe(552_000 + 180_700);
+    expect(clientPriceOf(quote)).toEqual({ amountMinor: 552_000 + 50_000, currency: "EUR" });
   });
 });

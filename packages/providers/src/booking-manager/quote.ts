@@ -230,12 +230,17 @@ export function repriceRequestFor(draft: BookingDraft, fallbackCurrency: string)
 }
 
 /**
- * The charter alone, net of the vendor's discounts and without extras: the figure a reservation
- * answers as `clientPrice`. The quote's discount lines are all the vendor's; ours are applied later.
+ * What a reservation opened on this quote answers as `clientPrice`: every line paid through us,
+ * that is the charter net of the vendor's discounts plus each obligatory extra not payable at
+ * the base. The vendor adds those extras itself on POST, so the figure is theirs as much as the
+ * charter is. Measured on company 225: West Wind's option came back at 501.00 on a 1.00 charter
+ * carrying the 500.00 APA, and the 112 reservations saved from it agree once "Agency discount",
+ * which is our commission and never the customer's, is left out. The quote's discount lines are
+ * all the vendor's; ours are applied later.
  */
-export function charterPriceOf(quote: ProviderQuote): Money {
+export function clientPriceOf(quote: ProviderQuote): Money {
   const amountMinor = quote.lines
-    .filter((line) => line.kind === "base" || line.kind === "discount")
+    .filter((line) => line.payWhen === "now")
     .reduce((total, line) => total + line.amount.amountMinor, 0);
   return { amountMinor, currency: quote.currency };
 }

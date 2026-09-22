@@ -8,7 +8,7 @@ import { unscopedCompanies } from "../shared/company-scope";
 import { ContractError } from "../shared/errors";
 import { SequentialQueue } from "../shared/queue";
 import { providerRejection } from "../testing/contracts";
-import type { BookingDraft } from "../types";
+import type { BookingDraft, Money } from "../types";
 import { createBookingManagerBookingService } from "./booking";
 import { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
@@ -394,7 +394,10 @@ const pipoDraft: BookingDraft = {
   route: { startBaseId: "127", endBaseId: "127" },
 };
 
-function substitutionService(answer: string, options: { deleteFails?: boolean } = {}) {
+function substitutionService(
+  answer: string,
+  options: { deleteFails?: boolean; yachtId?: string; baseId?: string; clientPrice?: Money } = {},
+) {
   const calls: { method: string; url: string; body: string | undefined }[] = [];
   const client = new BookingManagerClient({
     config,
@@ -423,9 +426,9 @@ function substitutionService(answer: string, options: { deleteFails?: boolean } 
       ...fakeResolver(),
       toExternalListing: () =>
         Promise.resolve({
-          externalYachtId: PIPO,
+          externalYachtId: options.yachtId ?? PIPO,
           externalCompanyId: "225",
-          externalBaseId: "127",
+          externalBaseId: options.baseId ?? "127",
           listingSourceId: "lsrc_pipo",
         }),
     },
@@ -434,7 +437,7 @@ function substitutionService(answer: string, options: { deleteFails?: boolean } 
     verifyPrice: () =>
       Promise.resolve({
         hash: PRICE_HASH,
-        charterPrice: { amountMinor: 170_000, currency: "EUR" },
+        clientPrice: options.clientPrice ?? { amountMinor: 170_000, currency: "EUR" },
       }),
     recordEvent: () => Promise.resolve(),
     loadProductName: () => Promise.resolve("Bareboat"),
@@ -484,6 +487,56 @@ describe("createOption against what the vendor opened", () => {
     const error = await providerRejection(service.createOption(pipoDraft));
 
     expect(error.message).toMatch(/clientPrice 170000 became 185000/);
+  });
+
+  /*
+   * West Wind's option on 225 (reservation 8192657220000107113, trimmed to what is compared): a
+   * 1.00 charter answered at 501.00, because POST adds the obligatory APA paid online. The extras
+   * paid at the base are listed beside it and left out of the figure.
+   */
+  const westWindAnswer =
+    `{"id":${PIPO_OPTION},"dateFrom":"2026-10-31 17:00:00","dateTo":"2026-11-07 09:00:00",` +
+    `"expirationDate":"2026-09-25 11:59:09",` +
+    `"yachtId":978989630000100225,"status":2,"productName":"Bareboat","baseFromId":194,` +
+    `"baseToId":194,"currency":"EUR","basePrice":1.0,"discount":0.0,"commission":0.0,` +
+    `"finalPrice":501.0,"clientPrice":501.0,"items":[` +
+    `{"name":"APA ","price":500.0,"payableInBase":false,"type":"extra"},` +
+    `{"name":"Cleaning","price":100.0,"payableInBase":true,"type":"extra"},` +
+    `{"name":"Skipper","price":910.0,"payableInBase":true,"type":"extra"}]}`;
+  const westWindDraft: BookingDraft = {
+    ...pipoDraft,
+    checkIn: "2026-10-31",
+    checkOut: "2026-11-07",
+    route: { startBaseId: "194", endBaseId: "194" },
+  };
+
+  it("keeps an option whose price carries the obligatory extras paid online", async () => {
+    const { calls, service } = substitutionService(westWindAnswer, {
+      yachtId: "978989630000100225",
+      baseId: "194",
+      clientPrice: { amountMinor: 100 + 50_000, currency: "EUR" },
+    });
+
+    await expect(service.createOption(westWindDraft)).resolves.toMatchObject({
+      providerReservationId: PIPO_OPTION,
+    });
+    expect(calls.map((call) => call.method)).toEqual(["POST"]);
+  });
+
+  it("still refuses one that left out an extra it should have charged online", async () => {
+    const { calls, service } = substitutionService(
+      westWindAnswer.replace('"clientPrice":501.0', '"clientPrice":1.0'),
+      {
+        yachtId: "978989630000100225",
+        baseId: "194",
+        clientPrice: { amountMinor: 100 + 50_000, currency: "EUR" },
+      },
+    );
+
+    const error = await providerRejection(service.createOption(westWindDraft));
+
+    expect(error.message).toMatch(/clientPrice 50100 became 100/);
+    expect(calls.map((call) => call.method)).toEqual(["POST", "DELETE"]);
   });
 
   it("refuses another product whatever case it is spelled in", async () => {
