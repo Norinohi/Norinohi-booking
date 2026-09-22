@@ -132,6 +132,8 @@ export default function ReviewAndBookStep() {
 
   /* Told again on the last screen before money moves: the week ends in another marina. */
   const oneWay = oneWayRouteOf(quote);
+  /* The operator's rule for bringing the boat back, in its own words: the booking depends on it. */
+  const returnNote = listing?.importantInformation.yachtDropOff.returnNote;
 
   const rows: SummaryRow[] = quote
     ? [
@@ -148,6 +150,7 @@ export default function ReviewAndBookStep() {
               },
             ]
           : []),
+        ...(returnNote ? [{ label: t("returnNote"), value: returnNote }] : []),
         { label: t("crew"), value: quote.crewType ? tCrew(quote.crewType) : "" },
         { label: t("people"), value: String(quote.guests) },
         { label: t("extras"), value: optionalNames || t("noExtras") },

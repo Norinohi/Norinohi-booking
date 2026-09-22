@@ -27,7 +27,8 @@
     "dueNow": "A pagar ahora",
     "terms": "Acepto los <link>Términos y condiciones y el contrato de alquiler</link>.",
     "cancellation": "Acepto la <link>Política de cancelación</link>.",
-    "operatorTerms": "Términos del operador, incluida la política de cancelación"
+    "operatorTerms": "Términos del operador, incluida la política de cancelación",
+    "returnNote": "Entrega del yate"
   },
   "extras": {
     "mandatory": "Obligatorio",

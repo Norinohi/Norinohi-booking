@@ -27,7 +27,8 @@
     "dueNow": "Da pagare ora",
     "terms": "Accetto i <link>Termini e condizioni e il Contratto di noleggio</link>.",
     "cancellation": "Accetto le <link>Condizioni di cancellazione</link>.",
-    "operatorTerms": "Condizioni dell’operatore, incluse le condizioni di cancellazione"
+    "operatorTerms": "Condizioni dell’operatore, incluse le condizioni di cancellazione",
+    "returnNote": "Riconsegna dello yacht"
   },
   "extras": {
     "mandatory": "Obbligatori",

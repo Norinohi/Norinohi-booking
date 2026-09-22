@@ -20,6 +20,12 @@ export const operator = pgTable(
      * 1,310 companies publish one, from 5k to 26k characters. Null is normal.
      */
     termsAndConditions: text("terms_and_conditions"),
+    /*
+     * The operator's rule for bringing a boat back ("return Friday 18:00"), which Booking Manager
+     * states once per company rather than per base or yacht. Read as a fallback for a listing's
+     * own `return_note` text.
+     */
+    checkoutNote: text("checkout_note"),
     ...timestamps,
   },
   (table) => [index("operator_slug_idx").on(table.slug)],

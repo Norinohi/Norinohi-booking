@@ -27,7 +27,8 @@
     "dueNow": "Jetzt fällig",
     "terms": "Ich akzeptiere die <link>AGB und den Chartervertrag</link>.",
     "cancellation": "Ich akzeptiere die <link>Stornierungsbedingungen</link>.",
-    "operatorTerms": "Bedingungen des Anbieters, einschliesslich Stornierungsbedingungen"
+    "operatorTerms": "Bedingungen des Anbieters, einschliesslich Stornierungsbedingungen",
+    "returnNote": "Yachtrückgabe"
   },
   "extras": {
     "mandatory": "Obligatorisch",

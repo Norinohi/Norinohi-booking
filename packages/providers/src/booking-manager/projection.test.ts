@@ -85,6 +85,15 @@ describe("operator terms and conditions", () => {
 
     expect(operators[0]?.termsAndConditions).toBeUndefined();
   });
+
+  it("carries the company's return rule, and nothing for the single space some companies send", () => {
+    const noteOf = (checkoutNote: string) =>
+      projectBookingManagerCatalogue(companies({ id: 225, name: "Demo version", checkoutNote }))
+        .operators[0]?.checkoutNote;
+
+    expect(noteOf("  Return on Friday by 18:00.  ")).toBe("Return on Friday by 18:00.");
+    expect(noteOf(" ")).toBeUndefined();
+  });
 });
 
 describe("product extras", () => {

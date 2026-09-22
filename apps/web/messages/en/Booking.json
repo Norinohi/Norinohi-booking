@@ -27,7 +27,8 @@
     "dueNow": "Due now",
     "terms": "I agree to the <link>Terms & Conditions and the Rental Agreement</link>.",
     "cancellation": "I accept the <link>Cancellation Policy</link>.",
-    "operatorTerms": "Operator's terms, including the cancellation policy"
+    "operatorTerms": "Operator's terms, including the cancellation policy",
+    "returnNote": "Yacht drop-off"
   },
   "extras": {
     "mandatory": "Mandatory",

@@ -27,7 +27,8 @@
     "dueNow": "Å betale nå",
     "terms": "Jeg godtar <link>vilkårene og leieavtalen</link>.",
     "cancellation": "Jeg godtar <link>avbestillingsvilkårene</link>.",
-    "operatorTerms": "Operatørens vilkår, inkludert avbestillingsvilkårene"
+    "operatorTerms": "Operatørens vilkår, inkludert avbestillingsvilkårene",
+    "returnNote": "Levering av yachten"
   },
   "extras": {
     "mandatory": "Obligatorisk",

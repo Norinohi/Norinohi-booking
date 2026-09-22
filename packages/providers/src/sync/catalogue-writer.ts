@@ -256,6 +256,7 @@ export async function writeCanonicalCatalogue(
         email: item.email ?? null,
         phone: item.phone ?? null,
         termsAndConditions: item.termsAndConditions ?? null,
+        checkoutNote: item.checkoutNote ?? null,
       })
       .onConflictDoUpdate({
         target: operator.slug,
@@ -266,6 +267,7 @@ export async function writeCanonicalCatalogue(
           email: sql`excluded.email`,
           phone: sql`excluded.phone`,
           termsAndConditions: sql`excluded.terms_and_conditions`,
+          checkoutNote: sql`excluded.checkout_note`,
         },
       })
       .returning({ id: operator.id });

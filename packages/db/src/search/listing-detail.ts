@@ -15,6 +15,7 @@ import { normalizedKeySql } from "./normalize";
 import { docHasMainsail } from "./mainsail";
 import { placeLine, placeLineExcept } from "./place-line";
 import { comparablePrice, recommendedSortValue } from "./pricing-sql";
+import { readReturnNote } from "./return-note";
 import { nextCharterAfterLapseColumns } from "./sellable-starts";
 import type {
   FaqCategory,
@@ -94,26 +95,6 @@ async function providerDescription(
     select value
     from listing_text
     where listing_id = ${listingId} and kind = 'description' and locale = ${locale}
-    limit 1
-  `);
-
-  return rows.rows[0]?.value;
-}
-
-/**
- * The operator's rule for bringing the boat back, in `locale`, else in English. Unlike the
- * description this is an instruction the charter depends on, so English beats saying nothing.
- */
-async function returnNote(
-  db: NodePgDatabase<typeof schema>,
-  listingId: string,
-  locale: string,
-): Promise<string | undefined> {
-  const rows = await db.execute<{ value: string }>(sql`
-    select value
-    from listing_text
-    where listing_id = ${listingId} and kind = 'return_note' and locale in (${locale}, 'en')
-    order by (locale = ${locale}) desc
     limit 1
   `);
 
@@ -393,7 +374,11 @@ export async function getListingDetailByIdOrSlug(
       localizeSearchDocs(db, docs, locale, translate),
     ),
     providerDescription(db, listing.listingId, locale),
-    returnNote(db, listing.listingId, locale),
+    readReturnNote(db, {
+      listingId: listing.listingId,
+      listingOfferId: listing.bestOfferId ?? null,
+      locale,
+    }),
     suggestedRouteFor(db, listing.baseId, locale),
   ]);
   const info = infoRows.rows[0];

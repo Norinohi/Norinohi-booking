@@ -1,0 +1,1 @@
+ALTER TABLE "operator" ADD COLUMN "checkout_note" text;

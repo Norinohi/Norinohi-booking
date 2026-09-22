@@ -1044,6 +1044,13 @@
       "when": 1790035451056,
       "tag": "0148_base_address",
       "breakpoints": true
+    },
+    {
+      "idx": 149,
+      "version": "7",
+      "when": 1790035746275,
+      "tag": "0149_operator_checkout_note",
+      "breakpoints": true
     }
   ]
 }

@@ -147,6 +147,8 @@ export function projectBookingManagerCatalogue(
         // The only place the vendor publishes a cancellation policy, inside the
         // wider terms; see `termsAndConditions` on `restCompanySchema`.
         termsAndConditions: text(item.termsAndConditions),
+        // Trimmed away when blank: company 225 and others send a single space.
+        checkoutNote: text(item.checkoutNote),
       };
     }),
     builders: shipyards.map((item) => {

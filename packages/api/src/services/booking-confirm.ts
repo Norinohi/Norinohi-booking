@@ -4,8 +4,8 @@ import {
   reportProviderRefusal,
 } from "../lib/provider-failure";
 import { booking, payment, providerReservationEvent } from "@yacht-charter/db/schema/booking";
-import { listingText } from "@yacht-charter/db/schema/listing-text";
 import { quote } from "@yacht-charter/db/schema/quote";
+import { readReturnNote } from "@yacht-charter/db/search/return-note";
 import type { InventoryProvider } from "@yacht-charter/providers";
 import { TransientError } from "@yacht-charter/providers/shared/errors";
 import { and, eq } from "drizzle-orm";
@@ -262,17 +262,11 @@ async function announceConfirmation(
   const owed = outstandingMinor(priced, paidMinor);
   const providerReference = reservation.providerReservationId ?? row.providerReservationId;
   /* The mail is English, so is the note it quotes. */
-  const [returnNote] = await db
-    .select({ value: listingText.value })
-    .from(listingText)
-    .where(
-      and(
-        eq(listingText.listingId, priced.listingId),
-        eq(listingText.kind, "return_note"),
-        eq(listingText.locale, "en"),
-      ),
-    )
-    .limit(1);
+  const returnNote = await readReturnNote(db, {
+    listingId: priced.listingId,
+    listingOfferId: priced.listingOfferId ?? row.listingOfferId,
+    locale: "en",
+  });
 
   // The customer's mail is the one with an address to fail on; the staff alert reads its own
   // out of the environment and goes out either way.
@@ -289,7 +283,7 @@ async function announceConfirmation(
       providerReference,
       // A confirmation that returns no link has not retracted the one the hold carried.
       crewListLink: reservation.crewListLink ?? row.crewListLink,
-      returnNote: returnNote?.value ?? null,
+      returnNote: returnNote ?? null,
     });
   }
 

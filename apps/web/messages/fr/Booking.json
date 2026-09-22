@@ -27,7 +27,8 @@
     "dueNow": "À payer maintenant",
     "terms": "J’accepte les <link>Conditions générales et le Contrat de location</link>.",
     "cancellation": "J’accepte la <link>Politique d’annulation</link>.",
-    "operatorTerms": "Conditions de l'opérateur, y compris la politique d'annulation"
+    "operatorTerms": "Conditions de l'opérateur, y compris la politique d'annulation",
+    "returnNote": "Restitution du yacht"
   },
   "extras": {
     "mandatory": "Obligatoires",

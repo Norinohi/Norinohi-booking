@@ -27,7 +27,8 @@
     "dueNow": "Do zapłaty teraz",
     "terms": "Akceptuję <link>Regulamin oraz Umowę czarteru</link>.",
     "cancellation": "Akceptuję <link>Zasady anulowania</link>.",
-    "operatorTerms": "Warunki operatora, w tym zasady anulowania"
+    "operatorTerms": "Warunki operatora, w tym zasady anulowania",
+    "returnNote": "Zwrot jachtu"
   },
   "extras": {
     "mandatory": "Obowiązkowe",

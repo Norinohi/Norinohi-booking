@@ -27,7 +27,8 @@
     "dueNow": "Forfalder nu",
     "terms": "Jeg accepterer <link>vilkår og betingelser samt lejeaftalen</link>.",
     "cancellation": "Jeg accepterer <link>afbestillingsbetingelserne</link>.",
-    "operatorTerms": "Udbyderens vilkår, herunder afbestillingsbetingelserne"
+    "operatorTerms": "Udbyderens vilkår, herunder afbestillingsbetingelserne",
+    "returnNote": "Aflevering af båden"
   },
   "extras": {
     "mandatory": "Obligatorisk",

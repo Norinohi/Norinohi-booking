@@ -27,7 +27,8 @@
     "dueNow": "Att betala nu",
     "terms": "Jag godkänner <link>de allmänna villkoren och hyresavtalet</link>.",
     "cancellation": "Jag accepterar <link>avbokningsvillkoren</link>.",
-    "operatorTerms": "Operatörens villkor, inklusive avbokningsvillkoren"
+    "operatorTerms": "Operatörens villkor, inklusive avbokningsvillkoren",
+    "returnNote": "Återlämning av båten"
   },
   "extras": {
     "mandatory": "Obligatoriskt",

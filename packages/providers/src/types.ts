@@ -648,6 +648,8 @@ const canonicalOperatorSchema = z.object({
    * Booking Manager publishes one for 45% of companies, NauSYS for none.
    */
   termsAndConditions: z.string().optional(),
+  /** How to bring the boat back, where the operator states it for its whole fleet. */
+  checkoutNote: z.string().optional(),
 });
 
 const canonicalBuilderSchema = z.object({

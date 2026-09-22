@@ -27,7 +27,8 @@
     "dueNow": "Nu te betalen",
     "terms": "Ik ga akkoord met de <link>Algemene voorwaarden en de huurovereenkomst</link>.",
     "cancellation": "Ik accepteer het <link>Annuleringsbeleid</link>.",
-    "operatorTerms": "Voorwaarden van de operator, inclusief het annuleringsbeleid"
+    "operatorTerms": "Voorwaarden van de operator, inclusief het annuleringsbeleid",
+    "returnNote": "Terugbrengen jacht"
   },
   "extras": {
     "mandatory": "Verplicht",
