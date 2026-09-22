@@ -240,6 +240,7 @@ export function createBookingManagerQuoteService(
         maxDiscountFromCommissionPercentage,
         expiresAt: new Date(now() + quoteTtlMs).toISOString(),
         balanceLeadDays: options.config.balanceLeadDays,
+        today: new Date(now()).toISOString().slice(0, 10),
         /* The catalogue answers first; an extra the sync never recorded falls
            through to whatever the caller knows. */
         labelFor: (externalId) =>
@@ -456,6 +457,8 @@ export interface OfferMapping {
   labelFor?: ((externalId: string) => string | undefined) | undefined;
   /** Days before the vendor's balance date that the customer's falls due; see `toPaymentPolicy`. */
   balanceLeadDays?: number | undefined;
+  /** ISO `yyyy-MM-dd` of the moment the quote is made, for a plan whose first instalment is undated. */
+  today?: string | undefined;
 }
 
 /**
@@ -546,6 +549,7 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
     currency,
     payableNowMinor,
     input.balanceLeadDays ?? BM_BALANCE_LEAD_DAYS,
+    input.today,
   );
   const priceSourceHash = priceObservationHash(offer, currency);
   const securityDeposit = securityDepositOf(offer, currency);
@@ -881,13 +885,14 @@ interface ResolvedPaymentPolicy {
  * vendor's date is the day we owe the operator too: on company 225 `paymentPlan` and
  * `agencyPaymentPlan` carried the same date, so a balance due that day leaves nothing for a late
  * payer or a bank transfer in flight. A balance that would then fall due by the day the plan
- * opens is taken now, in full.
+ * opens, or by today where that is later, is taken now, in full.
  */
 function toPaymentPolicy(
   offer: RestOffer,
   currency: string,
   payableNowMinor: number,
   balanceLeadDays: number,
+  today: string | undefined,
 ): ResolvedPaymentPolicy {
   const plan = (offer.paymentPlan ?? []).filter((entry) => entry.amount != null);
   const [first, second] = plan;
@@ -919,13 +924,21 @@ function toPaymentPolicy(
   };
   if (second?.date) {
     const balanceDueAt = daysBefore(parseBookingManagerDate(second.date), balanceLeadDays);
-    const opensOn = first.date ? parseBookingManagerDate(first.date) : undefined;
+    const opensOn = latestDate(first.date ? parseBookingManagerDate(first.date) : undefined, today);
     if (opensOn !== undefined && balanceDueAt <= opensOn) {
       return { policy: { mode: "full", depositPct: 1 }, depositMinor: payableNowMinor };
     }
     policy.balanceDueAt = balanceDueAt;
   }
   return { policy, depositMinor };
+}
+
+function latestDate(...dates: (string | undefined)[]): string | undefined {
+  return dates.reduce<string | undefined>(
+    (latest, date) =>
+      date !== undefined && (latest === undefined || date > latest) ? date : latest,
+    undefined,
+  );
 }
 
 function daysBefore(date: string, days: number): string {

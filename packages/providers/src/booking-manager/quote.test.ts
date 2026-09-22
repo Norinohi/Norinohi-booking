@@ -603,7 +603,11 @@ describe("a payment plan of three instalments", () => {
  * `paymentPlan` and `agencyPaymentPlan` both fell due 2026-09-29. The customer pays ahead of it.
  */
 describe("the customer's balance date", () => {
-  const planned = (plan: { date: string; amount: number }[], balanceLeadDays?: number) =>
+  const planned = (
+    plan: { date?: string; amount: number }[],
+    balanceLeadDays?: number,
+    today?: string,
+  ) =>
     mapOfferToProviderQuote({
       offer: restOfferSchema.parse({
         yachtId: "9001",
@@ -620,6 +624,7 @@ describe("the customer's balance date", () => {
       requestedCurrency: "EUR",
       expiresAt: "2026-09-22T12:00:00.000Z",
       balanceLeadDays,
+      today,
     });
   const halves = [
     { date: "2026-09-22 00:18:26", amount: 2000 },
@@ -648,6 +653,35 @@ describe("the customer's balance date", () => {
 
     expect(quote.paymentPolicy).toEqual({ mode: "full", depositPct: 1 });
     expect(quote.deposit).toEqual({ amountMinor: 400_000, currency: "EUR" });
+  });
+  it("is taken now in full when the lead puts it by today and the first instalment is undated", () => {
+    const undated = [{ amount: 2000 }, { date: "2026-09-27 00:00:00", amount: 2000 }];
+
+    expect(planned(undated, undefined, "2026-09-22").paymentPolicy).toEqual({
+      mode: "full",
+      depositPct: 1,
+    });
+    expect(planned(undated, undefined, "2026-09-10").paymentPolicy).toEqual({
+      mode: "deposit",
+      depositPct: 0.5,
+      balanceDueAt: "2026-09-20",
+    });
+  });
+
+  it("is taken now in full when today is past both the first date and the shifted one", () => {
+    const answeredEarlier = [
+      { date: "2026-09-01 10:00:00", amount: 2000 },
+      { date: "2026-09-28 00:00:00", amount: 2000 },
+    ];
+
+    expect(planned(answeredEarlier, undefined, "2026-09-22").paymentPolicy).toEqual({
+      mode: "full",
+      depositPct: 1,
+    });
+    expect(planned(answeredEarlier, undefined, "2026-09-20").paymentPolicy).toMatchObject({
+      mode: "deposit",
+      balanceDueAt: "2026-09-21",
+    });
   });
 });
 
@@ -791,6 +825,32 @@ describe("getBookingManagerQuote's discount bound", () => {
 
     expect(asked).toEqual([RUMBA_ID]);
     expect(quote.maxClientDiscount).toEqual({ amountMinor: 6_900, currency: "EUR" });
+  });
+});
+
+/* An undated pay-now instalment leaves only the quote's own clock to say when the plan opens. */
+describe("getBookingManagerQuote's balance date against its own clock", () => {
+  const offers =
+    `[{"yachtId":${RUMBA_ID},"startBaseId":0,"endBaseId":0,` +
+    '"dateFrom":"2027-06-05 17:00:00","dateTo":"2027-06-12 09:00:00",' +
+    '"product":"Bareboat","price":4600.0,"currency":"EUR","obligatoryExtras":[],' +
+    '"paymentPlan":[{"amount":2300.0},{"date":"2027-06-01 00:00:00","amount":2300.0}]}]';
+  const quotedAt = (iso: string) =>
+    createBookingManagerQuoteService({
+      client: clientAnswering(offers).client,
+      resolver: rumbaResolver,
+      config: QUOTE_CONFIG,
+      now: () => Date.parse(iso),
+    }).getBookingManagerQuote(RUMBA_WEEK);
+
+  it("keeps the deposit while the shifted date is still ahead", async () => {
+    const quote = await quotedAt("2027-05-20T09:00:00.000Z");
+    expect(quote.paymentPolicy).toMatchObject({ mode: "deposit", balanceDueAt: "2027-05-25" });
+  });
+
+  it("takes it in full once the shifted date has passed", async () => {
+    const quote = await quotedAt("2027-05-30T09:00:00.000Z");
+    expect(quote.paymentPolicy).toEqual({ mode: "full", depositPct: 1 });
   });
 });
 
