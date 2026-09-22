@@ -240,8 +240,9 @@ export function projectBookingManagerGeography(
 
     const country = countryById.get(countryId);
     const countryName = text(country?.name) ?? text(country?.long) ?? `Country ${countryId}`;
-    const lat = coordinateOf(item.latitude);
-    const lng = coordinateOf(item.longitude);
+    const point = pointOf(item);
+    const lat = point?.lat;
+    const lng = point?.lng;
 
     const sailingAreaNames = (item.sailingAreas ?? [])
       .map((value) => {
@@ -815,11 +816,23 @@ function capacityOf(value: JsonField): number | undefined {
 }
 
 /** Coordinates arrive as strings, and "0" is the vendor's unset marker, not the Gulf of Guinea. */
-function coordinateOf(value: JsonField): number | undefined {
+function coordinateOf(value: JsonField, limit: number): number | undefined {
   const raw = text(value);
   if (raw === undefined) return undefined;
   const parsed = Number(raw.replace(",", "."));
-  return Number.isFinite(parsed) && parsed !== 0 ? parsed : undefined;
+  return Number.isFinite(parsed) && parsed !== 0 && Math.abs(parsed) <= limit ? parsed : undefined;
+}
+
+/**
+ * Both coordinates or neither. Half a point is not a place: Shelter Bay Marina in Panama arrives
+ * as latitude 0 and longitude 9.37, its latitude in the wrong field, and kept alone that longitude
+ * pinned the base off West Africa and pulled it towards whatever region lies nearest there.
+ * "to be reused" carries 363931 / 280454, which no reading of degrees makes a place either.
+ */
+function pointOf(item: RestBase): { lat: number; lng: number } | undefined {
+  const lat = coordinateOf(item.latitude, 90);
+  const lng = coordinateOf(item.longitude, 180);
+  return lat === undefined || lng === undefined ? undefined : { lat, lng };
 }
 
 function countryCodeOf(country: RestCountry): string {

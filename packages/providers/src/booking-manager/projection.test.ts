@@ -887,6 +887,25 @@ describe("geography", () => {
     expect(regions.map((item) => item.name)).toEqual(["Zadar region"]);
   });
 
+  it("keeps a base's coordinates only as a whole point inside the globe", () => {
+    const { bases } = geographyOf([
+      // Live /bases: the latitude sits in the longitude field and the latitude reads 0.
+      { id: 1, name: "Shelter Bay Marina", countryId: 191, latitude: "0.0", longitude: "9.368332" },
+      { id: 2, name: "to be reused", countryId: 191, latitude: "363931.0", longitude: "280454.0" },
+      { id: 3, name: "Marina Kastela", countryId: 191, latitude: "43,5460", longitude: "16.3860" },
+      { id: 4, name: "Polar", countryId: 191, latitude: "-90", longitude: "180" },
+    ]);
+
+    const pointOf = (id: string) => {
+      const base = bases.find((item) => item.externalId === id);
+      return base === undefined ? undefined : { lat: base.lat, lng: base.lng };
+    };
+    expect(pointOf("1")).toEqual({ lat: undefined, lng: undefined });
+    expect(pointOf("2")).toEqual({ lat: undefined, lng: undefined });
+    expect(pointOf("3")).toEqual({ lat: 43.546, lng: 16.386 });
+    expect(pointOf("4")).toEqual({ lat: -90, lng: 180 });
+  });
+
   it("splits a sailing area that crosses a border by country", () => {
     const { regions } = geographyOf([
       { id: 1, name: "Port Gruž", countryId: 191, sailingAreas: [9] },
