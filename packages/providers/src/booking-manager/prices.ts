@@ -1,3 +1,5 @@
+import { MIN_ESTIMATED_NIGHTS } from "@yacht-charter/db/search/weekly-estimate";
+
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { fixedLimit, orderedWindow } from "../shared/ordered-window";
 import type { PriceWindow, SeasonalPrice } from "../sync/price-writer";
@@ -38,8 +40,6 @@ import type { BookingManagerPriceTerms } from "./price-terms";
 
 const DAY_MS = 86_400_000;
 const WEEK_MS = 7 * DAY_MS;
-/** The length every row of this sweep prices, which is what the yacht's bounds are held to. */
-const SWEPT_NIGHTS = 7;
 
 export interface BookingManagerSeasonalPriceLoaderOptions {
   client: BookingManagerClient;
@@ -49,7 +49,7 @@ export interface BookingManagerSeasonalPriceLoaderOptions {
   years: number[];
   /** Asked of the vendor; a row that answers in another currency keeps its own. */
   currency?: string;
-  /** Each yacht's default product, home base and length bounds; see `price-terms.ts`. */
+  /** Each yacht's default product, home base and maximum length; see `price-terms.ts`. */
   loadPriceTerms(
     externalYachtIds: readonly string[],
   ): Promise<Map<string, BookingManagerPriceTerms>>;
@@ -206,8 +206,11 @@ export function mapBookingManagerPriceCandidate(
  * - A round trip only, at the home base where there is one there. `/prices` lists one-way pairs
  *   `/offers` refuses, so a week priced only one-way is left unpriced rather than advertised.
  *   A row with no base pair at all predates 2.2.2 and is read as the round trip it was.
- * - None at all for a yacht whose bounds refuse a week: a day boat stating a maximum of one
- *   night has a weekly figure in `/prices` and no weekly charter in `/offers`.
+ * - None at all for a yacht that sells no charter the weekly list estimates: a day boat stating
+ *   a maximum of one night has a weekly figure in `/prices` and nothing in `/offers` it could
+ *   price. A band is also a per-night input to the estimate of every length from
+ *   `MIN_ESTIMATED_NIGHTS`, so a yacht with a fourteen-night minimum or a five-night maximum
+ *   keeps it; the listing's check-in rules keep the read model from selling a week it refuses.
  *
  * A week left out here keeps no rate, and the confirming `/offers` sweep still opens it the moment
  * the vendor prices it as a charter it sells.
@@ -216,8 +219,7 @@ export function selectBookingManagerWeeklyPrices(
   candidates: readonly BookingManagerPriceCandidate[],
   terms: BookingManagerPriceTerms | undefined,
 ): SeasonalPrice[] {
-  if (terms?.minNights !== undefined && SWEPT_NIGHTS < terms.minNights) return [];
-  if (terms?.maxNights !== undefined && SWEPT_NIGHTS > terms.maxNights) return [];
+  if (terms?.maxNights !== undefined && terms.maxNights < MIN_ESTIMATED_NIGHTS) return [];
 
   const byWeek = new Map<string, BookingManagerPriceCandidate[]>();
   for (const candidate of candidates) {

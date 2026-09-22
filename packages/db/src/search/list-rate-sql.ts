@@ -61,7 +61,9 @@ export function listRatePeriodPrice(listingId: SQL, checkIn: SQL, nights: number
  * the boat's rate alone, before fees, crew and discounts, from any offer that can still sell.
  *
  * Only a reference for a card nothing priced: a budget for the boat, captioned as a week "from"
- * it, never the price of the dates beside it (those are quoted live on the yacht page).
+ * it, never the price of the dates beside it (those are quoted live on the yacht page). An offer
+ * whose rules cap every charter below a week keeps its bands for shorter estimates but shows no
+ * weekly figure.
  */
 export function weeklyReferenceRate(listingId: SQL, checkIn: SQL): SQL {
   return sql`
@@ -78,6 +80,12 @@ export function weeklyReferenceRate(listingId: SQL, checkIn: SQL): SQL {
         and (
           price.end_date > ${checkIn}
           or (price.end_date = ${checkIn} and p.code <> ${HALF_OPEN_RATE_PROVIDER})
+        )
+        and not exists (
+          select 1
+          from listing_checkin_rule rule
+          where rule.listing_offer_id = o.id
+          having bool_and(coalesce(rule.max_nights < ${WEEKLY_RATE_NIGHTS}::integer, false))
         )
       order by price.price_minor
       limit 1

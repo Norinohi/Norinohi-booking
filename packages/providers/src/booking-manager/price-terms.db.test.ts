@@ -85,7 +85,7 @@ describe("loadBookingManagerPriceTerms", () => {
     ]);
 
     expect(Object.fromEntries(terms)).toEqual({
-      giulia: { product: "Bareboat", homeBaseId: "194", minNights: 7, maxNights: 90 },
+      giulia: { product: "Bareboat", homeBaseId: "194", maxNights: 90 },
       orion: { product: "Bareboat", homeBaseId: "3308139130000100225", maxNights: 1 },
       bare: {},
     });

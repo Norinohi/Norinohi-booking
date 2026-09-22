@@ -18,15 +18,14 @@ import { maxNightsOf, soldProductOf } from "./projection";
  * `/prices` answers for every product and every base pair the price list covers, and neither
  * is what `/offers` sells: without `productName` it offers the default product alone, and on
  * company 225 it sold only home-to-home round trips while `/prices` listed one-way pairs
- * beside them (SS 123 25 <-> 31, Tri Luke nine pairs, all refused by `/offers`). The length
- * bounds matter the same way: `/prices` prices a trip shorter than the yacht's minimum (Giulia,
- * minimum 7, has a 3-day price) that `/offers` will not sell.
+ * beside them (SS 123 25 <-> 31, Tri Luke nine pairs, all refused by `/offers`). The maximum
+ * matters the same way: a day boat has a weekly `/prices` figure and no charter `/offers` sells
+ * that the weekly list could estimate. The minimum is read only to check the maximum against it.
  */
 export interface BookingManagerPriceTerms {
   /** The product `/offers` prices when it is not given one. */
   product?: string;
   homeBaseId?: string;
-  minNights?: number;
   maxNights?: number;
 }
 
@@ -41,9 +40,7 @@ export function priceTermsOf(
   if (product) terms.product = product;
   const homeBaseId = idOf(yacht.homeBaseId);
   if (homeBaseId !== null) terms.homeBaseId = homeBaseId;
-  const minNights = positiveInt(yacht.minimumCharterDuration);
-  if (minNights !== undefined) terms.minNights = minNights;
-  const maxNights = maxNightsOf(yacht, minNights);
+  const maxNights = maxNightsOf(yacht, positiveInt(yacht.minimumCharterDuration));
   if (maxNights !== undefined) terms.maxNights = maxNights;
   return terms;
 }

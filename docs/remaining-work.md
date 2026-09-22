@@ -120,8 +120,8 @@ before it needs code.
     Wind, Escape, Queen II, all stating no minimum). A price list per length would be one
     fleet-wide call per length per start day on top of the ~104 weekly ones, and it would still
     need filtering: `/prices` also prices lengths the yacht's own minimum refuses (Giulia,
-    minimum 7, has a 3-day price `/offers` will not sell), which is why the weekly sweep drops a
-    yacht whose bounds refuse seven nights. Short charters are priced by `/offers` instead: the
+    minimum 7, has a 3-day price `/offers` will not sell), which the listing's check-in rules
+    already refuse to sell. Short charters are priced by `/offers` instead: the
     confirming sweep asks the short charters the cards name (`listShortCharterPeriods`), and the
     quote always prices live. What that leaves is a short charter nobody has searched for yet,
     which shows no vendor price until the sweep reaches it.

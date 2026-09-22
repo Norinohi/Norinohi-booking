@@ -352,8 +352,10 @@ UI calls it an API key; the API consumes it as a Bearer token.
    on company 225, only the round trip. So `selectBookingManagerWeeklyPrices`
    keeps one row per yacht-week: the default product (`price-terms.ts`, off the
    stored yacht), a round trip at the home base else at any base, never a one-way
-   pair, and no week at all for a yacht whose `minimumCharterDuration` /
-   `maximumCharterDuration` refuse seven nights.
+   pair, and no week at all for a yacht whose `maximumCharterDuration` is below
+   the four nights the weekly list estimates from. A yacht with a longer minimum
+   or a shorter maximum than a week keeps its bands: they price its other
+   lengths per night, and its check-in rules keep the week itself unsold.
 4. `GET /offers` per Saturday-to-Saturday pair gives real-time availability;
    `/availability` and `/shortAvailability` give booked/free status across a year.
 5. The base to country and sailing-area chain is reconstructed exactly as §3

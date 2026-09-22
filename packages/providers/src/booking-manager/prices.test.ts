@@ -399,7 +399,6 @@ describe("priceTermsOf", () => {
     expect(termsOf(yachtIdOf("Giulia"))).toEqual({
       product: "Bareboat",
       homeBaseId: "194",
-      minNights: 7,
       maxNights: 90,
     });
     // West Wind lists Cabin first and flags Bareboat as the default, and states no minimum.
@@ -504,11 +503,25 @@ describe("selectBookingManagerWeeklyPrices", () => {
     ).toHaveLength(1);
   });
 
-  it("prices no week for a yacht whose bounds refuse seven nights", () => {
+  it("prices no week for a yacht that sells no charter the weekly list estimates", () => {
     const week = [candidate({ priceMinor: 400_000 })];
-    expect(selectBookingManagerWeeklyPrices(week, { minNights: 14 })).toEqual([]);
     expect(selectBookingManagerWeeklyPrices(week, { maxNights: 1 })).toEqual([]);
-    expect(selectBookingManagerWeeklyPrices(week, { minNights: 7, maxNights: 7 })).toHaveLength(1);
+    expect(selectBookingManagerWeeklyPrices(week, { maxNights: 3 })).toEqual([]);
+    expect(selectBookingManagerWeeklyPrices(week, { maxNights: 4 })).toHaveLength(1);
+    expect(selectBookingManagerWeeklyPrices(week, { maxNights: 7 })).toHaveLength(1);
+  });
+
+  it("keeps the weekly band of a yacht with a fourteen-night minimum, which its fortnight is estimated from", () => {
+    const terms = priceTermsOf({
+      products: [{ name: "Bareboat", isDefaultProduct: true }],
+      homeBaseId: "194",
+      minimumCharterDuration: 14,
+      maximumCharterDuration: 90,
+    });
+    expect(terms).toEqual({ product: "Bareboat", homeBaseId: "194", maxNights: 90 });
+    expect(
+      selectBookingManagerWeeklyPrices([candidate({ priceMinor: 400_000 })], terms),
+    ).toHaveLength(1);
   });
 
   it("keeps one rate per week, in week order", () => {
