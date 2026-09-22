@@ -1,3 +1,5 @@
+import { log } from "evlog";
+
 import { ContractError } from "../shared/errors";
 import { stableSourceHash } from "../shared/raw-retention";
 import {
@@ -89,7 +91,8 @@ const OCCUPANCY_STATUS = new Map<number, OccupiedInterval["status"]>([
  * unfiltered account, `/availability` emits only `1`, `2`, `3`, `4` and `11` -
  * 241,273 rows for 2026 and 17,671 for 2027, with no `5`, `7` or `8` in either.
  * The feed lists taken periods, and those three describe a free boat, so they are
- * simply never in it. Nothing is being over-blocked.
+ * simply never in it. Nothing is being over-blocked. One that arrives all the same
+ * is counted and reported, so a new state is seen before anyone has to guess at it.
  *
  * If one ever does appear, do not unblock it on the vendor's word alone. `3` is
  * documented as available and measurably holds the boat: five status-3 periods
@@ -97,6 +100,18 @@ const OCCUPANCY_STATUS = new Map<number, OccupiedInterval["status"]>([
  * an adjacent free week and refused for its status-3 one.
  */
 const UNKNOWN_STATUS: OccupiedInterval["status"] = "blocked";
+
+/**
+ * `5` is the one exception, and on measurement rather than on the legend: it is what a DELETE
+ * leaves behind, and the week it held is sold again at once. On company 225, 2026-09-22, a
+ * deleted option answered `5` on both twins while `/offers` offered the same yacht and week at
+ * status 0. The spec says `/availability` lists cancelled reservations; on 225 the row simply
+ * vanished instead. Either way a cancelled row holds nothing, and reading it as blocked would
+ * take a free week off sale for as long as the vendor kept listing it.
+ */
+export function holdsTheBoat(status: number | null | undefined): boolean {
+  return status !== BM_RESERVATION_STATUS.CANCELLED;
+}
 
 const DAY_MS = 86_400_000;
 
@@ -223,8 +238,15 @@ export function mapBookingManagerOccupancyDump(
   const intervals: OccupiedInterval[] = [];
   const quarantinedYachtIds = new Set<string>();
   const issues: string[] = [];
+  const unknownStatuses = new Map<string, number>();
 
   for (const row of rows) {
+    if (!holdsTheBoat(row.status)) continue;
+    const status = row.status ?? null;
+    if (status === null || !OCCUPANCY_STATUS.has(status)) {
+      const key = status === null ? "none" : String(status);
+      unknownStatuses.set(key, (unknownStatuses.get(key) ?? 0) + 1);
+    }
     try {
       intervals.push(mapBookingManagerAvailability(row, config));
     } catch (error) {
@@ -244,6 +266,15 @@ export function mapBookingManagerOccupancyDump(
     quarantinedYachtIds.size === 0
       ? intervals
       : intervals.filter((interval) => !quarantinedYachtIds.has(interval.externalYachtId));
+
+  if (unknownStatuses.size > 0) {
+    log.warn({
+      action: "booking_manager.availability.unknown_status",
+      reason: "read as blocked",
+      count: [...unknownStatuses.values()].reduce((sum, count) => sum + count, 0),
+      statuses: [...unknownStatuses].map(([status, count]) => `${status}:${count}`).join(", "),
+    });
+  }
 
   const dump: OccupancyDump = { intervals: kept };
   if (quarantinedYachtIds.size > 0) {
