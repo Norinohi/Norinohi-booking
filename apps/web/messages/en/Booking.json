@@ -142,6 +142,9 @@
   },
   "confirmation": {
     "reserved": "Your yacht is reserved!",
+    "questionSent": "Your question is on its way",
+    "questionHold": "Your yacht is held until {date}. Asking does not extend the hold, so pay before then or the operator can release it.",
+    "questionEmailed": "We've emailed you a copy of your question and will send the answer to the same address",
     "notFound": "Booking not found",
     "browse": "Browse yachts",
     "remaining": "The remaining {amount} will be paid at check-in.",

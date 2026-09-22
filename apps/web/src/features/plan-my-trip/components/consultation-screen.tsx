@@ -45,7 +45,7 @@ export function ConsultationScreen() {
         <IconButton
           variant="subtle"
           size="sm"
-          aria-label={t("close")}
+          label={t("close")}
           onClick={() => router.push("/")}
           className="absolute top-6 right-6 md:top-5 md:right-5"
         >

@@ -137,7 +137,7 @@
       "mainsail": "Mainsail type",
       "cabins": "Cabins",
       "length": "Length",
-      "lengthValue": "{length, number} m"
+      "lengthValue": "{feet, number} ft / {metres, number} m"
     },
     "battenMainsail": "Batten mainsail",
     "badges": {

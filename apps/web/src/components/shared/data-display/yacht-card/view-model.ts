@@ -17,6 +17,7 @@ import { createElement, type ReactNode } from "react";
 
 import type { Marina } from "@/components/shared/overlay/marina-popover";
 import { type BadgeTranslator, badgeLabel } from "@/lib/badge-label";
+import { metresToFeet, roundMetres } from "@/lib/boat-length";
 import { type CrewTranslator, crewLabel } from "@/lib/crew-label";
 import { slugToLabel } from "@/lib/slug-to-label";
 
@@ -115,7 +116,13 @@ export function yachtSpecs(t: YachtCardTranslator, specs: BoatSpecs): YachtCardS
         ]
       : []),
     { label: t("specs.cabins"), value: String(specs.cabins) },
-    { label: t("specs.length"), value: t("specs.lengthValue", { length: specs.lengthM }) },
+    {
+      label: t("specs.length"),
+      value: t("specs.lengthValue", {
+        feet: metresToFeet(specs.lengthM),
+        metres: roundMetres(specs.lengthM),
+      }),
+    },
   ];
 }
 

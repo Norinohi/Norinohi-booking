@@ -60,6 +60,8 @@ import {
   perPersonMinor,
   resolveAdjustedPrice,
   resolvePaymentPolicy,
+  roundPayableNowUp,
+  roundUpToWholeUnit,
   totalMinor,
   type AppliedAdjustment,
   type QuotePaymentScheduleEntry,
@@ -1178,13 +1180,15 @@ async function resolveDeposit(
     paymentPolicy,
     total: totalMinor(lines),
     depositMinor:
-      paymentPolicy.mode === "full" ? payable : Math.round(payable * paymentPolicy.depositPct),
+      paymentPolicy.mode === "full"
+        ? payable
+        : Math.min(roundUpToWholeUnit(payable * paymentPolicy.depositPct), payable),
   };
 }
 
 /**
  * provider price → internal rules → discount → welcome discount → credit →
- * payment policy.
+ * rounding up to a whole unit → payment policy.
  *
  * Rules move the charter base only: that is what Manage Prices edits, and
  * discounting a fee the base collects in cash on arrival would be meaningless.
@@ -1240,7 +1244,7 @@ async function persistPricedQuote(
     const exact = await options.exactDiscountCap();
     if (exact !== undefined && exact < outcome.clientDiscountMinor) outcome = await run(exact);
   }
-  lines = outcome.lines;
+  lines = roundPayableNowUp(outcome.lines);
   const { applied, promo, spendableMinor, spendsCredit, clientDiscountMinor } = outcome;
 
   // 5. Payment policy, then the deposit that follows from it.

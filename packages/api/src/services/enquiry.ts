@@ -15,7 +15,7 @@ import type {
   enquirySetStatusInputSchema,
 } from "../contracts/enquiry";
 import { writeAuditLog } from "./audit";
-import { notifyEnquiryAnswered, notifyStaff } from "./enquiry-email";
+import { notifyEnquiryAnswered, notifyEnquiryReceived, notifyStaff } from "./enquiry-email";
 import { paginatedQuery, totalFrom } from "./pagination";
 import { InternalError, NotFoundError } from "../errors";
 
@@ -47,6 +47,7 @@ const ROW_COLUMNS = {
   bookingId: booking.id,
   reference: booking.reference,
   bookingStatus: booking.status,
+  holdExpiresAt: booking.holdExpiresAt,
   commercialSnapshot: booking.commercialSnapshot,
   listingSlug: listing.slug,
   checkIn: quote.checkIn,
@@ -179,13 +180,26 @@ export async function answerEnquiry(
 }
 
 /**
- * Tells staff a question arrived. Called from the router rather than from `askQuestion` itself:
- * that service is reached by pure unit tests, and pulling the environment-reading email module
- * into its import graph would fail them at load. The inbox is the durable record either way —
- * this is only the tap on the shoulder, so a failure here never fails the question.
+ * Sends the customer a receipt for the question and tells staff it arrived. Called from the
+ * router rather than from `askQuestion` itself: that service is reached by pure unit tests, and
+ * pulling the environment-reading email module into its import graph would fail them at load.
+ * Both mails are best-effort, so a failure here never fails the question.
  */
 export async function announceEnquiry(db: Database, id: string): Promise<void> {
   const row = await readOne(db, id);
+
+  await notifyEnquiryReceived({
+    to: row.customerEmail,
+    customerName: row.customerName,
+    reference: row.reference,
+    yachtName: row.commercialSnapshot.listingTitle,
+    checkIn: row.checkIn,
+    checkOut: row.checkOut,
+    question: row.question,
+    bookingId: row.bookingId,
+    bookingStatus: row.bookingStatus,
+    holdExpiresAt: row.holdExpiresAt,
+  });
 
   await notifyStaff({
     title: `New question on booking ${row.reference}`,

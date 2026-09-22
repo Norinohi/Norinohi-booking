@@ -394,7 +394,7 @@ export default function CrewListPanel({ booking }: { booking: BookingDetail }) {
                     type="button"
                     variant="neutral"
                     size="sm"
-                    aria-label={t("remove", { number: index + 1 })}
+                    label={t("remove", { number: index + 1 })}
                     onClick={() => remove(index)}
                   >
                     <Trash2 />

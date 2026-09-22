@@ -1,13 +1,17 @@
 import { env } from "@yacht-charter/env/server";
 import { thrownFields } from "@yacht-charter/providers/shared/log-fields";
 import { log, parseError } from "evlog";
-import { sendEnquiryAnswerEmail, sendStaffAlertEmail } from "@yacht-charter/transactional";
+import {
+  sendEnquiryAnswerEmail,
+  sendEnquiryReceivedEmail,
+  sendStaffAlertEmail,
+} from "@yacht-charter/transactional";
 
 import { BOOKING_RECEIVED_STATES, type BookingStatus } from "./booking-state";
 
 /*
- * The two mails around a booking enquiry: the ping that tells staff one arrived, and the reply
- * that reaches the customer. Both are best-effort — a question that was recorded must stay
+ * The mails around a booking enquiry: the receipt the customer gets as they ask, the ping that
+ * tells staff one arrived, and the reply that reaches the customer later. Both are best-effort — a question that was recorded must stay
  * recorded whether or not Resend answered, and the inbox at /inbox shows it either way.
  */
 
@@ -61,6 +65,63 @@ export async function notifyEnquiryAnswered(enquiry: EnquiryAnswered): Promise<v
     log.error({
       action: "email.failed",
       email: "enquiry_answer",
+      reference: enquiry.reference,
+      ...thrownFields(parseError(cause)),
+    });
+  }
+}
+
+export type EnquiryReceived = {
+  to: string;
+  customerName: string;
+  reference: string;
+  yachtName: string;
+  checkIn: string;
+  checkOut: string;
+  question: string;
+  bookingId: string;
+  bookingStatus: BookingStatus;
+  holdExpiresAt: Date | null;
+};
+
+function day(date: string): string {
+  return new Intl.DateTimeFormat(LOCALE, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(date));
+}
+
+/* To the minute and in UTC: a hold lapses at an instant, and the mail cannot know the reader's zone. */
+function instant(date: Date): string {
+  return new Intl.DateTimeFormat(LOCALE, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+    timeZoneName: "short",
+  }).format(date);
+}
+
+export async function notifyEnquiryReceived(enquiry: EnquiryReceived): Promise<void> {
+  const cta = answerCta(enquiry.bookingId, enquiry.bookingStatus);
+  const holding = BOOKING_RECEIVED_STATES.some((status) => status === enquiry.bookingStatus);
+
+  try {
+    await sendEnquiryReceivedEmail(enquiry.to, {
+      customerName: enquiry.customerName,
+      reference: enquiry.reference,
+      yachtName: enquiry.yachtName,
+      checkIn: day(enquiry.checkIn),
+      checkOut: day(enquiry.checkOut),
+      question: enquiry.question,
+      holdExpiresAt: holding && enquiry.holdExpiresAt ? instant(enquiry.holdExpiresAt) : undefined,
+      cta,
+    });
+  } catch (cause) {
+    log.error({
+      action: "email.failed",
+      email: "enquiry_received",
       reference: enquiry.reference,
       ...thrownFields(parseError(cause)),
     });

@@ -8,6 +8,7 @@ import { BookingCancelledEmail, type BookingCancelledEmailProps } from "./emails
 import { BookingConfirmedEmail, type BookingConfirmedEmailProps } from "./emails/booking-confirmed";
 import { BookingReceivedEmail, type BookingReceivedEmailProps } from "./emails/booking-received";
 import { EnquiryAnswerEmail, type EnquiryAnswerEmailProps } from "./emails/enquiry-answer";
+import { EnquiryReceivedEmail, type EnquiryReceivedEmailProps } from "./emails/enquiry-received";
 import { HoldExpiringEmail, type HoldExpiringEmailProps } from "./emails/hold-expiring";
 import { InvoiceIssuedEmail, type InvoiceIssuedEmailProps } from "./emails/invoice-issued";
 import { LeadFollowUpEmail, type LeadFollowUpEmailProps } from "./emails/lead-follow-up";
@@ -262,6 +263,23 @@ export async function sendEnquiryAnswerEmail(
     ? `Re: your question about booking ${enquiry.reference}`
     : "Re: your enquiry — YachtSkanner";
   return sendHtml(to, subject, html, { mailbox });
+}
+
+/** The receipt for a question about a booking, sent as it arrives; the answer follows later. */
+export async function sendEnquiryReceivedEmail(
+  to: string,
+  enquiry: Omit<EnquiryReceivedEmailProps, "appUrl" | "replyable">,
+) {
+  const html = await render(
+    createElement(EnquiryReceivedEmail, {
+      ...enquiry,
+      replyable: isReplyable("booking"),
+      appUrl: env.CORS_ORIGIN,
+    }),
+  );
+  return sendHtml(to, `We have your question about booking ${enquiry.reference}`, html, {
+    mailbox: "booking",
+  });
 }
 
 /**

@@ -25,6 +25,7 @@ import {
 } from "../api/queries";
 import { hasFailed, isSettling } from "../lib/checkout-status";
 import { guestAccessFor } from "../lib/guest-access";
+import { pendingHoldDeadline } from "../lib/hold-clock";
 import { charterRange } from "../lib/handover";
 import { confirmationParsers } from "../lib/search-params";
 
@@ -311,6 +312,14 @@ export default function BookingConfirmationScreen() {
     invoice !== null &&
     (invoice.status === "pending" || invoice.status === "sent");
 
+  /*
+   * A question sent instead of paying. Nothing was charged and the hold keeps running down, so
+   * "reserved" and "the rest at check-in" told this customer they were done when they owe the
+   * whole prepayment and may lose the boat.
+   */
+  const asked = method === "question";
+  const heldUntil = pendingHoldDeadline(booking);
+
   const security = booking.paymentSchedule.find((entry) => entry.kind === "security_deposit");
   const dueNowMinor = booking.dueNow.amountMinor;
   const balanceMinor = booking.total.amountMinor - dueNowMinor;
@@ -441,7 +450,7 @@ export default function BookingConfirmationScreen() {
             </motion.div>
             <div className="flex flex-col items-center gap-4 pt-3 text-center">
               <h1 className="text-h4 text-foreground">
-                {awaitingTransfer ? t("invoiceSent") : t("reserved")}
+                {asked ? t("questionSent") : awaitingTransfer ? t("invoiceSent") : t("reserved")}
               </h1>
               {/*
                * What the customer has to do next, which is not the same sentence for both ways
@@ -450,7 +459,21 @@ export default function BookingConfirmationScreen() {
                * someone who had just asked for an invoice that they were done and that the
                * money they still owe today was owed in September.
                */}
-              {awaitingTransfer ? (
+              {asked ? (
+                heldUntil && (
+                  <p className="text-base leading-[1.4] text-foreground opacity-80">
+                    {t("questionHold", {
+                      date: format.dateTime(new Date(heldUntil), {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        timeZoneName: "short",
+                      }),
+                    })}
+                  </p>
+                )
+              ) : awaitingTransfer ? (
                 <p className="text-base leading-[1.4] text-foreground opacity-80">
                   {t("invoiceHold", {
                     /* The invoiced figure, frozen when the request was raised, rather than what
@@ -482,11 +505,13 @@ export default function BookingConfirmationScreen() {
                 )
               )}
               <p className="text-sm leading-[1.3] font-medium text-natural-600">
-                {awaitingTransfer
-                  ? t("invoiceEmailed", { number: invoice.number })
-                  : isGuest
-                    ? t("guestEmailed")
-                    : t("emailed")}
+                {asked
+                  ? t("questionEmailed")
+                  : awaitingTransfer
+                    ? t("invoiceEmailed", { number: invoice.number })
+                    : isGuest
+                      ? t("guestEmailed")
+                      : t("emailed")}
               </p>
             </div>
             {/* Both destinations need an account: My Bookings for a signed-in customer, and the

@@ -137,7 +137,7 @@
       "mainsail": "Type grootzeil",
       "cabins": "Hutten",
       "length": "Lengte",
-      "lengthValue": "{length, number} m"
+      "lengthValue": "{feet, number} ft / {metres, number} m"
     },
     "battenMainsail": "Grootzeil met zeillatten",
     "badges": {

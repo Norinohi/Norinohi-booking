@@ -137,7 +137,7 @@
       "mainsail": "Großsegeltyp",
       "cabins": "Kabinen",
       "length": "Länge",
-      "lengthValue": "{length, number} m"
+      "lengthValue": "{feet, number} ft / {metres, number} m"
     },
     "battenMainsail": "Lattengroßsegel",
     "badges": {

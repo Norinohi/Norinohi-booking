@@ -71,7 +71,7 @@ export default function NavigationBar() {
         <div className="flex min-w-0 items-center gap-4 max-[360px]:gap-1 2xl:gap-6">
           <IconButton
             variant="subtle"
-            aria-label={open ? t("closeMenu") : t("openMenu")}
+            label={open ? t("closeMenu") : t("openMenu")}
             className="rounded-sm xl:hidden"
             onClick={() => setOpen((v) => !v)}
           >
@@ -108,7 +108,7 @@ export default function NavigationBar() {
                 variant="subtle"
                 nativeButton={false}
                 render={<Link href={WISHLIST_HREF} />}
-                aria-label={t("saved")}
+                label={t("saved")}
                 aria-current={onWishlist ? "page" : undefined}
                 className={cn("rounded-sm", onWishlist && "text-brand hover:bg-brand-50")}
               >

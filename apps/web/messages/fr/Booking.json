@@ -142,6 +142,9 @@
   },
   "confirmation": {
     "reserved": "Votre yacht est réservé !",
+    "questionSent": "Votre question est envoyée",
+    "questionHold": "Votre yacht est bloqué jusqu'au {date}. Poser une question ne prolonge pas l'option : payez avant cette date, sinon l'opérateur peut libérer le yacht.",
+    "questionEmailed": "Nous vous avons envoyé une copie de votre question par e-mail et répondrons à la même adresse",
     "notFound": "Réservation introuvable",
     "browse": "Parcourir les yachts",
     "remaining": "Le solde de {amount} sera payé à l’embarquement.",

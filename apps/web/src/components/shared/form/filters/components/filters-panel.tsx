@@ -114,7 +114,7 @@ export default function FiltersPanel({
           {t("clearAll")}
         </button>
         {onClose ? (
-          <IconButton variant="subtle" size="sm" aria-label={t("close")} onClick={onClose}>
+          <IconButton variant="subtle" size="sm" label={t("close")} onClick={onClose}>
             <X />
           </IconButton>
         ) : null}

@@ -142,6 +142,9 @@
   },
   "confirmation": {
     "reserved": "Din båd er reserveret!",
+    "questionSent": "Dit spørgsmål er sendt",
+    "questionHold": "Din yacht er holdt til dig indtil {date}. Et spørgsmål forlænger ikke reservationen, så betal inden da, ellers kan udlejeren frigive yachten.",
+    "questionEmailed": "Vi har mailet dig en kopi af dit spørgsmål og sender svaret til samme adresse",
     "notFound": "Bookingen blev ikke fundet",
     "browse": "Se bådene",
     "remaining": "De resterende {amount} betales ved check-in.",

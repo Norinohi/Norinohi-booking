@@ -186,7 +186,7 @@ export default function ManagePricesTable({ onEdit }: ManagePricesTableProps) {
                         <IconButton
                           variant="subtle"
                           size="sm"
-                          aria-label={t("prices.table.edit")}
+                          label={t("prices.table.edit")}
                           onClick={() => onEdit(row)}
                         >
                           <SquarePen className="size-5" />

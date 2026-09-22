@@ -2,6 +2,7 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { Hint } from "@yacht-charter/ui/components/overlay/hint";
 import { useUiLabels } from "@yacht-charter/ui/components/ui-labels";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -191,24 +192,28 @@ function CarouselArrow({
   const labels = useUiLabels();
   const isPrev = direction === "prev";
 
+  const label = isPrev ? labels.previousPhoto : labels.nextPhoto;
+
   return (
-    <button
-      type="button"
-      data-slot={`carousel-${direction}`}
-      aria-label={isPrev ? labels.previousPhoto : labels.nextPhoto}
-      disabled={isPrev ? !canScrollPrev : !canScrollNext}
-      onClick={() => (isPrev ? api?.scrollPrev() : api?.scrollNext())}
-      className={cn(
-        "absolute top-1/2 z-10 flex size-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/80 text-foreground shadow-popover transition-colors outline-none hover:bg-white focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-0",
-        /* The circle is 32px by design; the tap target around it is 44px. */
-        "before:absolute before:-inset-1.5 before:content-['']",
-        isPrev ? "left-3" : "right-3",
-        className,
-      )}
-      {...props}
-    >
-      {isPrev ? <ChevronLeft className="size-5" /> : <ChevronRight className="size-5" />}
-    </button>
+    <Hint label={label}>
+      <button
+        type="button"
+        data-slot={`carousel-${direction}`}
+        aria-label={label}
+        disabled={isPrev ? !canScrollPrev : !canScrollNext}
+        onClick={() => (isPrev ? api?.scrollPrev() : api?.scrollNext())}
+        className={cn(
+          "absolute top-1/2 z-10 flex size-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/80 text-foreground shadow-popover transition-colors outline-none hover:bg-white focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-0",
+          /* The circle is 32px by design; the tap target around it is 44px. */
+          "before:absolute before:-inset-1.5 before:content-['']",
+          isPrev ? "left-3" : "right-3",
+          className,
+        )}
+        {...props}
+      >
+        {isPrev ? <ChevronLeft className="size-5" /> : <ChevronRight className="size-5" />}
+      </button>
+    </Hint>
   );
 }
 
@@ -226,26 +231,30 @@ function CarouselNav({
 
   return (
     <div className={cn("flex shrink-0 items-center gap-1", className)} {...props}>
-      <Button
-        type="button"
-        variant="neutral"
-        size="icon-md"
-        aria-label={previousLabel}
-        disabled={!canScrollPrev}
-        onClick={() => api?.scrollPrev()}
-      >
-        <ChevronLeft />
-      </Button>
-      <Button
-        type="button"
-        variant="neutral"
-        size="icon-md"
-        aria-label={nextLabel}
-        disabled={!canScrollNext}
-        onClick={() => api?.scrollNext()}
-      >
-        <ChevronRight />
-      </Button>
+      <Hint label={previousLabel}>
+        <Button
+          type="button"
+          variant="neutral"
+          size="icon-md"
+          aria-label={previousLabel}
+          disabled={!canScrollPrev}
+          onClick={() => api?.scrollPrev()}
+        >
+          <ChevronLeft />
+        </Button>
+      </Hint>
+      <Hint label={nextLabel}>
+        <Button
+          type="button"
+          variant="neutral"
+          size="icon-md"
+          aria-label={nextLabel}
+          disabled={!canScrollNext}
+          onClick={() => api?.scrollNext()}
+        >
+          <ChevronRight />
+        </Button>
+      </Hint>
     </div>
   );
 }
