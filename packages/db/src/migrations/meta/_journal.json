@@ -1051,6 +1051,13 @@
       "when": 1790035746275,
       "tag": "0149_operator_checkout_note",
       "breakpoints": true
+    },
+    {
+      "idx": 150,
+      "version": "7",
+      "when": 1790035991982,
+      "tag": "0150_strip_operator_financials",
+      "breakpoints": true
     }
   ]
 }

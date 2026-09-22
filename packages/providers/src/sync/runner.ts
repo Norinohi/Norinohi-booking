@@ -131,6 +131,34 @@ export interface WriteRecordInput {
   seenAt: Date;
 }
 
+/*
+ * An operator's tax registration and bank accounts, as each vendor spells them (NauSYS ships both
+ * `bankAccounts` and the misspelt `bankAcounts`). Nothing reads them, and the raw table is not
+ * encrypted, so they are dropped before storage rather than kept against a need nobody has.
+ */
+const OPERATOR_FINANCIAL_KEYS = new Set([
+  "vatCode",
+  "vatcode",
+  "bankAccountNumber",
+  "bankAccounts",
+  "bankAcounts",
+]);
+
+const payloadObjectSchema = z.record(z.string(), z.unknown());
+
+/** The record as it may be stored: a company without its financial identifiers. */
+export function withoutOperatorFinancials(input: WriteRecordInput): WriteRecordInput {
+  if (input.resourceType !== "company") return input;
+  const payload = payloadObjectSchema.safeParse(input.payload);
+  if (!payload.success) return input;
+  return {
+    ...input,
+    payload: Object.fromEntries(
+      Object.entries(payload.data).filter(([key]) => !OPERATOR_FINANCIAL_KEYS.has(key)),
+    ),
+  };
+}
+
 export interface SweepScopeInput {
   resourceType: ProviderResourceType;
   scopeKey?: string;
@@ -561,7 +589,10 @@ export function createDrizzleCatalogueSyncStore(options: DrizzleStoreOptions): C
        */
       const deduped = [
         ...new Map(
-          inputs.map((input) => [recordKey(input.resourceType, input.externalId), input]),
+          inputs.map((input) => [
+            recordKey(input.resourceType, input.externalId),
+            withoutOperatorFinancials(input),
+          ]),
         ).values(),
       ];
 
