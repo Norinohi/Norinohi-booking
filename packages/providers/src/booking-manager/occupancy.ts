@@ -214,6 +214,9 @@ export function mapBookingManagerAvailability(
     }),
   };
   if (optionExpiresAt !== null) interval.optionExpiresAt = optionExpiresAt;
+  // Where the boat is when the charter ends, which is where the next week sells from.
+  if (row.baseFromId != null) interval.startBaseId = row.baseFromId;
+  if (row.baseToId != null) interval.endBaseId = row.baseToId;
   return interval;
 }
 

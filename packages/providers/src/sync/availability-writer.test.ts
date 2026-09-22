@@ -331,6 +331,68 @@ describe("freePeriodsFrom", () => {
     ]);
   });
 
+  describe("after a one-way charter", () => {
+    const home = "25";
+
+    it("asserts nothing free until the next charter once the boat ended at another base", () => {
+      expect(
+        freePeriodsFrom({
+          windows: [JULY],
+          homeBaseId: home,
+          occupied: [
+            { startDate: "2026-07-04", endDate: "2026-07-11", endBaseId: "31" },
+            { startDate: "2026-07-18", endDate: "2026-07-25", endBaseId: home },
+          ],
+        }),
+      ).toEqual([
+        { startDate: "2026-07-01", endDate: "2026-07-04" },
+        { startDate: "2026-07-25", endDate: "2026-07-31" },
+      ]);
+    });
+
+    it("carries a one-way that ended before the window into it", () => {
+      expect(
+        freePeriodsFrom({
+          windows: [JULY],
+          homeBaseId: home,
+          occupied: [
+            { startDate: "2026-06-20", endDate: "2026-06-27", endBaseId: "31" },
+            { startDate: "2026-07-18", endDate: "2026-07-25", endBaseId: home },
+          ],
+        }),
+      ).toEqual([{ startDate: "2026-07-25", endDate: "2026-07-31" }]);
+    });
+
+    it("keeps the stretch after a charter back at home, or one that names no base", () => {
+      expect(
+        freePeriodsFrom({
+          windows: [JULY],
+          homeBaseId: home,
+          occupied: [
+            { startDate: "2026-07-04", endDate: "2026-07-11", endBaseId: home },
+            { startDate: "2026-07-18", endDate: "2026-07-25" },
+          ],
+        }),
+      ).toEqual([
+        { startDate: "2026-07-01", endDate: "2026-07-04" },
+        { startDate: "2026-07-11", endDate: "2026-07-18" },
+        { startDate: "2026-07-25", endDate: "2026-07-31" },
+      ]);
+    });
+
+    it("judges nothing for a listing with no home base on record", () => {
+      expect(
+        freePeriodsFrom({
+          windows: [JULY],
+          occupied: [{ startDate: "2026-07-04", endDate: "2026-07-11", endBaseId: "31" }],
+        }),
+      ).toEqual([
+        { startDate: "2026-07-01", endDate: "2026-07-04" },
+        { startDate: "2026-07-11", endDate: "2026-07-31" },
+      ]);
+    });
+  });
+
   it("never leaves the windows it was given", () => {
     const windows = [JULY, { start: "2026-09-01", end: "2026-09-30" }];
     const periods = freePeriodsFrom({ windows, occupied: [] });
@@ -542,6 +604,26 @@ describe("runAvailabilitySync", () => {
 
     expect(store.freeOf("ylst_marlin")).toEqual([
       { startDate: "2026-06-01", endDate: "2027-01-01" },
+    ]);
+  });
+
+  it("reads the listing's home base against where each charter ended", async () => {
+    const AT_HOME: ListingRef = { ...MARLIN, externalHomeBaseId: "25" };
+    const store = fakeStore({
+      yachts: { "4711001": AT_HOME },
+      listings: { "102701": [AT_HOME] },
+    });
+
+    await runAvailabilitySync({
+      store: store.store,
+      source: source({
+        fetchOccupancy: () => Promise.resolve([occupied({ startBaseId: "25", endBaseId: "31" })]),
+      }),
+      now: () => RUN_AT,
+    });
+
+    expect(store.freeOf("ylst_marlin")).toEqual([
+      { startDate: "2026-06-01", endDate: "2026-06-27" },
     ]);
   });
 

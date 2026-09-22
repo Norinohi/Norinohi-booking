@@ -60,6 +60,15 @@ describe("mapBookingManagerAvailability", () => {
     });
   });
 
+  it("carries the bases the charter leaves from and ends at", () => {
+    expect(
+      mapBookingManagerAvailability(row({ baseFromId: "25", baseToId: "0" }), config),
+    ).toMatchObject({ startBaseId: "25", endBaseId: "0" });
+    expect(
+      mapBookingManagerAvailability(row({ baseFromId: null, baseToId: undefined }), config),
+    ).not.toHaveProperty("endBaseId");
+  });
+
   it.each([
     [BM_RESERVATION_STATUS.RESERVATION, "occupied"],
     [BM_RESERVATION_STATUS.OPTION, "option"],

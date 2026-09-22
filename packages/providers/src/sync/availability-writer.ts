@@ -66,6 +66,9 @@ export const occupiedIntervalSchema = z.object({
   status: z.enum(["occupied", "option", "blocked"]),
   /** The vendor's deadline for an `option`, as an ISO instant. Unset where it states none. */
   optionExpiresAt: z.iso.datetime().optional(),
+  /** The provider's own base ids the charter leaves from and ends at, where it states them. */
+  startBaseId: z.string().min(1).optional(),
+  endBaseId: z.string().min(1).optional(),
   sourceHash: z.string().min(1),
 });
 export type OccupiedInterval = z.infer<typeof occupiedIntervalSchema>;
@@ -131,6 +134,8 @@ export interface ListingRef {
    * overwrite.
    */
   listingOfferId: string | null;
+  /** The provider's id for the base the listing sells from, where the source records one. */
+  externalHomeBaseId?: string | null;
 }
 
 /* ------------------------------------------------------------------ source */
@@ -361,7 +366,12 @@ const DAY_MS = 86_400_000;
 export interface FreePeriodInput {
   /** Only ranges whose occupancy we actually hold; see `runAvailabilitySync`. */
   windows: readonly DateWindow[];
-  occupied: readonly { startDate: string; endDate: string }[];
+  occupied: readonly { startDate: string; endDate: string; endBaseId?: string | undefined }[];
+  /**
+   * The provider's id for the base the listing sells from. With it, the stretch after a charter
+   * that ended at another base is not asserted free; see `freePeriodsFrom`.
+   */
+  homeBaseId?: string | undefined;
 }
 
 export interface FreePeriod {
@@ -382,9 +392,20 @@ export interface FreePeriod {
  * the point someone asks for it.
  *
  * Half-open, so a charter ending the day the next begins leaves no gap between them.
+ *
+ * A one-way charter leaves the boat at another base, and the listing is sold from its home
+ * base, so the stretch after it was advertised from a marina the boat was not in (4.2% of
+ * Booking Manager's availability rows end elsewhere). Nothing says when it gets back, so that
+ * whole stretch, up to the next charter, is not asserted: whether it sells, and from where, is
+ * the vendor's to say, and the confirming `/offers` pass records it where it does.
  */
 export function freePeriodsFrom(input: FreePeriodInput): FreePeriod[] {
   const periods: FreePeriod[] = [];
+  const { homeBaseId } = input;
+  const endsAway = (interval: { endBaseId?: string | undefined }) =>
+    homeBaseId !== undefined &&
+    interval.endBaseId !== undefined &&
+    interval.endBaseId !== homeBaseId;
 
   for (const window of input.windows) {
     const inside = input.occupied
@@ -392,18 +413,32 @@ export function freePeriodsFrom(input: FreePeriodInput): FreePeriod[] {
       .map((interval) => ({
         startDate: interval.startDate < window.start ? window.start : interval.startDate,
         endDate: interval.endDate > window.end ? window.end : interval.endDate,
+        away: endsAway(interval),
       }))
       .sort((a, b) => a.startDate.localeCompare(b.startDate));
 
+    // Where the boat is as the window opens: wherever the last charter before it ended.
+    let away = false;
+    let lastEnd = "";
+    for (const interval of input.occupied) {
+      if (interval.endDate <= window.start && interval.endDate > lastEnd) {
+        lastEnd = interval.endDate;
+        away = endsAway(interval);
+      }
+    }
+
     let cursor = window.start;
     for (const interval of inside) {
-      if (interval.startDate > cursor) {
+      if (interval.startDate > cursor && !away) {
         periods.push({ startDate: cursor, endDate: interval.startDate });
       }
       // Overlapping bookings must not walk the cursor backwards and re-open sold time.
-      if (interval.endDate > cursor) cursor = interval.endDate;
+      if (interval.endDate > cursor) {
+        cursor = interval.endDate;
+        away = interval.away;
+      }
     }
-    if (cursor < window.end) periods.push({ startDate: cursor, endDate: window.end });
+    if (cursor < window.end && !away) periods.push({ startDate: cursor, endDate: window.end });
   }
 
   return periods.sort((a, b) => a.startDate.localeCompare(b.startDate));
@@ -786,6 +821,7 @@ export async function runAvailabilitySync(
           : freePeriodsFrom({
               windows,
               occupied: occupiedByListing.get(ref.listingId) ?? [],
+              homeBaseId: ref.externalHomeBaseId ?? undefined,
             });
         /*
          * Collected even when empty: a boat that just sold its last week must lose the
@@ -1074,6 +1110,7 @@ export function createDrizzleAvailabilitySyncStore(
         listingId: listingSource.listingId,
         listingSourceId: listingSource.id,
         listingOfferId: listingOffer.id,
+        externalHomeBaseId: listingSource.externalBaseId,
         active: providerRecord.active,
       })
       .from(listingSource)
@@ -1094,6 +1131,7 @@ export function createDrizzleAvailabilitySyncStore(
             // as the pair of queries this replaced behaved, not as a new rule.
             listingSourceId: row.active ? row.listingSourceId : null,
             listingOfferId: row.active ? row.listingOfferId : null,
+            externalHomeBaseId: row.externalHomeBaseId,
           });
         }
         return index;
@@ -1155,6 +1193,7 @@ export function createDrizzleAvailabilitySyncStore(
           listingId: listingSource.listingId,
           listingSourceId: listingSource.id,
           listingOfferId: listingOffer.id,
+          externalHomeBaseId: listingSource.externalBaseId,
         })
         .from(listingSource)
         .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
@@ -1180,6 +1219,7 @@ export function createDrizzleAvailabilitySyncStore(
                 listingId: row.listingId,
                 listingSourceId: row.listingSourceId,
                 listingOfferId: row.listingOfferId,
+                externalHomeBaseId: row.externalHomeBaseId,
               },
             ]
           : [],

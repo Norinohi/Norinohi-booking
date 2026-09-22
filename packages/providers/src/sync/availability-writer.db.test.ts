@@ -4,6 +4,7 @@ import {
   listingRefusedPeriod,
 } from "@yacht-charter/db/schema/availability";
 import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
+import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { createTestDatabase, type TestDatabase } from "@yacht-charter/db/test-support/database";
 import { seedListing, seedSearchWorld } from "@yacht-charter/db/test-support/search-fixture";
 import { and, asc, eq, sql } from "drizzle-orm";
@@ -565,5 +566,21 @@ describe("writeFreePeriods", () => {
     );
 
     expect(await freeOf(ref.listingOfferId)).toEqual(["2026-09-22..2027-09-22"]);
+  });
+});
+
+describe("the listing a yacht resolves to", () => {
+  it("carries the base its source is sold from, on both lookups", async () => {
+    const ref = await refOf("home_base", "prov_bm");
+    await test.db
+      .update(listingSource)
+      .set({ externalBaseId: "194", externalCompanyId: "225" })
+      .where(eq(listingSource.id, ref.listingSourceId));
+
+    const bm = store("prov_bm");
+    expect(await bm.resolveListing("home_base")).toMatchObject({ externalHomeBaseId: "194" });
+    expect(
+      (await bm.listListingsForScope("225")).find((item) => item.listingId === ref.listingId),
+    ).toMatchObject({ externalHomeBaseId: "194" });
   });
 });
