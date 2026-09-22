@@ -104,6 +104,8 @@
     "discountsHeading": "Inclusi nel prezzo di noleggio sopra indicato",
     "dueNow": "Da pagare ora",
     "payNowCta": "Paga ora {amount}",
+    "payNowPlain": "Paga ora",
+    "chargedAs": "Addebito di {amount} al cambio della tua banca",
     "requestBookingCta": "Invia richiesta di prenotazione",
     "requestBookingHint": "L’operatore di questo yacht conferma personalmente ogni prenotazione. Gli chiederemo le tue date e ti ricontatteremo. Al momento non ti viene addebitato nulla.",
     "requestQuote": "Richiedi preventivo",

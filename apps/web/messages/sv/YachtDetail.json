@@ -104,6 +104,8 @@
     "discountsHeading": "Ingår i hyrespriset ovan",
     "dueNow": "Att betala nu",
     "payNowCta": "Betala {amount} nu",
+    "payNowPlain": "Betala nu",
+    "chargedAs": "Du debiteras {amount} till din banks kurs",
     "requestBookingCta": "Skicka bokningsförfrågan",
     "requestBookingHint": "Den här båtens operatör bekräftar varje bokning personligen. Vi frågar dem om dina datum och återkommer till dig. Inget dras nu.",
     "requestQuote": "Begär offert",

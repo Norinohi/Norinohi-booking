@@ -104,6 +104,8 @@
     "discountsHeading": "Inclus dans le prix de location ci-dessus",
     "dueNow": "À payer maintenant",
     "payNowCta": "Payer {amount} maintenant",
+    "payNowPlain": "Payer maintenant",
+    "chargedAs": "Débit de {amount} au taux de votre banque",
     "requestBookingCta": "Envoyer la demande de réservation",
     "requestBookingHint": "Le loueur de ce yacht confirme personnellement chaque réservation. Nous lui soumettrons vos dates et reviendrons vers vous. Aucun montant n’est débité maintenant.",
     "requestQuote": "Demander un devis",

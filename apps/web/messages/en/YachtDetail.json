@@ -104,6 +104,8 @@
     "discountsHeading": "Included in the rental price above",
     "dueNow": "Due Now",
     "payNowCta": "Pay {amount} Now",
+    "payNowPlain": "Pay now",
+    "chargedAs": "Charged as {amount} at your bank's rate",
     "requestBookingCta": "Send booking request",
     "requestBookingHint": "This yacht's operator confirms every booking personally. We'll ask them for your dates and come back to you. Nothing is charged now.",
     "requestQuote": "Request Quote",

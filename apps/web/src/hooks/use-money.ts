@@ -35,6 +35,9 @@ export function useMoney() {
 /**
  * The same, to the cent wherever there are cents: for the booking flow, where the figure is what
  * the customer is charged or owes rather than an advertised price.
+ *
+ * A converted figure is whole, though. It is a reference rate, not a charge, and "888 650,83 грн"
+ * claimed a precision to the kopeck that no card network would honour.
  */
 export function useExactMoney() {
   const format = useFormatter();
@@ -42,10 +45,29 @@ export function useExactMoney() {
 
   return (amountMinor: number, currency = "EUR") => {
     const shown = convert(amountMinor, currency);
-    const digits = exactFractionDigits(shown.amountMinor);
+    const digits = shown.approximate ? 0 : exactFractionDigits(shown.amountMinor);
     return format.number(shown.amountMinor / 100, {
       style: "currency",
       currency: shown.currency,
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    });
+  };
+}
+
+/**
+ * What will actually be debited: the quote's own currency, to the cent, never converted. For the
+ * figures money moves against - the amount due now and the Pay button - which must not name a
+ * currency the card will not be charged in.
+ */
+export function useChargeMoney() {
+  const format = useFormatter();
+
+  return (amountMinor: number, currency = "EUR") => {
+    const digits = exactFractionDigits(amountMinor);
+    return format.number(amountMinor / 100, {
+      style: "currency",
+      currency,
       minimumFractionDigits: digits,
       maximumFractionDigits: digits,
     });

@@ -104,6 +104,8 @@
     "discountsHeading": "Wliczone w powyższą cenę czarteru",
     "dueNow": "Do zapłaty teraz",
     "payNowCta": "Zapłać {amount} teraz",
+    "payNowPlain": "Zapłać teraz",
+    "chargedAs": "Obciążymy Cię kwotą {amount} po kursie Twojego banku",
     "requestBookingCta": "Wyślij prośbę o rezerwację",
     "requestBookingHint": "Armator tego jachtu osobiście potwierdza każdą rezerwację. Zapytamy go o Twoje daty i odezwiemy się do Ciebie. Teraz nic nie pobieramy.",
     "requestQuote": "Poproś o wycenę",

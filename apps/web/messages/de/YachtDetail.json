@@ -104,6 +104,8 @@
     "discountsHeading": "Bereits im Charterpreis oben enthalten",
     "dueNow": "Jetzt fällig",
     "payNowCta": "Jetzt {amount} zahlen",
+    "payNowPlain": "Jetzt zahlen",
+    "chargedAs": "Abgebucht werden {amount} zum Kurs Ihrer Bank",
     "requestBookingCta": "Buchungsanfrage senden",
     "requestBookingHint": "Der Betreiber dieser Yacht bestätigt jede Buchung persönlich. Wir klären Ihre Termine mit ihm und melden uns. Es wird jetzt nichts belastet.",
     "requestQuote": "Angebot anfordern",

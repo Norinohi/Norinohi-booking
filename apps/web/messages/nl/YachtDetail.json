@@ -104,6 +104,8 @@
     "discountsHeading": "Inbegrepen in de huurprijs hierboven",
     "dueNow": "Nu te betalen",
     "payNowCta": "Betaal nu {amount}",
+    "payNowPlain": "Nu betalen",
+    "chargedAs": "Er wordt {amount} afgeschreven tegen de koers van je bank",
     "requestBookingCta": "Boekingsaanvraag versturen",
     "requestBookingHint": "De operator van dit jacht bevestigt elke boeking persoonlijk. We vragen je data bij hen na en komen bij je terug. Er wordt nu niets in rekening gebracht.",
     "requestQuote": "Offerte aanvragen",

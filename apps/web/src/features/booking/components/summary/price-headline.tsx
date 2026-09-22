@@ -66,6 +66,16 @@ export function PriceHeadline({ quote, repricing, depositWhenInsured }: PriceHea
       ? depositWhenInsured
       : null;
 
+  const boatText = money(showStruckBase ? netBaseMinor : baseMinor, quote.total.currency);
+  const depositText = deposit ? money(deposit.amountMinor, deposit.currency) : "";
+  /*
+   * Two amounts share the row at 24px, which a euro figure fits and a hryvnia one does not:
+   * "888 651 грн" beside "77 051 грн" ran into each other. The spaces in a formatted number do
+   * not break, so the type steps down instead, and for both at once so the pair stays even.
+   */
+  const crowded = deposit !== null && Math.max(boatText.length, depositText.length) > 9;
+  const amountSize = crowded ? "text-lg leading-8" : "text-2xl leading-8";
+
   return (
     <>
       <div className="flex items-center justify-center gap-1.5 rounded-lg bg-brand-50 px-4 py-3">
@@ -94,8 +104,13 @@ export function PriceHeadline({ quote, repricing, depositWhenInsured }: PriceHea
         {repricing ? (
           <Skeleton className="h-8 w-24" />
         ) : (
-          <p className="flex flex-wrap items-baseline gap-x-1.5 text-2xl leading-8 font-semibold text-foreground">
-            {money(showStruckBase ? netBaseMinor : baseMinor, quote.total.currency)}
+          <p
+            className={cn(
+              "flex flex-wrap items-baseline gap-x-1.5 font-semibold text-foreground",
+              amountSize,
+            )}
+          >
+            {boatText}
             {showStruckBase ? (
               <span className="text-base leading-6 font-medium text-natural-500 line-through">
                 {money(baseMinor, quote.total.currency)}
@@ -117,8 +132,8 @@ export function PriceHeadline({ quote, repricing, depositWhenInsured }: PriceHea
             {repricing ? (
               <Skeleton className="h-8 w-24 justify-self-end" />
             ) : (
-              <p className="text-right text-2xl leading-8 font-semibold text-foreground">
-                {money(deposit.amountMinor, deposit.currency)}
+              <p className={cn("text-right font-semibold text-foreground", amountSize)}>
+                {depositText}
               </p>
             )}
             <div className="flex flex-col items-end gap-1 justify-self-end">
