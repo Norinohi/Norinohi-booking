@@ -651,6 +651,17 @@ async function ensureLocation(
 
 type BaseDetails = Omit<typeof base.$inferInsert, "id" | "locationId" | "name">;
 
+/*
+ * Only Booking Manager states a marina's address, and a row NauSYS is bound to as well is written
+ * by both syncs: a provider that says nothing must not erase the other's, or the address on the
+ * page and in the emails would depend on which cron ran last.
+ */
+const keptAddress = sql`coalesce(excluded.address, base.address)`;
+const detailsKeepingAddress = (details: BaseDetails) => ({
+  ...details,
+  address: details.address ?? sql`${base.address}`,
+});
+
 /**
  * The provider's bases, each on the row it is bound to (`base_source`).
  *
@@ -741,7 +752,7 @@ async function writeBases(
   );
   for (const item of moved) {
     const id = mergedInto.get(item.baseId) ?? item.baseId;
-    await db.update(base).set(item.details).where(eq(base.id, id));
+    await db.update(base).set(detailsKeepingAddress(item.details)).where(eq(base.id, id));
     baseIds.set(item.externalId, id);
     if (bindings.get(item.externalId) !== id) await bindBase(db, providerId, item.externalId, id);
   }
@@ -824,7 +835,10 @@ async function ensureBase(db: Database, values: typeof base.$inferInsert): Promi
   const [upserted] = await db
     .insert(base)
     .values(values)
-    .onConflictDoUpdate({ target: [base.locationId, base.name], set: values })
+    .onConflictDoUpdate({
+      target: [base.locationId, base.name],
+      set: { ...values, address: keptAddress },
+    })
     .returning({ id: base.id });
   return upserted?.id ?? null;
 }

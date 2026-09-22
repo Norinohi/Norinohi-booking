@@ -24,7 +24,7 @@ import { writeCanonicalCatalogue } from "./catalogue-writer";
 let test: TestDatabase;
 
 const catalogueWith = (
-  bases: { externalId: string; regionName: string; name: string; lat?: number }[],
+  bases: { externalId: string; regionName: string; name: string; lat?: number; address?: string }[],
 ): CanonicalCatalogue => ({
   countries: [{ externalId: "191", code: "HR", name: "Croatia" }],
   regions: bases.map((item) => ({
@@ -43,6 +43,7 @@ const catalogueWith = (
     externalLocationId: `location:${item.regionName}:Split`,
     name: item.name,
     lat: item.lat,
+    address: item.address,
   })),
   operators: [],
   builders: [],
@@ -187,6 +188,64 @@ describe("a provider base bound to its row", () => {
     const own = await boundBase("prov_bm", "194");
     expect(own).not.toBe(shared);
     expect(await placeOf(own)).toMatchObject({ region: "Dalmatia" });
+  });
+});
+
+/* Only Booking Manager states an address; NauSYS writes the same marina's row saying none. */
+describe("a base's address", () => {
+  const addressOf = async (baseId: string | undefined) => {
+    const [row] = await test.db
+      .select({ address: base.address })
+      .from(base)
+      .where(eq(base.id, baseId ?? ""));
+    return row?.address;
+  };
+  const mandalina = { regionName: "Sibenik", name: "Marina Mandalina" };
+
+  it("survives a sync of another provider that states none", async () => {
+    await sync(
+      "prov_bm",
+      catalogueWith([{ externalId: "401", ...mandalina, address: "Obala Jerolima Milete 17" }]),
+    );
+    const baseId = await boundBase("prov_bm", "401");
+
+    await sync("prov_ns", catalogueWith([{ externalId: "ns-401", ...mandalina, lat: 43.72 }]));
+
+    expect(await boundBase("prov_ns", "ns-401")).toBe(baseId);
+    expect(await placeOf(baseId)).toMatchObject({ lat: 43.72 });
+    expect(await addressOf(baseId)).toBe("Obala Jerolima Milete 17");
+  });
+
+  it("survives a move of the row that states none, and takes a new one when stated", async () => {
+    await sync(
+      "prov_bm",
+      catalogueWith([{ externalId: "402", regionName: "Sibenik", name: "Marina Solaris" }]),
+    );
+    const baseId = await boundBase("prov_bm", "402");
+    await test.db
+      .update(base)
+      .set({ address: "Hotelsko naselje Solaris" })
+      .where(eq(base.id, baseId ?? ""));
+
+    await sync(
+      "prov_bm",
+      catalogueWith([{ externalId: "402", regionName: "Sibenik region", name: "Marina Solaris" }]),
+    );
+    expect(await placeOf(baseId)).toMatchObject({ region: "Sibenik region" });
+    expect(await addressOf(baseId)).toBe("Hotelsko naselje Solaris");
+
+    await sync(
+      "prov_bm",
+      catalogueWith([
+        {
+          externalId: "402",
+          regionName: "Sibenik region",
+          name: "Marina Solaris",
+          address: "Hotelsko naselje Solaris 86",
+        },
+      ]),
+    );
+    expect(await addressOf(baseId)).toBe("Hotelsko naselje Solaris 86");
   });
 });
 
