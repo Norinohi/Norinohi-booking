@@ -8,8 +8,10 @@ import type { BookingStatus } from "../services/booking-state";
  * behind it.
  *
  * A vendor cancellation under a live booking is named apart from the rest, because that is the
- * one that costs a customer their holiday. The rest is drift worth an operator's eye: a hold
- * the vendor confirmed behind our back, or a confirmed charter it has put back on hold.
+ * one that costs a customer their holiday. So is a hold that ran out at the vendor while we
+ * still count on it, which nobody cancelled and which Booking Manager goes on blocking the week
+ * for. The rest is drift worth an operator's eye: a hold the vendor confirmed behind our back,
+ * or a confirmed charter it has put back on hold.
  *
  * A booking mid-flight through our own confirm is not drift. The vendor is answering about the
  * reservation we are in the middle of changing, and reporting that would be noise on every
@@ -18,6 +20,7 @@ import type { BookingStatus } from "../services/booking-state";
 export type ProviderReservationStatus = "option_held" | "confirmed" | "cancelled";
 export type DriftKind =
   | "cancelled_by_operator"
+  | "option_lapsed"
   | "status_drift"
   | "dates_changed"
   | "yacht_changed"
@@ -26,8 +29,9 @@ export type DriftKind =
 export function driftKindOf(
   ours: BookingStatus,
   theirs: ProviderReservationStatus,
+  lapsed = false,
 ): DriftKind | null {
-  if (theirs === "cancelled") return "cancelled_by_operator";
+  if (theirs === "cancelled") return lapsed ? "option_lapsed" : "cancelled_by_operator";
   if (ours === "CONFIRMING") return null;
   if (theirs === "confirmed" && ours === "OPTION_HELD") return "status_drift";
   if (theirs === "option_held" && ours === "CONFIRMED") return "status_drift";

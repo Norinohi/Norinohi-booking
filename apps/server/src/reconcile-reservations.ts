@@ -40,6 +40,7 @@ const metrics = {
   statusesRecorded: result.statusesRecorded,
   drift: result.drift.length,
   cancelledByOperator: result.drift.filter((item) => item.kind === "cancelled_by_operator").length,
+  optionsLapsed: result.drift.filter((item) => item.kind === "option_lapsed").length,
   unreachable: result.unreachable.length,
   invoicesRecorded: invoices.recorded,
   invoicesUnmatched: invoices.unmatched,

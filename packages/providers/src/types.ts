@@ -453,6 +453,11 @@ export const providerReservationStateSchema = z.object({
   securityToken: z.string().optional(),
   /** The vendor's own word for the status, kept for the operator reading the report. */
   providerStatus: z.string(),
+  /**
+   * A hold that ran out at the vendor rather than one anybody cancelled; `status` is then
+   * `cancelled`. Booking Manager goes on blocking the week until the record is deleted.
+   */
+  lapsed: z.boolean().optional(),
   /** The vendor's yacht, which an operator can swap under a booking. */
   externalYachtId: z.string().optional(),
   checkIn: z.string().optional(),

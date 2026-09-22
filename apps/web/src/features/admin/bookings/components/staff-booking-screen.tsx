@@ -76,8 +76,12 @@ function chipVariant(map: Record<string, ChipVariant>, key: string): ChipVariant
 /*
  * The vendor's last word, when it is one that means the boat is still theirs to give back.
  * `cancelled` and a null (a provider that was never asked) are the other side of this.
+ *
+ * The booking chain writes our canonical words and the reservation reconcile the vendor's own,
+ * which for both vendors are `OPTION` and `RESERVATION`. Booking Manager's `OPTION_EXPIRED`
+ * belongs here too: it keeps the week blocked until the record is deleted.
  */
-const PROVIDER_HOLDS = ["confirmed", "option_held"];
+const PROVIDER_HOLDS = ["confirmed", "option_held", "OPTION", "RESERVATION", "OPTION_EXPIRED"];
 
 /*
  * Statuses that say we let the slot go. Cancelling a CONFIRMED booking lands at REFUND_PENDING

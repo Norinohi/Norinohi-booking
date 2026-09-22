@@ -160,4 +160,26 @@ describe("reservation reconcile", () => {
       ["price_changed", "170000 -> 180000 EUR (minor units)"],
     ]);
   });
+
+  it("reports a hold that ran out at the vendor as lapsed, not as the operator's cancellation", async () => {
+    const { reservationId, bookingId } = await heldBooking("lapsed");
+    feed([
+      {
+        providerReservationId: reservationId,
+        status: "cancelled",
+        providerStatus: "OPTION_EXPIRED",
+        lapsed: true,
+      },
+    ]);
+
+    const result = await reconcileReservations(
+      test.db,
+      inventory,
+      new Date("2026-09-24T00:00:00Z"),
+    );
+    const mine = result.drift.filter((item) => item.providerReservationId === reservationId);
+
+    expect(mine.map((item) => item.kind)).toEqual(["option_lapsed"]);
+    expect((await bookingState(test.db, bookingId)).booking.providerStatus).toBe("OPTION_EXPIRED");
+  });
 });

@@ -266,13 +266,28 @@ first we would hear of it is the customer arriving at the base.
 NauSYS publishes no webhook and no event stream, but its reservation list filters by modify
 time (`modifyTimeFrom`/`modifyTimeTo`), which is enough to ask "what changed since the last
 run". Verified against the live account (Sep 2026): 14 of the agency's 61 reservations answered
-for a two-month window, each carrying `lastModifiedAt`. Booking Manager publishes no such feed;
+for a two-month window, each carrying `lastModifiedAt`. The pass also names the reservations it
+holds, and NauSYS answers those by id whatever their modify time.
+
+Booking Manager is asked by id alone, one `GET /reservation/{id}` per reservation we hold, one
+call at a time on the credential's shared lane. Neither of its lists is a delta, measured on
+company 225 (Sep 2026): `/reservations/{year}` is agency-wide and leaves every cancelled record
+out unless asked for `status=5` on its own, and `/objects/Reservation/search` with a
+`lastSyncPoint` answered the same request differently twice, moved its sync point backwards and
+missed cancellations the single read reported. `5` reads as an operator cancellation. `3`, and a
+`2` past its `expirationDate`, read as a hold that lapsed (`option_lapsed`), which nobody
+cancelled and which Booking Manager keeps blocking the week for until the record is deleted. A
+reservation the vendor cannot find or answers in a shape we cannot read is logged and skipped; a
+vendor that is down or refuses the key leaves the whole provider unreachable for the run.
+
 `listChangedReservations` is optional on the provider interface and a vendor without one leaves
 its bookings unreconciled rather than blocking the pass.
 
-**It writes two things and only two**: the vendor's status word onto `booking.provider_status`,
-and the rotated security token, without which every later call on that reservation — a
-cancellation, a crew list — is refused. It does **not** move a booking's own status. A charter
+**It writes two things and only two**: the vendor's status word onto `booking.provider_status`
+(`OPTION`, `RESERVATION`, `STORNO`, `OPTION_EXPIRED`, `CANCELLED`, where the booking chain
+writes our canonical `option_held`, `confirmed`, `cancelled`), and the rotated security token
+(NauSYS only), without which every later call on that reservation, a cancellation or a crew
+list, is refused. It does **not** move a booking's own status. A charter
 the operator cancelled is money in a customer's hands and a refund somebody has to decide on,
 and this pass cannot know whether that already happened. So it reports and exits non-zero, and
 `flagStaleConfirmations` in the expiry sweep takes the same line for the same reason.

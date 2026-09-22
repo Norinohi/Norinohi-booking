@@ -1,0 +1,103 @@
+{
+  "id": 8192658760000107113,
+  "charterReservationId": 8192659040000100225,
+  "reservationCode": "26-00674",
+  "dateFrom": "2026-10-31 17:00:00",
+  "dateTo": "2026-11-07 09:00:00",
+  "expirationDate": "2026-09-01 11:59:31",
+  "creationDate": "2026-08-25 18:19:31",
+  "confirmationDate": "2026-08-25 00:00:00",
+  "yachtId": 978990020000100225,
+  "status": 3,
+  "productName": "Bareboat",
+  "baseFromId": 194,
+  "baseToId": 194,
+  "clientName": "Test Norinohi Audit",
+  "clientId": 8192658730000107113,
+  "currency": "EUR",
+  "termsOfPayment": "  ",
+  "basePrice": 1.0,
+  "discount": 0.0,
+  "commission": 0.0,
+  "finalPrice": 501.0,
+  "clientPrice": 501.0,
+  "securityDeposit": 1500.0,
+  "items": [
+    {
+      "id": 8192658900000107113,
+      "name": "APA ",
+      "quantity": 1.0,
+      "unit": "EMPTY",
+      "price": 500.0,
+      "payableInBase": false,
+      "type": "extra"
+    },
+    {
+      "id": 8192658910000107113,
+      "name": "Cleaning",
+      "quantity": 1.0,
+      "unit": "EMPTY",
+      "price": 100.0,
+      "payableInBase": true,
+      "type": "extra"
+    },
+    {
+      "id": 8192658920000107113,
+      "name": "Skipper",
+      "quantity": 1.0,
+      "unit": "EMPTY",
+      "price": 910.0,
+      "payableInBase": true,
+      "type": "extra"
+    },
+    {
+      "id": 8192658930000107113,
+      "name": "Towels",
+      "quantity": 2.0,
+      "unit": "EMPTY",
+      "price": 140.0,
+      "payableInBase": true,
+      "type": "extra"
+    },
+    {
+      "id": 8192658940000107113,
+      "name": "Cleaning 2",
+      "quantity": 1.0,
+      "unit": "EMPTY",
+      "price": 150.0,
+      "payableInBase": true,
+      "type": "extra"
+    },
+    {
+      "id": 8192658950000107113,
+      "name": "Outboard engine",
+      "quantity": 1.0,
+      "unit": "EMPTY",
+      "price": 100.0,
+      "payableInBase": true,
+      "type": "extra"
+    },
+    {
+      "id": 8192658960000107113,
+      "name": "Tourist tax",
+      "quantity": 1.0,
+      "unit": "EMPTY",
+      "price": 7.0,
+      "payableInBase": true,
+      "type": "extra"
+    }
+  ],
+  "paymentPlan": [
+    {
+      "date": "2026-09-01 00:00:00",
+      "amount": 250.5
+    },
+    {
+      "date": "2026-10-01 17:00:00",
+      "amount": 250.5
+    }
+  ],
+  "remarks": "",
+  "internalRemarks": "",
+  "crewListLink": "https://www.booking-manager.com/cbm/servlet/cbm?serviceId=225&token=REDACTED&fview=crew_editor&reservation_id=8192659040000100225"
+}

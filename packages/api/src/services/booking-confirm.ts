@@ -116,8 +116,8 @@ export async function confirmBookingWithProvider(
      * An answer that is not a confirmation is not one, whatever else it says. Booking Manager can
      * answer its confirm with the reservation still an option, and marking that CONFIRMED sold a
      * charter the operator never fixed. It is not a refusal either, so it is left the way a
-     * timeout is: CONFIRMING, for a person and reconcile to settle, money neither refunded nor
-     * captured.
+     * timeout is: CONFIRMING, money neither refunded nor captured, for a person to settle with
+     * the vendor's status word that reservation-reconcile records on the booking.
      */
     if (reservation.status !== "confirmed") {
       log.warn({
@@ -153,8 +153,8 @@ export async function confirmBookingWithProvider(
      * have been committed before the answer was lost. Treating it as one refunded a charter the
      * operator had already fixed and took its week off the card. The booking stays in
      * CONFIRMING, where the stale-confirming sweep flags it for a person after fifteen minutes
-     * and reservation-reconcile reads the vendor's record for it; the money is neither
-     * refunded nor captured until one of them decides.
+     * and reservation-reconcile records the vendor's own status on it, for both vendors; the
+     * money is neither refunded nor captured until that person decides.
      */
     if (error instanceof TransientError) {
       reportProviderRefusal("confirm", error, { bookingId, provider: row.provider });

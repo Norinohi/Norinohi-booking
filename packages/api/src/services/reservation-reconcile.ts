@@ -28,9 +28,10 @@ import type { BookingStatus } from "./booking-state";
  * working in their own system: a charter they cancel, a boat they swap, a week they move. The
  * first we would hear of it is the customer arriving at the base.
  *
- * NauSYS publishes no webhook and no event stream. What it does publish is a reservation list
- * filtered by modify time, so this pass asks "what changed since the last run" and compares
- * the answers to our own rows.
+ * Neither vendor publishes a webhook or an event stream. NauSYS publishes a reservation list
+ * filtered by modify time, so this pass asks "what changed since the last run"; both answer for
+ * the reservations we name by id, which is how Booking Manager is asked, since neither of its
+ * lists is a delta. The answers are compared to our own rows.
  *
  * It writes exactly two things: the vendor's status word onto `booking.provider_status`, and
  * the rotated security token, without which every later call on that reservation fails. It
@@ -120,7 +121,7 @@ export async function reconcileReservations(
   };
   if (ours.length === 0) return result;
 
-  /* One call per vendor rather than per booking: the feed is a window, not a lookup. */
+  /* One ask per vendor rather than per booking; how many calls that takes is the adapter's. */
   for (const code of new Set(ours.map((row) => row.provider))) {
     const adapter = await providerByKey(fallback, code);
     if (!adapter.listChangedReservations) continue;
@@ -204,7 +205,7 @@ export async function reconcileReservations(
           detail,
         });
 
-      const kind = driftKindOf(row.status, state.status);
+      const kind = driftKindOf(row.status, state.status, state.lapsed);
       if (kind) report(kind, null);
 
       const baseline: DriftBaseline = {

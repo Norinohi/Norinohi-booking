@@ -17,6 +17,12 @@ describe("driftKindOf", () => {
     expect(driftKindOf("OPTION_HELD", "cancelled")).toBe("cancelled_by_operator");
   });
 
+  /* Booking Manager: nobody cancelled it, and the vendor still blocks the week for it. */
+  it("names a hold that ran out at the vendor apart from a cancellation", () => {
+    expect(driftKindOf("OPTION_HELD", "cancelled", true)).toBe("option_lapsed");
+    expect(driftKindOf("CONFIRMED", "cancelled", true)).toBe("option_lapsed");
+  });
+
   it("flags a hold the operator confirmed behind our back", () => {
     expect(driftKindOf("OPTION_HELD", "confirmed")).toBe("status_drift");
   });

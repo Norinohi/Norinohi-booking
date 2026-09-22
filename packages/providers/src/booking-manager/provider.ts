@@ -22,6 +22,7 @@ import type {
   ProviderRecordSet,
   ProviderReservation,
   ProviderReservationRef,
+  ProviderReservationState,
   QuoteRequest,
   RawEntity,
 } from "../types";
@@ -58,6 +59,7 @@ import { bookingManagerPriceWindow, createBookingManagerSeasonalPriceLoader } fr
 import { projectBookingManagerCatalogue } from "./projection";
 import { clientPriceOf, createBookingManagerQuoteService, repriceRequestFor } from "./quote";
 import { createBookingManagerBookingService } from "./booking";
+import { listChangedBookingManagerReservations } from "./reservations";
 import { loadBookingManagerDiscountCap } from "./discount-cap";
 
 import type { JsonField } from "../shared/json";
@@ -310,6 +312,21 @@ export class BookingManagerInventoryProvider
 
   addOrUpdateExtras(input: ProviderExtrasMutation): Promise<ProviderQuote> {
     return this.bookings.addOrUpdateExtras(input);
+  }
+
+  /**
+   * Read by id alone: the window is ignored, because neither vendor list is a delta (see
+   * `reservations.ts`). `until` is still the clock an option's expiry is read against.
+   */
+  listChangedReservations(window: {
+    since: Date;
+    until: Date;
+    reservationIds?: readonly string[] | undefined;
+  }): Promise<ProviderReservationState[]> {
+    return listChangedBookingManagerReservations(this.client, window, {
+      timeZone: this.config.timeZone,
+      now: window.until,
+    });
   }
 
   capabilities(): ProviderCapabilities {

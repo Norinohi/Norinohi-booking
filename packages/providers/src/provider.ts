@@ -73,19 +73,19 @@ export interface InventoryProvider {
    */
   searchCrewPlaces?(query: string, limit: number): Promise<CrewPlace[]>;
   /**
-   * The reservations this operator changed inside a window, so our copies can be checked
-   * against theirs.
-   *
-   * Optional: NauSYS filters its reservation list by modify time, Booking Manager does not
-   * publish such a feed, and a provider that cannot answer simply leaves its bookings
-   * unreconciled rather than blocking the pass.
-   */
-  /**
    * The most we may take off this priced charter of our own accord, stated exactly, where the
    * vendor bounds it more tightly than the offer can say. Optional: only NauSYS does, from its
    * commission net of VAT. Asked only when our discounts take anything, since it costs a call.
    */
   exactClientDiscountCap?(quote: ProviderQuote): Promise<Money | undefined>;
+  /**
+   * The reservations this operator changed inside a window, so our copies can be checked
+   * against theirs.
+   *
+   * Optional, and a provider without it leaves its bookings unreconciled rather than blocking
+   * the pass. NauSYS answers by id or by modify time; Booking Manager only by id, one
+   * `GET /reservation/{id}` each, since neither of its lists is a delta we can trust.
+   */
   listChangedReservations?(window: {
     since: Date;
     until: Date;
