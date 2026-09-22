@@ -1,0 +1,1 @@
+ALTER TABLE "base" ADD COLUMN "address" text;

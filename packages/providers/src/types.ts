@@ -629,6 +629,7 @@ const canonicalBaseSchema = z.object({
   email: z.string().optional(),
   phone: z.string().optional(),
   website: z.string().optional(),
+  address: z.string().optional(),
   checkInTime: z.string().optional(),
   checkOutTime: z.string().optional(),
 });

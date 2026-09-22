@@ -1037,6 +1037,13 @@
       "when": 1790034799884,
       "tag": "0147_soft_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 148,
+      "version": "7",
+      "when": 1790035451056,
+      "tag": "0148_base_address",
+      "breakpoints": true
     }
   ]
 }

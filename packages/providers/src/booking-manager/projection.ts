@@ -230,6 +230,7 @@ export function projectBookingManagerGeography(
     name: string;
     lat?: number;
     lng?: number;
+    address?: string;
   }[] = [];
 
   for (const item of bases) {
@@ -290,6 +291,7 @@ export function projectBookingManagerGeography(
       name: baseNameOf(item),
       lat,
       lng,
+      address: text(item.address),
     });
   }
 

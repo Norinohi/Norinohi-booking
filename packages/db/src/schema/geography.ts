@@ -77,6 +77,8 @@ export const base = pgTable(
     email: text("email"),
     phone: text("phone"),
     website: text("website"),
+    /* The operator's own line, which is a street for some ("Uvala Baluni 8") and a stretch of water for others. */
+    address: text("address"),
     checkInTime: text("check_in_time"),
     checkOutTime: text("check_out_time"),
     ...timestamps,

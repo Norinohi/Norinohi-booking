@@ -887,6 +887,15 @@ describe("geography", () => {
     expect(regions.map((item) => item.name)).toEqual(["Zadar region"]);
   });
 
+  it("carries the operator's address line for a base, and nothing for a blank one", () => {
+    const { bases } = geographyOf([
+      { id: 1, name: "ACI Marina Split", countryId: 191, address: "Uvala Baluni 8" },
+      { id: 2, name: "Marina Kastela", countryId: 191, address: " " },
+    ]);
+
+    expect(bases.map((item) => item.address)).toEqual(["Uvala Baluni 8", undefined]);
+  });
+
   it("keeps a base's coordinates only as a whole point inside the globe", () => {
     const { bases } = geographyOf([
       // Live /bases: the latitude sits in the longitude field and the latitude reads 0.

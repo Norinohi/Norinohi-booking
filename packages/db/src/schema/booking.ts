@@ -162,6 +162,7 @@ export type CommercialSnapshot = {
   baseEmail?: string | null;
   basePhone?: string | null;
   baseWebsite?: string | null;
+  baseAddress?: string | null;
   depositInsuranceIncluded?: boolean;
   petsAllowed?: boolean;
   specs?: {

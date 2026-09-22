@@ -1064,7 +1064,11 @@ async function buildSnapshot(db: Database, listingId: string): Promise<Commercia
   if (!doc) throw new NotFoundError({ message: "Unknown listing" });
 
   const [baseRow] = await db
-    .select({ checkInTime: base.checkInTime, checkOutTime: base.checkOutTime })
+    .select({
+      checkInTime: base.checkInTime,
+      checkOutTime: base.checkOutTime,
+      address: base.address,
+    })
     .from(base)
     .where(eq(base.id, doc.baseId))
     .limit(1);
@@ -1087,6 +1091,7 @@ async function buildSnapshot(db: Database, listingId: string): Promise<Commercia
     baseEmail: doc.baseEmail,
     basePhone: doc.basePhone,
     baseWebsite: doc.baseWebsite,
+    baseAddress: baseRow?.address ?? null,
     depositInsuranceIncluded: doc.depositInsuranceIncluded,
     petsAllowed: doc.petsAllowed,
     specs: {
@@ -1196,7 +1201,12 @@ function presentSummary(
       name: snapshot.baseName,
       locationName: snapshot.locationName,
       countryName: snapshot.countryName,
-      address: placeLine(snapshot.baseName, snapshot.locationName, snapshot.countryName),
+      address: placeLine(
+        snapshot.baseName,
+        snapshot.baseAddress,
+        snapshot.locationName,
+        snapshot.countryName,
+      ),
       coordinates: { lat: snapshot.baseLat ?? 0, lng: snapshot.baseLng ?? 0 },
       timeZone: BASE_TIME_ZONE,
       phone: snapshot.basePhone ?? null,

@@ -246,6 +246,7 @@ export async function getListingDetailByIdOrSlug(
       videoUrl: string | null;
       tourUrl: string | null;
       skipperLicenceRequired: boolean | null;
+      baseAddress: string | null;
     }>(sql`
       select
         spec.beam_m as "beamM",
@@ -262,7 +263,8 @@ export async function getListingDetailByIdOrSlug(
            one hull can film it separately, and the page shows one of them. */
         coalesce(o.video_url, l.video_url) as "videoUrl",
         coalesce(o.tour_url, l.tour_url) as "tourUrl",
-        o.skipper_licence_required as "skipperLicenceRequired"
+        o.skipper_licence_required as "skipperLicenceRequired",
+        bs.address as "baseAddress"
       from listing l
       left join listing_specification spec on spec.listing_id = l.id
       left join base bs on bs.id = l.home_base_id
@@ -566,7 +568,7 @@ export async function getListingDetailByIdOrSlug(
       },
       marinaContact: {
         name: listing.baseName,
-        address: placeLine(listing.baseName, listing.location, listing.country),
+        address: placeLine(listing.baseName, info?.baseAddress, listing.location, listing.country),
         email: listing.baseEmail,
         phone: listing.basePhone,
         website: listing.baseWebsite,

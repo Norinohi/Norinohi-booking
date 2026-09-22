@@ -285,6 +285,7 @@ export async function writeCanonicalCatalogue(
       email: item.email ?? null,
       phone: item.phone ?? null,
       website: item.website ?? null,
+      address: item.address ?? null,
       checkInTime: item.checkInTime ?? null,
       checkOutTime: item.checkOutTime ?? null,
     });
