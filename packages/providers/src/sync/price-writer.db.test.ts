@@ -7,8 +7,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createDrizzlePricePeriodStore, writeSeasonalPrices } from "./price-writer";
 
 /*
- * Three Booking Manager listings priced for the same four Saturday weeks, the first of them
- * already over. `repriced` is still priced for the second week only, `dropped` for none, and
+ * Four Booking Manager listings priced for the same four Saturday weeks, the first of them
+ * already over. `repriced` is still priced for the second week only, `dropped` for none,
+ * `oversized` for the second and third with a third-week figure the column cannot hold, and
  * `untouched` is not part of the run at all.
  */
 
@@ -22,7 +23,7 @@ beforeAll(async () => {
   test = await createTestDatabase();
   const { db } = test;
   await seedSearchWorld(db);
-  for (const slug of ["repriced", "dropped", "untouched"]) {
+  for (const slug of ["repriced", "dropped", "oversized", "untouched"]) {
     await seedListing(db, slug, {
       providerId: "prov_bm",
       free: { from: WEEKS[0], to: weekEnd(WEEKS[3]) },
@@ -83,6 +84,31 @@ describe("writeSeasonalPrices inside a complete window", () => {
       "lst_untouched 2026-09-26 400000",
       "lst_untouched 2026-10-03 400000",
       "lst_untouched 2026-10-10 400000",
+    ]);
+  });
+
+  it("deletes a week whose fresh rate was refused rather than keep the stale one", async () => {
+    const week = (start: string, priceMinor: number) => ({
+      startDate: start,
+      endDate: weekEnd(start),
+      priceMinor,
+      currency: "EUR",
+    });
+    const written = await writeSeasonalPrices({
+      store: createDrizzlePricePeriodStore({ db: test.db, providerId: "prov_bm" }),
+      listingIds: ["lst_oversized"],
+      loadSeasonalPrices: () =>
+        Promise.resolve(
+          new Map([["lst_oversized", [week(WEEKS[1], 450_000), week(WEEKS[2], 8_883_888_500)]]]),
+        ),
+      completeWithin: { start: "2026-09-22", end: WEEKS[3] },
+    });
+
+    expect(written).toBe(1);
+    expect(await ratesOf(["lst_oversized"])).toEqual([
+      "lst_oversized 2026-09-12 400000",
+      "lst_oversized 2026-09-26 450000",
+      "lst_oversized 2026-10-10 400000",
     ]);
   });
 

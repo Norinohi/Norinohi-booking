@@ -7,6 +7,7 @@ import {
   type OfferRef,
   supportsSeasonalPrices,
   writeSeasonalPrices,
+  type PricePeriodRow,
   type PricePeriodStore,
   type PricePeriodWrite,
   type PriceWindow,
@@ -23,7 +24,7 @@ const price = (over: Partial<SeasonalPrice> = {}): SeasonalPrice => ({
 
 /** Stands in for the Drizzle store; the conflict behaviour is the SQL's business. */
 function fakeStore(sourceIds: Record<string, string | null> = {}) {
-  const batches: PricePeriodWrite[][] = [];
+  const batches: PricePeriodRow[][] = [];
   const prunes: {
     offerIds: string[];
     window: PriceWindow;
@@ -41,15 +42,15 @@ function fakeStore(sourceIds: Record<string, string | null> = {}) {
       }
       return Promise.resolve(found);
     },
-    writePricePeriods(writes) {
-      batches.push([...writes]);
-      return Promise.resolve(dedupePricePeriodRows(writes).rows.length);
+    writePricePeriods(rows) {
+      batches.push([...rows]);
+      return Promise.resolve(rows.length);
     },
     prunePricePeriods(offers, window, kept) {
       prunes.push({
         offerIds: offers.map((offer) => offer.listingOfferId),
         window,
-        kept: kept.map((write) => write.listingOfferId),
+        kept: kept.map((row) => `${row.listingOfferId}|${row.startDate}`),
       });
       return Promise.resolve(0);
     },
@@ -116,14 +117,13 @@ describe("writeSeasonalPrices", () => {
 
     expect(written).toBe(2);
     expect(batches).toEqual([
-      [
-        {
-          listingId: "ylst_marlin",
-          listingSourceId: "lsrc_marlin",
-          listingOfferId: "loff_lsrc_marlin",
-          prices,
-        },
-      ],
+      prices.map((rate) => ({
+        listingId: "ylst_marlin",
+        listingSourceId: "lsrc_marlin",
+        listingOfferId: "loff_lsrc_marlin",
+        kind: "weekly",
+        ...rate,
+      })),
     ]);
   });
 
@@ -194,9 +194,40 @@ describe("writeSeasonalPrices", () => {
     });
 
     expect(prunes).toEqual([
-      { offerIds: ["loff_src_a", "loff_src_b"], window, kept: ["loff_src_a"] },
+      { offerIds: ["loff_src_a", "loff_src_b"], window, kept: ["loff_src_a|2026-07-04"] },
     ]);
     expect(batches).toHaveLength(1);
+  });
+
+  /* A week whose fresh rate the column refused is not restated, so its stale rate goes too. */
+  it("keeps only the rows it wrote, so a rejected week is pruned", async () => {
+    const { store, batches, prunes } = fakeStore({ a: "src_a" });
+    const window = { start: "2026-06-01", end: "2028-01-01" };
+
+    await writeSeasonalPrices({
+      store,
+      listingIds: ["a"],
+      loadSeasonalPrices: () =>
+        Promise.resolve(
+          new Map([
+            [
+              "a",
+              [
+                price(),
+                price({
+                  startDate: "2026-07-11",
+                  endDate: "2026-07-18",
+                  priceMinor: 8_883_888_500,
+                }),
+              ],
+            ],
+          ]),
+        ),
+      completeWithin: window,
+    });
+
+    expect(batches[0]?.map((row) => row.startDate)).toEqual(["2026-07-04"]);
+    expect(prunes).toEqual([{ offerIds: ["loff_src_a"], window, kept: ["loff_src_a|2026-07-04"] }]);
   });
 
   it("prunes nothing when the write before it fails", async () => {

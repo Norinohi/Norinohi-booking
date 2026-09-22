@@ -152,16 +152,16 @@ export interface PriceWindow {
 export interface PricePeriodStore {
   /** The provider's active offer per listing, which is what a rate belongs to. */
   loadSourceIds(listingIds: readonly string[]): Promise<Map<string, OfferRef>>;
-  /** Returns the number of distinct periods written. */
-  writePricePeriods(writes: readonly PricePeriodWrite[]): Promise<number>;
+  /** Rows already through `dedupePricePeriodRows`; returns how many were written. */
+  writePricePeriods(rows: readonly PricePeriodRow[]): Promise<number>;
   /**
-   * Deletes every weekly period of these offers starting inside `window` that the fresh price
-   * list does not restate, and returns how many went.
+   * Deletes every weekly period of these offers starting inside `window` that is not among the
+   * `kept` rows just written, and returns how many went.
    */
   prunePricePeriods(
     offers: readonly OfferRef[],
     window: PriceWindow,
-    kept: readonly PricePeriodWrite[],
+    kept: readonly PricePeriodRow[],
   ): Promise<number>;
 }
 
@@ -209,16 +209,27 @@ export async function writeSeasonalPrices(options: WriteSeasonalPricesOptions): 
     });
   }
 
-  const written = await options.store.writePricePeriods(writes);
+  const { rows, rejected } = dedupePricePeriodRows(writes);
+  if (rejected > 0) {
+    // Logged rather than thrown: it is a vendor data problem, one boat wide, and the run has
+    // thousands of other listings whose rates are fine.
+    log.warn({
+      action: "prices.rates_dropped",
+      reason: "too large for price_minor; left unwritten",
+      rejected,
+    });
+  }
+  const written = await options.store.writePricePeriods(rows);
 
   /*
    * After the write, so a failure between the two leaves stale rates rather than none. Only the
    * offers this run resolved, and only inside the window the loader vouches for: a rate that
    * outlives its week in the vendor's list otherwise keeps opening a season nobody sells and
-   * keeps the card's "from" figure at a price nobody quotes.
+   * keeps the card's "from" figure at a price nobody quotes. A week whose fresh rate was
+   * rejected is not restated either, so its stale rate goes with the rest.
    */
   if (options.completeWithin && answered.length > 0) {
-    const pruned = await options.store.prunePricePeriods(answered, options.completeWithin, writes);
+    const pruned = await options.store.prunePricePeriods(answered, options.completeWithin, rows);
     if (pruned > 0) {
       log.info({
         action: "prices.periods_pruned",
@@ -280,12 +291,11 @@ export function createDrizzlePricePeriodStore(options: {
     },
 
     async prunePricePeriods(offers, window, kept) {
-      const keptByOffer = new Map<string, SeasonalPrice[]>();
-      for (const write of kept) {
-        keptByOffer.set(write.listingOfferId, [
-          ...(keptByOffer.get(write.listingOfferId) ?? []),
-          ...write.prices,
-        ]);
+      const keptByOffer = new Map<string, PricePeriodRow[]>();
+      for (const row of kept) {
+        const rows = keptByOffer.get(row.listingOfferId);
+        if (rows) rows.push(row);
+        else keptByOffer.set(row.listingOfferId, [row]);
       }
 
       let pruned = 0;
@@ -333,17 +343,7 @@ export function createDrizzlePricePeriodStore(options: {
       return pruned;
     },
 
-    async writePricePeriods(writes) {
-      const { rows, rejected } = dedupePricePeriodRows(writes);
-      if (rejected > 0) {
-        // Printed rather than thrown: it is a vendor data problem, one boat wide, and
-        // the run has thousands of other listings whose rates are fine.
-        log.warn({
-          action: "prices.rates_dropped",
-          reason: "too large for price_minor; those periods keep their previous price",
-          rejected,
-        });
-      }
+    async writePricePeriods(rows) {
       if (rows.length === 0) return 0;
 
       /*
