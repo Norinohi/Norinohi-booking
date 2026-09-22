@@ -19,7 +19,7 @@ import UserMenu from "./user-menu";
 /** The wordmark is a logo, not a heading: it holds its size at every density. */
 const WORDMARK_CLASS =
   // oxlint-disable-next-line design-tokens/no-arbitrary-size
-  "shrink-0 cursor-pointer text-xl leading-tight font-bold max-[360px]:text-lg text-foreground md:text-[28px] 2xl:text-[28px]";
+  "shrink-0 cursor-pointer text-xl leading-tight font-bold max-sm:text-lg text-foreground md:text-[28px] 2xl:text-[28px]";
 
 const NAV_LINKS = [
   { key: "destinations", hash: "destinations", chip: false },
@@ -66,9 +66,9 @@ export default function NavigationBar() {
           "max-md:hidden",
       )}
     >
-      <div className="mx-auto flex h-18 max-w-384 items-center justify-between gap-4 px-4 max-[360px]:gap-1 max-[360px]:px-3 md:px-13.5 xl:px-17.5 2xl:h-20">
+      <div className="mx-auto flex h-18 max-w-384 items-center justify-between gap-4 px-4 max-sm:gap-1 max-sm:px-3 md:px-13.5 xl:px-17.5 2xl:h-20">
         {/* Left group: hamburger (below xl) + wordmark + nav links (xl+). xl rather than wider so a 1366px laptop keeps the full nav with a browser sidebar open. */}
-        <div className="flex min-w-0 items-center gap-4 max-[360px]:gap-1 2xl:gap-6">
+        <div className="flex min-w-0 items-center gap-4 max-sm:gap-1 2xl:gap-6">
           <IconButton
             variant="subtle"
             label={open ? t("closeMenu") : t("openMenu")}
@@ -102,7 +102,7 @@ export default function NavigationBar() {
 
         {/* Right group: icon cluster (always) + CTAs (xl+) */}
         <div className="flex shrink-0 items-center gap-1.5 2xl:gap-5">
-          <div className="flex items-center gap-1.5 max-[360px]:gap-0">
+          <div className="flex items-center gap-1.5 max-sm:gap-0">
             <motion.div animate={bump} className="relative inline-flex">
               <IconButton
                 variant="subtle"

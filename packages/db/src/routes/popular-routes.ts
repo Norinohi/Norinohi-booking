@@ -44,6 +44,27 @@ export type PopularRoute = {
   stops: PopularRouteStop[];
 };
 
+type PopularRouteRow = Omit<PopularRoute, "placeLabel"> & { placeLabel: (string | null)[] };
+
+/*
+ * Base, region and country, each once. A region-drawn route has no base, and a territory such as
+ * the British Virgin Islands files the same name as its region and its country, so the plain join
+ * read "British Virgin Islands · British Virgin Islands · British Virgin Islands".
+ */
+export function placeLabel(parts: (string | null)[]): string {
+  const seen = new Set<string>();
+  const kept: string[] = [];
+  for (const part of parts) {
+    const name = part?.trim();
+    if (!name) continue;
+    const key = normalizedKey(name);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    kept.push(name);
+  }
+  return kept.join(" · ");
+}
+
 /**
  * The site-wide popular sailing routes, in the curated order, in one language.
  *
@@ -81,7 +102,7 @@ export async function listPopularRoutes(
     ? sql`and ${normalizedKeySql(sql`coalesce(target_region.name, base_region.name)`)} = ${normalizedKey(input.region)}`
     : sql``;
 
-  const rows = await db.execute<PopularRoute>(sql`
+  const rows = await db.execute<PopularRouteRow>(sql`
     select
       route.id,
       route.slug,
@@ -94,9 +115,8 @@ export async function listPopularRoutes(
       route.cloudinary_id as "cloudinaryId",
       /* A route hangs off a base or a region and the two reach their country by different
          paths, so both are joined and coalesced rather than branched on in the caller. */
-      concat_ws(
-        ' · ',
-        coalesce(base.name, target_region.name),
+      jsonb_build_array(
+        base.name,
         coalesce(base_region.name, target_region.name),
         coalesce(base_country.name, region_country.name)
       ) as "placeLabel",
@@ -168,6 +188,7 @@ export async function listPopularRoutes(
   const asValue = (name: string | null) => (name === null ? null : valueForLabel(name));
   return rows.rows.map((row) => ({
     ...row,
+    placeLabel: placeLabel(row.placeLabel),
     countryValue: asValue(row.countryValue),
     sailingAreaValue: asValue(row.sailingAreaValue),
     marinaValue: asValue(row.marinaValue),

@@ -5,6 +5,7 @@
   "removed": "Von der Merkliste entfernt.",
   "emptyTitle": "Noch keine gemerkten Yachten",
   "emptyDescription": "Entdecken Sie Yachten und merken Sie sich Ihre Favoriten für später",
+  "emptyAction": "Yachten finden",
   "someUnavailable": "Einige Ihrer gemerkten Yachten sind nicht mehr verfügbar.",
   "toggleFailed": "Ihre Merkliste konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
   "merged": "{count, plural, one {# gemerkte Yacht} other {# gemerkte Yachten}} zu Ihrem Konto hinzugefügt.",

@@ -1,5 +1,6 @@
 "use client";
 
+import { buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
@@ -8,6 +9,7 @@ import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
 import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
+import { Link } from "@/i18n/navigation";
 
 import type { CharterPeriod } from "@/components/shared/form/charter-date-field";
 import { lastSearchedPeriod, useListingCards } from "@/features/yachts";
@@ -71,7 +73,15 @@ export default function WishlistScreen() {
               </div>
             ) : isEmpty ? (
               <div className="px-4 py-10 md:px-5 md:py-14">
-                <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
+                <EmptyState
+                  title={t("emptyTitle")}
+                  description={t("emptyDescription")}
+                  action={
+                    <Link href="/yachts" className={buttonVariants({ variant: "brand" })}>
+                      {t("emptyAction")}
+                    </Link>
+                  }
+                />
               </div>
             ) : (
               <>

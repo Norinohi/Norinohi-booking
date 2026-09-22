@@ -601,16 +601,26 @@ export async function listSimilarListings(
   const listing = await getListingByIdOrSlug(db, listingId);
   if (!listing) return [];
 
+  /*
+   * Nearness first: a boat from the same marina, then the same region, then the same country.
+   * The category only breaks ties inside a tier, since matching it alone once admitted boats from
+   * the other end of the Mediterranean.
+   */
   const rows = await db.execute<SearchRow>(sql`
     select ${searchColumns}${nextCharterAfterLapseColumns()}
     from listing_search_doc doc
     where doc.listing_id <> ${listing.listingId}
-      and (
-        doc.category = ${listing.category}
-        or doc.country = ${listing.country}
-        or doc.region = ${listing.region}
-      )
-    order by ${recommendedSortValue} desc, ${comparablePrice(basis)} asc nulls last, doc.listing_id asc
+      and doc.country = ${listing.country}
+    order by
+      case
+        when doc.base_id = ${listing.baseId} then 0
+        when doc.region = ${listing.region} then 1
+        else 2
+      end,
+      (doc.category is not distinct from ${listing.category}) desc,
+      ${recommendedSortValue} desc,
+      ${comparablePrice(basis)} asc nulls last,
+      doc.listing_id asc
     limit ${limit}
   `);
 

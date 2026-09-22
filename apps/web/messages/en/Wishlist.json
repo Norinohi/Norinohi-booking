@@ -5,6 +5,7 @@
   "removed": "Removed from your wishlist.",
   "emptyTitle": "No saved yachts yet",
   "emptyDescription": "Start exploring and save your favorites for later",
+  "emptyAction": "Find yachts",
   "someUnavailable": "Some of your saved yachts are no longer available.",
   "toggleFailed": "Couldn't update your wishlist. Please try again.",
   "merged": "{count, plural, one {# saved yacht} other {# saved yachts}} added to your account.",

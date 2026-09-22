@@ -71,6 +71,7 @@ export default function RowLayout({ className, ...boat }: RowLayoutProps) {
 function Details({
   marina,
   name,
+  operator,
   rating,
   charterType,
   crew,
@@ -121,6 +122,12 @@ function Details({
           crew={crew}
           className="hidden flex-wrap items-center gap-1.5 xl:flex"
         />
+
+        {operator ? (
+          <p className="text-sm font-medium leading-[1.3] wrap-break-word text-natural-500">
+            {operator}
+          </p>
+        ) : null}
       </div>
 
       <YachtCardSpecs specs={specs} />
