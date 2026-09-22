@@ -62,7 +62,12 @@ export async function listTravellers(
     .where(eq(bookingTraveller.bookingId, bookingId))
     .orderBy(asc(bookingTraveller.createdAt), asc(bookingTraveller.id));
 
-  return { bookingId, travellers: rows.map(present), submission: submissionOf(owned) };
+  return {
+    bookingId,
+    travellers: rows.map(present),
+    submission: submissionOf(owned),
+    ...filedWith(owned),
+  };
 }
 
 /**
@@ -171,9 +176,18 @@ export async function saveTravellers(
     vhfLicence: encryptOptionalPii(traveller.vhfLicence),
     skipperEmail: encryptOptionalPii(traveller.skipperEmail),
     skipperMobile: encryptOptionalPii(traveller.skipperMobile),
+    disabledPerson: encryptOptionalPii(traveller.disabledPerson ? "true" : undefined),
+    shoeSize: traveller.shoeSize ?? null,
   }));
+  const filed = {
+    crewListNote: encryptOptionalPii(input.note),
+    crewListFlightNumber: input.trip?.flightNumber ?? null,
+    crewListArrivalTime: input.trip?.arrivalTime ?? null,
+    crewListAirportTransfer: input.trip?.airportTransfer ?? null,
+  };
 
   const saved = await db.transaction(async (tx) => {
+    await tx.update(booking).set(filed).where(eq(booking.id, input.bookingId));
     await tx.delete(bookingTraveller).where(eq(bookingTraveller.bookingId, input.bookingId));
     if (values.length === 0) return [];
     return tx.insert(bookingTraveller).values(values).returning();
@@ -181,7 +195,26 @@ export async function saveTravellers(
 
   const submission = await submitCrewList(db, provider, row, quoted, input);
 
-  return { bookingId: input.bookingId, travellers: saved.map(present), submission };
+  return {
+    bookingId: input.bookingId,
+    travellers: saved.map(present),
+    submission,
+    ...filedWith({ ...row, ...filed }),
+  };
+}
+
+/** The note and trip as they were last filed; the note decrypted for its author. */
+function filedWith(row: BookingRow): Pick<ListResult, "note" | "trip"> {
+  return {
+    note: decryptOptionalPii(row.crewListNote),
+    trip: {
+      ...(row.crewListFlightNumber ? { flightNumber: row.crewListFlightNumber } : null),
+      ...(row.crewListArrivalTime ? { arrivalTime: row.crewListArrivalTime } : null),
+      ...(row.crewListAirportTransfer === null
+        ? null
+        : { airportTransfer: row.crewListAirportTransfer }),
+    },
+  };
 }
 
 /**
@@ -216,6 +249,7 @@ async function submitCrewList(
       ref,
       members: input.travellers.map((traveller) => memberOf(traveller, charter)),
       ...(input.note === undefined ? null : { note: input.note }),
+      ...(input.trip === undefined ? null : { trip: input.trip }),
     });
     outcome = { accepted: receipt.accepted, message: refusalMessage(receipt) };
   } catch (error) {
@@ -275,6 +309,10 @@ function memberOf(
     ...(traveller.vhfLicence === undefined ? null : { vhfLicence: traveller.vhfLicence }),
     ...(traveller.skipperEmail === undefined ? null : { skipperEmail: traveller.skipperEmail }),
     ...(traveller.skipperMobile === undefined ? null : { skipperMobile: traveller.skipperMobile }),
+    ...(traveller.disabledPerson === undefined
+      ? null
+      : { disabledPerson: traveller.disabledPerson }),
+    ...(traveller.shoeSize === undefined ? null : { shoeSize: traveller.shoeSize }),
   };
 }
 
@@ -312,5 +350,7 @@ function present(row: TravellerRow): Traveller {
     vhfLicence: decryptOptionalPii(row.vhfLicence),
     skipperEmail: decryptOptionalPii(row.skipperEmail),
     skipperMobile: decryptOptionalPii(row.skipperMobile),
+    disabledPerson: decryptOptionalPii(row.disabledPerson) === "true",
+    shoeSize: row.shoeSize,
   };
 }

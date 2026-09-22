@@ -1,4 +1,5 @@
 import { placeLine } from "../lib/place-line";
+import { oneWayRouteOf, oneWayRouteText } from "../lib/one-way-route";
 import type { CommercialSnapshot, payment } from "@yacht-charter/db/schema/booking";
 import type { quote } from "@yacht-charter/db/schema/quote";
 import { env } from "@yacht-charter/env/server";
@@ -72,6 +73,15 @@ function atMarina(priced: typeof quote.$inferSelect): string | undefined {
   return amountMinor > 0 ? money(amountMinor, priced.currency) : undefined;
 }
 
+/**
+ * The route line a one-way charter's mail carries beside the marina, which names only where it
+ * starts. Absent for a round trip, so the mail reads as it always did.
+ */
+function routeLine(priced: typeof quote.$inferSelect): { oneWayRoute?: string } {
+  const route = oneWayRouteOf(priced);
+  return route ? { oneWayRoute: oneWayRouteText(route) } : {};
+}
+
 /** Locale-prefixed like every app route — `/en/bookings/...`, matching the i18n routing. */
 function appUrl(path: string): string {
   return `${env.CORS_ORIGIN}/${LOCALE}${path}`;
@@ -106,7 +116,8 @@ export async function notifyBookingReceived(booking: BookingReceivedEmail): Prom
     yachtName: snapshot.listingTitle,
     checkIn: day(priced.checkIn),
     checkOut: day(priced.checkOut),
-    marina: placeLine(snapshot.baseName, snapshot.countryName),
+    marina: placeLine(snapshot.baseName, snapshot.baseAddress, snapshot.countryName),
+    ...routeLine(priced),
     guests: priced.guests,
     crew: priced.crewType ?? undefined,
     imageUrl: snapshot.mainImage ?? undefined,
@@ -142,6 +153,8 @@ export type BookingConfirmedEmail = {
   /** The operator's own reservation number, which is what the marina answers to. */
   providerReference: string | null;
   crewListLink: string | null;
+  /** The operator's rule for bringing the boat back to base, in its own words. */
+  returnNote?: string | null;
 };
 
 /**
@@ -161,7 +174,8 @@ export async function notifyBookingConfirmed(booking: BookingConfirmedEmail): Pr
       yachtName: snapshot.listingTitle,
       checkIn: day(priced.checkIn),
       checkOut: day(priced.checkOut),
-      marina: placeLine(snapshot.baseName, snapshot.countryName),
+      marina: placeLine(snapshot.baseName, snapshot.baseAddress, snapshot.countryName),
+      ...routeLine(priced),
       guests: priced.guests,
       imageUrl: snapshot.mainImage ?? undefined,
       total: money(priced.totalMinor, priced.currency),
@@ -173,6 +187,7 @@ export async function notifyBookingConfirmed(booking: BookingConfirmedEmail): Pr
         : undefined,
       providerReference: booking.providerReference ?? undefined,
       crewListUrl: booking.crewListLink ?? undefined,
+      returnNote: booking.returnNote ?? undefined,
       bookingUrl: appUrl(`/bookings/${booking.bookingId}`),
       payUrl:
         booking.outstandingMinor > 0 ? appUrl(`/bookings/${booking.bookingId}/pay`) : undefined,
@@ -225,6 +240,7 @@ export type BookingStaffAlert = {
  */
 export async function announceBookingToStaff(alert: BookingStaffAlert): Promise<void> {
   const { snapshot, priced } = alert;
+  const oneWay = oneWayRouteOf(priced);
 
   await notifyStaff({
     title: `New booking ${alert.reference} — ${snapshot.listingTitle}`,
@@ -237,6 +253,7 @@ export async function announceBookingToStaff(alert: BookingStaffAlert): Promise<
       },
       { label: "Yacht", value: snapshot.listingTitle },
       { label: "Base", value: placeLine(snapshot.baseName, snapshot.countryName) },
+      ...(oneWay ? [{ label: "Route", value: oneWayRouteText(oneWay) }] : []),
       { label: "Charter", value: `${day(priced.checkIn)} → ${day(priced.checkOut)}` },
       { label: "Guests", value: String(priced.guests) },
       { label: "Total", value: money(priced.totalMinor, priced.currency) },

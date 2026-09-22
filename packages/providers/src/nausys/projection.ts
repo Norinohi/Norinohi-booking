@@ -5,10 +5,13 @@ import { stripHtml } from "../shared/html-text";
 import { CONTENT_LOCALES } from "@yacht-charter/db/search/localize";
 
 import { toLocaleMap } from "../shared/international-text";
+import { wallClockTime } from "../shared/wall-clock";
+import { crewRoleOf } from "../shared/crew-role";
 import { decimalStringToMinor } from "../shared/money";
 import { isPlaceholderBuilder } from "../shared/placeholder-builders";
 import { mergeYachtTitle } from "../shared/yacht-title";
 import type { JsonField, JsonObject } from "../shared/json";
+import { internationalText } from "./extras";
 import {
   currencyOf,
   intOf,
@@ -27,6 +30,7 @@ import {
 import {
   restCharterBaseSchema,
   restCharterCompanySchema,
+  restSeasonSchema,
   restCountrySchema,
   restEquipmentCategorySchema,
   restEquipmentSchema,
@@ -87,6 +91,12 @@ export interface NausysProjectionOptions {
    * which agency it is offers the row rather than guessing.
    */
   agencyId?: string;
+  /**
+   * Today, ISO. Which season's price row a listing states depends on it: a yacht carries this
+   * year's and next year's rows side by side, and the higher season id used to win, so every
+   * charter this season was shown next season's fees. Omitted, the old order stands.
+   */
+  today?: string;
 }
 
 export function projectNausysCatalogue(
@@ -97,6 +107,15 @@ export function projectNausysCatalogue(
   const regions = parseAll(records, "region", restRegionSchema);
   const locations = parseAll(records, "location", restLocationSchema);
   const companies = parseAll(records, "company", restCharterCompanySchema);
+  const seasonDatesById = new Map(
+    parseAll(records, "season", restSeasonSchema).flatMap((item) => {
+      const from = nausysDayOrUndefined(item.from);
+      const to = nausysDayOrUndefined(item.to);
+      return from === undefined || to === undefined
+        ? []
+        : [[String(item.id), { from, to }] as const];
+    }),
+  );
   const bases = parseAll(records, "base", restCharterBaseSchema);
   const allBuilders = parseAll(records, "builder", restYachtBuilderSchema);
   const builders = allBuilders.filter((item) => !isPlaceholderBuilder(item.name));
@@ -107,10 +126,17 @@ export function projectNausysCatalogue(
   const services = parseAll(records, "service", restServiceSchema);
   const priceMeasures = parseAll(records, "price_measure", restPriceMeasureSchema);
   const sailTypes = parseAll(records, "sail_type", restSailTypeSchema);
-  const yachts = parseAll(records, "yacht", restYachtSchema);
+  const steeringTypes = parseAll(records, "steering_type", restSailTypeSchema);
 
   const countryNameById = new Map(countries.map((item) => [String(item.id), name(item.name)]));
   const locationNameById = new Map(locations.map((item) => [String(item.id), name(item.name)]));
+  const locationById = new Map(locations.map((item) => [String(item.id), item]));
+  const steeringTypeById = new Map(
+    steeringTypes.flatMap((item) => {
+      const kind = steeringKindOf(name(item.name));
+      return kind === undefined ? [] : [[String(item.id), kind] as const];
+    }),
+  );
   const modelById = new Map(models.map((item) => [String(item.id), item]));
   const placeholderBuilders = new Set(
     allBuilders.filter((item) => isPlaceholderBuilder(item.name)).map((item) => String(item.id)),
@@ -150,7 +176,29 @@ export function projectNausysCatalogue(
     }),
   );
 
-  const projectedBases = bases.map((item) => {
+  const yachts = parseAll(records, "yacht", restYachtSchema);
+  /*
+   * A base the operator has shut is left out unless a yacht still sails from it. Bases are
+   * shared per marina and upserted last-write-wins, so a closed one's handover times used to
+   * overwrite a live operator's at the same marina. One that still has a fleet stays: the
+   * vendor's test company sells 14 hulls from a base it dated closed in 2024.
+   */
+  const fleetBaseIds = new Set(yachts.map((yacht) => String(yacht.baseId)));
+  const liveBases = bases.filter(
+    (item) => fleetBaseIds.has(String(item.id)) || !isClosedBase(item, options.today),
+  );
+  const returnNotesByBaseId = new Map(bases.map((item) => [String(item.id), returnNotesOf(item)]));
+  const handoverByBaseId = new Map(
+    bases.map((item) => [
+      String(item.id),
+      {
+        checkInTime: wallClockTime(item.checkInTime),
+        checkOutTime: wallClockTime(item.checkOutTime),
+      },
+    ]),
+  );
+
+  const projectedBases = liveBases.map((item) => {
     const locationId = String(item.locationId);
     const locationName = locationNameById.get(locationId) ?? `Location ${locationId}`;
 
@@ -168,27 +216,39 @@ export function projectNausysCatalogue(
       // is the right trade while those times are also on the listing's check-in
       // rules, but it needs revisiting if per-operator base detail starts to matter.
       name: text(item.name) ?? locationName,
-      lat: numberOf(item.lat),
-      lng: numberOf(item.lon),
+      /* A base with no fix of its own gets its marina's, which is where the pin belongs anyway. */
+      lat: numberOf(item.lat) ?? numberOf(locationById.get(locationId)?.lat),
+      lng: numberOf(item.lon) ?? numberOf(locationById.get(locationId)?.lon),
       checkInTime: text(item.checkInTime),
       checkOutTime: text(item.checkOutTime),
     };
   });
 
+  /* See `offlineCompanyIds` on `projectYacht`. */
+  const offlineCompanyIds = new Set(
+    companies.filter((item) => item.pac === true).map((item) => String(item.id)),
+  );
+
   const listings = yachts
     .map((yacht) =>
       projectYacht(yacht, {
+        offlineCompanyIds,
         modelById,
         placeholderBuilders,
         knownEquipment,
         sailTypeById,
+        steeringTypeById,
         equipmentNameById,
         serviceNameById,
         depositInsuranceServiceIds,
         agencyId: options.agencyId,
+        seasonDatesById,
+        today: options.today,
         equipmentTranslationsById,
         serviceTranslationsById,
         priceMeasureById,
+        returnNotesByBaseId,
+        handoverByBaseId,
       }),
     )
     .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -270,6 +330,9 @@ type RestYacht = z.infer<typeof restYachtSchema>;
 type RestYachtModel = z.infer<typeof restYachtModelSchema>;
 
 type ExtraNaming = {
+  /** Season dates by season id, and today, for choosing which season's row a listing states. */
+  seasonDatesById?: ReadonlyMap<string, { from: string; to: string }>;
+  today?: string | undefined;
   equipmentNameById: Map<string, string>;
   serviceNameById: Map<string, string>;
   /** Services that lower the deposit instead of adding something to the charter. */
@@ -295,6 +358,20 @@ function projectYacht(
     placeholderBuilders: Set<string>;
     knownEquipment: Set<string>;
     sailTypeById: Map<string, string>;
+    steeringTypeById?: Map<string, string>;
+    /**
+     * Companies the vendor marks as private-access, offline: NauSYS does not run their
+     * bookings live, so a hold the customer pays against may never be honoured. Their yachts
+     * are sold the way a hull needing option approval is, as a request the operator confirms.
+     */
+    offlineCompanyIds?: ReadonlySet<string>;
+    /** The home base's return-to-base notes, by base id; see `returnNotesOf`. */
+    returnNotesByBaseId?: ReadonlyMap<string, ReturnNote[]>;
+    /** The home base's handover, by base id, for a yacht that states none of its own. */
+    handoverByBaseId?: ReadonlyMap<
+      string,
+      { checkInTime: string | undefined; checkOutTime: string | undefined }
+    >;
   } & ExtraNaming,
 ) {
   // The vendor's own withdrawals. `disabled` is a boat taken out of service and
@@ -346,8 +423,17 @@ function projectYacht(
       berths: yacht.berthsTotal ?? 0,
       heads: yacht.wc ?? 0,
       showers: capacityOf(yacht.showers),
+      maxPersons:
+        yacht.maxPersons !== undefined && yacht.maxPersons > 0 ? yacht.maxPersons : undefined,
       yearBuilt: yacht.buildYear ?? 0,
       engines: intOf(yacht.engines),
+      /* The vendor states no unit; its own yacht pages print the figure as horsepower. */
+      enginePower:
+        yacht.enginePower !== undefined && yacht.enginePower > 0
+          ? `${yacht.enginePower} hp`
+          : undefined,
+      fuelType: yacht.fuelType?.toLowerCase(),
+      propulsionType: yacht.propulsionType?.toLowerCase(),
       fuelCapacity: capacityOf(yacht.fuelTank, model?.fuelTank),
       waterCapacity: capacityOf(yacht.waterTank, model?.waterTank),
       // The vendor names the rig in its own `sailTypes` reference, so an id we cannot
@@ -356,6 +442,10 @@ function projectYacht(
         yacht.sailTypeId === undefined
           ? undefined
           : context.sailTypeById.get(String(yacht.sailTypeId)),
+      steeringType:
+        yacht.steeringTypeId === undefined
+          ? undefined
+          : context.steeringTypeById?.get(String(yacht.steeringTypeId)),
     },
     crewType: crewTypeOf(yacht),
     media: mediaOf(yacht),
@@ -363,11 +453,20 @@ function projectYacht(
       .map((item) => String(item.equipmentId))
       .filter((id) => context.knownEquipment.has(id)),
     extras: extrasOf(yacht, currency, context),
-    texts: textsOf(yacht),
+    texts: [...textsOf(yacht), ...(context.returnNotesByBaseId?.get(String(yacht.baseId)) ?? [])],
     checkinRules: checkinRulesOf(yacht),
     oneWayRules: oneWayRulesOf(yacht),
     defaultCurrency: currency,
     ...fleetAndFilmOf(yacht),
+    ...(context.offlineCompanyIds?.has(String(yacht.companyId))
+      ? { optionApprovalRequired: true }
+      : null),
+    checkInTime:
+      wallClockTime(yacht.checkInTime) ??
+      context.handoverByBaseId?.get(String(yacht.baseId))?.checkInTime,
+    checkOutTime:
+      wallClockTime(yacht.checkOutTime) ??
+      context.handoverByBaseId?.get(String(yacht.baseId))?.checkOutTime,
     securityDepositMinor: minorOf(yacht.deposit, depositCurrency),
     securityDepositWhenInsuredMinor: reducedDepositOf(yacht, depositCurrency),
     securityDepositCurrency: depositCurrency,
@@ -550,6 +649,51 @@ function textsOf(yacht: RestYacht) {
   return texts;
 }
 
+type RestCharterBase = z.infer<typeof restCharterBaseSchema>;
+
+/**
+ * The vendor's four steering names, spelled as it spells them ("Tiller steereing", "2 Steering
+ * Wheels"), as one vocabulary. A name none of these fits is left unset.
+ */
+function steeringKindOf(label: string | undefined): string | undefined {
+  const lower = label?.toLowerCase() ?? "";
+  if (lower.includes("tiller")) return "tiller";
+  if (lower.includes("joystick")) return "joystick";
+  if (/\b(2|two|twin|double)\b/.test(lower) && lower.includes("wheel")) return "twin wheel";
+  if (lower.includes("wheel")) return "wheel";
+  return undefined;
+}
+
+interface ReturnNote {
+  kind: "return_note";
+  locale: string;
+  value: string;
+}
+
+/** Disabled, or past the date the operator set for closing or disabling it. */
+function isClosedBase(base: RestCharterBase, today: string | undefined): boolean {
+  if (base.disabled === true) return true;
+  if (today === undefined) return false;
+  return [base.closedBaseDate, base.disabledDate].some((date) => {
+    const day = nausysDayOrUndefined(date);
+    return day !== undefined && day <= today;
+  });
+}
+
+/**
+ * The operator's rule for bringing the boat back, per language: the note and, after it, what
+ * to do when the return runs late. The delay note alone is not published; it only qualifies
+ * the rule it follows.
+ */
+function returnNotesOf(base: RestCharterBase): ReturnNote[] {
+  const notes = toLocaleMap(base.returnToBaseNote);
+  const delays = toLocaleMap(base.returnToBaseDelayNote);
+  return Object.entries(notes).flatMap(([locale, note]) => {
+    const value = stripHtml([note, delays[locale]].filter(Boolean).join(" "));
+    return value === undefined ? [] : [{ kind: "return_note" as const, locale, value }];
+  });
+}
+
 /** Recorded periods use `periodFrom`/`periodTo`; `dateFrom`/`dateTo` is the PDF's spelling. */
 function oneWayRulesOf(yacht: RestYacht) {
   const periods = yacht.oneWayPeriods;
@@ -678,12 +822,29 @@ function extrasOf(yacht: RestYacht, currency: string, context: ExtraNaming): Can
   );
   const relevant = atHomeBase.length > 0 ? atHomeBase : seasons;
 
-  type Candidate = { rank: ReturnType<typeof extraRank>; seasonId: number; extra: CanonicalExtra };
+  type Candidate = {
+    rank: ReturnType<typeof extraRank>;
+    season: ReturnType<typeof seasonRank>;
+    seasonId: number;
+    extra: CanonicalExtra;
+  };
   const beats = (left: Candidate, right: Candidate): boolean => {
     if (left.rank.atHomeBase !== right.rank.atHomeBase) {
       return left.rank.atHomeBase > right.rank.atHomeBase;
     }
+    /* The season a charter booked today falls in, else the next one to open. */
+    if (left.season.tier !== right.season.tier) return left.season.tier > right.season.tier;
+    if (left.season.tier === 1 && left.season.from !== right.season.from) {
+      return left.season.from < right.season.from;
+    }
     if (left.rank.endsAt !== right.rank.endsAt) return left.rank.endsAt > right.rank.endsAt;
+    /*
+     * The same season can list a service twice, as an obligatory fee and again as an add-on
+     * ("Damage waiver" at 420, and at 350 "applies only when skipper is chosen"). The fee is
+     * what every charter pays, so it is the row the listing states; the add-on stored in its
+     * place put an obligatory charge in the optional list.
+     */
+    if (left.extra.obligatory !== right.extra.obligatory) return left.extra.obligatory;
     return left.seasonId > right.seasonId;
   };
 
@@ -691,7 +852,12 @@ function extrasOf(yacht: RestYacht, currency: string, context: ExtraNaming): Can
   const consider = (seasonId: number, extra: CanonicalExtra | null) => {
     if (extra === null) return;
     const key = `${extra.kind}:${extra.externalId}`;
-    const candidate: Candidate = { rank: extraRank(extra, homeBaseId), seasonId, extra };
+    const candidate: Candidate = {
+      rank: extraRank(extra, homeBaseId),
+      season: seasonRank(String(seasonId), context),
+      seasonId,
+      extra,
+    };
     const held = chosen.get(key);
     if (held === undefined || beats(candidate, held)) chosen.set(key, candidate);
   };
@@ -785,6 +951,33 @@ function nightsOf(days: number | undefined): number | undefined {
  * the season id breaks what is left. The conditions ride along on whichever row wins, so a
  * reader can still drop it for a charter it does not cover.
  */
+/** The operator's text as a note, where it wrote one; see `CanonicalExtra.note`. */
+function noteOf(text: Parameters<typeof internationalText>[0]) {
+  const note = internationalText(text);
+  return note === null ? null : { note };
+}
+
+/**
+ * Where a season stands against today: 2 running, 1 still to come, 0 over or unknown. Without a
+ * date or the season's dates every row ties here, and the order below it decides as it did.
+ */
+interface SeasonRank {
+  tier: 0 | 1 | 2;
+  from: string;
+}
+
+function seasonRank(
+  seasonId: string,
+  context: Pick<ExtraNaming, "seasonDatesById" | "today">,
+): SeasonRank {
+  const dates = context.seasonDatesById?.get(seasonId);
+  const today = context.today;
+  const rank = (tier: SeasonRank["tier"], from: string): SeasonRank => ({ tier, from });
+  if (dates === undefined || today === undefined) return rank(0, "");
+  if (dates.from <= today && today <= dates.to) return rank(2, dates.from);
+  return rank(dates.from > today ? 1 : 0, dates.from);
+}
+
 function extraRank(extra: CanonicalExtra, homeBaseId: string | undefined) {
   const bases = extra.validForBaseIds ?? [];
   const atHomeBase = bases.length === 0 || (homeBaseId !== undefined && bases.includes(homeBaseId));
@@ -828,6 +1021,7 @@ function serviceExtraOf(
     calculationType: text(item.calculationType),
     payableInBase: payableInBaseOf(item.calculationType),
     onRequestOnly: item.onRequestOnly === true,
+    ...noteOf(item.description),
     ...(context.depositInsuranceServiceIds.has(externalId) ? { depositInsurance: true } : null),
     ...conditionsOf(item, priceCurrency),
     ...scope,
@@ -855,13 +1049,17 @@ function equipmentExtraOf(
   if (withheldFromUs(item, context.agencyId)) return null;
 
   const priceCurrency = currencyOf(item.currency, fallbackCurrency);
+  /* A percentage row, as on services: the PDF's own equipment example is `amount: "0.1500"`
+     with `amountIsPercentage`, which read as money listed 15% of the charter as 0.15 EUR. */
+  const rate = percentageOf(item);
   /* `amount` is the field in use: the vendor deprecated `price` here in its favour (and
      `listPrice` on the equipment prices beside it), so the older one is only a fallback. */
-  const priceMinor = minorOf(item.amount ?? item.price, priceCurrency);
+  const priceMinor = rate === undefined ? minorOf(item.amount ?? item.price, priceCurrency) : 0;
   if (priceMinor === undefined) return null;
 
   return {
     kind: "equipment",
+    ...percentageFields(rate, item.percentageCalculationType),
     externalId,
     name: label,
     translations: context.equipmentTranslationsById.get(externalId),
@@ -873,6 +1071,7 @@ function equipmentExtraOf(
     calculationType: text(item.calculationType),
     payableInBase: payableInBaseOf(item.calculationType),
     onRequestOnly: false,
+    ...noteOf(item.condition),
     ...conditionsOf(item, priceCurrency),
     ...scope,
   };
@@ -1006,50 +1205,16 @@ function percentageOf(item: {
 }
 
 /**
- * Which crew role a service's name says it is, if any.
- *
- * NauSYS marks nothing as crew: a skipper is a priced service like a paddleboard,
- * and the only signal is what the operator called it. So this reads the name, and
- * an unrecognised one stays unset rather than being guessed into a role — quoting
- * a customer for a skipper they did not ask for is worse than not offering crew.
- *
- * Ordered because "skippered cook" must not match `skipper` first; the most
- * specific patterns are tried before the general ones. Reviewed against the
- * services our own account returns, so it will need revisiting for an operator who
- * names crew in a language this does not cover.
+ * An id the priceMeasures dump does not name (missing from it, unnamed in every locale, or a
+ * stale table after a failed step). Stored as a measure no rule counts, so a requested extra
+ * stays a request the base prices; stored as nothing, it read as "per booking", and an item at
+ * 80 a day was added to the total as 80 for a week.
  */
-const CREW_ROLE_PATTERNS: { role: "skipper" | "hostess" | "cook"; pattern: RegExp }[] = [
-  { role: "cook", pattern: /\b(cook|chef)\b/i },
-  { role: "hostess", pattern: /\b(hostess|host|stewardess)\b/i },
-  { role: "skipper", pattern: /\b(skipper|captain)\b/i },
-];
-
-/**
- * Names that mention a crew word but are not that person's fee for the charter.
- *
- * Operators sell a lot beside the skipper: "Skipper training practice" (235 rows), "Checkout
- * Skipper" (175) and "Day Checkout Captain" (169) are the handover, "ASA Skipper" and
- * "Certification Skipper" (90 each) are sailing courses, "Captain By Day"/"By Night" (89 each)
- * are hourly hire, and "Additional fee for Skipper in forepeak & shared bathroom" (72) is a
- * cabin surcharge. Reading any of them as the skipper adds a week of crew to a card the vendor
- * never charges for -- one hull advertised 15,050 EUR against a quote of 12,550, the difference
- * being a training course counted as the skipper.
- *
- * Deliberately a list of markers rather than a shape: these are names people typed, and the
- * only honest rule is that a word like "training" or "surcharge" says what the line really is.
- */
-const NOT_CREW_MARKERS =
-  /\b(training|course|lesson|school|certification|asa|licen[cs]e|surcharge|checkout|check-out|forepeak|by day|by night|short[- ]term|additional fee)\b/i;
-
-function crewRoleOf(name: string): "skipper" | "hostess" | "cook" | undefined {
-  if (NOT_CREW_MARKERS.test(name)) return undefined;
-  return CREW_ROLE_PATTERNS.find((entry) => entry.pattern.test(name))?.role;
-}
+const UNRESOLVED_MEASURE = "per unit";
 
 function measureOf(priceMeasureId: number | undefined, context: ExtraNaming): string | undefined {
-  return priceMeasureId === undefined
-    ? undefined
-    : context.priceMeasureById.get(String(priceMeasureId));
+  if (priceMeasureId === undefined) return undefined;
+  return context.priceMeasureById.get(String(priceMeasureId)) ?? UNRESOLVED_MEASURE;
 }
 
 /** The currency the operator prices this season in; the deposit names its own. */

@@ -1,5 +1,7 @@
 import { sql, type SQL } from "drizzle-orm";
 
+import { extraChargedOnReturnFromFiledBase } from "./extra-scope-sql";
+
 /** The crew nobody can decline for a charter of `nights`, as the `crew` lateral on offer `o`. */
 export function unavoidableCrew(nights: SQL): SQL {
   return sql`
@@ -52,19 +54,7 @@ export function unavoidableCrew(nights: SQL): SQL {
           from provider_extra_catalogue extra
           where extra.listing_offer_id = o.id
             and extra.crew_role is not null
-            /*
-             * Only fees charged where this charter starts.
-             *
-             * The operator files a fee per base as well as per season, and most of them do:
-             * 130,535 of NauSYS's 184,539 priced extras rows name the bases they apply at. A
-             * row whose list does not include the base it was filed under is charged at some
-             * other base, and adding it here put fees on a card no charter from here pays.
-             */
-            and (
-              extra.valid_for_base_ids is null
-              or extra.external_base_id is null
-              or extra.external_base_id = any(extra.valid_for_base_ids)
-            )
+            and ${extraChargedOnReturnFromFiledBase()}
             /*
              * Only the crew nothing has counted yet. An operator that files its skipper as an
              * obligatory extra has it in both fee totals already -- the catalogue sum beside

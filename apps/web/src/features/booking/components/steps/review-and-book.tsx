@@ -12,6 +12,7 @@ import { dayToDisplay } from "@/lib/date";
 
 import { useLineRateLabel } from "../../hooks/use-line-rate-label";
 import { useQuoteLineLabel } from "../../hooks/use-quote-line-label";
+import { oneWayRouteLabel, oneWayRouteOf } from "../../lib/one-way-route";
 import type { BookingValues } from "../../lib/booking-form";
 import { dayWithHandover } from "../../lib/handover";
 import { useBooking } from "../booking-provider";
@@ -129,6 +130,11 @@ export default function ReviewAndBookStep() {
     });
   }
 
+  /* Told again on the last screen before money moves: the week ends in another marina. */
+  const oneWay = oneWayRouteOf(quote);
+  /* The operator's rule for bringing the boat back, in its own words: the booking depends on it. */
+  const returnNote = listing?.importantInformation.yachtDropOff.returnNote;
+
   const rows: SummaryRow[] = quote
     ? [
         { label: t("yacht"), value: listing?.title ?? "" },
@@ -136,6 +142,15 @@ export default function ReviewAndBookStep() {
           label: t("dates"),
           value: `${dayWithHandover(day(quote.checkIn), checkInTime)} \u2192 ${dayWithHandover(day(quote.checkOut), checkOutTime)}`,
         },
+        ...(oneWay
+          ? [
+              {
+                label: t("route"),
+                value: oneWayRouteLabel(oneWay, t("oneWay")),
+              },
+            ]
+          : []),
+        ...(returnNote ? [{ label: t("returnNote"), value: returnNote }] : []),
         { label: t("crew"), value: quote.crewType ? tCrew(quote.crewType) : "" },
         { label: t("people"), value: String(quote.guests) },
         { label: t("extras"), value: optionalNames || t("noExtras") },

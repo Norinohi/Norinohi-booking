@@ -1,0 +1,1 @@
+ALTER TABLE "listing_offer" ADD COLUMN "skipper_licence_required" boolean;

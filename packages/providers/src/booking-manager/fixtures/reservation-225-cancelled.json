@@ -1,0 +1,48 @@
+{
+  "id": 8295147330000100225,
+  "reservationCode": "26-01250",
+  "dateFrom": "2026-10-17 17:00:00",
+  "dateTo": "2026-10-24 09:00:00",
+  "creationDate": "2026-09-22 00:18:26",
+  "confirmationDate": "2026-09-22 00:00:00",
+  "yachtId": 207160073500225,
+  "status": 5,
+  "productName": "Bareboat",
+  "baseFromId": 127,
+  "baseToId": 127,
+  "clientName": "Test Norinohi Audit",
+  "clientId": 8170917970000100225,
+  "currency": "EUR",
+  "termsOfPayment": "50% after booking\n50% 4 weeks before commencement of the charter",
+  "basePrice": 1700.0,
+  "discount": 0.0,
+  "commission": 255.0,
+  "finalPrice": 1445.0,
+  "clientPrice": 1700.0,
+  "securityDeposit": 1500.0,
+  "items": [
+    {
+      "id": 8295147550000100225,
+      "name": "Agency discount",
+      "quantity": 15.0,
+      "unit": "PERCENTAGE",
+      "price": -255.0,
+      "payableInBase": false,
+      "type": "discount"
+    }
+  ],
+  "paymentPlan": [
+    {
+      "date": "2026-09-29 00:00:00",
+      "amount": 1700.0
+    }
+  ],
+  "agencyPaymentPlan": [
+    {
+      "date": "2026-09-29 00:00:00",
+      "amount": 1445.0
+    }
+  ],
+  "remarks": "",
+  "crewListLink": "https://www.booking-manager.com/cbm/servlet/cbm?serviceId=225&token=REDACTED&fview=crew_editor&reservation_id=8295147330000100225"
+}

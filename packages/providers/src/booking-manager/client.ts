@@ -1,10 +1,17 @@
 import type { z } from "zod";
 
-import { ContractError, describeSchemaIssues } from "../shared/errors";
+import {
+  ContractError,
+  describeSchemaIssues,
+  type ProviderError,
+  SlotUnavailableError,
+} from "../shared/errors";
 import type { JsonRequestValue, JsonValue } from "../shared/json";
 import {
+  buildQueryString,
   createProviderHttpClient,
   type FetchLike,
+  httpStatusClassifier,
   type ProviderHttpClient,
   type ProviderRequestOptions,
   type QueryValue,
@@ -12,15 +19,10 @@ import {
 } from "../shared/http-client";
 import { parseExactJson } from "../shared/exact-json";
 import { queueForInterval, SequentialQueue } from "../shared/queue";
-
-/**
- * How many customer calls this credential will have in flight at once. Four is the sweep's own
- * default fan-out, so it is a load the vendor already sees from us.
- */
-const LIVE_LANES = 4;
 import type { RetryPolicy } from "../shared/retry";
+import { BM_LIVE_LANES } from "./call-budget";
 import type { BookingManagerConfig } from "./config";
-import { bookingManagerEndpoints } from "./endpoints";
+import { bookingManagerEndpoints, reservationRefusalOf } from "./endpoints";
 
 export interface BookingManagerClientOptions {
   config: BookingManagerConfig;
@@ -50,9 +52,9 @@ export interface BookingManagerClientOptions {
  * for that to be reachable: 504s with an HTML body under load, and a cold start
  * near 30 s on each of the vendor's six servers.
  *
- * So a create is attempted once and a timeout surfaces as an indeterminate state
- * for `reservation-reconcile` to settle against the vendor's own record, which is
- * the only place the truth exists.
+ * So a create is attempted once, and a timeout is settled by asking the vendor
+ * whether an option of ours now sits on the slot (`settleOwnOption` in
+ * `booking.ts`) rather than by sending it again.
  *
  * This is enforced here rather than left to the call site because the hazard is
  * precisely that someone wires the endpoint up and does not know about it.
@@ -62,15 +64,59 @@ const NON_IDEMPOTENT_ENDPOINTS = new Set<string>([
   bookingManagerEndpoints.reservation,
 ]);
 
-function retryOptionsFor(endpoint: string): ProviderRequestOptions | undefined {
-  return NON_IDEMPOTENT_ENDPOINTS.has(endpoint) ? { retry: { maxAttempts: 1 } } : undefined;
+/**
+ * A write tried once also gets the long ceiling rather than the quote's. The vendor's cold start
+ * runs near 30 s, the quote's ceiling, and a create abandoned there may still land, leaving an
+ * option nobody knows is ours; waiting longer is the cheaper side of that trade.
+ */
+function writeOptionsFor(
+  endpoint: string,
+  config: BookingManagerConfig,
+): ProviderRequestOptions | undefined {
+  return NON_IDEMPOTENT_ENDPOINTS.has(endpoint)
+    ? { retry: { maxAttempts: 1 }, timeoutMs: config.syncTimeoutMs }
+    : undefined;
+}
+
+/**
+ * Real HTTP statuses, as the shared classifier reads them, except where the vendor's plain-text
+ * refusal says more than its status: a `400` on `POST /reservation` that opens with "Yacht is
+ * not available" is the charter being unavailable, not a body we got wrong, so it is a
+ * `SlotUnavailableError` whose `providerCode` says which refusal it was. Any other 4xx keeps the
+ * vendor's sentence on the error, which is where the event log and support read it.
+ */
+export function classifyBookingManagerResponse(
+  httpStatus: number,
+  body: JsonValue,
+  context: { endpoint: string; text?: string },
+): ProviderError | null {
+  const text = context.text?.trim() ?? "";
+  if (httpStatus === 400 && context.endpoint === bookingManagerEndpoints.reservation) {
+    const refusal = reservationRefusalOf(text);
+    if (refusal) {
+      return new SlotUnavailableError(`Booking Manager refused the reservation: ${text}`, {
+        endpoint: context.endpoint,
+        providerCode: refusal,
+        payload: { httpStatus, text },
+      });
+    }
+  }
+
+  const error = httpStatusClassifier(httpStatus, body, context);
+  if (!(error instanceof ContractError) || body !== null || text === "") return error;
+  return new ContractError(`${error.message}: ${text.slice(0, 200)}`, {
+    endpoint: context.endpoint,
+    providerCode: error.providerCode,
+    payload: { httpStatus, text: text.slice(0, 500) },
+  });
 }
 
 /**
  * Unlike NauSYS, Booking Manager signals failure with real HTTP status codes
- * (400/401/404/422), so the shared `httpStatusClassifier` default needs no
- * override. 422 falls through to ContractError, which is right: an unprocessable
- * obligatory field is a payload we got wrong, not something a retry fixes.
+ * (400/401/404/422), so `classifyBookingManagerResponse` defers to the shared
+ * classifier for everything but the reservation refusals. 422 falls through to
+ * ContractError, which is right: an unprocessable obligatory field is a payload we
+ * got wrong, not something a retry fixes.
  */
 export class BookingManagerClient {
   readonly config: BookingManagerConfig;
@@ -90,6 +136,7 @@ export class BookingManagerClient {
       // Without this the vendor's 19-digit ids are rounded before anything sees them,
       // and the id we send back on a quote or a booking is one we invented.
       parseJson: parseExactJson,
+      classifyResponse: classifyBookingManagerResponse,
       fetchImpl: options.fetchImpl,
       retry: options.retry,
     });
@@ -141,7 +188,7 @@ export class BookingManagerClient {
    * has not, so the pool keeps a ceiling on how much of it we ever use at once.
    */
   liveLane(): ProviderRequestOptions {
-    this.liveCalls = (this.liveCalls + 1) % LIVE_LANES;
+    this.liveCalls = (this.liveCalls + 1) % BM_LIVE_LANES;
     return { queueKey: `${this.config.queueKey}:live#${this.liveCalls}` };
   }
 
@@ -150,16 +197,25 @@ export class BookingManagerClient {
     schema: z.ZodType<TOut>,
     body: JsonRequestValue,
   ): Promise<TOut> {
-    const response = await this.http.post(endpoint, body, retryOptionsFor(endpoint));
+    const response = await this.http.post(endpoint, body, writeOptionsFor(endpoint, this.config));
     return this.parse(endpoint, schema, response.body);
   }
 
+  /**
+   * PUT is the vendor's confirm, and a confirm is not something to repeat blind: a retry after a
+   * lost 200 can answer a 4xx for a charter that exists. So it is tried once, with the long
+   * ceiling, and the caller reads the reservation back before trying again.
+   */
   async put<TOut>(
     endpoint: string,
     schema: z.ZodType<TOut>,
-    body?: JsonRequestValue,
+    query?: Record<string, QueryValue | undefined>,
   ): Promise<TOut> {
-    const response = await this.http.put(endpoint, body);
+    const response = await this.http.put(
+      `${endpoint}${query ? buildQueryString(query) : ""}`,
+      undefined,
+      { retry: { maxAttempts: 1 }, timeoutMs: this.config.syncTimeoutMs },
+    );
     return this.parse(endpoint, schema, response.body);
   }
 

@@ -4,7 +4,11 @@ import { Select } from "@yacht-charter/ui/components/form/select";
 import { Slider } from "@yacht-charter/ui/components/form/slider";
 import { useTranslations } from "next-intl";
 
+import { useExactMoney } from "@/hooks/use-money";
+import { baseExtraCode, isVariantCode } from "@/lib/extra-code";
+
 import type { Quote } from "../../api/queries";
+import { oneWayRouteOf } from "../../lib/one-way-route";
 import type { CrewType } from "../../types";
 
 const PEOPLE_MIN = 1;
@@ -15,6 +19,7 @@ export interface CharterOptionsProps {
   crewType: CrewType | undefined;
   crewOptions: readonly CrewType[];
   onCrewChange: (next: CrewType) => void;
+  onCrewVariantChange?: ((code: string) => void) | undefined;
   onDropOffChange?: (endBaseId: string | null) => void;
   guests: number;
   onGuestsChange: (next: number) => void;
@@ -26,12 +31,30 @@ export function CharterOptions({
   crewType,
   crewOptions,
   onCrewChange,
+  onCrewVariantChange,
   onDropOffChange,
   guests,
   onGuestsChange,
 }: CharterOptionsProps) {
   const t = useTranslations("YachtDetail");
   const tCrew = useTranslations("Common.crewTypes");
+  const money = useExactMoney();
+
+  /*
+   * A crew role the offer sells as several variants: a male or a female captain, a skipper by
+   * the day or by the week. The quote has already priced one, the customer's pick or the
+   * adapter's default, and says which in the line's detail; this offers the rest.
+   */
+  const offered = new Map((quote?.offeredExtras ?? []).map((item) => [item.code, item]));
+  const crewVariants = (quote?.lines ?? []).flatMap((line) => {
+    if (line.group !== "crew" || !isVariantCode(line.code)) return [];
+    const variants = offered.get(baseExtraCode(line.code))?.variants ?? [];
+    if (variants.length < 2) return [];
+    const suffix = line.detail ? ` (${line.detail})` : "";
+    const role =
+      suffix && line.label.endsWith(suffix) ? line.label.slice(0, -suffix.length) : line.label;
+    return [{ line, role, variants }];
+  });
 
   /*
    * Where this charter may finish, given where it starts.
@@ -54,6 +77,7 @@ export function CharterOptions({
    * like the charter base added a one-way fee that was, against the real start, entirely correct.
    */
   const pickUpBaseName = dropOffOptions[0]?.startBaseName;
+  const oneWay = oneWayRouteOf(quote);
 
   /*
    * Where this particular charter is collected, which is not always where the listing lives.
@@ -86,6 +110,25 @@ export function CharterOptions({
         />
       </div>
 
+      {onCrewVariantChange
+        ? crewVariants.map(({ line, role, variants }) => (
+            <div key={baseExtraCode(line.code)} className="flex flex-col gap-1.5">
+              <span className="text-sm leading-4.25 font-semibold text-foreground">{role}</span>
+              <Select
+                className="h-12"
+                options={variants.map((variant) => ({
+                  value: variant.code,
+                  label: `${variant.detail ?? role} - ${money(variant.amount.amountMinor, variant.amount.currency)}`,
+                }))}
+                value={line.code}
+                onValueChange={(value) => {
+                  if (value && value !== line.code) onCrewVariantChange(value);
+                }}
+              />
+            </div>
+          ))
+        : null}
+
       {/* Only where the provider offered a real choice of ending. One drop-off is not a
           decision, and a fleet that never sells one-way must not grow a control implying
           it does. */}
@@ -113,6 +156,22 @@ export function CharterOptions({
               onDropOffChange(chosen && chosen.isOneWay ? value : null);
             }}
           />
+        </div>
+      ) : null}
+
+      {/* A route the provider fixed rather than offered: nothing to choose, but the week ends in
+          another marina, and the customer has to know that before paying. */}
+      {oneWay && !(onDropOffChange && dropOffOptions.length > 1) ? (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm leading-4.25 font-semibold text-foreground">
+            {t("sidebar.oneWayRoute")}
+          </span>
+          {oneWay.from && oneWay.to ? (
+            <span className="text-sm leading-4.25 font-medium text-foreground">
+              {oneWay.from} → {oneWay.to}
+            </span>
+          ) : null}
+          <span className="text-xs font-semibold text-natural-300">{t("sidebar.oneWayNote")}</span>
         </div>
       ) : null}
 

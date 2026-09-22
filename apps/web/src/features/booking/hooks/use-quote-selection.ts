@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { baseExtraCode, isVariantCode } from "@/lib/extra-code";
+
 import type { Quote } from "../api/queries";
 import type { CrewType, ListingDetail } from "../types";
 import type { useQuote } from "./use-quote";
@@ -72,10 +74,11 @@ export function useQuoteSelection(
   /*
    * Re-prices rather than adjusting a total, because a one-way is a different charter: the
    * vendor quotes it as its own offer with its own directional fee, and only it knows which
-   * pairings it will sell that week.
+   * pairings it will sell that week. The start goes with it: the choices on offer are the ones
+   * from this start, and a drop-off sent alone could be priced from another base.
    */
   function setDropOff(endBaseId: string | null) {
-    if (quote) void repriceWith({ endBaseId });
+    if (quote) void repriceWith({ endBaseId, startBaseId: quote.route?.startBaseId ?? null });
   }
 
   function setGuests(next: number) {
@@ -91,6 +94,27 @@ export function useQuoteSelection(
    * caller has to be able to wait for the superseding quote before holding against it.
    */
   const extrasDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  /*
+   * The crew variants the customer picked, off the quote's own list: a crew line reads the same
+   * whether it was picked or chosen by the adapter, and only a pick should outlive a change of
+   * party size. Sent beside every extras edit, since `extras` is one list on the wire.
+   */
+  const crewPicks = () => {
+    if (!quote) return [];
+    const aboard = new Set(
+      quote.lines.filter((line) => line.group === "crew").map((line) => baseExtraCode(line.code)),
+    );
+    return quote.extras.filter((code) => isVariantCode(code) && aboard.has(baseExtraCode(code)));
+  };
+
+  /** One crew role's variant, replacing whatever was picked for that role before. */
+  function selectCrewVariant(code: string) {
+    if (!quote) return;
+    const role = baseExtraCode(code);
+    const picks = crewPicks().filter((pick) => baseExtraCode(pick) !== role);
+    void repriceWith({ extras: [...extras, ...picks, code] });
+  }
 
   /** What the live quote actually priced, which is what a reprice would have to change. */
   const pricedExtras = () =>
@@ -117,7 +141,7 @@ export function useQuoteSelection(
   /** One reprice for one edit, and the edit stops being pending once that reprice has answered. */
   async function commitExtras(next: readonly string[]) {
     try {
-      await repriceWith({ extras: [...next] });
+      await repriceWith({ extras: [...next, ...crewPicks()] });
     } finally {
       if (pendingExtrasRef.current === next) pendingExtrasRef.current = null;
     }
@@ -206,6 +230,7 @@ export function useQuoteSelection(
     extras,
     requestedExtras,
     setCrew,
+    selectCrewVariant,
     setDropOff,
     setGuests,
     selectExtras,

@@ -1,0 +1,136 @@
+[
+  {
+    "yachtId": 978989630000100225,
+    "yacht": "West Wind",
+    "startBaseId": 194,
+    "endBaseId": 194,
+    "startBase": "Lefkada / D-Marin Marina Lefkas",
+    "endBase": "Lefkada / D-Marin Marina Lefkas",
+    "dateFrom": "2027-06-05 17:00:00",
+    "dateTo": "2027-06-12 09:00:00",
+    "status": 0,
+    "product": "Bareboat",
+    "price": 4801.0,
+    "currency": "GBP",
+    "startPrice": 5219.0,
+    "obligatoryExtrasPrice": 1527.64,
+    "obligatoryExtras": [
+      {
+        "id": 26877460000100225,
+        "name": "Cleaning",
+        "price": 84.54,
+        "currency": "GBP",
+        "payableInBase": true,
+        "description": ""
+      },
+      {
+        "id": 1498942990000100225,
+        "name": "Cleaning 2",
+        "price": 126.81,
+        "currency": "GBP",
+        "payableInBase": true,
+        "description": ""
+      },
+      {
+        "id": 26877420000100225,
+        "name": "Skipper",
+        "price": 769.314,
+        "currency": "GBP",
+        "payableInBase": true,
+        "description": ""
+      },
+      {
+        "id": 1488977450000100225,
+        "name": "Tourist tax",
+        "price": 5.9178,
+        "currency": "GBP",
+        "payableInBase": true,
+        "description": ""
+      },
+      {
+        "id": 696570151400225,
+        "name": "Towels",
+        "price": 118.355995,
+        "currency": "GBP",
+        "payableInBase": true,
+        "description": ""
+      },
+      {
+        "id": 5561822060000100225,
+        "name": "APA ",
+        "price": 422.69998,
+        "currency": "GBP",
+        "payableInBase": false,
+        "description": ""
+      }
+    ],
+    "paymentPlan": [
+      { "date": "2026-09-29 00:22:39", "amount": 2400.5 },
+      { "date": "2027-05-08 00:00:00", "amount": 2400.5 }
+    ],
+    "discounts": [
+      {
+        "id": 8294180160000100225,
+        "name": "Early booking 2027",
+        "percentage": 8.0,
+        "price": 417.52,
+        "currency": "GBP"
+      }
+    ],
+    "securityDeposit": 1690.8,
+    "commissionPercentage": 15.0,
+    "commissionValue": 720.15,
+    "discountPercentage": 8.0
+  },
+  {
+    "yachtId": 7078608780000100225,
+    "yacht": "Giulia",
+    "startBaseId": 194,
+    "endBaseId": 194,
+    "startBase": "Lefkada / D-Marin Marina Lefkas",
+    "endBase": "Lefkada / D-Marin Marina Lefkas",
+    "dateFrom": "2027-06-05 17:00:00",
+    "dateTo": "2027-06-12 09:00:00",
+    "status": 0,
+    "product": "Bareboat",
+    "price": 2081.0,
+    "currency": "GBP",
+    "startPrice": 2262.0,
+    "obligatoryExtrasPrice": 228.26,
+    "obligatoryExtras": [
+      {
+        "id": 1498942990000100225,
+        "name": "Cleaning 2",
+        "price": 126.81,
+        "currency": "GBP",
+        "payableInBase": true,
+        "description": ""
+      },
+      {
+        "id": 7078632280000100225,
+        "name": "Charter pack",
+        "price": 101.448,
+        "currency": "GBP",
+        "payableInBase": true,
+        "description": ""
+      }
+    ],
+    "paymentPlan": [
+      { "date": "2026-09-29 00:22:39", "amount": 1040.5 },
+      { "date": "2027-05-08 00:00:00", "amount": 1040.5 }
+    ],
+    "discounts": [
+      {
+        "id": 8294180160000100225,
+        "name": "Early booking 2027",
+        "percentage": 8.0,
+        "price": 180.96,
+        "currency": "GBP"
+      }
+    ],
+    "securityDeposit": 2113.5,
+    "commissionPercentage": 15.0,
+    "commissionValue": 312.15,
+    "discountPercentage": 8.0
+  }
+]

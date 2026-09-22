@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { unscopedCompanies } from "../shared/company-scope";
-import { ContractError } from "../shared/errors";
-import { looseJsonObject } from "../shared/json";
+import { AuthError, ContractError } from "../shared/errors";
+import { type JsonObject, looseJsonObject } from "../shared/json";
 import { SequentialQueue } from "../shared/queue";
 import { occupiedIntervalSchema } from "../sync/availability-writer";
 import { NausysClient } from "./client";
@@ -14,6 +14,7 @@ import {
   restOccupancyReservationSchema,
   restOccupancyResponseSchema,
 } from "./endpoints";
+import freeYachtsFixture from "./fixtures/freeYachts.json" with { type: "json" };
 import freeYachtsSearchFixture from "./fixtures/freeYachtsSearch.json" with { type: "json" };
 import occupancyFixture from "./fixtures/occupancy.json" with { type: "json" };
 import priceListsFixture from "./fixtures/priceLists-recorded.json" with { type: "json" };
@@ -158,6 +159,77 @@ describe("fetchNausysOccupancy", () => {
     await fetchNausysOccupancy(client, { companyId: "102701", seasonId: 771 });
 
     expect(transport.calls[0]?.endpoint).toBe("occupancy2/102701/771");
+  });
+});
+
+/*
+ * One odd row used to fail the whole response, and the ContractError out of the fetch took the
+ * rest of the run with it: SERVICE was such a literal once, found in production.
+ */
+describe("occupancy rows the schema does not know", () => {
+  function withRows(extra: JsonObject[]): JsonObject {
+    const body = z
+      .looseObject({ reservations: z.array(looseJsonObject({})) })
+      .parse(structuredClone(occupancyFixture));
+    return { ...body, reservations: [...body.reservations, ...extra] };
+  }
+
+  it("quarantines the yacht an unreadable row names, and keeps the rest", async () => {
+    const { client, transport } = build();
+    transport.respondWith(
+      "occupancy",
+      withRows([
+        {
+          id: 1,
+          yachtId: 9_999_001,
+          reservationType: "MAINTENANCE_WINDOW",
+          periodFrom: "01.07.2026",
+          periodTo: "08.07.2026",
+        },
+      ]),
+    );
+
+    const dump = await fetchNausysOccupancy(client, { companyId: "102701", year: 2026 });
+    const mapped = mapOccupancyDump(dump, "Europe/Zagreb");
+
+    expect(dump.reservations).toHaveLength(3);
+    expect(mapped.quarantinedYachtIds).toEqual(["9999001"]);
+    expect(mapped.intervals.length).toBeGreaterThan(0);
+  });
+
+  /* A row that names no yacht could be anybody's week; the scope-year is refused, not guessed. */
+  it("refuses the dump when an unreadable row names no yacht", async () => {
+    const { client, transport } = build();
+    transport.respondWith(
+      "occupancy",
+      withRows([{ id: 2, reservationType: "RESERVATION", periodFrom: "01.07.2026" }]),
+    );
+
+    const dump = await fetchNausysOccupancy(client, { companyId: "102701", year: 2026 });
+
+    expect(() => mapOccupancyDump(dump, "Europe/Zagreb")).toThrow(ContractError);
+  });
+});
+
+describe("what stops a NauSYS availability run", () => {
+  const source = () =>
+    createNausysAvailabilitySource({
+      client: build().client,
+      companyIds: ["102701"],
+      years: [2026],
+      optionTimeZone: "Europe/Zagreb",
+    });
+
+  it("is a dead credential, and not one company refusing us or one bad dump", () => {
+    const isFatal = source().isFatal;
+    expect(isFatal).toBeDefined();
+    expect(isFatal?.(new AuthError("refused", { providerCode: "AUTHENTICATION_ERROR" }))).toBe(
+      true,
+    );
+    expect(isFatal?.(new AuthError("refused", { providerCode: "OPERATION_NOT_ALLOWED" }))).toBe(
+      false,
+    );
+    expect(isFatal?.(new ContractError("bad dump"))).toBe(false);
   });
 });
 
@@ -452,7 +524,7 @@ describe("createNausysAvailabilitySource", () => {
     expect(source.searchConfirmed).toBeUndefined();
   });
 
-  it("asks freeYachts for our own hulls, one page per period", async () => {
+  it("asks freeYachts for our own hulls, several periods a call, one page per period", async () => {
     const { client, transport } = build();
     transport.respondWith("freeYachts", { status: "OK", freeYachts: [] });
 
@@ -472,13 +544,52 @@ describe("createNausysAvailabilitySource", () => {
     for await (const page of source.searchConfirmed?.(null) ?? []) pages.push(page);
 
     expect(transport.calls.map((call) => call.body)).toMatchObject([
-      { periodFrom: "04.07.2026", periodTo: "11.07.2026", yachts: [4_711_001, 4_711_002] },
-      { periodFrom: "11.07.2026", periodTo: "18.07.2026", yachts: [4_711_001, 4_711_002] },
+      {
+        periods: [
+          { periodFrom: "04.07.2026", periodTo: "11.07.2026" },
+          { periodFrom: "11.07.2026", periodTo: "18.07.2026" },
+        ],
+        yachts: [4_711_001, 4_711_002],
+      },
     ]);
+    expect(pages.map((page) => page.swept?.startDate)).toEqual(["2026-07-04", "2026-07-11"]);
     expect(pages.map((page) => page.cursor)).toEqual([
       { windowIndex: 1, page: 1 },
       { windowIndex: 2, page: 1 },
     ]);
+  });
+
+  it("files each row of a several-period answer under the period it answers", async () => {
+    const { client, transport } = build();
+    const [row] = freeYachtsFixture.freeYachts;
+    transport.respondWith("freeYachts", {
+      status: "OK",
+      freeYachts: [
+        { ...row, periodFrom: "11.07.2026", periodTo: "18.07.2026" },
+        { ...row, yachtId: 4_711_002 },
+      ],
+    });
+
+    const source = createNausysAvailabilitySource({
+      optionTimeZone: "Europe/Zagreb",
+      client,
+      companyIds: ["102701"],
+      years: [],
+      hotWindows: [
+        { periodFrom: "2026-07-04", periodTo: "2026-07-11" },
+        { periodFrom: "2026-07-11", periodTo: "2026-07-18" },
+      ],
+      loadYachtIds: () => Promise.resolve(["4711001", "4711002"]),
+    });
+
+    const pages = [];
+    for await (const page of source.searchConfirmed?.(null) ?? []) pages.push(page);
+
+    expect(pages.map((page) => page.offers.map((offer) => offer.externalYachtId))).toEqual([
+      ["4711002"],
+      ["4711001"],
+    ]);
+    expect(pages[1]?.offers[0]).toMatchObject({ startDate: "2026-07-11", endDate: "2026-07-18" });
   });
 
   /*
@@ -561,7 +672,7 @@ describe("createNausysAvailabilitySource", () => {
     const pages = [];
     for await (const page of source.searchConfirmed?.(null) ?? []) pages.push(page);
 
-    expect(transport.calls).toHaveLength(2);
+    expect(transport.calls).toHaveLength(1);
     expect(pages.map((page) => page.swept?.startDate)).toEqual([undefined, "2026-07-11"]);
   });
 
@@ -759,5 +870,39 @@ describe("mapNausysPriceLists", () => {
     expect(prices.has("4711001")).toBe(false);
     expect(prices.get("22287918")).toHaveLength(9);
     expect(issues.map((issue) => issue.reason)).toEqual(["row_unreadable"]);
+  });
+});
+
+/*
+ * "A price list with defined locations applies only to those locations and has a higher
+ * priority than a price list without defined locations." Merged cheapest first, a yacht's card
+ * could carry another marina's lower rate.
+ */
+describe("price lists scoped to locations", () => {
+  function twoLists() {
+    const general = weeklyList();
+    general.rows = [{ yachtId: 4711001, prices: general.columns.map(() => "1000") }];
+    const scoped = { ...weeklyList(), locationsId: [57] };
+    scoped.rows = [{ yachtId: 4711001, prices: scoped.columns.map(() => "1200") }];
+    return [
+      { externalId: "1", payload: general },
+      { externalId: "2", payload: scoped },
+    ];
+  }
+
+  it("prices a yacht at its location from that location's list", () => {
+    const prices = mapNausysPriceLists(twoLists(), undefined, new Map([["4711001", "57"]]));
+
+    expect(new Set(prices.get("4711001")?.map((price) => price.priceMinor))).toEqual(
+      new Set([120_000]),
+    );
+  });
+
+  it("does not price a yacht elsewhere from another location's list", () => {
+    const prices = mapNausysPriceLists(twoLists(), undefined, new Map([["4711001", "61"]]));
+
+    expect(new Set(prices.get("4711001")?.map((price) => price.priceMinor))).toEqual(
+      new Set([100_000]),
+    );
   });
 });

@@ -71,7 +71,7 @@ Not invented — absent, and correctly showing as absent. Re-check each against 
 | ---------------------------- | ----------------------------------------------------------- | ----------------------------------- | ------------------------------------------------ |
 | `pets_allowed`               | no field                                                    | not seen in the yacht record        | false for all 109; copy no longer claims a ban   |
 | `deposit_insurance_included` | only `depositWhenInsured`, an amount                        | unknown                             | false for all 109; the toggle matches nothing    |
-| `max_nights`                 | never mapped by `checkinRulesOf`                            | `minimumCharterDuration` only       | null on all 109; the calendar cannot cap a range |
+| `max_nights`                 | never mapped by `checkinRulesOf`                            | `maximumCharterDuration`, mapped    | null on all 109; the calendar cannot cap a range |
 | Daily rates                  | `DAILY` price lists exist for **2** of 109                  | unknown                             | `listing_price_period.kind` is ready for them    |
 | Short-break product          | `minimumShortPeriodDuration: 3` on **104** yachts, unmapped | unknown                             | see below                                        |
 | Base timezone                | not published                                               | not published                       | times are wall-clock text; do not convert        |

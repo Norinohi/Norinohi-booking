@@ -115,6 +115,9 @@ export const listing = pgTable(
     /** A walkthrough the operator filmed, and a 360 tour of the same boat. */
     videoUrl: text("video_url"),
     tourUrl: text("tour_url"),
+    /* This boat's own handover, `HH:mm`; the shared base row's times are only a fallback. */
+    checkInTime: text("check_in_time"),
+    checkOutTime: text("check_out_time"),
     securityDepositMinor: integer("security_deposit_minor"),
     /**
      * What the deposit falls to when the charter carries deposit insurance, where the operator
@@ -169,6 +172,8 @@ export const listingSpecification = pgTable("listing_specification", {
   yearBuilt: integer("year_built"),
   cabins: integer("cabins"),
   berths: integer("berths"),
+  /* The legal limit on board where the vendor states one; see `max_guests` in the read model. */
+  maxPersons: integer("max_persons"),
   heads: integer("heads"),
   /* Null when the provider states no count; a head is not necessarily a shower. */
   showers: integer("showers"),

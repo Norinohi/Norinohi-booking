@@ -1,9 +1,23 @@
+import { booking, SLOT_HOLDING_STATUSES } from "@yacht-charter/db/schema/booking";
+import { quote } from "@yacht-charter/db/schema/quote";
+import { and, eq, inArray, ne, or } from "drizzle-orm";
+import { log, parseError } from "evlog";
 import { z } from "zod";
 
 import type { Database } from "../registry";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
-import { ContractError } from "../shared/errors";
+import {
+  ContractError,
+  OPTION_LAPSED,
+  OWN_OPTION_HELD,
+  PRODUCT_NOT_OFFERED,
+  ProviderError,
+  SlotUnavailableError,
+  TransientError,
+} from "../shared/errors";
+import { crewListLinkFrom } from "../shared/crew-list-link";
 import { exactJsonNumber } from "../shared/exact-json";
+import { thrownFields } from "../shared/log-fields";
 import { toExactPositiveIntId } from "../shared/projection-helpers";
 import { wallClockTime } from "../shared/wall-clock";
 import {
@@ -17,7 +31,8 @@ import {
   providerReservationRefSchema,
   providerReservationSchema,
   type BookingDraft,
-  type CrewType,
+  type Money,
+  type OperatorSettlement,
   type ProviderExtrasMutation,
   type ProviderQuote,
   type ProviderReservation,
@@ -25,16 +40,31 @@ import {
 } from "../types";
 import type { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
-import { formatBookingManagerDateTime, parseBookingManagerDateTime } from "./dates";
 import {
+  formatBookingManagerDateTime,
+  parseBookingManagerDate,
+  parseBookingManagerDateTime,
+} from "./dates";
+import { numberToMinor } from "./money";
+import {
+  BM_RESERVATION_REFUSAL,
   BM_RESERVATION_STATUS,
   BM_RESERVATION_STATUS_NAMES,
   bookingManagerEndpoints,
+  isSameBookingManagerProduct,
+  restOfferListSchema,
+  restReservationListSchema,
   restReservationSchema,
   type RestReservation,
 } from "./endpoints";
 
 const PROVIDER = "booking_manager" as const;
+
+/**
+ * A base id the vendor will take back: digits without a leading zero, where `0` itself is a real
+ * base (Marina Cienfuegos on company 225) and ids run from one digit to nineteen.
+ */
+const BASE_ID = /^(?:0|[1-9]\d*)$/;
 
 /**
  * DELETE answers with the cancelled reservation on some tenants and with a bare
@@ -49,8 +79,16 @@ const cancelResponseSchema = z.union([restReservationSchema, z.null(), z.looseOb
  * what is on offer right now. Injected rather than imported so this file stays
  * independent of the quote module, and so the refusal path is testable without a
  * second endpoint in play.
+ *
+ * `clientPrice` is what the reservation should answer as its own `clientPrice`: the charter net
+ * of the vendor's discounts plus the obligatory extras paid online, which POST adds unasked.
  */
-export type VerifyPrice = (draft: BookingDraft) => Promise<string>;
+export type VerifyPrice = (draft: BookingDraft) => Promise<VerifiedPrice>;
+
+export interface VerifiedPrice {
+  hash: string;
+  clientPrice?: Money;
+}
 
 export interface BookingManagerBookingServiceDeps {
   client: BookingManagerClient;
@@ -60,13 +98,19 @@ export interface BookingManagerBookingServiceDeps {
   verifyPrice: VerifyPrice;
   recordEvent?: ReservationEventRecorder;
   /**
-   * `BookingDraft` carries no currency, and the vendor prices per currency. This
-   * is the account's billing currency; it must match what the quote was read in
-   * or the hold prices a different charter.
+   * The account's billing currency, for a draft that carries none. A draft's own currency is
+   * the quote's, and wins: the vendor prices per currency, so any other one holds a different
+   * figure from the one the customer accepted.
    */
   currency?: string;
-  /** Same per-yacht product catalogue the quote path resolves against. */
-  productNameFor?: (crewType: CrewType) => string | undefined;
+  /** The listing's product for a vendor yacht; the same loader the quote names it from. */
+  loadProductName?: (externalYachtId: string) => Promise<string | undefined>;
+  /**
+   * Which of our live bookings, if any, may hold an option of ours found on the slot. Asked
+   * before that option is released or taken over, since it may be another customer's hold.
+   * Defaults to reading `booking`; see `liveBookingHolding`.
+   */
+  bookingHolding?: (found: FoundOwnOption) => Promise<string | undefined>;
   /**
    * The vendor's own client record id, when the agency keeps one. Left unset the
    * reservation carries only `clientName` (Q-BM-CLIENT: MMK has not confirmed how
@@ -74,9 +118,10 @@ export interface BookingManagerBookingServiceDeps {
    */
   clientIdFor?: (draft: BookingDraft) => number | undefined;
   /**
-   * Whether the vendor emails the operator and the client on create. Off by
-   * default: our hold is provisional and an operator notified of a booking we may
-   * release minutes later is worse than no notification.
+   * Whether the vendor emails the operator and the client, sent on the create and as the
+   * confirming PUT's query parameter. Off by default: our hold is provisional and an operator
+   * notified of a booking we may release minutes later is worse than no notification. The spec
+   * says it acts only on calls made as a charter, which an agency key is not.
    */
   sendNotification?: boolean;
 }
@@ -89,17 +134,24 @@ export interface BookingManagerBookingService {
 }
 
 /**
- * The full `PUT /reservations` body. Every field is sent on every write: the
- * endpoint replaces the resource, so an omitted field is a cleared field.
+ * What the reservation was asked to be, in the terms the vendor answers with, so the answer can be
+ * checked against it. Bases and product are what we sent; undefined is something we left to it.
  */
+export interface ReservationTerms {
+  yachtId: string;
+  checkIn: string;
+  checkOut: string;
+  startBaseId: string | undefined;
+  endBaseId: string | undefined;
+  productName: string | undefined;
+  currency: string;
+}
+
+/** The `POST /reservation` body; see `reservationRequest`. */
 type ReservationBody = {
   dateFrom: string;
   dateTo: string;
   yachtId: RawJSON;
-  /**
-   * Omitted on create, sent on update. See `reservationBody`.
-   */
-  status?: number;
   clientName: string;
   passengersOnBoard: number;
   currency: string;
@@ -117,29 +169,24 @@ export function createBookingManagerBookingService(
   const recordEvent = deps.recordEvent ?? createReservationEventRecorder(db, PROVIDER);
   const currency = deps.currency ?? "EUR";
   const sendNotification = deps.sendNotification ?? false;
+  const bookingHolding = deps.bookingHolding ?? ((found) => liveBookingHolding(db, found));
 
   /**
-   * The reservation body, built the same way for the create and the update. PUT
-   * is read as a replace rather than a patch: the spec documents one reservation
-   * resource and no partial-update semantics, so sending only `{status}` risks
-   * the vendor clearing the fields we omitted (Q-BM-PUT).
-   *
-   * `status` is omitted entirely on create. POST can only ever open an option, so
-   * the field says nothing the endpoint does not already decide, and the vendor
-   * asked us not to send it: "you do not need to specify the status ... I strongly
-   * recommend not including the status field" (Diego Pacifico, MMK, 2026-08-25).
-   * Only `dateFrom`, `dateTo` and `yachtId` are mandatory there. It stays on the
-   * update, which is the call that moves an option to a reservation and the one
-   * place the value carries meaning.
+   * The create body. `status` is not sent: POST can only ever open an option, and the vendor
+   * asked us not to - "you do not need to specify the status ... I strongly recommend not
+   * including the status field" (Diego Pacifico, MMK, 2026-08-25). Only `dateFrom`, `dateTo` and
+   * `yachtId` are mandatory.
    */
-  async function reservationBody(draft: BookingDraft, status?: number): Promise<ReservationBody> {
+  async function reservationRequest(
+    draft: BookingDraft,
+  ): Promise<{ body: ReservationBody; terms: ReservationTerms }> {
     const ref = await resolver.toExternalListing(draft.listingId);
     const yachtId = toExactPositiveIntId(ref.externalYachtId, {
       provider: "Booking Manager",
       what: `listing ${draft.listingId}`,
     });
     const baseId = ref.externalBaseId?.trim() || undefined;
-    const productName = draft.crewType ? deps.productNameFor?.(draft.crewType) : undefined;
+    const productName = await deps.loadProductName?.(yachtId);
     const clientId = deps.clientIdFor?.(draft);
 
     const body: ReservationBody = {
@@ -152,10 +199,9 @@ export function createBookingManagerBookingService(
       yachtId: exactJsonNumber(yachtId),
       clientName: fullName(draft.customer),
       passengersOnBoard: draft.guests,
-      currency,
+      currency: draft.currency ?? currency,
       sendNotification,
     };
-    if (status !== undefined) body.status = status;
     if (productName) body.productName = productName;
     /*
      * The bases the offer was priced for, falling back to the listing's own only when the quote
@@ -169,14 +215,25 @@ export function createBookingManagerBookingService(
      */
     const startBase = draft.route?.startBaseId?.trim() || baseId;
     const endBase = draft.route?.endBaseId?.trim() || startBase;
-    if (startBase !== undefined && /^[1-9]\d*$/.test(startBase)) {
+    const terms: ReservationTerms = {
+      yachtId,
+      checkIn: draft.checkIn,
+      checkOut: draft.checkOut,
+      startBaseId: undefined,
+      endBaseId: undefined,
+      productName,
+      currency: body.currency,
+    };
+    if (startBase !== undefined && BASE_ID.test(startBase)) {
       body.baseFromId = exactJsonNumber(startBase);
+      terms.startBaseId = startBase;
     }
-    if (endBase !== undefined && /^[1-9]\d*$/.test(endBase)) {
+    if (endBase !== undefined && BASE_ID.test(endBase)) {
       body.baseToId = exactJsonNumber(endBase);
+      terms.endBaseId = endBase;
     }
     if (clientId !== undefined) body.clientId = clientId;
-    return body;
+    return { body, terms };
   }
 
   async function createOption(draft: BookingDraft): Promise<ProviderReservation> {
@@ -186,32 +243,238 @@ export function createBookingManagerBookingService(
     // this hash is the only link between the price the customer accepted and the
     // reservation about to be opened.
     const current = await verifyPrice(parsed);
-    if (current !== parsed.priceSourceHash) {
+    if (current.hash !== parsed.priceSourceHash) {
       throw new ContractError(
         "PRICE_CHANGED: the Booking Manager price moved between the quote and the hold",
         {
           endpoint: bookingManagerEndpoints.reservation,
           providerCode: "PRICE_CHANGED",
-          payload: { expected: parsed.priceSourceHash, actual: current },
+          payload: { expected: parsed.priceSourceHash, actual: current.hash },
         },
       );
     }
 
-    const response = await client.post(
-      bookingManagerEndpoints.reservation,
-      restReservationSchema,
-      await reservationBody(parsed),
-    );
+    const request = await reservationRequest(parsed);
+    const { terms } = request;
+    let response: RestReservation;
+    let agencyId: string | undefined;
+    try {
+      response = await client.post(
+        bookingManagerEndpoints.reservation,
+        restReservationSchema,
+        request.body,
+      );
+    } catch (cause) {
+      const ownOption =
+        cause instanceof SlotUnavailableError &&
+        cause.providerCode === BM_RESERVATION_REFUSAL.OWN_OPTION_EXISTS;
+      if (!ownOption && !(cause instanceof TransientError)) {
+        throw cause instanceof SlotUnavailableError ? refusalInOurTerms(cause, terms) : cause;
+      }
+      ({ response, agencyId } = await settleOwnOption(parsed, request, current, cause));
+    }
 
     await logEvent(parsed.quoteId, "option_created", response);
 
+    if (response.status !== BM_RESERVATION_STATUS.OPTION) await refuseNotAnOption(response);
+
+    const substituted = substitutionsIn(response, terms, current.clientPrice);
+    if (substituted.length > 0) await refuseSubstituted(response, substituted);
+
+    return heldOption(parsed, response, agencyId);
+  }
+
+  /**
+   * What to do once the vendor may already hold an option of ours on the slot: after POST
+   * answered "own Option exists", or did not answer at all, which with no idempotency key (Q10)
+   * leaves an option it opened unreported.
+   *
+   * The option is looked up rather than the create sent again. One no live booking of ours holds
+   * is an orphan: taken over when it is open and on exactly our terms for this customer, which
+   * is the create that timed out, and otherwise released and the create sent once more. One a
+   * live booking holds, or another checkout of the week may still be waiting on, is that
+   * booking's, and the slot is refused. Where nothing is found, or the
+   * lookup fails, the original refusal stands.
+   */
+  async function settleOwnOption(
+    draft: BookingDraft,
+    request: { body: ReservationBody; terms: ReservationTerms },
+    verified: VerifiedPrice,
+    cause: ProviderError,
+  ): Promise<{ response: RestReservation; agencyId: string | undefined }> {
+    const { body, terms } = request;
+    const original =
+      cause instanceof SlotUnavailableError ? refusalInOurTerms(cause, terms) : cause;
+    const trigger = cause instanceof TransientError ? "no_answer" : "own_option_exists";
+
+    let found: OwnOption | undefined;
+    try {
+      found = await findOwnOption(terms);
+    } catch (lookup) {
+      log.warn({
+        action: "booking_manager.reservation.own_option_lookup_failed",
+        yachtId: terms.yachtId,
+        checkIn: terms.checkIn,
+        trigger,
+        ...thrownFields(parseError(lookup)),
+      });
+      throw original;
+    }
+    if (!found) {
+      log.warn({
+        action: "booking_manager.reservation.own_option_not_found",
+        yachtId: terms.yachtId,
+        checkIn: terms.checkIn,
+        trigger,
+      });
+      throw original;
+    }
+
+    const ids = [found.charterId, found.agencyId].filter((id): id is string => id !== undefined);
+    const holder = await bookingHolding({
+      reservationIds: ids,
+      listingId: draft.listingId,
+      checkIn: draft.checkIn,
+      checkOut: draft.checkOut,
+      quoteId: draft.quoteId,
+    });
+    if (holder) {
+      throw new SlotUnavailableError(
+        `Booking Manager slot for yacht ${terms.yachtId} from ${terms.checkIn} is held by our own option ${ids.join("/")}, which booking ${holder} holds`,
+        {
+          endpoint: bookingManagerEndpoints.reservation,
+          providerCode: OWN_OPTION_HELD,
+          payload: { reservationIds: ids, bookingId: holder },
+        },
+      );
+    }
+
+    const record = found.record;
+    const adoptable =
+      record.status === BM_RESERVATION_STATUS.OPTION &&
+      sameClientName(record.clientName, body.clientName) &&
+      substitutionsIn(record, terms, verified.clientPrice).length === 0;
+    if (adoptable) {
+      log.warn({
+        action: "booking_manager.reservation.own_option_adopted",
+        reservationId: String(record.id),
+        agencyReservationId: found.agencyId,
+        trigger,
+      });
+      return { response: record, agencyId: found.agencyId };
+    }
+
+    const orphan = found.charterId ?? String(record.id);
+    const released = await releaseQuietly(orphan, "orphaned");
+    log.warn({
+      action: "booking_manager.reservation.own_option_released",
+      reservationId: orphan,
+      agencyReservationId: found.agencyId,
+      status: record.status ?? null,
+      released,
+      trigger,
+    });
+    if (!released) throw original;
+
+    try {
+      return {
+        response: await client.post(
+          bookingManagerEndpoints.reservation,
+          restReservationSchema,
+          body,
+        ),
+        agencyId: undefined,
+      };
+    } catch (again) {
+      throw again instanceof SlotUnavailableError ? refusalInOurTerms(again, terms) : again;
+    }
+  }
+
+  /**
+   * The option this agency holds on the yacht for the charter, charter-side record first.
+   *
+   * `showOptions` names an open one by its agency-side id; an expired one (`3`) it leaves out
+   * altogether although it still blocks the slot, so `/reservations/{year}` for the month the
+   * charter starts in is asked next, where agency records carry `charterReservationId`. The
+   * charter-side record is what POST would have answered with, and the only one carrying the
+   * price, the plan and the crew link.
+   */
+  async function findOwnOption(terms: ReservationTerms): Promise<OwnOption | undefined> {
+    const offers = await client.get(
+      bookingManagerEndpoints.offers,
+      restOfferListSchema,
+      {
+        dateFrom: formatBookingManagerDateTime(terms.checkIn),
+        dateTo: formatBookingManagerDateTime(terms.checkOut),
+        yachtId: [terms.yachtId],
+        showOptions: true,
+      },
+      client.liveLane(),
+    );
+    let agencyId = offers.find(
+      (offer) =>
+        offer.yachtId === terms.yachtId &&
+        offer.myReservationId != null &&
+        calendarDateOf(offer.dateFrom) === terms.checkIn &&
+        calendarDateOf(offer.dateTo) === terms.checkOut,
+    )?.myReservationId;
+    let charterId: string | undefined;
+
+    if (agencyId == null) {
+      const listed = await client.get(
+        bookingManagerEndpoints.reservationsByYear(Number(terms.checkIn.slice(0, 4))),
+        restReservationListSchema,
+        { month: Number(terms.checkIn.slice(5, 7)) },
+        client.liveLane(),
+      );
+      const ours = listed.find(
+        (row) =>
+          row.yachtId === terms.yachtId &&
+          (row.status === BM_RESERVATION_STATUS.OPTION ||
+            row.status === BM_RESERVATION_STATUS.OPTION_EXPIRED) &&
+          calendarDateOf(row.dateFrom) === terms.checkIn &&
+          calendarDateOf(row.dateTo) === terms.checkOut,
+      );
+      if (!ours) return undefined;
+      agencyId = ours.id;
+      charterId = ours.charterReservationId ?? undefined;
+    }
+
+    if (charterId === undefined) {
+      const twin = await client.get(
+        bookingManagerEndpoints.reservationById(agencyId),
+        restReservationSchema,
+        undefined,
+        client.liveLane(),
+      );
+      charterId = twin.charterReservationId ?? undefined;
+      if (charterId === undefined) return { agencyId, record: twin };
+    }
+
+    const record = await client.get(
+      bookingManagerEndpoints.reservationById(charterId),
+      restReservationSchema,
+      undefined,
+      client.liveLane(),
+    );
+    return { charterId, agencyId, record };
+  }
+
+  /** An open option the vendor answered with, in our terms. */
+  function heldOption(
+    draft: BookingDraft,
+    response: RestReservation,
+    agencyId?: string,
+  ): ProviderReservation {
     const reservationId = String(response.id);
+    const settlement = operatorSettlementOf(response);
+    const crewListLink = crewListLinkFrom(response.crewListLink);
 
     return providerReservationSchema.parse({
       id: reservationId,
       provider: PROVIDER,
-      listingId: parsed.listingId,
-      quoteId: parsed.quoteId,
+      listingId: draft.listingId,
+      quoteId: draft.quoteId,
       status: toCanonicalStatus(response, bookingManagerEndpoints.reservation),
       // Booking Manager keeps one id across the option and the reservation it
       // becomes, so the option and the booking are the same handle.
@@ -220,9 +483,65 @@ export function createBookingManagerBookingService(
       holdExpiresAt: holdExpiresAt(response),
       checkInTime: wallClockTime(response.dateFrom),
       checkOutTime: wallClockTime(response.dateTo),
+      ...(agencyId ? { providerAgencyReservationId: agencyId } : null),
+      ...(crewListLink ? { crewListLink } : null),
+      ...(settlement ? { operatorSettlement: settlement } : null),
     });
   }
 
+  /**
+   * POST can only open an option (`2`), and anything else is a record we cannot hold a customer
+   * to. `9` is the one measured: a second option queued behind a hold already on the slot, with
+   * no expiry and blocking nothing, so it is released rather than left behind.
+   */
+  async function refuseNotAnOption(response: RestReservation): Promise<never> {
+    const status = response.status ?? null;
+    let released = false;
+    if (status === BM_RESERVATION_STATUS.OPTION_ON_WAITING) {
+      released = await releaseQuietly(String(response.id), "not_an_option");
+    }
+    throw new ContractError(
+      `Booking Manager answered the reservation with ${response.id} in status ${JSON.stringify(status)} (${BM_RESERVATION_STATUS_NAMES.get(status ?? -1) ?? "unknown"}), not an option`,
+      {
+        endpoint: bookingManagerEndpoints.reservation,
+        providerCode: "NOT_AN_OPTION",
+        payload: { id: response.id, status, released },
+      },
+    );
+  }
+
+  /** Best effort: an option it fails to free lapses at its own expiry, and the log names it. */
+  async function releaseQuietly(reservationId: string, reason: string): Promise<boolean> {
+    try {
+      await client.del(
+        bookingManagerEndpoints.reservationById(reservationId),
+        cancelResponseSchema,
+      );
+      return true;
+    } catch (cause) {
+      log.error({
+        action: "booking_manager.reservation.release_failed",
+        reservationId,
+        reason,
+        ...thrownFields(parseError(cause)),
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Turns the option into a reservation with `PUT /reservation/{id}`, which takes no body: the
+   * spec declares none, and measured (Q8) every field of one was ignored and the option flipped
+   * to `1` all the same. `sendNotification` goes as the query parameter the spec names.
+   *
+   * The PUT is not repeatable blind, since a retry after a lost 200 can answer a 4xx for a
+   * charter that exists, so the record is read around it instead. Before: a reservation already
+   * at `1` (a lost answer, a replayed webhook) is taken as confirmed without asking again, and an
+   * option that lapsed or was cancelled is refused. After a PUT that did not answer: `1` means it
+   * landed, a still open option earns the one retry, and anything the read cannot settle stays a
+   * TransientError for the booking chain to leave indeterminate. An answer that is not `1` is
+   * never reported as confirmed.
+   */
   async function confirmBooking(draft: BookingDraft): Promise<ProviderReservation> {
     const parsed = bookingDraftSchema.parse(draft);
 
@@ -238,11 +557,31 @@ export function createBookingManagerBookingService(
       what: "reservation id",
     });
     const endpoint = bookingManagerEndpoints.reservationById(id);
+    const confirm = () => client.put(endpoint, restReservationSchema, { sendNotification });
 
-    const response = await client.put(endpoint, restReservationSchema, {
-      ...(await reservationBody(parsed, BM_RESERVATION_STATUS.RESERVATION)),
-      id,
-    });
+    const before = await readQuietly(endpoint, "before_confirm");
+    let response: RestReservation;
+    if (before?.status === BM_RESERVATION_STATUS.RESERVATION) {
+      response = before;
+    } else {
+      if (before !== undefined && before.status !== BM_RESERVATION_STATUS.OPTION) {
+        throw optionGone(id, before, endpoint);
+      }
+      try {
+        response = await confirm();
+      } catch (cause) {
+        if (!(cause instanceof TransientError)) throw cause;
+        const after = await readQuietly(endpoint, "after_confirm");
+        if (after === undefined) throw cause;
+        if (after.status === BM_RESERVATION_STATUS.RESERVATION) {
+          response = after;
+        } else if (after.status === BM_RESERVATION_STATUS.OPTION) {
+          response = await confirm();
+        } else {
+          throw optionGone(id, after, endpoint);
+        }
+      }
+    }
 
     // Every reservation exists twice: a charter-side record whose id ends in the
     // charter company's id, and an agency-side twin ending in ours, linked by
@@ -266,21 +605,63 @@ export function createBookingManagerBookingService(
       );
     }
 
-    await logEvent(parsed.quoteId, "confirm_succeeded", response);
+    if (
+      response.status === BM_RESERVATION_STATUS.OPTION_EXPIRED ||
+      response.status === BM_RESERVATION_STATUS.CANCELLED
+    ) {
+      throw optionGone(id, response, endpoint);
+    }
+    const status = toCanonicalStatus(response, endpoint);
+    if (status === "confirmed") await logEvent(parsed.quoteId, "confirm_succeeded", response);
+    else {
+      log.warn({
+        action: "booking_manager.reservation.confirm_not_applied",
+        reservationId: id,
+        status: response.status ?? null,
+      });
+    }
 
     // The charter-side id stays the handle across option and booking; switching to
     // the id PUT happens to answer with would change the key mid-lifecycle.
     const reservationId = String(id);
+    const agencyId = response.id === id ? undefined : String(response.id);
+    /* The PUT answers with the agency twin, which carries no plan; the charter side says what
+       we owe now that the charter is fixed. A read that fails costs only that. */
+    const charterSide = response.id === id ? response : await readQuietly(endpoint, "settlement");
+    const settlement = charterSide && operatorSettlementOf(charterSide);
+    const crewListLink =
+      crewListLinkFrom(response.crewListLink) ?? crewListLinkFrom(charterSide?.crewListLink);
 
     return providerReservationSchema.parse({
       id: reservationId,
       provider: PROVIDER,
       listingId: parsed.listingId,
       quoteId: parsed.quoteId,
-      status: toCanonicalStatus(response, endpoint),
+      status,
       providerReservationId: reservationId,
       providerOptionId: parsed.reservation.providerOptionId ?? reservationId,
+      ...(agencyId ? { providerAgencyReservationId: agencyId } : null),
+      ...(crewListLink ? { crewListLink } : null),
+      ...(settlement ? { operatorSettlement: settlement } : null),
     });
+  }
+
+  /** The reservation as the vendor holds it now, or nothing where it cannot be read. */
+  async function readQuietly(
+    endpoint: string,
+    reason: string,
+  ): Promise<RestReservation | undefined> {
+    try {
+      return await client.get(endpoint, restReservationSchema, undefined, client.liveLane());
+    } catch (cause) {
+      log.warn({
+        action: "booking_manager.reservation.read_failed",
+        endpoint,
+        reason,
+        ...thrownFields(parseError(cause)),
+      });
+      return undefined;
+    }
   }
 
   /**
@@ -304,6 +685,12 @@ export function createBookingManagerBookingService(
    * claim we cannot support. Wiring it up needs the vendor to say who approves,
    * which status an approval lands on, and what it costs the guest; those are
    * open questions in `docs/vendor/booking-manager-reply-2026-08-25.md`.
+   *
+   * An expired option (`3`) is deleted like a live one. Expiry does not free the week: the
+   * vendor keeps it out of `/offers` for as long as the record stands, so a lapsed hold of
+   * ours left alone is a boat nobody can sell. Whether the vendor accepts that DELETE is
+   * unmeasured (Q19), so a refusal is reported as a release that did not land rather than as
+   * a cancelled option.
    */
   async function cancelOption(ref: ProviderReservationRef): Promise<ProviderReservation> {
     const parsed = providerReservationRefSchema.parse(ref);
@@ -328,7 +715,10 @@ export function createBookingManagerBookingService(
       );
     }
 
-    await client.del(endpoint, cancelResponseSchema);
+    /* Measured on 225: a cancelled record no longer blocks /offers, so it is already released. */
+    if (existing.status !== BM_RESERVATION_STATUS.CANCELLED) {
+      await deleteOption(id, endpoint, existing.status);
+    }
 
     const listingId =
       existing.yachtId == null
@@ -345,6 +735,23 @@ export function createBookingManagerBookingService(
       status: "cancelled",
       providerReservationId: String(id),
     });
+  }
+
+  async function deleteOption(
+    id: string,
+    endpoint: string,
+    status: RestReservation["status"],
+  ): Promise<void> {
+    try {
+      await client.del(endpoint, cancelResponseSchema);
+    } catch (cause) {
+      if (status !== BM_RESERVATION_STATUS.OPTION_EXPIRED) throw cause;
+      if (cause instanceof ProviderError && cause.retryable) throw cause;
+      throw new ContractError(
+        `Booking Manager option ${id} has expired and still blocks its week, and the vendor refused to delete it; the operator has to release it`,
+        { endpoint, providerCode: "EXPIRED_OPTION_NOT_RELEASED", cause },
+      );
+    }
   }
 
   /**
@@ -366,6 +773,38 @@ export function createBookingManagerBookingService(
       {
         endpoint: bookingManagerEndpoints.reservationById(parsed.ref.providerReservationId),
         providerCode: "EXTRAS_NOT_SUPPORTED",
+      },
+    );
+  }
+
+  /**
+   * Releases an option the vendor opened on terms other than ours, and refuses it.
+   *
+   * POST answers 201 whatever it made of the body: measured on company 225, a drop-off it does
+   * not sell (136) came back as the home base (127), USD came back as EUR, and a body with no
+   * product took the default. Kept, that is a charter at another marina, in another currency or
+   * of another product than the one the customer paid for. The release is best effort: an option
+   * it fails to free lapses at its own expiry, and the event says which one to look at.
+   */
+  async function refuseSubstituted(
+    response: RestReservation,
+    substituted: readonly Substitution[],
+  ): Promise<never> {
+    const released = await releaseQuietly(String(response.id), "substituted");
+    log.warn({
+      action: "booking_manager.reservation.substituted",
+      reservationId: String(response.id),
+      released,
+      fields: substituted.map((entry) => entry.field).join(","),
+    });
+    throw new ContractError(
+      `Booking Manager opened reservation ${response.id} on other terms than asked: ${substituted
+        .map((entry) => `${entry.field} ${entry.asked} became ${entry.answered}`)
+        .join("; ")}`,
+      {
+        endpoint: bookingManagerEndpoints.reservation,
+        providerCode: "RESERVATION_SUBSTITUTED",
+        payload: { id: response.id, released, substituted },
       },
     );
   }
@@ -405,6 +844,230 @@ export function createBookingManagerBookingService(
 /* ------------------------------------------------------------------ internals */
 
 /**
+ * The option a confirm was for is no longer there to confirm: it lapsed (`3`), or it was
+ * cancelled (`5`), by us or by the operator. Nothing says the week was sold to anyone else.
+ * Any other state is a record we do not understand, refused as a contract failure.
+ */
+function optionGone(id: string, record: RestReservation, endpoint: string): ProviderError {
+  const status = record.status ?? null;
+  const name = BM_RESERVATION_STATUS_NAMES.get(status ?? -1) ?? "unknown";
+  if (
+    status === BM_RESERVATION_STATUS.OPTION_EXPIRED ||
+    status === BM_RESERVATION_STATUS.CANCELLED
+  ) {
+    return new SlotUnavailableError(
+      `Booking Manager option ${id} is ${name} and can no longer be confirmed`,
+      { endpoint, providerCode: OPTION_LAPSED, payload: { id, status } },
+    );
+  }
+  return new ContractError(
+    `Booking Manager reservation ${id} is in status ${JSON.stringify(status)} (${name}), not an option to confirm`,
+    { endpoint, providerCode: "NOT_AN_OPTION", payload: { id, status } },
+  );
+}
+
+/** An option of ours found on a slot; `charterId` is absent where the vendor named no twin. */
+interface OwnOption {
+  charterId?: string;
+  agencyId: string;
+  record: RestReservation;
+}
+
+/** An option of ours found on a slot, and the hold that is asking about it. */
+export interface FoundOwnOption {
+  reservationIds: readonly string[];
+  listingId: string;
+  checkIn: string;
+  checkOut: string;
+  /** The quote being held, whose own booking is the one asking and never counts. */
+  quoteId: string;
+}
+
+/**
+ * The booking of ours that holds, or may hold, the option found on a slot.
+ *
+ * A live booking carrying any of the option's ids holds it. So may another booking still in
+ * OPTION_PENDING on the same listing and dates: its POST can have landed at the vendor while
+ * its answer, and with it the ids, is still on the way, and nothing stops two customers
+ * checking out the same week at once. Releasing that option would hand the first customer a
+ * reservation already deleted, so while such a booking exists the option counts as its.
+ */
+export async function liveBookingHolding(
+  db: Database,
+  found: FoundOwnOption,
+): Promise<string | undefined> {
+  const ids = [...found.reservationIds];
+  const byId =
+    ids.length > 0
+      ? or(
+          inArray(booking.providerReservationId, ids),
+          inArray(booking.providerOptionId, ids),
+          inArray(booking.providerAgencyReservationId, ids),
+        )
+      : undefined;
+  const inFlight = and(
+    eq(booking.status, "OPTION_PENDING"),
+    eq(booking.listingId, found.listingId),
+    ne(booking.quoteId, found.quoteId),
+    eq(quote.checkIn, found.checkIn),
+    eq(quote.checkOut, found.checkOut),
+  );
+  const [row] = await db
+    .select({ id: booking.id })
+    .from(booking)
+    .innerJoin(quote, eq(quote.id, booking.quoteId))
+    .where(
+      and(
+        eq(booking.provider, PROVIDER),
+        inArray(booking.status, [...SLOT_HOLDING_STATUSES]),
+        byId ? or(byId, inFlight) : inFlight,
+      ),
+    )
+    .limit(1);
+  return row?.id;
+}
+
+/** `clientName` is all the vendor keeps of the customer, so it is what tells two holds apart. */
+function sameClientName(held: string | null | undefined, ours: string): boolean {
+  const normal = (name: string) => name.trim().replace(/\s+/g, " ").toLowerCase();
+  return held != null && normal(held) === normal(ours);
+}
+
+/**
+ * A POST refusal restated in the taxonomy the booking chain reads.
+ *
+ * "Price not defined" answers a product the vendor does not price for the charter, and the
+ * product is ours, from the last catalogue sync, so with one named it is a refusal of our terms
+ * rather than of the week. "Own option exists" is our own hold on the slot, which no one else
+ * has bought.
+ */
+function refusalInOurTerms(
+  cause: SlotUnavailableError,
+  terms: ReservationTerms,
+): SlotUnavailableError {
+  const restated = (providerCode: string) =>
+    new SlotUnavailableError(cause.message, {
+      endpoint: cause.endpoint,
+      providerCode,
+      payload: { refusal: cause.providerCode },
+      cause,
+    });
+  if (cause.providerCode === BM_RESERVATION_REFUSAL.OWN_OPTION_EXISTS) {
+    return restated(OWN_OPTION_HELD);
+  }
+  if (cause.providerCode === BM_RESERVATION_REFUSAL.PRICE_NOT_DEFINED && terms.productName) {
+    return restated(PRODUCT_NOT_OFFERED);
+  }
+  return cause;
+}
+
+/** The day of a vendor timestamp, or the text as sent where it is not one, which then differs. */
+function calendarDateOf(value: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  try {
+    return parseBookingManagerDate(value);
+  } catch {
+    return value;
+  }
+}
+
+export interface Substitution {
+  field:
+    | "yachtId"
+    | "dateFrom"
+    | "dateTo"
+    | "baseFromId"
+    | "baseToId"
+    | "productName"
+    | "currency"
+    | "clientPrice";
+  asked: string;
+  answered: string;
+}
+
+/**
+ * Every term the reservation came back with that is not the one asked for. A term the answer
+ * leaves out is not a substitution: the check is on what the vendor says it made.
+ */
+export function substitutionsIn(
+  response: RestReservation,
+  terms: ReservationTerms,
+  clientPrice: Money | undefined,
+): Substitution[] {
+  const found: Substitution[] = [];
+  const differs = (
+    field: Substitution["field"],
+    asked: string | undefined,
+    answered: string | null | undefined,
+    same: (left: string, right: string) => boolean = (left, right) => left === right,
+  ) => {
+    if (asked === undefined || answered == null) return;
+    if (!same(asked, answered)) found.push({ field, asked, answered });
+  };
+  const sameText = (left: string, right: string) =>
+    left.trim().toUpperCase() === right.trim().toUpperCase();
+
+  differs("yachtId", terms.yachtId, response.yachtId);
+  differs("dateFrom", terms.checkIn, calendarDateOf(response.dateFrom));
+  differs("dateTo", terms.checkOut, calendarDateOf(response.dateTo));
+  differs("baseFromId", terms.startBaseId, response.baseFromId);
+  differs("baseToId", terms.endBaseId, response.baseToId);
+  differs("productName", terms.productName, response.productName, isSameBookingManagerProduct);
+  differs("currency", terms.currency, response.currency, sameText);
+
+  /* The price is only comparable in the money it was quoted in; a currency swap is reported above. */
+  const currency = response.currency?.trim();
+  if (
+    clientPrice !== undefined &&
+    response.clientPrice != null &&
+    currency !== undefined &&
+    sameText(currency, clientPrice.currency)
+  ) {
+    const answeredMinor = numberToMinor(response.clientPrice, currency, "clientPrice");
+    if (Math.abs(answeredMinor - clientPrice.amountMinor) > 1) {
+      found.push({
+        field: "clientPrice",
+        asked: String(clientPrice.amountMinor),
+        answered: String(answeredMinor),
+      });
+    }
+  }
+  return found;
+}
+
+/**
+ * What we owe the operator, off the charter-side record, which alone carries it: `finalPrice` is
+ * the charter net of our commission there, and `agencyPaymentPlan` its instalments. The agency
+ * twin has no `agencyPaymentPlan` and a `finalPrice` equal to the client's, so nothing is read
+ * from a record without the plan. `bankDetails` is left behind on purpose: operator bank
+ * accounts are not kept anywhere in our data (see `withoutOperatorFinancials`).
+ */
+export function operatorSettlementOf(response: RestReservation): OperatorSettlement | undefined {
+  const currency = response.currency?.trim().toUpperCase();
+  if (!currency || !Array.isArray(response.agencyPaymentPlan)) return undefined;
+
+  const plan = response.agencyPaymentPlan.flatMap((entry) =>
+    entry.amount == null || !entry.date
+      ? []
+      : [
+          {
+            dueDate: parseBookingManagerDate(entry.date),
+            amountMinor: numberToMinor(entry.amount, currency, "agencyPaymentPlan[].amount"),
+          },
+        ],
+  );
+  const terms = response.termsOfPayment?.trim();
+  return {
+    currency,
+    ...(response.finalPrice == null
+      ? null
+      : { netMinor: numberToMinor(response.finalPrice, currency, "finalPrice") }),
+    plan,
+    ...(terms ? { terms } : null),
+  };
+}
+
+/**
  * The vendor takes a single `clientName`, checkout collects a given name and an
  * optional family name.
  */
@@ -415,10 +1078,12 @@ function fullName(customer: BookingDraft["customer"]): string {
 }
 
 /**
- * `3` (OPTION_IN_EXPIRATION) is still a live hold, so it maps to the same
- * canonical state as `2`. An absent or unknown status is refused rather than
- * assumed: reading a confirmed reservation as a hold would let the sweeper
- * release a sold charter.
+ * An absent or unknown status is refused rather than assumed: reading a confirmed
+ * reservation as a hold would let the sweeper release a sold charter.
+ *
+ * `3` (OPTION_EXPIRED) is a hold that is over, so it reads as closed beside `5`,
+ * although the vendor goes on blocking the week until the record is deleted; see
+ * `cancelOption`.
  *
  * `5` (CANCELLED) is undocumented and is what every successful DELETE answers
  * with - the vendor transitions the record instead of removing it. Throwing on it
@@ -432,8 +1097,8 @@ function toCanonicalStatus(
     case BM_RESERVATION_STATUS.RESERVATION:
       return "confirmed";
     case BM_RESERVATION_STATUS.OPTION:
-    case BM_RESERVATION_STATUS.OPTION_IN_EXPIRATION:
       return "option_held";
+    case BM_RESERVATION_STATUS.OPTION_EXPIRED:
     case BM_RESERVATION_STATUS.CANCELLED:
       return "cancelled";
     default:

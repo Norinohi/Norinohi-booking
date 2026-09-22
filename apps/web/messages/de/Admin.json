@@ -1118,6 +1118,8 @@
     "guestAccount": "Gastkonto",
     "guests": "{count, plural, one {# Gast} other {# Gäste}}",
     "noReservationId": "Noch keine Reservierungs-ID",
+    "agencyReservationId": "Agentur-ID {id}",
+    "operatorDue": "{amount} bis {date}",
     "outstanding": "{amount} ausstehend",
     "dueAtCheckIn": "{amount} fällig in der Marina",
     "createdAt": "Erstellt {at}",
@@ -1132,7 +1134,8 @@
       "total": "Gesamt",
       "collected": "Eingegangen",
       "timeline": "Verlauf",
-      "commission": "Provision"
+      "commission": "Provision",
+      "operatorSettlement": "An den Vercharterer zu zahlen"
     },
     "invoice": {
       "title": "Rechnungsanforderung",

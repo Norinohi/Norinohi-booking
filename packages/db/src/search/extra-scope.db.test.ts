@@ -1,0 +1,184 @@
+import { eq } from "drizzle-orm";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { listingOffer, providerExtraCatalogue } from "../schema";
+import { createTestDatabase, type TestDatabase } from "../test-support/database";
+import {
+  isoDay,
+  saturdayAhead,
+  seedListing,
+  seedSearchWorld,
+  shiftIso,
+} from "../test-support/search-fixture";
+import { listRequestableExtraPrices } from "./extras";
+import { getListingDetailByIdOrSlug } from "./listing-detail";
+import { rebuildListingSearchDocs } from "./read-model";
+import { searchListings } from "./repository";
+import type { ListingSearchInput } from "./types";
+
+/*
+ * Booking Manager fees restricted to routes and bases, each filed under the hull's home base
+ * `HOME`, the way the projection files them. `OTHER` is another base of the same fleet.
+ *
+ *   routed    a return-only APA the card must count, a one-way fee it must not, a charter pack
+ *             for a return from another base, a fee sold only at another base, and an optional
+ *             pack bundling the APA
+ *   skippered an obligatory skipper for a return from home: a skippered charter
+ *   elsewhere an obligatory skipper for a return from another base: still bareboat
+ *   licence-free, licence-unsaid  bareboat hulls whose vendor does and does not waive the licence
+ */
+
+const HOME = "194";
+const OTHER = "1055942990000100000";
+const FROM = isoDay(saturdayAhead());
+const WEEKLY_RATE = 400_000;
+
+const search: ListingSearchInput = { sailingArea: ["Split"], locale: "en" };
+
+let test: TestDatabase;
+
+const fee = (
+  listingId: string,
+  listingOfferId: string,
+  externalId: string,
+  fields: Partial<typeof providerExtraCatalogue.$inferInsert>,
+) => ({
+  listingId,
+  listingOfferId,
+  source: "booking_manager",
+  kind: "service" as const,
+  externalId,
+  name: externalId,
+  obligatory: true,
+  priceMinor: 0,
+  priceCurrency: "EUR",
+  priceMeasure: "per_booking",
+  externalBaseId: HOME,
+  ...fields,
+});
+
+beforeAll(async () => {
+  test = await createTestDatabase();
+  const { db } = test;
+  await seedSearchWorld(db);
+
+  const free = { from: FROM, to: shiftIso(FROM, 28) };
+  const rules = [{ checkinWeekday: 6, checkoutWeekday: 6, minNights: 7 }];
+  const routed = await seedListing(db, "routed", {
+    providerId: "prov_bm",
+    free,
+    rules,
+    weeklyRateMinor: WEEKLY_RATE,
+  });
+  const skippered = await seedListing(db, "skippered", { providerId: "prov_bm", free, rules });
+  const elsewhere = await seedListing(db, "elsewhere", { providerId: "prov_bm", free, rules });
+  const licenceFree = await seedListing(db, "licence-free", { providerId: "prov_bm", free, rules });
+  await seedListing(db, "licence-unsaid", { providerId: "prov_bm", free, rules });
+  await db
+    .update(listingOffer)
+    .set({ skipperLicenceRequired: false })
+    .where(eq(listingOffer.id, licenceFree.offerId));
+
+  await db.insert(providerExtraCatalogue).values([
+    fee(routed.listingId, routed.offerId, "APA", {
+      priceMinor: 20_000,
+      validRoutes: [`${HOME}>${HOME}`, `${OTHER}>${OTHER}`],
+    }),
+    fee(routed.listingId, routed.offerId, "One Way Fee", {
+      priceMinor: 30_000,
+      oneWayOnly: true,
+      validRoutes: [`${HOME}>${OTHER}`],
+    }),
+    fee(routed.listingId, routed.offerId, "Charter pack Tenerife", {
+      priceMinor: 50_000,
+      validRoutes: [`${OTHER}>${OTHER}`],
+    }),
+    fee(routed.listingId, routed.offerId, "Sold at the other base", {
+      priceMinor: 40_000,
+      validForBaseIds: [OTHER],
+    }),
+    fee(routed.listingId, routed.offerId, "Charter Pack", {
+      obligatory: false,
+      priceMinor: 25_000,
+      includedExternalIds: ["Bed linen", "APA"],
+    }),
+    fee(skippered.listingId, skippered.offerId, "Skipper", {
+      crewRole: "skipper",
+      priceMinor: 150_000,
+      priceMeasure: "per_week",
+      validRoutes: [`${HOME}>${HOME}`],
+    }),
+    fee(elsewhere.listingId, elsewhere.offerId, "Skipper", {
+      crewRole: "skipper",
+      priceMinor: 150_000,
+      priceMeasure: "per_week",
+      validRoutes: [`${OTHER}>${OTHER}`],
+    }),
+  ]);
+
+  await rebuildListingSearchDocs(db);
+}, 120_000);
+
+afterAll(async () => {
+  await test?.drop();
+});
+
+const bySlug = async () => {
+  const { items } = await searchListings(test.db, search);
+  return new Map(items.map((item) => [item.slug, item]));
+};
+
+describe("route and base conditions on a fee", () => {
+  it("counts a fee restricted to a return from home on the card, and nothing charged elsewhere", async () => {
+    const routed = (await bySlug()).get("routed");
+
+    expect(routed?.priceFromMinor).toBe(WEEKLY_RATE + 20_000);
+  });
+
+  it("makes a hull skippered only where the skipper is billed on a return from home", async () => {
+    const cards = await bySlug();
+
+    expect(cards.get("skippered")?.crewType).toBe("skipper");
+    expect(cards.get("elsewhere")?.crewType).toBe("bareboat");
+  });
+
+  it("lists the fees a charter from home can be asked for, one-way ones labelled", async () => {
+    const detail = await getListingDetailByIdOrSlug(test.db, "routed");
+
+    expect(
+      detail?.mandatoryExtras.map((item) => ({ label: item.label, oneWayOnly: item.oneWayOnly })),
+    ).toEqual([
+      { label: "APA", oneWayOnly: false },
+      { label: "One Way Fee", oneWayOnly: true },
+    ]);
+  });
+});
+
+describe("a pack that bundles other extras", () => {
+  it("names what it bundles, in the codes a quote line carries", async () => {
+    const prices = await listRequestableExtraPrices(test.db, "lst_routed", "off_routed");
+
+    expect(prices.get("service:Charter Pack")?.bundles).toEqual([
+      "service:Bed linen",
+      "service:APA",
+    ]);
+  });
+});
+
+describe("the sailing licence the page asks for", () => {
+  const licenceOf = async (slug: string) =>
+    (await getListingDetailByIdOrSlug(test.db, slug))?.importantInformation.sailingLicenseRequired;
+
+  it("asks for one on a bareboat the vendor says nothing about", async () => {
+    expect(await licenceOf("licence-unsaid")).toBe("required");
+  });
+
+  it("does not on a bareboat the vendor states can be taken without one", async () => {
+    expect(await licenceOf("licence-free")).toBe("not_required");
+  });
+
+  it("does not where the skipper is billed on every charter", async () => {
+    expect(await licenceOf("skippered")).toBe("not_required");
+    expect(await licenceOf("elsewhere")).toBe("required");
+  });
+});

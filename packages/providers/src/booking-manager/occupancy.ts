@@ -1,3 +1,5 @@
+import { log } from "evlog";
+
 import { ContractError } from "../shared/errors";
 import { stableSourceHash } from "../shared/raw-retention";
 import {
@@ -51,14 +53,14 @@ import {
  * Every documented state occupies the boat. `SERVICE` is the vendor's maintenance
  * or delivery block, so it is `blocked` and never a sale; the NauSYS import had to
  * make exactly this distinction (0d9a822) after treating one as inventory sold.
- * `OPTION_IN_EXPIRATION` stays an option: it is still holding the week, and the
- * difference from `OPTION` is how close its deadline is, which the slot keeps in
- * `option_expires_at` anyway.
+ * `OPTION_EXPIRED` is `blocked` rather than an option: its deadline has passed, yet the
+ * vendor keeps the week out of `/offers` until someone deletes it, so there is no
+ * expiry left to show and no reason to expect the week back on its own.
  */
 const OCCUPANCY_STATUS = new Map<number, OccupiedInterval["status"]>([
   [BM_RESERVATION_STATUS.RESERVATION, "occupied"],
   [BM_RESERVATION_STATUS.OPTION, "option"],
-  [BM_RESERVATION_STATUS.OPTION_IN_EXPIRATION, "option"],
+  [BM_RESERVATION_STATUS.OPTION_EXPIRED, "blocked"],
   [BM_RESERVATION_STATUS.SERVICE, "blocked"],
   // Named unavailable by the vendor on 2026-08-25. They would land on
   // UNKNOWN_STATUS anyway; listing them means a reader can tell a deliberate
@@ -89,7 +91,8 @@ const OCCUPANCY_STATUS = new Map<number, OccupiedInterval["status"]>([
  * unfiltered account, `/availability` emits only `1`, `2`, `3`, `4` and `11` -
  * 241,273 rows for 2026 and 17,671 for 2027, with no `5`, `7` or `8` in either.
  * The feed lists taken periods, and those three describe a free boat, so they are
- * simply never in it. Nothing is being over-blocked.
+ * simply never in it. Nothing is being over-blocked. One that arrives all the same
+ * is counted and reported, so a new state is seen before anyone has to guess at it.
  *
  * If one ever does appear, do not unblock it on the vendor's word alone. `3` is
  * documented as available and measurably holds the boat: five status-3 periods
@@ -97,6 +100,18 @@ const OCCUPANCY_STATUS = new Map<number, OccupiedInterval["status"]>([
  * an adjacent free week and refused for its status-3 one.
  */
 const UNKNOWN_STATUS: OccupiedInterval["status"] = "blocked";
+
+/**
+ * `5` is the one exception, and on measurement rather than on the legend: it is what a DELETE
+ * leaves behind, and the week it held is sold again at once. On company 225, 2026-09-22, a
+ * deleted option answered `5` on both twins while `/offers` offered the same yacht and week at
+ * status 0. The spec says `/availability` lists cancelled reservations; on 225 the row simply
+ * vanished instead. Either way a cancelled row holds nothing, and reading it as blocked would
+ * take a free week off sale for as long as the vendor kept listing it.
+ */
+export function holdsTheBoat(status: number | null | undefined): boolean {
+  return status !== BM_RESERVATION_STATUS.CANCELLED;
+}
 
 const DAY_MS = 86_400_000;
 
@@ -164,12 +179,12 @@ export function mapBookingManagerAvailability(
   // is not malformed, so it must not fail the scope. The writer's intervals are
   // half-open, where startDate === endDate would overlap nothing and quietly
   // advertise the day as free, so it is widened to the one day it describes.
-  // Q-BM-DATETO, and the evidence now leans our way: the SOAP manual
-  // (availability_service_description v1.26, 1.4 getBookingSheet) documents the
-  // same field on the same data as "dateto - date of the checkout", which is the
-  // exclusive reading assumed here. Not a REST statement and not conclusive, so
-  // the question stays open - if it were the inclusive last day, every interval
-  // would be a night short.
+  // `dateTo` is the check-out day, exclusive (Q-BM-DATETO, closed by measurement on
+  // company 225, 2026-09-22): Queen II's row 26.12-31.12.2026 leaves 31 December
+  // free in `/shortAvailability` format 3, and its row 27.12.2025-03.01.2026 leaves
+  // the 3rd free. The SOAP manual says the same ("dateto - date of the checkout").
+  // A row across the year arrives with its full dates in each year's dump, and the
+  // writer clips it to the windows it fetched.
   const endDate = rawEndDate === startDate ? addOneDay(startDate) : rawEndDate;
 
   const status = row.status ?? null;
@@ -199,6 +214,9 @@ export function mapBookingManagerAvailability(
     }),
   };
   if (optionExpiresAt !== null) interval.optionExpiresAt = optionExpiresAt;
+  // Where the boat is when the charter ends, which is where the next week sells from.
+  if (row.baseFromId != null) interval.startBaseId = row.baseFromId;
+  if (row.baseToId != null) interval.endBaseId = row.baseToId;
   return interval;
 }
 
@@ -223,8 +241,15 @@ export function mapBookingManagerOccupancyDump(
   const intervals: OccupiedInterval[] = [];
   const quarantinedYachtIds = new Set<string>();
   const issues: string[] = [];
+  const unknownStatuses = new Map<string, number>();
 
   for (const row of rows) {
+    if (!holdsTheBoat(row.status)) continue;
+    const status = row.status ?? null;
+    if (status === null || !OCCUPANCY_STATUS.has(status)) {
+      const key = status === null ? "none" : String(status);
+      unknownStatuses.set(key, (unknownStatuses.get(key) ?? 0) + 1);
+    }
     try {
       intervals.push(mapBookingManagerAvailability(row, config));
     } catch (error) {
@@ -244,6 +269,15 @@ export function mapBookingManagerOccupancyDump(
     quarantinedYachtIds.size === 0
       ? intervals
       : intervals.filter((interval) => !quarantinedYachtIds.has(interval.externalYachtId));
+
+  if (unknownStatuses.size > 0) {
+    log.warn({
+      action: "booking_manager.availability.unknown_status",
+      reason: "read as blocked",
+      count: [...unknownStatuses.values()].reduce((sum, count) => sum + count, 0),
+      statuses: [...unknownStatuses].map(([status, count]) => `${status}:${count}`).join(", "),
+    });
+  }
 
   const dump: OccupancyDump = { intervals: kept };
   if (quarantinedYachtIds.size > 0) {

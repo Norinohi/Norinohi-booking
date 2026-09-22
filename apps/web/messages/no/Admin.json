@@ -1118,6 +1118,8 @@
     "guestAccount": "Gjestekonto",
     "guests": "{count, plural, one {# gjest} other {# gjester}}",
     "noReservationId": "Ingen reservasjons-ID ennå",
+    "agencyReservationId": "Byrå-ID {id}",
+    "operatorDue": "{amount} innen {date}",
     "outstanding": "{amount} utestående",
     "dueAtCheckIn": "{amount} betales i marinaen",
     "createdAt": "Opprettet {at}",
@@ -1132,7 +1134,8 @@
       "total": "Totalt",
       "collected": "Innkrevd",
       "timeline": "Tidslinje",
-      "commission": "Provisjon"
+      "commission": "Provisjon",
+      "operatorSettlement": "Skyldig operatøren"
     },
     "invoice": {
       "title": "Fakturaforespørsel",

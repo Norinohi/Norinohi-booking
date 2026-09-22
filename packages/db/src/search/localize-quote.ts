@@ -11,7 +11,28 @@ import { normalizedKey } from "./normalize";
  * Structural rather than the `QuoteLine` row type, because the same lines pass through here in
  * two shapes: the provider's, before a quote is persisted, and the database's, after.
  */
-export type LocalizableQuoteLine = { code: string; label: string; kind: string };
+export type LocalizableQuoteLine = {
+  code: string;
+  label: string;
+  kind: string;
+  detail?: string | null;
+};
+
+/**
+ * `service:100511@66279570` → `service:100511`. The catalogue and both dictionaries know the
+ * extra, not the vendor's row for one of its variants. Mirrors `baseExtraCode` in
+ * `@yacht-charter/providers/shared/extra-code`, which this package cannot import.
+ */
+function baseCode(code: string): string {
+  const at = code.indexOf("@");
+  return at === -1 ? code : code.slice(0, at);
+}
+
+/** The extra's own name, from a label a variant line ends with its detail. */
+function nameOf(line: LocalizableQuoteLine): string {
+  const suffix = line.detail ? ` (${line.detail})` : "";
+  return suffix && line.label.endsWith(suffix) ? line.label.slice(0, -suffix.length) : line.label;
+}
 
 /**
  * A priced quote's line labels in the reader's language.
@@ -24,8 +45,9 @@ export type LocalizableQuoteLine = { code: string; label: string; kind: string }
  *
  * The same two dictionaries the catalogue page reads, in the same order of authority: the
  * provider's own wording for this exact extra, then the curated label for a fee written that
- * way by anyone, then what the provider called it. Lines that are not extras - the charter
- * itself, discounts, credit - carry no vendor name and are left alone.
+ * way by anyone, then what the provider called it. A NauSYS discount is named from the
+ * vendor's own multilingual discountItems dump. The other lines - the charter itself, our
+ * promos, credit - carry no vendor name and are left alone.
  */
 export async function localizeQuoteLines<T extends LocalizableQuoteLine>(
   db: NodePgDatabase<typeof schema>,
@@ -35,25 +57,72 @@ export async function localizeQuoteLines<T extends LocalizableQuoteLine>(
 ): Promise<T[]> {
   if (lines.length === 0 || !locale || locale === DEFAULT_LOCALE) return lines;
 
+  const discounts = await discountNames(db, lines, locale);
   const extras = lines.filter((line) => line.kind === "extra" || line.kind === "fee");
-  if (extras.length === 0) return lines;
+  if (extras.length === 0) {
+    return discounts.size === 0 ? lines : lines.map((line) => withDiscountName(line, discounts));
+  }
 
   const byId = await labelsByExtraCode(
     db,
     listingId,
-    extras.map((line) => line.code),
+    [...new Set(extras.map((line) => baseCode(line.code)))],
     locale,
   );
-  const byName = await labelsByName(
-    db,
-    extras.map((line) => line.label),
-    locale,
-  );
+  const byName = await labelsByName(db, extras.map(nameOf), locale);
 
   return lines.map((line) => {
-    const translated = byId.get(line.code) ?? byName.get(normalizedName(line.label));
-    return translated === undefined ? line : { ...line, label: translated };
+    if (line.kind !== "extra" && line.kind !== "fee") return withDiscountName(line, discounts);
+    const translated = byId.get(baseCode(line.code)) ?? byName.get(normalizedName(nameOf(line)));
+    if (translated === undefined) return line;
+    /* The variant is the operator's own words and has no translation; it goes back on as is. */
+    return { ...line, label: line.detail ? `${translated} (${line.detail})` : translated };
   });
+}
+
+const NAUSYS_DISCOUNT_PREFIX = "nausys-discount-";
+
+/** Where NauSYS spells a language's key other than by its code. */
+const NAUSYS_TEXT_KEY = new Map([
+  ["sv", "SE"],
+  ["uk", "UA"],
+  ["da", "DK"],
+]);
+
+/**
+ * NauSYS's own names for the discounts on these lines, in `locale`, from the synced
+ * discountItems dump, which names each in eighteen languages. A locale it does not carry keeps
+ * the English the quote was stored with.
+ */
+async function discountNames(
+  db: NodePgDatabase<typeof schema>,
+  lines: readonly LocalizableQuoteLine[],
+  locale: string,
+): Promise<Map<string, string>> {
+  const ids = lines
+    .filter((line) => line.kind === "discount" && line.code.startsWith(NAUSYS_DISCOUNT_PREFIX))
+    .map((line) => line.code.slice(NAUSYS_DISCOUNT_PREFIX.length));
+  if (ids.length === 0) return new Map();
+
+  const key = `text${NAUSYS_TEXT_KEY.get(locale) ?? locale.toUpperCase()}`;
+  const rows = await db.execute<{ id: string; name: string | null }>(sql`
+    select record.external_id as id, payload.payload->'name'->>${key} as name
+    from provider_record record
+    join provider on provider.id = record.provider_id and provider.code = 'nausys'
+    join provider_raw_payload payload on payload.id = record.raw_payload_id
+    where record.resource_type = 'discount_item'
+      and record.external_id in ${sql`(${sql.join(
+        ids.map((id) => sql`${id}`),
+        sql`, `,
+      )})`}
+  `);
+  return new Map(rows.rows.flatMap((row) => (row.name ? [[row.id, row.name] as const] : [])));
+}
+
+function withDiscountName<T extends LocalizableQuoteLine>(line: T, names: Map<string, string>): T {
+  if (line.kind !== "discount" || !line.code.startsWith(NAUSYS_DISCOUNT_PREFIX)) return line;
+  const name = names.get(line.code.slice(NAUSYS_DISCOUNT_PREFIX.length));
+  return name === undefined ? line : { ...line, label: name };
 }
 
 /**

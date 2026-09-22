@@ -12,7 +12,7 @@ import {
   runAvailabilitySync,
 } from "./availability-writer";
 import { readSyncCursor } from "./cursor";
-import { SyncAlreadyRunningError } from "./run";
+import { type LockWait, openWhenFree } from "./run";
 
 /**
  * Its own cursor row beside the half-hourly sweep's `occupancy:hot`, under the same kind.
@@ -30,33 +30,6 @@ export function readPriceWeeksCursor(db: Database, providerId: string) {
     kind: "availability",
     scope: PRICE_WEEKS_CURSOR_SCOPE,
   });
-}
-
-export interface LockWait {
-  /** Epoch ms after which a lock still held is reported rather than waited for. */
-  until: number;
-  pollMs: number;
-  now: () => number;
-  sleep: (ms: number) => Promise<void>;
-}
-
-/**
- * Opens the run once the availability lock is free, or throws `SyncAlreadyRunningError`.
- *
- * The half-hourly sweep holds the lock for five to ten minutes of every half hour, so a nightly
- * run that gave up on the first refusal would lose its night to whichever container started a
- * second sooner. Waiting costs budget, which is counted from the process start either way.
- */
-export async function openWhenFree(open: () => Promise<string>, wait: LockWait): Promise<string> {
-  for (;;) {
-    try {
-      return await open();
-    } catch (error) {
-      if (!(error instanceof SyncAlreadyRunningError)) throw error;
-      if (wait.now() + wait.pollMs > wait.until) throw error;
-      await wait.sleep(wait.pollMs);
-    }
-  }
 }
 
 export function openPriceWeeksRun(db: Database, providerId: string, wait: LockWait) {

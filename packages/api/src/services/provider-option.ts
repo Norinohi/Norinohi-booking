@@ -168,8 +168,15 @@ export async function retryReleaseForBooking(
    * could only ever fail, log an auth-class error, and leave the row on the list for good.
    * Recorded as released instead, which is what takes it off the list: the week is back on
    * sale upstream because the vendor's own deadline passed, not because we freed it.
+   *
+   * Not where the lapse frees nothing: Booking Manager keeps an expired option blocking its
+   * week until it is deleted, so there the release is still worth asking for.
    */
-  if (row.holdExpiresAt !== null && row.holdExpiresAt.getTime() <= Date.now()) {
+  if (
+    row.holdExpiresAt !== null &&
+    row.holdExpiresAt.getTime() <= Date.now() &&
+    !provider.capabilities().lapsedOptionHoldsSlot
+  ) {
     await recordEvent(
       db,
       row.id,

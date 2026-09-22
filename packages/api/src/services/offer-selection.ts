@@ -17,7 +17,11 @@ import { listingRefusedPeriod } from "@yacht-charter/db/schema/availability";
 import { providerCommission } from "@yacht-charter/db/schema/commission";
 import { quoteOfferAttempt } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider, ProviderQuote, QuoteRequest } from "@yacht-charter/providers";
-import { NotFoundError, SlotUnavailableError } from "@yacht-charter/providers/shared/errors";
+import {
+  NotFoundError,
+  refusesOnlyTheTerms,
+  SlotUnavailableError,
+} from "@yacht-charter/providers/shared/errors";
 import { and, eq, sql } from "drizzle-orm";
 
 import { env } from "@yacht-charter/env/server";
@@ -399,16 +403,26 @@ async function askOffer(
      * only honest thing to do with it is narrow it where it was caught.
      */
     const shared = { offerId: offer.offerId, providerCode: offer.providerCode };
+    /*
+     * A vendor refusing only the terms we asked on still sells the week, so it is not recorded as
+     * a refusal of it: that would take the week off the card for every visitor.
+     */
     const failure: OfferQuoteResult =
-      error instanceof SlotUnavailableError || error instanceof NotFoundError
-        ? { ...shared, outcome: "unavailable", reason: error.name }
-        : error instanceof TimeoutError
-          ? { ...shared, outcome: "timeout", reason: "timeout" }
-          : {
-              ...shared,
-              outcome: "error",
-              reason: error instanceof Error ? error.message.slice(0, 200) : "unknown",
-            };
+      error instanceof SlotUnavailableError && refusesOnlyTheTerms(error)
+        ? {
+            ...shared,
+            outcome: "error",
+            reason: `${error.name}: ${error.providerCode ?? "terms refused"}`,
+          }
+        : error instanceof SlotUnavailableError || error instanceof NotFoundError
+          ? { ...shared, outcome: "unavailable", reason: error.name }
+          : error instanceof TimeoutError
+            ? { ...shared, outcome: "timeout", reason: "timeout" }
+            : {
+                ...shared,
+                outcome: "error",
+                reason: error instanceof Error ? error.message.slice(0, 200) : "unknown",
+              };
 
     return { provider, priced: null, attempt: { ...failure, latencyMs: Date.now() - started } };
   }

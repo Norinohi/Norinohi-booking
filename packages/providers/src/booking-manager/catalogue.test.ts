@@ -1,10 +1,15 @@
-import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+
+import { log } from "evlog";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { z } from "zod";
 
 vi.hoisted(() => {
   process.env.SKIP_ENV_VALIDATION = "1";
 });
 
+import { AuthError, TransientError } from "../shared/errors";
+import { parseExactJson } from "../shared/exact-json";
 import type { QueryValue } from "../shared/http-client";
 import type { CatalogueSyncEvent } from "../sync/runner";
 import type { BookingManagerClient } from "./client";
@@ -214,5 +219,146 @@ describe("syncBookingManagerCatalogue yacht sweep", () => {
     );
 
     expect(asked).toEqual(["4", "5"]);
+  });
+});
+
+/*
+ * An operator's `/yachts` answering 200 with `[]` used to be read as "every boat withdrawn", and
+ * the scope sweep deactivated the fleet on the strength of that one answer.
+ */
+describe("an empty fleet answer", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const sweptCompanies = (events: CatalogueSyncEvent[]) =>
+    events
+      .filter((event) => event.type === "scope-complete" && event.resourceType === "yacht")
+      .map((event) => (event.type === "scope-complete" ? event.scopeKey : null));
+
+  it("leaves unswept, and says so, a company whose boats we hold", async () => {
+    const warn = vi.spyOn(log, "warn").mockImplementation(() => undefined);
+    const client = fakeClient(["225", "331"], (companyId) =>
+      Promise.resolve(companyId === "225" ? [] : [{ id: "y331" }]),
+    );
+
+    const events = await collect(
+      syncBookingManagerCatalogue(client, {
+        listImportedCompanyIds: () => Promise.resolve(["225", "331"]),
+      }),
+    );
+
+    expect(sweptCompanies(events)).toEqual(["331"]);
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "booking_manager.catalogue.empty_fleet_kept",
+        companyId: "225",
+      }),
+    );
+  });
+
+  it("still completes a company that never had a fleet", async () => {
+    const warn = vi.spyOn(log, "warn").mockImplementation(() => undefined);
+    const client = fakeClient(["225", "900"], (companyId) =>
+      Promise.resolve(companyId === "225" ? [{ id: "y225" }] : []),
+    );
+
+    const events = await collect(
+      syncBookingManagerCatalogue(client, {
+        listImportedCompanyIds: () => Promise.resolve(["225"]),
+      }),
+    );
+
+    expect(sweptCompanies(events)).toEqual(["225", "900"]);
+    expect(warn).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action: "booking_manager.catalogue.empty_fleet_kept" }),
+    );
+  });
+
+  it("asks which companies hold boats once, however many answer empty", async () => {
+    vi.spyOn(log, "warn").mockImplementation(() => undefined);
+    const listImportedCompanyIds = vi.fn(() => Promise.resolve(["1", "2", "3"]));
+    const client = fakeClient(["1", "2", "3"], () => Promise.resolve([]));
+
+    await collect(syncBookingManagerCatalogue(client, { listImportedCompanyIds }));
+
+    // Once for the empty answers and once more at the end, for retiring out-of-scope companies.
+    expect(listImportedCompanyIds).toHaveBeenCalledTimes(2);
+  });
+});
+
+/*
+ * `/equipment` translates into eight of the site's languages; the names ride on each English
+ * item as `translations`, and a language that fails leaves the others and the English standing.
+ */
+describe("equipment names in the site's languages", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const english = parseExactJson(
+    readFileSync(new URL("fixtures/equipment.json", import.meta.url), "utf8"),
+  );
+  const german = parseExactJson(
+    readFileSync(new URL("fixtures/equipment-de.json", import.meta.url), "utf8"),
+  );
+
+  it("asks for each language the vendor translates and files the names on the English item", async () => {
+    const warn = vi.spyOn(log, "warn").mockImplementation(() => undefined);
+    const languages: unknown[] = [];
+    const client = Object.assign(
+      fakeClient([], () => Promise.resolve([])),
+      {
+        get: (endpoint: string, _schema: z.ZodType<unknown>, query: CatalogueQuery = {}) => {
+          if (endpoint !== bookingManagerEndpoints.equipment) return Promise.resolve([]);
+          languages.push(query.language);
+          if (query.language === "fr") {
+            return Promise.reject(new TransientError("vendor 500", { endpoint }));
+          }
+          return Promise.resolve(query.language === "de" ? german : english);
+        },
+      },
+    );
+
+    const events = await collect(syncBookingManagerCatalogue(client, { skipWarmup: true }));
+    const equipment = events.flatMap((event) =>
+      event.type === "entity" && event.entity.resourceType === "equipment_category"
+        ? [event.entity]
+        : [],
+    );
+
+    expect(languages).toEqual([undefined, "de", "es", "fr", "it", "nl", "no", "pl", "sv"]);
+    expect(equipment).toHaveLength(52);
+    expect(equipment.find((item) => item.externalId === "4")?.payload).toMatchObject({
+      name: "Dinghy",
+      translations: { de: "Beiboot", es: "Dinghy" },
+    });
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "booking_manager.catalogue.equipment_language_failed",
+        language: "fr",
+      }),
+    );
+    expect(equipment.find((item) => item.externalId === "4")?.payload).not.toHaveProperty(
+      "translations.fr",
+    );
+  });
+
+  it("stops the run when a language fails on the credential", async () => {
+    vi.spyOn(log, "warn").mockImplementation(() => undefined);
+    const rejected = new AuthError("bad token");
+    const client = Object.assign(
+      fakeClient([], () => Promise.resolve([])),
+      {
+        get: (endpoint: string, _schema: z.ZodType<unknown>, query: CatalogueQuery = {}) => {
+          if (endpoint !== bookingManagerEndpoints.equipment) return Promise.resolve([]);
+          return query.language === "de" ? Promise.reject(rejected) : Promise.resolve(english);
+        },
+      },
+    );
+
+    await expect(collect(syncBookingManagerCatalogue(client, { skipWarmup: true }))).rejects.toBe(
+      rejected,
+    );
   });
 });

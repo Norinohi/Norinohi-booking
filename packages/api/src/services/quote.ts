@@ -15,6 +15,7 @@ import {
 import { booking } from "@yacht-charter/db/schema/booking";
 import { discount } from "@yacht-charter/db/schema/discount";
 import { crewTypeSchema, providerQuoteSchema } from "@yacht-charter/providers";
+import { baseExtraCode } from "@yacht-charter/providers/shared/extra-code";
 import { thrownFields } from "@yacht-charter/providers/shared/log-fields";
 import { log, parseError } from "evlog";
 import type {
@@ -25,6 +26,7 @@ import type {
 } from "@yacht-charter/providers";
 import {
   NotFoundError as ProviderNotFoundError,
+  refusesOnlyTheTerms,
   SlotUnavailableError,
 } from "@yacht-charter/providers/shared/errors";
 
@@ -40,12 +42,15 @@ import { and, asc, eq, gt, inArray, isNull, or } from "drizzle-orm";
 
 import { daysBetween } from "../lib/dates";
 import { classifyRefusal } from "../lib/refusal-report";
+import { netOfBundles } from "../lib/bundled-extras";
 import { requestedExtraAmountMinor } from "../lib/requested-extra-amount";
 import { saysSlotIsGone } from "../lib/provider-failure";
+import { repriceRoute } from "../lib/reprice-route";
 import { onlyVendorFailures } from "../lib/vendor-outage";
 
 import type { Database, DatabaseExecutor } from "../context";
 import { learnExtrasFromQuote } from "./learn-extras";
+import { providerByKey } from "./provider-routing";
 import { resolveDiscountForListing, type DiscountRejection } from "./discount-redemption";
 import { spendableCreditMinor, welcomeDiscountMinor } from "./loyalty";
 import {
@@ -72,6 +77,8 @@ export type PersistedQuote = ProviderQuote & {
   quoteId: string;
   /** Asked of the base rather than bought here; priced off the catalogue. See the quote schema. */
   requestedExtras: string[];
+  /** The codes this quote was asked to price, crew variant picks among them. */
+  extras: string[];
   /** The trip split across the party; null when the guest count is unusable. */
   perPerson: { amountMinor: number; currency: string } | null;
   /** Derived instalments, in the order the customer meets them. */
@@ -104,6 +111,8 @@ export type RepriceChanges = {
   crewType?: CrewType;
   /** Null clears a one-way and prices the charter back to its own base. */
   endBaseId?: string | null;
+  /** The base the charter starts from. Omitted keeps the quoted one; null frees it. */
+  startBaseId?: string | null;
   discountCode?: string | null;
   applyCredit?: boolean;
 };
@@ -143,7 +152,9 @@ export async function createQuote(
     selection.selected.listingOfferId,
   );
 
-  const quote = await persistPricedQuote(db, selection.selected.priced, {
+  const winner = selection.selected.priced;
+  const quote = await persistPricedQuote(db, winner, {
+    exactDiscountCap: await exactDiscountCapFor(provider, winner),
     userId,
     extras: input.extras ?? [],
     requestedExtras: input.requestedExtras ?? [],
@@ -204,6 +215,33 @@ export async function createQuote(
   }
 
   return quote;
+}
+
+/**
+ * The provider's exact bound on our discounts for this priced charter, as a lazy call, where the
+ * vendor that priced it can state one. Resolved from the quote rather than the configured
+ * adapter, for the same reason every step after pricing is: the winner may be the other vendor.
+ */
+async function exactDiscountCapFor(
+  fallback: InventoryProvider,
+  priced: ProviderQuote,
+): Promise<(() => Promise<number | undefined>) | undefined> {
+  const adapter = await providerByKey(fallback, priced.provider);
+  if (!adapter.exactClientDiscountCap) return undefined;
+  return async () => {
+    try {
+      const cap = await adapter.exactClientDiscountCap?.(priced);
+      return cap?.currency === priced.currency ? cap.amountMinor : undefined;
+    } catch (error) {
+      /* Best effort: the estimate stands, and the hold refuses a discount the vendor will not. */
+      log.warn({
+        action: "quote.exact_discount_cap_unavailable",
+        listingId: priced.listingId,
+        ...thrownFields(parseError(error)),
+      });
+      return undefined;
+    }
+  };
 }
 
 /**
@@ -449,7 +487,7 @@ export async function learnFromProviderRefusal(
   priced: typeof quote.$inferSelect,
   error: Error | null,
 ): Promise<void> {
-  if (!saysSlotIsGone(error) || !priced.listingOfferId) return;
+  if (!saysSlotIsGone(error) || refusesOnlyTheTerms(error) || !priced.listingOfferId) return;
 
   const input: QuoteRequest = {
     listingId: priced.listingId,
@@ -526,14 +564,7 @@ export async function repriceQuote(
     );
   }
   const requestedCrewType = changes.crewType ?? asCrewType(existing.crewType);
-  /*
-   * Distinguishes "not mentioned" from "cleared". Omitted keeps the drop-off the customer
-   * already chose, so changing guests does not silently turn their one-way into a return;
-   * null is the control being switched back and has to survive the `??` that carries values
-   * forward.
-   */
-  const requestedEndBaseId =
-    changes.endBaseId === undefined ? existing.route?.endBaseId : (changes.endBaseId ?? undefined);
+  const requestedRoute = repriceRoute(existing, changes);
   const discountCode =
     changes.discountCode === undefined ? existing.discountCode : changes.discountCode;
 
@@ -547,12 +578,14 @@ export async function repriceQuote(
   };
 
   if (requestedCrewType) request.crewType = requestedCrewType;
-  if (requestedEndBaseId) request.endBaseId = requestedEndBaseId;
+  if (requestedRoute.startBaseId) request.startBaseId = requestedRoute.startBaseId;
+  if (requestedRoute.endBaseId) request.endBaseId = requestedRoute.endBaseId;
 
   const priced = await priceOrConflict(db, provider, request, existing.listingOfferId);
 
   const replacement = await db.transaction(async (tx) => {
     const result = await persistPricedQuote(tx, priced, {
+      exactDiscountCap: await exactDiscountCapFor(provider, priced),
       /*
        * A reprice stays on the quote's own offer. Extra codes are that vendor's, so switching
        * seller mid-edit would silently invalidate what the customer had ticked; new dates go
@@ -638,6 +671,8 @@ async function heldQuote(
       payWhen: line.payWhen,
       kind: line.kind,
       group: line.group,
+      ...(line.detail === undefined ? null : { detail: line.detail }),
+      ...(line.note === undefined ? null : { note: line.note }),
     })),
     total: money(row.totalMinor),
     deposit: money(row.depositMinor),
@@ -665,6 +700,7 @@ async function heldQuote(
     ...priced,
     quoteId: row.id,
     requestedExtras: row.requestedExtras,
+    extras: row.extras,
     perPerson: toPerPerson(row.totalMinor, row.guests, currency),
     paymentSchedule: buildPaymentSchedulePreview({
       lines: row.lines,
@@ -750,7 +786,8 @@ async function assertSelectableExtras(
   if (extras.length === 0) return;
 
   const selectable = await listSelectableExtraCodes(db, listingId, listingOfferId);
-  const unsold = [...new Set(extras)].filter((code) => !selectable.has(code));
+  /* The catalogue lists the extra once; a variant code is sold if its extra is. */
+  const unsold = [...new Set(extras)].filter((code) => !selectable.has(baseExtraCode(code)));
   if (unsold.length === 0) return;
 
   throw new BadRequestError({
@@ -828,7 +865,10 @@ async function priceOrConflict(
        * is paying for. Logging it and moving on left the card advertising that week until the
        * sync came round, and the next visitor met the same refusal.
        */
-      if (listingOfferId) await learnFromRefusal(db, provider, input, attempts);
+      /* Not where only the pinned base pair or the product was refused: the week is still on sale. */
+      if (listingOfferId && !refusesOnlyTheTerms(error)) {
+        await learnFromRefusal(db, provider, input, attempts);
+      }
       throw new ConflictError({ message: "Requested slot is not available" });
     }
     throw error;
@@ -864,6 +904,118 @@ async function applyInternalRules(
 }
 
 /**
+ * Stages 1 to 4, what we take off the provider's price of our own accord, against a budget: the
+ * provider's own bound where it sets one (see `ProviderQuote.maxClientDiscount`). NauSYS lets an
+ * agency discount only out of its commission, and 240 of its hulls allow nothing at all, so a
+ * promo code there broke the operator's terms and, past the commission, sold below what we pay.
+ * Each stage takes what is left; the rest of what it would have given is not given.
+ */
+async function ourDiscounts(
+  db: DatabaseExecutor,
+  start: QuoteLine[],
+  priced: ProviderQuote,
+  options: { userId: string | null; discountCode: string | null; applyCredit: boolean },
+  budgetMinor: number,
+) {
+  const currency = priced.currency;
+  const onDate = priced.checkIn;
+  let lines = start;
+  const applied: AppliedAdjustment[] = [];
+  let budget = budgetMinor;
+  let clientDiscountMinor = 0;
+  const spend = (wanted: number): number => {
+    const taken = Math.max(0, Math.min(wanted, budget));
+    budget -= taken;
+    clientDiscountMinor += taken;
+    return taken;
+  };
+
+  // 1. Internal price_adjustment_rule, against the charter base.
+  const rules = capRuleReduction(
+    await applyInternalRules(db, lines, priced.listingId, onDate),
+    baseMinorOf(lines),
+    spend,
+  );
+  lines = rules.lines;
+  applied.push(...rules.applied);
+
+  // 2. Marketing discount, off everything payable now.
+  const promo = options.discountCode
+    ? await applyDiscountCode(
+        db,
+        lines,
+        options.discountCode,
+        priced.listingId,
+        onDate,
+        currency,
+        spend,
+      )
+    : null;
+  if (promo) {
+    lines = promo.lines;
+    applied.push(...promo.applied);
+  }
+
+  // 3. The invitee's referral welcome discount, if this is their first booking.
+  lines = (await applyWelcomeDiscount(db, lines, options.userId, currency, spend)).lines;
+
+  // 4. Referral credit, last: it is a way of paying rather than a price change,
+  // so it comes off after everything that decides what the trip costs. Resolved
+  // even when nobody asked to spend it, so the sidebar can offer what is there.
+  const spendableMinor = Math.min(
+    await spendableCreditMinor(
+      db,
+      options.userId,
+      currency,
+      totalMinor(lines),
+      payableNowMinor(lines),
+    ),
+    budget,
+  );
+  const spendsCredit = options.applyCredit && spendableMinor > 0;
+  if (spendsCredit) lines = applyReferralCredit(lines, spend(spendableMinor), currency);
+
+  return { lines, applied, promo, spendableMinor, spendsCredit, clientDiscountMinor };
+}
+
+function baseMinorOf(lines: readonly QuoteLine[]): number {
+  return lines.find((line) => line.kind === "base")?.amountMinor ?? 0;
+}
+
+/**
+ * Holds a price rule's reduction to what the budget allows. A rule that raises the price takes
+ * nothing from it. Where the reduction is cut, the base is set back up and each applied rule's
+ * recorded amount scaled to match, so the snapshot still adds up to the change on the base.
+ */
+interface RuleOutcome {
+  lines: QuoteLine[];
+  applied: AppliedAdjustment[];
+}
+
+function capRuleReduction(
+  rules: RuleOutcome,
+  baseBefore: number,
+  spend: (wanted: number) => number,
+): RuleOutcome {
+  const cut = baseBefore - baseMinorOf(rules.lines);
+  if (cut <= 0) return rules;
+
+  const allowed = spend(cut);
+  if (allowed === cut) return rules;
+
+  const factor = allowed / cut;
+  return {
+    lines: rules.lines.map((line) =>
+      line.kind === "base" ? { ...line, amountMinor: baseBefore - allowed } : line,
+    ),
+    applied: rules.applied.map((adjustment) => ({
+      ...adjustment,
+      amountMinor: Math.round(adjustment.amountMinor * factor),
+    })),
+  };
+}
+
+/**
  * Stage 2. A rejected code prices the trip without it and reports why, rather
  * than failing: a mistyped code should not cost the visitor the whole quote.
  */
@@ -874,6 +1026,7 @@ async function applyDiscountCode(
   listingId: string,
   onDate: string,
   currency: string,
+  spend: (wanted: number) => number,
 ): Promise<{
   lines: QuoteLine[];
   applied: AppliedAdjustment[];
@@ -888,10 +1041,11 @@ async function applyDiscountCode(
   }
 
   const payable = payableNowMinor(lines);
-  const off =
+  const off = spend(
     outcome.discount.type === "percentage"
       ? Math.round(payable * ((outcome.discount.valuePct ?? 0) / 100))
-      : Math.min(outcome.discount.valueMinor ?? 0, payable);
+      : Math.min(outcome.discount.valueMinor ?? 0, payable),
+  );
 
   // Recorded even at zero: the code was valid and accepted, and the checkout
   // still redeems it against the booking.
@@ -937,13 +1091,10 @@ async function applyWelcomeDiscount(
   lines: QuoteLine[],
   userId: string | null,
   currency: string,
+  spend: (wanted: number) => number,
 ): Promise<{ lines: QuoteLine[] }> {
-  const off = await welcomeDiscountMinor(
-    db,
-    userId,
-    currency,
-    totalMinor(lines),
-    payableNowMinor(lines),
+  const off = spend(
+    await welcomeDiscountMinor(db, userId, currency, totalMinor(lines), payableNowMinor(lines)),
   );
 
   if (off <= 0) return { lines };
@@ -1051,10 +1202,11 @@ async function persistPricedQuote(
     applyCredit: boolean;
     /** The offer this price came from, so every later step reaches the same vendor. */
     listingOfferId: string | null;
+    /** The provider's exact bound on our discounts, asked only when they take anything. */
+    exactDiscountCap?: (() => Promise<number | undefined>) | undefined;
   },
 ): Promise<PersistedQuote> {
   const currency = priced.currency;
-  const onDate = priced.checkIn;
 
   let lines: QuoteLine[] = priced.lines.map((line) => {
     const mapped: QuoteLine = {
@@ -1066,6 +1218,8 @@ async function persistPricedQuote(
       kind: line.kind,
     };
     if (line.group) mapped.group = line.group;
+    if (line.detail !== undefined) mapped.detail = line.detail;
+    if (line.note !== undefined) mapped.note = line.note;
     return mapped;
   });
 
@@ -1073,40 +1227,21 @@ async function persistPricedQuote(
     ...(await requestedExtraLines(db, priced, options.requestedExtras, options.listingOfferId)),
   );
 
-  const applied: AppliedAdjustment[] = [];
-
-  // 1. Internal price_adjustment_rule, against the charter base.
-  const rules = await applyInternalRules(db, lines, priced.listingId, onDate);
-  lines = rules.lines;
-  applied.push(...rules.applied);
-
-  // 2. Marketing discount, off everything payable now.
-  const promo = options.discountCode
-    ? await applyDiscountCode(db, lines, options.discountCode, priced.listingId, onDate, currency)
-    : null;
-
-  if (promo) {
-    lines = promo.lines;
-    applied.push(...promo.applied);
+  /*
+   * Our own discounts, run against the provider's bound (see `ourDiscounts`). Where they take
+   * anything and the provider can state the bound exactly, it is asked, and a tighter answer
+   * runs them again: NauSYS bounds the discount by its commission net of VAT, which only its
+   * reservation side reports, so the offer's gross commission is an upper estimate.
+   */
+  const run = (budget: number) => ourDiscounts(db, lines, priced, options, budget);
+  const estimated = priced.maxClientDiscount?.amountMinor ?? Number.POSITIVE_INFINITY;
+  let outcome = await run(estimated);
+  if (outcome.clientDiscountMinor > 0 && options.exactDiscountCap) {
+    const exact = await options.exactDiscountCap();
+    if (exact !== undefined && exact < outcome.clientDiscountMinor) outcome = await run(exact);
   }
-
-  // 3. The invitee's referral welcome discount, if this is their first booking.
-  const welcome = await applyWelcomeDiscount(db, lines, options.userId, currency);
-  lines = welcome.lines;
-
-  // 4. Referral credit, last: it is a way of paying rather than a price change,
-  // so it comes off after everything that decides what the trip costs. Resolved
-  // even when nobody asked to spend it, so the sidebar can offer what is there.
-  const spendableMinor = await spendableCreditMinor(
-    db,
-    options.userId,
-    currency,
-    totalMinor(lines),
-    payableNowMinor(lines),
-  );
-  const spendsCredit = options.applyCredit && spendableMinor > 0;
-
-  if (spendsCredit) lines = applyReferralCredit(lines, spendableMinor, currency);
+  lines = outcome.lines;
+  const { applied, promo, spendableMinor, spendsCredit, clientDiscountMinor } = outcome;
 
   // 5. Payment policy, then the deposit that follows from it.
   const { paymentPolicy, total, depositMinor } = await resolveDeposit(
@@ -1141,6 +1276,7 @@ async function persistPricedQuote(
     discountId: promo?.discountId ?? null,
     discountCode: appliedDiscount?.code ?? null,
     creditAppliedMinor: creditApplied?.amountMinor ?? 0,
+    clientDiscountMinor,
     applied,
   });
 
@@ -1150,6 +1286,7 @@ async function persistPricedQuote(
     ...priced,
     quoteId,
     requestedExtras: options.requestedExtras,
+    extras: options.extras,
     crewType,
     lines: lines.map((line) => {
       const mapped: PersistedQuote["lines"][number] = {
@@ -1160,6 +1297,8 @@ async function persistPricedQuote(
         kind: line.kind,
       };
       if (line.group) mapped.group = line.group;
+      if (line.detail !== undefined) mapped.detail = line.detail;
+      if (line.note !== undefined) mapped.note = line.note;
       return mapped;
     }),
     total: { amountMinor: total, currency },
@@ -1197,7 +1336,8 @@ async function persistPricedQuote(
  * arrival, so they are `at_check_in`: counted in the total, never in what is charged here. Their
  * own group keeps them apart from the extras the offer priced, which the booking flow reads back
  * as the customer's purchasable selection. An extra whose catalogue rate cannot be counted for
- * this charter gets no line and stays a request the base prices.
+ * this charter gets no line and stays a request the base prices. A pack adds only what the quote
+ * does not bill already; see `netOfBundles`.
  */
 async function requestedExtraLines(
   db: DatabaseExecutor,
@@ -1214,7 +1354,7 @@ async function requestedExtraLines(
     baseMinor: priced.lines.find((line) => line.kind === "base")?.amount.amountMinor ?? 0,
   };
 
-  return [...new Set(requestedExtras)].flatMap((code): QuoteLine[] => {
+  const counted = [...new Set(requestedExtras)].flatMap((code) => {
     const rate = catalogue.get(code);
     // A catalogue row in another currency cannot be summed into this quote's total.
     if (!rate || (rate.priceCurrency !== null && rate.priceCurrency !== priced.currency)) return [];
@@ -1222,10 +1362,25 @@ async function requestedExtraLines(
     const amountMinor = requestedExtraAmountMinor(rate, basis);
     if (amountMinor === null) return [];
 
+    return [{ code, name: rate.name, amountMinor, bundles: rate.bundles }];
+  });
+
+  const chargedElsewhere = new Map<string, number>();
+  for (const line of priced.lines) {
+    if (line.kind !== "extra" && line.kind !== "fee") continue;
+    const code = baseExtraCode(line.code);
+    chargedElsewhere.set(code, (chargedElsewhere.get(code) ?? 0) + line.amount.amountMinor);
+  }
+  const net = netOfBundles(counted, chargedElsewhere);
+
+  return counted.flatMap((line): QuoteLine[] => {
+    const amountMinor = net.get(line.code);
+    if (amountMinor == null) return [];
+
     return [
       {
-        code,
-        label: rate.name,
+        code: line.code,
+        label: line.name,
         amountMinor,
         currency: priced.currency,
         payWhen: "at_check_in",
@@ -1269,6 +1424,7 @@ async function insertQuote(
     discountId: string | null;
     discountCode: string | null;
     creditAppliedMinor: number;
+    clientDiscountMinor: number;
     applied: AppliedAdjustment[];
     listingOfferId: string | null;
   },
@@ -1297,6 +1453,7 @@ async function insertQuote(
       discountId: input.discountId,
       discountCode: input.discountCode,
       creditAppliedMinor: input.creditAppliedMinor,
+      clientDiscountMinor: input.clientDiscountMinor,
       // The base pair the provider priced, so the hold opens the charter that was quoted,
       // and the alternatives it offered, so the choice survives a reload.
       route: input.priced.route,

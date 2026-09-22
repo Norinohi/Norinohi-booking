@@ -13,6 +13,8 @@
     "confirmWithBase": "Price not published, confirm with the base",
     "percentageOfCharter": "{percent}% of the charter price",
     "oneWayOnly": "One-way charters only",
+    "chooseVariants": "Choose the options you need",
+    "fromPrice": "from {price}",
     "measure": {
       "booking": "{price} per booking",
       "day": "{price} per day",
@@ -47,7 +49,8 @@
       "nauticalMile": "{price} per nautical mile",
       "roundTrip": "{price} round trip",
       "litre": "{price} per litre",
-      "weekStartedPerson": "{price} per person per week started"
+      "weekStartedPerson": "{price} per person per week started",
+      "unit": "{price} per unit"
     }
   },
   "resultsCount": "{count, plural, one {# yacht found} other {# yachts found}}",

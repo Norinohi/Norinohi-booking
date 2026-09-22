@@ -107,11 +107,11 @@ export const listingOffer = pgTable(
     /**
      * The smallest party this offer has been refused for, learned from live quotes.
      *
-     * Booking Manager's offers engine caps a product below the boat's berth count and publishes
-     * the cap nowhere: `maxPeopleOnBoard` exists in its schema and is null on all 12,813
-     * products we hold, and neither the offer nor its product carries a capacity. One hull
-     * advertised with 9 berths sells to 8, and the only way to find out is to ask for nine and
-     * be told nothing.
+     * Booking Manager's offers engine can cap a product below the boat's berth count. The yacht's
+     * `maxPeopleOnBoard` states the cap on about half the fleet and is read into `max_persons`;
+     * on the rest neither the yacht, the offer nor its product carries one. One hull advertised
+     * with 9 berths sells to 8, and the only way to find out is to ask for nine and be told
+     * nothing.
      *
      * So it is recorded when that happens: the search filter matches on berths, and a party
      * this offer has already refused should stop being sent to it.
@@ -132,12 +132,21 @@ export const listingOffer = pgTable(
      */
     commissionPct: pct("commission_pct"),
     commissionSeenAt: timestamp("commission_seen_at"),
+    /* This boat's own handover, `HH:mm`; the shared base row's times are only a fallback. */
+    checkInTime: text("check_in_time"),
+    checkOutTime: text("check_out_time"),
     securityDepositMinor: integer("security_deposit_minor"),
     /** The deposit this offer takes when the charter carries deposit insurance. */
     securityDepositWhenInsuredMinor: integer("security_deposit_when_insured_minor"),
     securityDepositCurrency: text("security_deposit_currency"),
     depositInsuranceIncluded: boolean("deposit_insurance_included").default(false).notNull(),
     crewType: text("crew_type"),
+    /**
+     * Whether the customer who sails this boat without a skipper must hold a licence, as this
+     * vendor states it per hull. Null where it does not say, which is read as required: only
+     * Booking Manager answers, and says no on about 1,900 of its hulls.
+     */
+    skipperLicenceRequired: boolean("skipper_licence_required"),
     providerRating: numeric("provider_rating", { precision: 3, scale: 2 }),
     providerReviewCount: integer("provider_review_count"),
 
@@ -208,6 +217,8 @@ export const listingOfferSpecification = pgTable("listing_offer_specification", 
   yearBuilt: integer("year_built"),
   cabins: integer("cabins"),
   berths: integer("berths"),
+  /* The legal limit on board where the vendor states one; see `max_guests` in the read model. */
+  maxPersons: integer("max_persons"),
   heads: integer("heads"),
   showers: integer("showers"),
   engines: integer("engines"),

@@ -1,9 +1,16 @@
-import type { z } from "zod";
+import { log } from "evlog";
+import { z } from "zod";
 
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { formatNausysDate, parseNausysDate } from "../shared/dates";
+import { looseJsonObject } from "../shared/json";
 import { ContractError, SlotUnavailableError } from "../shared/errors";
-import { formatExtraCode, type ExtraKind } from "../shared/extra-code";
+import {
+  baseExtraCode,
+  formatExtraCode,
+  formatExtraVariantCode,
+  type ExtraKind,
+} from "../shared/extra-code";
 import { DEFAULT_LINE_LABELS } from "../shared/generic-labels";
 import { decimalStringToMinor } from "../shared/money";
 import { toPositiveIntId } from "../shared/projection-helpers";
@@ -20,7 +27,12 @@ import {
 } from "../types";
 import type { NausysClient } from "./client";
 import { walkDiscounts } from "./discounts";
-import { extraLineMinor, isIncludedInCharterPrice, type PercentageBasis } from "./extras";
+import {
+  extraLineMinor,
+  internationalText,
+  isIncludedInCharterPrice,
+  type PercentageBasis,
+} from "./extras";
 import type { NausysConfig } from "./config";
 import {
   nausysEndpoints,
@@ -34,8 +46,15 @@ type RestExtra = NonNullable<RestFreeYacht["obligatoryExtras"]>[number];
 type QuoteLine = ProviderQuote["lines"][number];
 type PaymentPolicy = ProviderQuote["paymentPolicy"];
 
-/** PAYMENT_PLAN carries the instalment schedule, ADDITIONAL_EXTRAS the optional services. */
-const EXTENDED_DATA_SET = "PAYMENT_PLAN,ADDITIONAL_EXTRAS";
+/**
+ * PAYMENT_PLAN carries the instalment schedule, ADDITIONAL_EXTRAS the optional services, and
+ * OBLIGATORY_SERVICES the mandatory fees, which the PDF exports "only if one yacht and one
+ * period are requested", exactly what a quote asks. Obligatory extras used to come back only as a
+ * side effect of ADDITIONAL_EXTRAS: on the test company (Sep 2026) PAYMENT_PLAN alone returns
+ * none, so a vendor that started applying its own rule would have quoted every charter without
+ * its tourist tax, transit log and cleaning.
+ */
+const EXTENDED_DATA_SET = "PAYMENT_PLAN,OBLIGATORY_SERVICES,ADDITIONAL_EXTRAS";
 
 const DEFAULT_QUOTE_TTL_MS = 15 * 60 * 1000;
 
@@ -93,7 +112,7 @@ async function selectsDepositInsurance(
   if (request.extras.length === 0 || !options.loadDepositInsuranceCodes) return false;
 
   const codes = await options.loadDepositInsuranceCodes(request.listingId);
-  return request.extras.some((code) => codes.has(code));
+  return request.extras.some((code) => codes.has(baseExtraCode(code)));
 }
 
 function crewServiceIdsFor(
@@ -154,11 +173,41 @@ export interface NausysQuoteServiceOptions {
    * priced at nothing, which is what the adapter did before.
    */
   loadCrewRoles?: (listingId: string) => Promise<CrewRoleService[]>;
+  /** The operator's bound on an agency's client discount for this yacht; see `DiscountRule`. */
+  loadDiscountRule?: (listingId: string) => Promise<DiscountRule | undefined>;
+  /**
+   * The operator's names for its discounts ("Early booking", "Better Price discount") by
+   * discount item id, from the synced discountItems dump. Without it every discount line on a
+   * quote read "Charter discount", two of them side by side on a charter with two.
+   */
+  loadDiscountNames?: (discountItemIds: readonly string[]) => Promise<ReadonlyMap<string, string>>;
+  /**
+   * Marina names by NauSYS location id, for the route a charter runs. `freeYachts` names the
+   * start and end only by location id, and a one-way the operator fixed is something the
+   * customer has to be told in words.
+   */
+  loadLocationNames?: (locationIds: readonly string[]) => Promise<ReadonlyMap<string, string>>;
   now?: () => number;
+}
+
+/**
+ * `maxDiscountFromCommission` with the `agencyDiscountType` that says what it is a share of.
+ * Always a fraction: across the 7,408 synced hulls every value lies between 0 and 1 (0.05 of
+ * the client price, 1 of the commission), which is what settled the unit the vendor had not.
+ */
+export interface DiscountRule {
+  basis: "CLIENT_PRICE" | "AGENCY_COMMISSION";
+  fraction: number;
 }
 
 export interface NausysQuoteService {
   getNausysQuote(input: QuoteRequest): Promise<ProviderQuote>;
+  /** The exact bound on our client discount; see `InventoryProvider.exactClientDiscountCap`. */
+  getExactDiscountCap(quote: ProviderQuote): Promise<number | undefined>;
+  /** The same quote, with the offer rows it bills, for the hold to put on the reservation. */
+  getNausysQuoteWithRows(
+    input: QuoteRequest,
+  ): Promise<{ quote: ProviderQuote; billedRows: BilledExtraRow[] }>;
 }
 
 export function createNausysQuoteService(options: NausysQuoteServiceOptions): NausysQuoteService {
@@ -199,7 +248,23 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
       { ...request },
     );
 
-    const yacht = (response.freeYachts ?? []).find((entry) => entry.yachtId === yachtId);
+    const offered = preferredFreeYachtRow(
+      (response.freeYachts ?? []).filter((entry) => entry.yachtId === yachtId),
+    );
+    const yacht = offered;
+    /* Asked for by name, so an absent list (not an empty one) is the vendor saying nothing. */
+    if (yacht && yacht.obligatoryExtras === undefined) {
+      log.warn({ action: "nausys.quote_without_obligatory_extras", yachtId, periodFrom });
+    }
+    if (yacht && !isRoundTrip(yacht)) {
+      log.warn({
+        action: "nausys.quote_one_way_only",
+        yachtId,
+        periodFrom,
+        locationFromId: yacht.locationFromId,
+        locationToId: yacht.locationToId,
+      });
+    }
     // An empty list is how the vendor says "not free in that period": there is no
     // separate unavailable status, and no other reading of it is safe.
     if (!yacht) {
@@ -221,64 +286,144 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
     return yacht;
   }
 
+  async function mappingFor(input: QuoteRequest): Promise<FreeYachtMapping> {
+    const parsed = quoteRequestSchema.parse(input);
+    const ref = await resolver.toExternalListing(parsed.listingId);
+    const yachtId = toPositiveIntId(ref.externalYachtId, {
+      provider: "NauSYS",
+      what: "the yacht id",
+    });
+
+    const yacht = await readFreeYacht(
+      yachtId,
+      formatNausysDate(parsed.checkIn),
+      formatNausysDate(parsed.checkOut),
+      parsed.currency,
+      parsed.guests,
+    );
+
+    /*
+     * The offer's own deposit wins over the catalogue default; see the option's docstring.
+     * Read before the fallback so a present value costs no extra work.
+     *
+     * A charter carrying deposit insurance is held to the reduced figure the vendor sends
+     * beside it -- the whole point of buying the insurance, and the number the base will
+     * actually block on the card.
+     */
+    const insured = await selectsDepositInsurance(options, parsed);
+    const offered =
+      (insured ? reducedDepositOf(yacht.price) : undefined) ?? yacht.price.depositAmount;
+    const securityDeposit =
+      offered === undefined
+        ? await options.loadSecurityDeposit?.(parsed.listingId)
+        : {
+            amountMinor: decimalStringToMinor(offered, yacht.price.currency),
+            currency: yacht.price.currency,
+          };
+
+    const crewRoles = (await options.loadCrewRoles?.(parsed.listingId)) ?? [];
+    const extraLabels = await options.loadExtraLabels?.(parsed.listingId);
+    const discountIds = (yacht.price.discounts ?? []).map((item) => String(item.discountItemId));
+    const discountNames =
+      discountIds.length > 0 ? await options.loadDiscountNames?.(discountIds) : undefined;
+    const locationIds = [yacht.locationFromId, yacht.locationToId].flatMap((id) =>
+      id === undefined ? [] : [String(id)],
+    );
+    const locationNames =
+      locationIds.length > 0 ? await options.loadLocationNames?.(locationIds) : undefined;
+
+    return {
+      yacht,
+      listingId: parsed.listingId,
+      checkIn: parsed.checkIn,
+      checkOut: parsed.checkOut,
+      guests: parsed.guests,
+      crewType: parsed.crewType,
+      extras: parsed.extras,
+      crewServiceIds: crewServiceIdsFor(crewRoles, parsed.crewType),
+      crewRoleServiceIds: crewRoles.map((item) => item.externalId),
+      locationNames,
+      discountRule: await options.loadDiscountRule?.(parsed.listingId),
+      securityDeposit,
+      expiresAt: new Date(now() + quoteTtlMs).toISOString(),
+      /* The catalogue answers for extras, and the discountItems dump for discounts: every
+         RestDiscount names a RestDiscountItem. What neither knows falls through to whatever
+         the caller knows. */
+      labelFor: (kind, externalId) =>
+        (kind === "discount"
+          ? discountNames?.get(externalId)
+          : extraLabels?.get(formatExtraCode(kind, externalId))) ??
+        options.labelFor?.(kind, externalId),
+    };
+  }
+
   return {
-    async getNausysQuote(input: QuoteRequest): Promise<ProviderQuote> {
-      const parsed = quoteRequestSchema.parse(input);
-      const ref = await resolver.toExternalListing(parsed.listingId);
+    /*
+     * A proposal, which the vendor answers "without ID" and does not store: the only place it
+     * states the commission net of VAT that bounds an agency's client discount. Verified on the
+     * test company (Sep 2026): 1,345.10 gross commission, 1,076.08 net, and a discount of
+     * 1,076.08 accepted where 1,076.09 was refused DISCOUNT_TO_HIGH. The client is a placeholder
+     * the proposal needs to parse, since nothing is kept.
+     */
+    async getExactDiscountCap(priced: ProviderQuote): Promise<number | undefined> {
+      const ref = await resolver.toExternalListing(priced.listingId);
       const yachtId = toPositiveIntId(ref.externalYachtId, {
         provider: "NauSYS",
         what: "the yacht id",
       });
-
-      const yacht = await readFreeYacht(
-        yachtId,
-        formatNausysDate(parsed.checkIn),
-        formatNausysDate(parsed.checkOut),
-        parsed.currency,
-        parsed.guests,
+      const proposal = await client.bookingCall(
+        nausysEndpoints.booking.createInfo,
+        restProposalSchema,
+        {
+          client: { name: "Price", surname: "Check", email: "price-check@example.com" },
+          periodFrom: formatNausysDate(priced.checkIn),
+          periodTo: formatNausysDate(priced.checkOut),
+          yachtID: yachtId,
+          numberOfGuests: priced.guests,
+          proposal: true,
+        },
       );
-
-      /*
-       * The offer's own deposit wins over the catalogue default; see the option's docstring.
-       * Read before the fallback so a present value costs no extra work.
-       *
-       * A charter carrying deposit insurance is held to the reduced figure the vendor sends
-       * beside it -- the whole point of buying the insurance, and the number the base will
-       * actually block on the card.
-       */
-      const insured = await selectsDepositInsurance(options, parsed);
-      const offered =
-        (insured ? reducedDepositOf(yacht.price) : undefined) ?? yacht.price.depositAmount;
-      const securityDeposit =
-        offered === undefined
-          ? await options.loadSecurityDeposit?.(parsed.listingId)
-          : {
-              amountMinor: decimalStringToMinor(offered, yacht.price.currency),
-              currency: yacht.price.currency,
-            };
-
-      const crewRoles = (await options.loadCrewRoles?.(parsed.listingId)) ?? [];
-      const extraLabels = await options.loadExtraLabels?.(parsed.listingId);
-
-      return mapFreeYachtToProviderQuote({
-        yacht,
-        listingId: parsed.listingId,
-        checkIn: parsed.checkIn,
-        checkOut: parsed.checkOut,
-        guests: parsed.guests,
-        crewType: parsed.crewType,
-        extras: parsed.extras,
-        crewServiceIds: crewServiceIdsFor(crewRoles, parsed.crewType),
-        securityDeposit,
-        expiresAt: new Date(now() + quoteTtlMs).toISOString(),
-        /* The catalogue answers for extras; a discount has no catalogue row, and an
-           extra the sync never recorded falls through to whatever the caller knows. */
-        labelFor: (kind, externalId) =>
-          (kind === "discount" ? undefined : extraLabels?.get(formatExtraCode(kind, externalId))) ??
-          options.labelFor?.(kind, externalId),
-      });
+      const currency = proposal.currency ?? proposal.paymentCurrency;
+      const net = proposal.effectiveAgencyCommissionAmountWithoutVAT;
+      if (currency !== priced.currency || net === undefined || proposal.clientPrice === undefined) {
+        return undefined;
+      }
+      return maxClientDiscountOf(
+        await options.loadDiscountRule?.(priced.listingId),
+        decimalStringToMinor(net, currency),
+        decimalStringToMinor(proposal.clientPrice, currency),
+      );
+    },
+    async getNausysQuote(input: QuoteRequest): Promise<ProviderQuote> {
+      return mapFreeYachtToProviderQuote(await mappingFor(input));
+    },
+    async getNausysQuoteWithRows(input: QuoteRequest) {
+      const mapping = await mappingFor(input);
+      return { quote: mapFreeYachtToProviderQuote(mapping), billedRows: billedExtraRows(mapping) };
     },
   };
+}
+
+/**
+ * The row to price when the vendor answers one yacht more than once.
+ *
+ * A free-yacht row is a yacht, a period and a pair of locations: the same hull can come back as
+ * a round trip and as a one-way, at different prices. The first row was taken, so a customer
+ * could be quoted the one-way without being told they would finish elsewhere. A round trip is
+ * what we sell unless nothing else is on offer.
+ */
+export function preferredFreeYachtRow<T extends { locationFromId?: number; locationToId?: number }>(
+  rows: readonly T[],
+): T | undefined {
+  return rows.find(isRoundTrip) ?? rows[0];
+}
+
+function isRoundTrip(row: { locationFromId?: number; locationToId?: number }): boolean {
+  return (
+    row.locationFromId === undefined ||
+    row.locationToId === undefined ||
+    row.locationFromId === row.locationToId
+  );
 }
 
 export interface FreeYachtMapping {
@@ -304,9 +449,15 @@ export interface FreeYachtMapping {
   extras?: readonly string[] | undefined;
   /** Vendor service ids the chosen crew type puts aboard; priced as crew lines. */
   crewServiceIds?: readonly string[] | undefined;
+  /** Every crew role's service id, aboard or not, so none is ever billed as an add-on. */
+  crewRoleServiceIds?: readonly string[] | undefined;
   securityDeposit?: Money | undefined;
   expiresAt: string;
   labelFor?: ((kind: NausysLabelKind, externalId: string) => string | undefined) | undefined;
+  /** Marina names by location id; see `loadLocationNames`. */
+  locationNames?: ReadonlyMap<string, string> | undefined;
+  /** The operator's bound on our client discount; see `DiscountRule`. */
+  discountRule?: DiscountRule | undefined;
 }
 
 /** Pure `RestFreeYacht → ProviderQuote`. No I/O, no clock, no vendor field beyond this file. */
@@ -320,28 +471,33 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
   const clientPriceMinor = decimalStringToMinor(yacht.price.clientPrice, currency);
 
   /* What a percentage extra is a percentage of; see `PercentageBasis`. */
-  const basis = { listMinor: listPriceMinor, clientMinor: clientPriceMinor };
+  const basis = {
+    listMinor: listPriceMinor,
+    clientMinor: clientPriceMinor,
+    days: daysBetweenIso(input.checkIn, input.checkOut),
+  };
 
   const charterLines = buildCharterLines(yacht, currency, listPriceMinor, clientPriceMinor, input);
-  const obligatoryLines = (yacht.obligatoryExtras ?? []).map((extra) =>
-    toExtraLine(extra, currency, input, "mandatory", basis),
+  const obligatory = yacht.obligatoryExtras ?? [];
+  const additional = yacht.additionalExtras ?? [];
+  const obligatoryCodes = rowCodes(obligatory);
+  const additionalCodes = rowCodes(additional);
+  const obligatoryLines = obligatory.map((extra, index) =>
+    toExtraLine(
+      extra,
+      obligatoryCodes[index] ?? offerExtraCode(extra),
+      currency,
+      input,
+      "mandatory",
+      basis,
+    ),
   );
-  /*
-   * Crew is bought by choosing a crew type, not by ticking an extra, so it is
-   * excluded from the optional selection: billing the same service twice is what
-   * would happen if a customer ticked the skipper the crew control already added.
-   */
-  const crewCodes = new Set(
-    (input.crewServiceIds ?? []).map((id) => formatExtraCode("service", id)),
+  const { crew, selected } = billedAdditionalRows(input, basis);
+  const crewLines = crew.map((row) =>
+    toExtraLine(row.extra, row.code, currency, input, "crew", basis),
   );
-  const crew = additionalExtrasByCode(yacht, crewCodes);
-  const selected = additionalExtrasByCode(
-    yacht,
-    new Set((input.extras ?? []).filter((code) => !crewCodes.has(code))),
-  );
-  const crewLines = crew.map((extra) => toExtraLine(extra, currency, input, "crew", basis));
-  const selectedLines = selected.map((extra) =>
-    toExtraLine(extra, currency, input, "optional", basis),
+  const selectedLines = selected.map((row) =>
+    toExtraLine(row.extra, row.code, currency, input, "optional", basis),
   );
   const extraLines = [...obligatoryLines, ...crewLines, ...selectedLines];
   const lines = [...charterLines, ...extraLines];
@@ -358,26 +514,13 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
     );
   }
 
-  /*
-   * Everything the offer could price, ticked or not, so the listing can grey out
-   * the extras this period does not sell instead of accepting a choice that
-   * quietly costs nothing. Crew stays in: the listing keeps crew roles out of its
-   * optional extras entirely, so nothing downstream can offer them twice.
-   */
-  const offeredExtras = (yacht.additionalExtras ?? []).flatMap((extra) => {
-    const identity = offerExtraIdentity(extra);
-    /* An entry we cannot place, or cannot pay for in the charter's currency, is not
-       on offer: leaving it out is also what keeps `toExtraLine` from ever meeting it. */
-    if (identity.externalId === UNPLACEABLE_ID || extra.currency !== currency) return [];
-
-    return [
-      {
-        code: formatExtraCode(identity.kind, identity.externalId),
-        amount: { amountMinor: extraLineMinor(extra, currency, basis), currency },
-        payWhen: payWhenFor(extra),
-      },
-    ];
-  });
+  const offeredExtras = offeredExtrasOf(
+    additional,
+    additionalCodes,
+    obligatoryCodesOf(yacht),
+    currency,
+    basis,
+  );
 
   const paymentPolicy = toPaymentPolicy(yacht.paymentPlans, yacht.yachtId);
   const payableNowMinor = sumMinor(lines.filter((line) => line.payWhen === "now"));
@@ -389,11 +532,16 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
   // Crew as well as the ticked extras: both are billed, so a move in either has to
   // invalidate the quote before checkout takes money against it.
   const priceSourceHash = priceObservationHash(yacht, input.securityDeposit, [
-    ...crew,
-    ...selected,
+    ...crew.map((row) => row.extra),
+    ...selected.map((row) => row.extra),
   ]);
 
   const commission = commissionOf(yacht.price, currency, clientPriceMinor);
+  const maxClientDiscount = maxClientDiscountOf(
+    input.discountRule,
+    commission?.amount.amountMinor,
+    clientPriceMinor,
+  );
 
   return providerQuoteSchema.parse({
     // freeYachts creates nothing provider-side, so there is no vendor quote id to
@@ -414,6 +562,9 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
     paymentPolicy,
     offeredExtras,
     ...(commission === undefined ? null : { commission }),
+    ...(maxClientDiscount === undefined
+      ? null
+      : { maxClientDiscount: { amountMinor: maxClientDiscount, currency } }),
     priceSourceHash,
     // `QuoteRequest` carries no expected price, so the adapter has nothing to
     // compare against; `repriceQuote` sets this itself when the caller asked for
@@ -422,7 +573,81 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
     expiresAt: input.expiresAt,
     checkInTime: wallClockTime(yacht.checkIn),
     checkOutTime: wallClockTime(yacht.checkOut),
+    ...routeOf(yacht, input.locationNames, totalMinor, currency),
   });
+}
+
+/**
+ * Where the charter starts and ends, in the operator's locations.
+ *
+ * One entry, never a choice: NauSYS fixes a one-way through the yacht's `oneWayPeriods`, and
+ * `createInfo` takes no base or location, so there is nothing a customer could pick that the
+ * reservation would honour. What they must be told is that it ends somewhere else, which a
+ * charter priced from a one-way row used to leave unsaid. Ids are NauSYS location ids, a space
+ * the booking never sends back.
+ */
+function routeOf(
+  yacht: RestFreeYacht,
+  names: ReadonlyMap<string, string> | undefined,
+  totalMinor: number,
+  currency: string,
+): Pick<ProviderQuote, "route" | "routeOptions"> | null {
+  if (yacht.locationFromId === undefined || yacht.locationToId === undefined) return null;
+  const startBaseId = String(yacht.locationFromId);
+  const endBaseId = String(yacht.locationToId);
+  const startBaseName = names?.get(startBaseId);
+  const endBaseName = names?.get(endBaseId);
+
+  return {
+    route: { startBaseId, endBaseId },
+    routeOptions: [
+      {
+        startBaseId,
+        endBaseId,
+        ...(startBaseName === undefined ? null : { startBaseName }),
+        ...(endBaseName === undefined ? null : { endBaseName }),
+        isOneWay: startBaseId !== endBaseId,
+        total: { amountMinor: totalMinor, currency },
+      },
+    ],
+  };
+}
+
+/** Whole days from one ISO date to another. */
+function daysBetweenIso(from: string, to: string): number {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+}
+
+/** What a `createInfo` proposal says about the money; see `getExactDiscountCap`. */
+const restProposalSchema = looseJsonObject({
+  status: z.string(),
+  clientPrice: z.string().optional(),
+  currency: z.string().optional(),
+  paymentCurrency: z.string().optional(),
+  effectiveAgencyCommissionAmountWithoutVAT: z.string().optional(),
+});
+
+/**
+ * How much of the price we may give away, in minor units, or undefined for no bound.
+ *
+ * Never more than the commission itself, whatever the rule says: past it we would sell below
+ * what we pay the operator. A rule stated against a commission the offer did not report allows
+ * nothing, since there is no share of it we can prove we have.
+ */
+function maxClientDiscountOf(
+  rule: DiscountRule | undefined,
+  commissionMinor: number | undefined,
+  clientPriceMinor: number,
+): number | undefined {
+  if (rule === undefined) return commissionMinor;
+  const fraction = Math.min(Math.max(rule.fraction, 0), 1);
+  const byRule =
+    rule.basis === "CLIENT_PRICE"
+      ? Math.floor(clientPriceMinor * fraction)
+      : commissionMinor === undefined
+        ? 0
+        : Math.floor(commissionMinor * fraction);
+  return commissionMinor === undefined ? byRule : Math.min(byRule, commissionMinor);
 }
 
 /**
@@ -504,6 +729,130 @@ function baseLine(amountMinor: number, currency: string): QuoteLine {
   };
 }
 
+/**
+ * The services the offer already bills as obligatory.
+ *
+ * An operator can list the same service in both lists: a damage waiver obligatory at 420 and
+ * optional at 350 "when skipper is chosen", a free car park beside "additional car 45/week".
+ * The obligatory line is charged on every charter, so selling the add-on as well billed the
+ * waiver twice; and a skipper obligatory on a crewed yacht was billed a second time by the
+ * crew control. The add-on is never sold on top of it.
+ */
+function obligatoryCodesOf(yacht: RestFreeYacht): Set<string> {
+  return new Set((yacht.obligatoryExtras ?? []).map((extra) => offerExtraCode(extra)));
+}
+
+/** One additional-extras row with the code the rest of the system knows it by. */
+interface AdditionalRow {
+  extra: RestExtra;
+  code: string;
+}
+
+interface BilledAdditionalRows {
+  crew: AdditionalRow[];
+  selected: AdditionalRow[];
+}
+
+/**
+ * The additional rows this charter bills: the crew its crew type puts aboard and the extras
+ * the customer ticked. Shared by the quote and the hold, so what `addExtras` puts on the
+ * reservation is exactly what the customer was quoted.
+ */
+function billedAdditionalRows(
+  input: FreeYachtMapping,
+  basis: PercentageBasis,
+): BilledAdditionalRows {
+  const additional = input.yacht.additionalExtras ?? [];
+  const codes = rowCodes(additional);
+  const obligatory = obligatoryCodesOf(input.yacht);
+  const rows = additional
+    .map((extra, index) => ({ extra, code: codes[index] ?? offerExtraCode(extra) }))
+    .filter((row) => !obligatory.has(offerExtraCode(row.extra)));
+
+  /*
+   * Crew is bought by choosing a crew type, not by ticking an extra, so it is
+   * excluded from the optional selection: billing the same service twice is what
+   * would happen if a customer ticked the skipper the crew control already added.
+   */
+  const crewCodes = new Set(
+    (input.crewServiceIds ?? []).map((id) => formatExtraCode("service", id)),
+  );
+  /*
+   * Every crew role the listing knows, aboard or not. A variant the customer picked for a role
+   * is carried in `extras` like any other code, and must never fall through to the optional
+   * selection: switching from full crew to a skipper would otherwise have kept billing the
+   * hostess they had picked, as an add-on.
+   */
+  const roleCodes = new Set([
+    ...crewCodes,
+    ...(input.crewRoleServiceIds ?? []).map((id) => formatExtraCode("service", id)),
+  ]);
+  const crewPicks = new Set(
+    (input.extras ?? []).filter((code) => crewCodes.has(baseExtraCode(code))),
+  );
+  const crew = crewRowsFor(
+    rows.filter((row) => crewCodes.has(offerExtraCode(row.extra))),
+    crewPicks,
+    input.guests,
+    input.yacht.price.currency,
+    basis,
+  );
+  const wanted = new Set(
+    (input.extras ?? []).filter((code) => !roleCodes.has(baseExtraCode(code))),
+  );
+  /*
+   * A selection names one row: the plain code for an extra the offer sells once, a variant code
+   * for one it sells as alternatives. The plain code of a many-row extra matches nothing, so a
+   * transfer ticked without a route prices nothing rather than every route at once.
+   */
+  const selected = rows.filter((row) => wanted.has(row.code));
+  return { crew, selected };
+}
+
+/** A billed row as `addExtras` addresses it: the season price row's id, per id space. */
+export interface BilledExtraRow {
+  kind: ExtraKind;
+  rowId: number;
+  code: string;
+  /** The catalogue id, which is all a reservation line names of where it came from. */
+  externalId: string;
+  /** The row's condition, which tells one variant's reservation line from another's. */
+  condition: string | null;
+}
+
+/**
+ * The rows `addExtras` has to put on the reservation for this charter to be the one quoted.
+ *
+ * A row without a usable id cannot be addressed, and dropping it would hold a reservation that
+ * silently lacks something the customer paid for, so it throws instead.
+ */
+export function billedExtraRows(input: FreeYachtMapping): BilledExtraRow[] {
+  const currency = input.yacht.price.currency;
+  const basis = {
+    listMinor: decimalStringToMinor(input.yacht.price.priceListPrice, currency),
+    clientMinor: decimalStringToMinor(input.yacht.price.clientPrice, currency),
+  };
+  const { crew, selected } = billedAdditionalRows(input, basis);
+
+  return [...crew, ...selected].map((row) => {
+    const rowId = row.extra.id;
+    if (rowId === undefined || !Number.isSafeInteger(rowId)) {
+      throw new ContractError(
+        `NauSYS offer row for ${row.code} carries no id addExtras can address`,
+        { endpoint: nausysEndpoints.availability.freeYachts },
+      );
+    }
+    const identity = offerExtraIdentity(row.extra);
+    return {
+      kind: identity.kind,
+      rowId,
+      code: row.code,
+      externalId: identity.externalId,
+      condition: conditionText(row.extra),
+    };
+  });
+}
+
 /** Stands in for an entry in neither documented shape; no selection can equal it. */
 const UNPLACEABLE_ID = "unknown";
 
@@ -555,14 +904,163 @@ function offerExtraCode(extra: RestExtra): string {
   return formatExtraCode(kind, externalId);
 }
 
-function additionalExtrasByCode(yacht: RestFreeYacht, wanted: ReadonlySet<string>): RestExtra[] {
-  if (wanted.size === 0) return [];
+/**
+ * Each entry's code, index for index: the plain code where the offer lists the extra once, a
+ * variant code where it lists it several times. Counted per list, because an obligatory row and
+ * an additional one of the same service are different charges, not alternatives.
+ *
+ * A repeated row the vendor sent without a usable id keeps the plain code, as every row did
+ * before variants were told apart: there is nothing else to address it by. Obligatory rows
+ * arrive with 64-bit ids a number cannot hold exactly, so they land here too.
+ */
+function rowCodes(extras: readonly RestExtra[]): string[] {
+  const rows = new Map<string, number>();
+  for (const extra of extras) {
+    const code = offerExtraCode(extra);
+    rows.set(code, (rows.get(code) ?? 0) + 1);
+  }
 
-  return (yacht.additionalExtras ?? []).filter((extra) => wanted.has(offerExtraCode(extra)));
+  return extras.map((extra) => {
+    const code = offerExtraCode(extra);
+    if ((rows.get(code) ?? 0) < 2 || !Number.isSafeInteger(extra.id)) return code;
+    const { kind, externalId } = offerExtraIdentity(extra);
+    return formatExtraVariantCode(kind, externalId, String(extra.id));
+  });
+}
+
+/**
+ * One row per crew role, where the offer sells a role as several.
+ *
+ * It does: a skipper as a male and a female captain, or by the day and by the week; a hostess
+ * for "up to 4 guests" and for "5-8 guests". Every row used to be billed, so a skipper cost
+ * 1,400 plus 1,500. The customer's own pick wins. Without one, a row whose stated party size
+ * excludes this party goes and the cheapest of the rest is priced, its label saying which one
+ * it was, so the sidebar can offer the others.
+ */
+function crewRowsFor(
+  rows: readonly { extra: RestExtra; code: string }[],
+  picks: ReadonlySet<string>,
+  guests: number,
+  currency: string,
+  basis: PercentageBasis,
+): { extra: RestExtra; code: string }[] {
+  const byRole = new Map<string, { extra: RestExtra; code: string }[]>();
+  for (const row of rows) {
+    const role = baseExtraCode(row.code);
+    byRole.set(role, [...(byRole.get(role) ?? []), row]);
+  }
+
+  return [...byRole.values()].flatMap((variants) => {
+    /* Rows that could not be told apart keep the old behaviour; there is nothing to choose by. */
+    if (variants.every((row) => row.code === baseExtraCode(row.code))) return variants;
+
+    const picked = variants.find((row) => picks.has(row.code));
+    if (picked) return [picked];
+
+    const fitting = variants.filter((row) => fitsParty(conditionText(row.extra), guests));
+    const candidates = fitting.length > 0 ? fitting : variants;
+    const priceOf = (row: { extra: RestExtra }) => extraLineMinor(row.extra, currency, basis);
+    return [candidates.reduce((low, row) => (priceOf(row) < priceOf(low) ? row : low))];
+  });
+}
+
+const PEOPLE = String.raw`(?:guests?|pax|persons?|people)`;
+const PARTY_RANGE = new RegExp(String.raw`(\d+)\s*-\s*(\d+)\s*${PEOPLE}`, "i");
+const PARTY_UP_TO = new RegExp(String.raw`up\s+to\s+(\d+)\s*${PEOPLE}`, "i");
+
+/**
+ * Whether a variant's own words leave room for this party. Only the two ways operators have
+ * been seen to write it, "up to 4 guests" and "5-8 guests"; a condition that states no party
+ * size fits every party.
+ */
+function fitsParty(condition: string | null, guests: number): boolean {
+  if (condition === null) return true;
+
+  const range = PARTY_RANGE.exec(condition);
+  if (range) return guests >= Number(range[1]) && guests <= Number(range[2]);
+
+  const upTo = PARTY_UP_TO.exec(condition);
+  if (upTo) return guests <= Number(upTo[1]);
+
+  return true;
+}
+
+const DETAIL_MAX = 90;
+
+/**
+ * How a variant is named beside its extra: the first line of the operator's condition, cut
+ * short. Most are a route or a vehicle ("Athens Airport - Lavrion base; taxi 1 - 3 pax"), but
+ * some operators write a paragraph, and the whole of it ended up in the line label, the
+ * confirmation email and the crew select. The full text still decides the party-size fit.
+ */
+function variantDetail(extra: RestExtra): string | null {
+  const firstLine = conditionText(extra)?.split("\n")[0]?.trim();
+  if (!firstLine) return null;
+  return firstLine.length <= DETAIL_MAX
+    ? firstLine
+    : `${firstLine.slice(0, DETAIL_MAX - 1).trimEnd()}…`;
+}
+
+/** The operator's condition on an offer row; see `internationalText`. */
+function conditionText(extra: RestExtra): string | null {
+  return internationalText(extra.condition);
+}
+
+/**
+ * Everything the offer could price, ticked or not, so the listing can grey out the extras this
+ * period does not sell instead of accepting a choice that quietly costs nothing. Crew stays in:
+ * the listing keeps crew roles out of its optional extras entirely, so nothing downstream can
+ * offer them twice.
+ *
+ * One entry per extra, with its variants beneath it where the offer sells it as several. The
+ * listing used to key this by the plain code, so seven transfer rows collapsed onto whichever
+ * came last and the box read 300 while ticking it charged 1,000.
+ */
+function offeredExtrasOf(
+  additional: readonly RestExtra[],
+  codes: readonly string[],
+  obligatory: ReadonlySet<string>,
+  currency: string,
+  basis: PercentageBasis,
+): NonNullable<ProviderQuote["offeredExtras"]> {
+  const byExtra = new Map<string, NonNullable<ProviderQuote["offeredExtras"]>[number]>();
+
+  additional.forEach((extra, index) => {
+    const identity = offerExtraIdentity(extra);
+    /* An entry we cannot place, or cannot pay for in the charter's currency, is not
+       on offer: leaving it out is also what keeps `toExtraLine` from ever meeting it. */
+    if (identity.externalId === UNPLACEABLE_ID || extra.currency !== currency) return;
+    if (obligatory.has(offerExtraCode(extra))) return;
+
+    const code = codes[index] ?? offerExtraCode(extra);
+    const base = baseExtraCode(code);
+    const amount = { amountMinor: extraLineMinor(extra, currency, basis), currency };
+    const payWhen = payWhenFor(extra);
+    const entry = byExtra.get(base);
+
+    if (code === base) {
+      const note = conditionText(extra);
+      if (entry === undefined) {
+        byExtra.set(base, { code: base, amount, payWhen, ...(note === null ? null : { note }) });
+      }
+      return;
+    }
+
+    const variant = { code, detail: variantDetail(extra), amount, payWhen };
+    if (entry === undefined) {
+      byExtra.set(base, { code: base, amount, payWhen, variants: [variant] });
+      return;
+    }
+    entry.variants = [...(entry.variants ?? []), variant];
+    if (amount.amountMinor < entry.amount.amountMinor) entry.amount = amount;
+  });
+
+  return [...byExtra.values()];
 }
 
 function toExtraLine(
   extra: RestExtra,
+  code: string,
   currency: string,
   input: FreeYachtMapping,
   group: NonNullable<QuoteLine["group"]>,
@@ -579,14 +1077,20 @@ function toExtraLine(
   }
 
   const lineMinor = extraLineMinor(extra, currency, basis);
+  const label = labelOf(input, identity.kind, identity.externalId, DEFAULT_LABELS.service);
+  /* Only a variant needs telling apart; on a single-row extra the condition is fine print. */
+  const detail = code === baseExtraCode(code) ? null : variantDetail(extra);
+  const note = detail === null ? conditionText(extra) : null;
 
   return {
     // The canonical extra identity, the same string the listing page rendered and
     // the customer submitted. Keeping the namespaces aligned is what lets a
     // selection be reconciled against the line that priced it, and what makes
     // `booking_extra.code` mean the same thing as the code on screen.
-    code: formatExtraCode(identity.kind, identity.externalId),
-    label: labelOf(input, identity.kind, identity.externalId, DEFAULT_LABELS.service),
+    code,
+    label: detail === null ? label : `${label} (${detail})`,
+    ...(detail === null ? null : { detail }),
+    ...(note === null ? null : { note }),
     amount: { amountMinor: lineMinor, currency },
     payWhen: payWhenFor(extra),
     kind: "extra",
@@ -668,6 +1172,8 @@ function hashableExtras(extras: readonly RestExtra[]) {
   return extras
     .map((extra) => ({
       serviceId: extra.serviceId ?? extra.extraId ?? 0,
+      /* Which variant: two transfer rows share the service id and differ only here. */
+      rowId: Number.isSafeInteger(extra.id) ? (extra.id ?? null) : null,
       // Both, not just whichever we billed. A unit price that moves while the
       // total holds still means the vendor changed something about this line, and
       // a re-quote is cheap next to serving a stale one.
@@ -677,7 +1183,7 @@ function hashableExtras(extras: readonly RestExtra[]) {
       currency: extra.currency,
       calculationType: extra.calculationType ?? null,
     }))
-    .sort((a, b) => a.serviceId - b.serviceId);
+    .sort((a, b) => a.serviceId - b.serviceId || (a.rowId ?? 0) - (b.rowId ?? 0));
 }
 
 function assertEchoedPeriod(yacht: RestFreeYacht, checkIn: string, checkOut: string): void {

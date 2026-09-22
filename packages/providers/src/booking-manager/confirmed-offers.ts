@@ -234,6 +234,19 @@ function reconciledStartPriceMinor(
   return startPriceMinor;
 }
 
+/**
+ * The party the sweep prices for, stated rather than left to the vendor.
+ *
+ * Asked without it, `/offers` prices per-person extras for two - Towels at 10 EUR a night came
+ * back as 140 for the week, 420 for six - while the catalogue's own fee total, which the card
+ * falls back to for any week this pass has not reached, counts them once because the card knows
+ * no party size. The two halves of one search then disagreed by a person's worth of fees
+ * depending on which week had been swept. One is what the fallback already assumes, and the
+ * quote re-prices for the real party. On company 225 it changes nothing else: the same fleet
+ * and the same base prices come back as without it (2027-06-05, 27 yachts).
+ */
+const SWEEP_PASSENGERS = 1;
+
 export async function* streamBookingManagerConfirmedOffers(
   options: BookingManagerConfirmedOfferOptions,
   from: ConfirmedOfferCursor,
@@ -298,6 +311,7 @@ export async function* streamBookingManagerConfirmedOffers(
           dateTo: formatBookingManagerDateTime(period.endDate),
           companyId: scopeKeys ?? undefined,
           currency: options.currency || undefined,
+          passengersOnBoard: SWEEP_PASSENGERS,
         },
         client.sweepLane("offers", slot % Math.max(1, concurrency.limit())),
       );

@@ -155,6 +155,44 @@ export class SlotUnavailableError extends ProviderError {
   readonly retryable = false;
 }
 
+/**
+ * The `providerCode` of a `SlotUnavailableError` for a period that is on sale, only not on the
+ * base pair the request pinned. The customer cannot have that charter, yet the week is not gone,
+ * so nothing may take it off the card for anyone else.
+ */
+export const ROUTE_NOT_OFFERED = "ROUTE_NOT_OFFERED";
+
+/**
+ * The `providerCode` of a `SlotUnavailableError` for a period the vendor sells, only not under
+ * the product we named for the listing. That name comes from the last catalogue sync, so this is
+ * our record falling behind the operator's, not the week going.
+ */
+export const PRODUCT_NOT_OFFERED = "PRODUCT_NOT_OFFERED";
+
+/**
+ * The `providerCode` of a `SlotUnavailableError` for a period an option of our own already holds.
+ * Nobody else has bought it: taking it off the card would outlive our hold.
+ */
+export const OWN_OPTION_HELD = "OWN_OPTION_HELD";
+
+/**
+ * The `providerCode` of a `SlotUnavailableError` for an option of ours that lapsed or was
+ * cancelled before it could be confirmed. The charter cannot go ahead, but nothing says anyone
+ * else bought the period.
+ */
+export const OPTION_LAPSED = "OPTION_LAPSED";
+
+/** A refusal that says nothing about the period being sold to anyone else. */
+export function refusesOnlyTheTerms(error: Error | null): boolean {
+  return (
+    error instanceof SlotUnavailableError &&
+    (error.providerCode === ROUTE_NOT_OFFERED ||
+      error.providerCode === PRODUCT_NOT_OFFERED ||
+      error.providerCode === OWN_OPTION_HELD ||
+      error.providerCode === OPTION_LAPSED)
+  );
+}
+
 const NETWORK_ERROR_NAMES = new Set(["AbortError", "TimeoutError", "FetchError"]);
 
 const NETWORK_ERROR_CODES = new Set([

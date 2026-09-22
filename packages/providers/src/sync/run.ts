@@ -1,8 +1,9 @@
-import { and, eq, inArray, lte } from "drizzle-orm";
+import { and, eq, inArray, lte, sql } from "drizzle-orm";
 import { log, parseError } from "evlog";
 
 import {
   IN_FLIGHT_SYNC_STATUSES,
+  provider,
   STALE_SYNC_RUN_MS,
   syncError,
   type syncKind,
@@ -67,22 +68,144 @@ export async function openSyncRun(
   providerId: string,
   kind: SyncKind,
 ): Promise<string> {
-  const opened = await insertSyncRun(db, providerId, kind);
-  if (opened) return track(db, opened, providerId, kind);
+  const opened = await attempt(db, providerId, kind);
+  if (opened.id) return track(db, opened.id, providerId, kind);
 
-  const reaped = await reapStaleSyncRuns(db, { providerId, kind });
-  if (reaped.length === 0) throw new SyncAlreadyRunningError(providerId, kind);
+  const reaped = await reapStaleSyncRuns(db, { providerId, kind: opened.heldBy });
+  if (reaped.length === 0) throw new SyncAlreadyRunningError(providerId, opened.heldBy);
 
   /* Still refused means a live process took it between the reap and here, which is the
      collision the lock is for: report it rather than fight over it. */
-  const retried = await insertSyncRun(db, providerId, kind);
-  if (!retried) throw new SyncAlreadyRunningError(providerId, kind);
+  const retried = await attempt(db, providerId, kind);
+  if (!retried.id) throw new SyncAlreadyRunningError(providerId, retried.heldBy);
 
-  return track(db, retried, providerId, kind);
+  return track(db, retried.id, providerId, kind);
 }
 
+/** The insert, and which kind holds the ground when it is refused. */
+async function attempt(
+  db: Database,
+  providerId: string,
+  kind: SyncKind,
+): Promise<{ id: string | null; heldBy: SyncKind }> {
+  try {
+    return { id: await insertSyncRun(db, providerId, kind), heldBy: kind };
+  } catch (error) {
+    if (error instanceof OtherKindInFlight) return { id: null, heldBy: error.kind };
+    throw error;
+  }
+}
+
+export interface LockWait {
+  /** Epoch ms after which a lock still held is reported rather than waited for. */
+  until: number;
+  pollMs: number;
+  now: () => number;
+  sleep: (ms: number) => Promise<void>;
+  /**
+   * Waits only while a run of this kind holds the ground, and reports any other at once. The
+   * catalogue job waits out a half-hourly availability run but not its own previous night, which
+   * on a multi-hour walk would only spend the wait to reach the same answer.
+   */
+  onlyWhileHeldBy?: SyncKind;
+}
+
+/**
+ * Opens the run once the lock is free, or throws `SyncAlreadyRunningError`.
+ *
+ * The half-hourly sweep holds the lock for five to ten minutes of every half hour, and for an
+ * exclusive provider it holds the other kinds off too, so a nightly run that gave up on the first
+ * refusal would lose its night to whichever container started a second sooner. Waiting costs
+ * budget, which is counted from the process start either way.
+ */
+export async function openWhenFree(open: () => Promise<string>, wait: LockWait): Promise<string> {
+  for (;;) {
+    try {
+      return await open();
+    } catch (error) {
+      if (!(error instanceof SyncAlreadyRunningError)) throw error;
+      if (wait.onlyWhileHeldBy !== undefined && error.kind !== wait.onlyWhileHeldBy) throw error;
+      if (wait.now() + wait.pollMs > wait.until) throw error;
+      await wait.sleep(wait.pollMs);
+    }
+  }
+}
+
+/**
+ * The providers whose background calls may not overlap at all, and the kinds that make them.
+ *
+ * NauSYS forbids parallel requests on a credential, and its written exemption covers only live
+ * booking calls. Measured on 2026-09-18, parallel `freeYachts` calls from this account were
+ * answered `429 Too many concurrent requests for user` for all but one. The in-flight index
+ * locks per kind, and the client's queue serializes only inside one process, so the nightly
+ * catalogue walk (hours long) and the half-hourly availability run each held their own lock and
+ * called the vendor side by side.
+ *
+ * Booking Manager allows 20 calls in flight per account and blocks the key until its nightly
+ * restart past that (MMK, 2026-08-25). Each sweep fans out to the budget in `call-budget.ts`, which
+ * only holds if one sweep runs at a time: the nightly catalogue walk used to overlap the
+ * half-hourly availability run, two processes each spending the whole sweep share.
+ *
+ * Media cleanup never calls a vendor and is left out.
+ */
+const EXCLUSIVE_PROVIDER_CODES = new Set(["nausys", "booking_manager"]);
+const VENDOR_KINDS: readonly SyncKind[] = ["catalogue", "availability"];
+
+type Executor = Database | Parameters<Parameters<Database["transaction"]>[0]>[0];
+
+/** Another vendor kind holds an exclusive provider; see `EXCLUSIVE_PROVIDER_CODES`. */
+class OtherKindInFlight extends Error {
+  constructor(readonly kind: SyncKind) {
+    super(`A ${kind} run is in flight`);
+  }
+}
+
+/**
+ * The insert that takes the lock, with the cross-kind check where the provider needs it.
+ *
+ * For an exclusive provider the check and the insert share one transaction behind an advisory
+ * lock on the provider, so two processes of different kinds cannot both see nothing and both
+ * start: the second waits for the first to commit its row, then finds it.
+ */
 async function insertSyncRun(
   db: Database,
+  providerId: string,
+  kind: SyncKind,
+): Promise<string | null> {
+  if (!(await isExclusive(db, providerId, kind))) return plainInsert(db, providerId, kind);
+
+  const others = VENDOR_KINDS.filter((other) => other !== kind);
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`sync:${providerId}`}))`);
+    const [live] = await tx
+      .select({ kind: syncRun.kind })
+      .from(syncRun)
+      .where(
+        and(
+          eq(syncRun.providerId, providerId),
+          inArray(syncRun.kind, [...others]),
+          inArray(syncRun.status, [...IN_FLIGHT_SYNC_STATUSES]),
+        ),
+      )
+      .limit(1);
+    const liveKind = VENDOR_KINDS.find((candidate) => candidate === live?.kind);
+    if (liveKind !== undefined) throw new OtherKindInFlight(liveKind);
+    return plainInsert(tx, providerId, kind);
+  });
+}
+
+async function isExclusive(db: Database, providerId: string, kind: SyncKind): Promise<boolean> {
+  if (!VENDOR_KINDS.includes(kind)) return false;
+  const [owner] = await db
+    .select({ code: provider.code })
+    .from(provider)
+    .where(eq(provider.id, providerId))
+    .limit(1);
+  return owner !== undefined && EXCLUSIVE_PROVIDER_CODES.has(owner.code);
+}
+
+async function plainInsert(
+  db: Executor,
   providerId: string,
   kind: SyncKind,
 ): Promise<string | null> {

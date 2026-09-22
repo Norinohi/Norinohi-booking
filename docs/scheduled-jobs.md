@@ -266,13 +266,35 @@ first we would hear of it is the customer arriving at the base.
 NauSYS publishes no webhook and no event stream, but its reservation list filters by modify
 time (`modifyTimeFrom`/`modifyTimeTo`), which is enough to ask "what changed since the last
 run". Verified against the live account (Sep 2026): 14 of the agency's 61 reservations answered
-for a two-month window, each carrying `lastModifiedAt`. Booking Manager publishes no such feed;
+for a two-month window, each carrying `lastModifiedAt`. The pass also names the reservations it
+holds, and NauSYS answers those by id whatever their modify time.
+
+Booking Manager is asked by id alone, one `GET /reservation/{id}` per reservation we hold, one
+call at a time on the credential's shared lane. Neither of its lists is a delta, measured on
+company 225 (Sep 2026): `/reservations/{year}` is agency-wide and leaves every cancelled record
+out unless asked for `status=5` on its own, and `/objects/Reservation/search` with a
+`lastSyncPoint` answered the same request differently twice, moved its sync point backwards and
+missed cancellations the single read reported. `5` reads as an operator cancellation. `3`, and a
+`2` past its `expirationDate`, read as a hold that lapsed (`option_lapsed`), which nobody
+cancelled and which Booking Manager keeps blocking the week for until the record is deleted.
+Any other status on a reservation of ours (a service week, an owner's week, a waiting option) is
+reported as `status_drift` with the vendor's word, so the run fails rather than passing over it.
+A reservation the vendor cannot find or answers in a shape we cannot read is logged and skipped
+(whether a `404` can mean a cancelled charter is still with the vendor); a vendor that is down,
+rate-limits the pass or refuses the key leaves the whole provider unreachable for the run.
+
+A booking is asked about only until two days after its check-out. `CONFIRMED` is where a charter
+stays once sold, and a charter that is over has nothing left for the operator to change, so
+without the bound every charter ever sold would cost Booking Manager one call on every run.
+
 `listChangedReservations` is optional on the provider interface and a vendor without one leaves
 its bookings unreconciled rather than blocking the pass.
 
-**It writes two things and only two**: the vendor's status word onto `booking.provider_status`,
-and the rotated security token, without which every later call on that reservation — a
-cancellation, a crew list — is refused. It does **not** move a booking's own status. A charter
+**It writes two things and only two**: the vendor's status word onto `booking.provider_status`
+(`OPTION`, `RESERVATION`, `STORNO`, `OPTION_EXPIRED`, `CANCELLED`, where the booking chain
+writes our canonical `option_held`, `confirmed`, `cancelled`), and the rotated security token
+(NauSYS only), without which every later call on that reservation, a cancellation or a crew
+list, is refused. It does **not** move a booking's own status. A charter
 the operator cancelled is money in a customer's hands and a refund somebody has to decide on,
 and this pass cannot know whether that already happened. So it reports and exits non-zero, and
 `flagStaleConfirmations` in the expiry sweep takes the same line for the same reason.
@@ -476,6 +498,10 @@ Manager hold is refused rather than released: the run exits non-zero and the ven
 keeps holding the boat, which is at least loud, but it is still a boat nobody can
 sell until someone reads the log.
 
+The same run also reads the NauSYS agency invoices of the last 45 days into
+`provider_invoice` (see the backend map, "Agency invoices"). A commission that differs from
+the quoted one is logged, not failed.
+
 `cron-reconcile` needs exactly what the sweep needs, and for the same reason: it walks
 bookings across vendors and resolves each one's adapter from its own `provider` column,
 so **both credential sets** or a booking held by the other vendor is silently skipped.
@@ -589,7 +615,15 @@ says why.
 Progress and failures land in `sync_run` and `sync_error` either way. Poll
 `admin.provider.syncStatus` to follow a run.
 
-Overlap is safe. A provider with a run already in flight is reported as not
-started rather than failing, and the NauSYS queue serializes every call on one
-credential, so a half-hourly availability run colliding with a still-running nightly
-catalogue walk just skips that run.
+Overlap is safe. A provider with a run of the same kind already in flight is reported as
+not started rather than failing. For both vendors the catalogue and availability kinds (price
+weeks included) also exclude each other (`EXCLUSIVE_PROVIDER_CODES` in `sync/run.ts`): the
+client's queue serializes calls only inside one process. NauSYS answered parallel calls on the
+credential with 429; Booking Manager allows 20 in flight per account and blocks the key until
+its nightly restart past that, and its sweep width is a share of that budget that holds only
+with one sweep at a time. So a half-hourly availability run colliding with a still-running
+nightly catalogue walk skips that run instead of calling the vendor beside it, and the
+catalogue job, which fires on the same minute as a tick, waits up to 20 minutes for that tick
+to finish rather than losing its night. Reservation reconcile and the expiry sweep open no run
+and are not covered; each holds at most one call open, and the Booking Manager budget counts
+them.

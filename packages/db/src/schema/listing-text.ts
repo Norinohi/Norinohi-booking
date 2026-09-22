@@ -10,6 +10,8 @@ export const listingTextKind = pgEnum("listing_text_kind", [
   "notes",
   "conditions",
   "one_way_note",
+  /* The operator's rule for bringing the boat back, off its base: "Return on the evening before". */
+  "return_note",
 ]);
 
 /** Providers ship the same prose in several languages; locales are BCP-47 short tags. */

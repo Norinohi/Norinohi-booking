@@ -1,8 +1,15 @@
 import "../test-support/checkout-env";
 
+import { quote as quoteTable } from "@yacht-charter/db/schema/quote";
 import { createTestDatabase, type TestDatabase } from "@yacht-charter/db/test-support/database";
-import { SlotUnavailableError } from "@yacht-charter/providers/shared/errors";
+import {
+  ContractError,
+  OPTION_LAPSED,
+  SlotUnavailableError,
+  TransientError,
+} from "@yacht-charter/providers/shared/errors";
 import type { MockInventoryProvider } from "@yacht-charter/providers/mock/provider";
+import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
@@ -23,6 +30,7 @@ import {
 } from "../test-support/fake-stripe";
 import { getBooking, getCheckoutStatus } from "./booking";
 import { confirmCheckout } from "./payment";
+import { listUnreleasedOptions } from "./provider-option";
 import { handleStripeWebhook } from "./stripe-webhook";
 
 /*
@@ -150,6 +158,10 @@ describe("happy path: quote, hold, checkout, webhook, confirmation", () => {
     const { db } = test;
     const confirm = vi.spyOn(inventory, "confirmBooking");
     stripe.capture.mockClear();
+    /* The base pair the option was opened on travels to the confirm with it. */
+    const route = { startBaseId: "31404981", endBaseId: "2206479" };
+    const quoteId = (await bookingState(db, bookingId)).quote?.id ?? "";
+    await db.update(quoteTable).set({ route }).where(eq(quoteTable.id, quoteId));
 
     const body = eventBody(
       "payment_intent.amount_capturable_updated",
@@ -164,6 +176,7 @@ describe("happy path: quote, hold, checkout, webhook, confirmation", () => {
       note: undefined,
     });
     expect(confirm).toHaveBeenCalledTimes(1);
+    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({ route }));
     expect(stripe.capture).toHaveBeenCalledWith(intentId, undefined, {
       idempotencyKey: `capture:${intentId}`,
     });
@@ -433,6 +446,221 @@ describe("provider refuses after the card was authorized", () => {
 
     expect((await bookingState(db, hold.bookingId)).booking.status).toBe("REFUNDED");
     expect(await weekOnSale(db, listingId)).toBe(true);
+  });
+});
+
+/*
+ * Booking Manager keeps an expired option (status 3) blocking its week until it is deleted, so a
+ * confirm refused on it has to hand the option back itself: no sweep looks at a refunded booking.
+ */
+describe("provider refuses the confirmation on an option that still blocks the week", () => {
+  async function refusedOnLapsedOption(slug: string) {
+    const { db } = test;
+    const { hold, pi } = await checkoutOn(slug);
+    const { booking } = await bookingState(db, hold.bookingId);
+    vi.spyOn(inventory, "capabilities").mockReturnValue({
+      ...inventory.capabilities(),
+      lapsedOptionHoldsSlot: true,
+    });
+    vi.spyOn(inventory, "confirmBooking").mockRejectedValueOnce(
+      new SlotUnavailableError("Booking Manager option is Option expired", {
+        providerCode: OPTION_LAPSED,
+      }),
+    );
+    return { hold, pi, booking };
+  }
+
+  it("deletes the option after refusing the booking", async () => {
+    const { db } = test;
+    const { hold, pi, booking } = await refusedOnLapsedOption("lapsed-confirm");
+    const cancel = vi.spyOn(inventory, "cancelOption");
+
+    try {
+      await deliver(
+        db,
+        inventory,
+        stripe,
+        eventBody(
+          "payment_intent.amount_capturable_updated",
+          stripe.settle(pi, "requires_capture"),
+        ),
+      );
+    } finally {
+      vi.mocked(inventory.capabilities).mockRestore();
+    }
+
+    expect(cancel).toHaveBeenCalledWith({
+      providerReservationId: booking.providerReservationId,
+      securityToken: booking.providerReservationUuid,
+    });
+    const refused = await bookingState(db, hold.bookingId);
+    expect(refused.booking.status).toBe("REFUND_PENDING");
+    expect(refused.events.map((event) => event.kind)).toEqual([
+      "option_created",
+      "confirm_failed",
+      "cancel_succeeded",
+    ]);
+    cancel.mockRestore();
+  });
+
+  it("lists a delete the vendor refuses for a person to free", async () => {
+    const { db } = test;
+    const { hold, pi } = await refusedOnLapsedOption("lapsed-stuck");
+    const cancel = vi.spyOn(inventory, "cancelOption").mockRejectedValueOnce(
+      new ContractError("the vendor refused to delete it", {
+        providerCode: "EXPIRED_OPTION_NOT_RELEASED",
+      }),
+    );
+
+    try {
+      await deliver(
+        db,
+        inventory,
+        stripe,
+        eventBody(
+          "payment_intent.amount_capturable_updated",
+          stripe.settle(pi, "requires_capture"),
+        ),
+      );
+    } finally {
+      vi.mocked(inventory.capabilities).mockRestore();
+      cancel.mockRestore();
+    }
+
+    expect((await bookingState(db, hold.bookingId)).booking.status).toBe("REFUND_PENDING");
+    expect(await listUnreleasedOptions(db)).toContainEqual(
+      expect.objectContaining({
+        bookingId: hold.bookingId,
+        reason: "the vendor refused to delete it",
+      }),
+    );
+  });
+});
+
+/*
+ * A timeout on the confirmation says nothing about whether the charter exists: the vendor may
+ * have fixed it before the answer was lost. Refunding it, as a refusal is, gave the money back
+ * on a charter the operator was holding.
+ */
+describe("provider does not answer the confirmation", () => {
+  it("neither captures nor releases, and leaves the booking for reconcile", async () => {
+    const { db } = test;
+    const { listingId, hold, pi } = await checkoutOn("silent");
+    vi.spyOn(inventory, "confirmBooking").mockRejectedValueOnce(
+      new TransientError("NauSYS createBooking timed out"),
+    );
+    stripe.capture.mockClear();
+    stripe.cancel.mockClear();
+
+    await deliver(
+      db,
+      inventory,
+      stripe,
+      eventBody("payment_intent.amount_capturable_updated", stripe.settle(pi, "requires_capture")),
+    );
+
+    expect(stripe.capture).not.toHaveBeenCalled();
+    expect(stripe.cancel).not.toHaveBeenCalled();
+
+    const pending = await bookingState(db, hold.bookingId);
+    expect(pending.booking.status).toBe("CONFIRMING");
+    expect(pending.events.map((event) => event.kind)).toEqual(["option_created", "confirm_failed"]);
+    expect(await weekOnSale(db, listingId)).toBe(false);
+  });
+});
+
+/*
+ * Booking Manager can answer its confirm with the reservation still an option. That is neither a
+ * confirmation nor a refusal, so the booking waits in CONFIRMING like a timeout does.
+ */
+describe("provider answers the confirmation without confirming", () => {
+  it("neither marks it confirmed nor refunds it", async () => {
+    const { db } = test;
+    const { listingId, hold, pi } = await checkoutOn("unconfirmed");
+    const confirmBooking = inventory.confirmBooking.bind(inventory);
+    vi.spyOn(inventory, "confirmBooking").mockImplementationOnce(async (request) => ({
+      ...(await confirmBooking(request)),
+      status: "option_held",
+    }));
+    stripe.capture.mockClear();
+    stripe.cancel.mockClear();
+
+    await deliver(
+      db,
+      inventory,
+      stripe,
+      eventBody("payment_intent.amount_capturable_updated", stripe.settle(pi, "requires_capture")),
+    );
+
+    expect(stripe.capture).not.toHaveBeenCalled();
+    expect(stripe.cancel).not.toHaveBeenCalled();
+    const pending = await bookingState(db, hold.bookingId);
+    expect(pending.booking.status).toBe("CONFIRMING");
+    expect(pending.events.at(-1)).toMatchObject({
+      kind: "confirm_failed",
+      payload: { indeterminate: true, providerStatus: "option_held" },
+    });
+    expect(await weekOnSale(db, listingId)).toBe(false);
+  });
+});
+
+/*
+ * Booking Manager answers the option with the operator's crew-list page and with what we owe the
+ * operator, and the confirmation with the agency twin's id. The booking keeps each, and a
+ * confirmation that states less does not take away what the option carried.
+ */
+describe("what the provider states on the reservation", () => {
+  it("keeps the crew-list page, the operator's settlement and the twin id", async () => {
+    const { db } = test;
+    const { listingId } = await seedYacht(db, "settlement");
+    const userId = await seedCustomer(db, "usr_settlement");
+    const quote = await quoteWeek(db, inventory, listingId, userId);
+    const settlement = {
+      currency: "EUR",
+      netMinor: 144_500,
+      plan: [{ dueDate: "2026-09-29", amountMinor: 144_500 }],
+      terms: "50% after booking",
+    };
+    const link = "https://www.booking-manager.com/cbm/servlet/cbm?fview=crew_editor";
+
+    const createOption = inventory.createOption.bind(inventory);
+    vi.spyOn(inventory, "createOption").mockImplementationOnce(async (draft) => ({
+      ...(await createOption(draft)),
+      crewListLink: link,
+      operatorSettlement: settlement,
+    }));
+    const hold = await holdQuote(db, inventory, userId, quote.quoteId);
+    await confirmCheckout(db, userId, hold.bookingId, "deposit");
+    const [paymentRow] = (await bookingState(db, hold.bookingId)).payments;
+    if (!paymentRow?.stripePaymentIntentId) throw new Error("checkout recorded no intent");
+
+    expect((await bookingState(db, hold.bookingId)).booking).toMatchObject({
+      crewListLink: link,
+      operatorSettlement: settlement,
+      providerAgencyReservationId: null,
+    });
+
+    const confirmBooking = inventory.confirmBooking.bind(inventory);
+    vi.spyOn(inventory, "confirmBooking").mockImplementationOnce(async (request) => ({
+      ...(await confirmBooking(request)),
+      providerAgencyReservationId: "8295147120000107113",
+    }));
+    await deliver(
+      db,
+      inventory,
+      stripe,
+      eventBody(
+        "payment_intent.amount_capturable_updated",
+        stripe.settle(paymentRow.stripePaymentIntentId, "requires_capture"),
+      ),
+    );
+
+    expect((await bookingState(db, hold.bookingId)).booking).toMatchObject({
+      status: "CONFIRMED",
+      crewListLink: link,
+      operatorSettlement: settlement,
+      providerAgencyReservationId: "8295147120000107113",
+    });
   });
 });
 

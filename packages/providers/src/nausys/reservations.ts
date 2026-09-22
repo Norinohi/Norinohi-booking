@@ -8,20 +8,26 @@ import {
 } from "../shared/dates";
 import { decimalStringToMinor } from "../shared/money";
 import type { ProviderReservationState, WaitingOptions } from "../types";
+import type { JsonObject } from "../shared/json";
 import type { NausysClient } from "./client";
 import { nausysEndpoints, restYachtReservationSchema } from "./endpoints";
 
 /**
- * The reservations the operator touched inside a window.
+ * What the operator's own record says about our reservations.
  *
- * `reservations` filters by modify time (`modifyTimeFrom`/`modifyTimeTo`), which is the only
- * change feed NauSYS publishes: no webhook, no event stream. Verified against the live account
- * (Sep 2026) -- 14 of the agency's 61 reservations answered for a two-month window, each
- * carrying `lastModifiedAt`.
+ * NauSYS publishes no webhook and no event stream. It splits a reservation's life across three
+ * lists that take the same request: `reservations` (fixed charters), `options` (holds) and
+ * `stornos` (cancellations, with `canceledAt`). Reading only the first was reading only one of
+ * three: a hold the operator released or changed never came back, and a charter it cancelled
+ * moved into `stornos` where nothing looked, so the one change worth waking somebody for was
+ * the one the pass could not see.
  *
- * Without it nothing ever re-read a reservation. Our copy is written once, at the moment we
- * act on it, so an operator who cancels a charter, moves its dates or reprices it leaves our
- * booking saying what it said the day it was made.
+ * Where the caller names the reservations it holds, they are asked about by id, which the vendor
+ * answers whatever their modify time ("ignored if reservation ids sent") and whatever list they
+ * now sit in, so a change older than the window is not missed either. Without ids all three
+ * lists are read. Without ids the modify-time
+ * window stands, verified against the live account (Sep 2026): 14 of the agency's 61
+ * reservations answered for a two-month window, each carrying `lastModifiedAt`.
  */
 const restChangedReservationSchema = restYachtReservationSchema.extend({
   lastModifiedAt: z.string().optional(),
@@ -36,32 +42,86 @@ const restReservationsResponseSchema = z.looseObject({
 export interface NausysChangeWindow {
   since: Date;
   until: Date;
+  /** The vendor reservation ids we hold open; asked about directly when given. */
+  reservationIds?: readonly string[] | undefined;
 }
+
+/** Enough ids per call to keep a request small; the vendor states no limit. */
+const IDS_PER_CALL = 100;
+
+/** Which list wins when one id is in more than one: a cancellation outranks everything. */
+const PRECEDENCE = {
+  cancelled: 3,
+  confirmed: 2,
+  option_held: 1,
+  unrecognised: 0,
+} satisfies Record<ProviderReservationState["status"], number>;
 
 export async function listChangedNausysReservations(
   client: NausysClient,
   window: NausysChangeWindow,
   timeZone: string,
 ): Promise<ProviderReservationState[]> {
-  const response = await client.bookingCall(
-    nausysEndpoints.availability.reservations,
-    restReservationsResponseSchema,
-    {
-      modifyTimeFrom: nausysMinute(window.since, timeZone),
-      modifyTimeTo: nausysMinute(window.until, timeZone),
-    },
-    // Background work, so the serialized lane: nobody is waiting on this answer.
-    "sync",
-  );
+  const ids = (window.reservationIds ?? []).map(Number).filter((id) => Number.isSafeInteger(id));
+  const filters: JsonObject[] =
+    ids.length > 0
+      ? chunk(ids, IDS_PER_CALL).map((batch) => ({ reservations: batch }))
+      : [
+          {
+            modifyTimeFrom: nausysMinute(window.since, timeZone),
+            modifyTimeTo: nausysMinute(window.until, timeZone),
+          },
+        ];
+  /*
+   * Asked by id, any one list answers for every reservation named, in its current status:
+   * verified on the vendor's test company (Sep 2026), where four stornoed options came back
+   * STORNO from `reservations`, `options` and `stornos` alike. The window has no ids to go by,
+   * so it still needs all three.
+   */
+  const lists =
+    ids.length > 0
+      ? [nausysEndpoints.availability.reservations]
+      : [
+          nausysEndpoints.availability.reservations,
+          nausysEndpoints.availability.options,
+          nausysEndpoints.availability.stornos,
+        ];
 
-  return (response.reservations ?? []).map((reservation) => stateOf(reservation, timeZone));
+  const byId = new Map<string, ProviderReservationState>();
+  for (const endpoint of lists) {
+    for (const filter of filters) {
+      const response = await client.bookingCall(
+        endpoint,
+        restReservationsResponseSchema,
+        filter,
+        // Background work, so the serialized lane: nobody is waiting on this answer.
+        "sync",
+      );
+      for (const reservation of response.reservations ?? []) {
+        const state = stateOf(reservation, timeZone);
+        const held = byId.get(state.providerReservationId);
+        if (!held || PRECEDENCE[state.status] > PRECEDENCE[held.status]) {
+          byId.set(state.providerReservationId, state);
+        }
+      }
+    }
+  }
+  return [...byId.values()];
+}
+
+function chunk<T>(items: readonly T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let at = 0; at < items.length; at += size) out.push(items.slice(at, at + size));
+  return out;
 }
 
 function stateOf(
   reservation: z.infer<typeof restChangedReservationSchema>,
   timeZone: string,
 ): ProviderReservationState {
-  const currency = reservation.currency;
+  /* The reservation lists carry `paymentCurrency` where the booking responses carry `currency`,
+     and without one the price was dropped before anything could compare it. */
+  const currency = reservation.currency ?? reservation.paymentCurrency;
   const priceMinor =
     reservation.clientPrice === undefined || currency === undefined
       ? undefined
@@ -72,6 +132,7 @@ function stateOf(
     status: canonicalStatusOf(reservation.reservationStatus),
     providerStatus: reservation.reservationStatus,
     securityToken: reservation.uuid,
+    externalYachtId: String(reservation.yachtId),
     checkIn: dayOrUndefined(reservation.periodFrom),
     checkOut: dayOrUndefined(reservation.periodTo),
     ...(priceMinor === undefined ? null : { priceMinor, currency }),

@@ -1,3 +1,4 @@
+import { log } from "evlog";
 import { z } from "zod";
 
 import type { ProviderRecordSet, ProviderResourceType } from "../types";
@@ -13,11 +14,18 @@ export function parseAll<TSchema extends z.ZodType>(
   schema: TSchema,
 ): z.infer<TSchema>[] {
   const parsed: z.infer<TSchema>[] = [];
+  let dropped = 0;
   for (const entry of records.get(resourceType) ?? []) {
     const result = schema.safeParse(entry.payload);
     // One unparseable record is dropped rather than thrown: it is already retained
     // raw, and the run is worth more than the row.
     if (result.success) parsed.push(result.data);
+    else dropped += 1;
+  }
+  /* Said once per type rather than per row. Silent, a vendor retyping one field would read as a
+     clean sync that projected nothing of that kind. */
+  if (dropped > 0) {
+    log.warn({ action: "projection.records_dropped", resourceType, dropped, kept: parsed.length });
   }
   return parsed;
 }

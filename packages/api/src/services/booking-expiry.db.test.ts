@@ -25,6 +25,7 @@ import { inArray } from "drizzle-orm";
 
 import { confirmCheckout } from "./payment";
 import { sweepExpiries } from "./expiry";
+import { retryReleaseForBooking } from "./provider-option";
 
 /*
  * What the expiry job does to a checkout nobody finished, run with its own clock moved forward
@@ -137,6 +138,65 @@ describe("hold expiry", () => {
       kind: "option_released",
       payload: { released: false, error: "provider timed out" },
     });
+  });
+});
+
+/*
+ * Staff retrying a release the vendor refused. A lapsed NauSYS option frees its week by itself,
+ * so asking again only fails; a lapsed Booking Manager one (status 3) keeps the week off sale
+ * until it is deleted, so there the retry must still reach the vendor.
+ */
+describe("retrying a refused release after the hold lapsed", () => {
+  it("records a lapse as the release where lapsing frees the week", async () => {
+    const { db } = test;
+    const { hold, booking } = await holdOn("lapsed-free");
+    const cancel = vi.spyOn(inventory, "cancelOption");
+    vi.useFakeTimers({ now: (booking.holdExpiresAt?.getTime() ?? 0) + HOUR, toFake: ["Date"] });
+
+    try {
+      await expect(retryReleaseForBooking(db, inventory, hold.bookingId)).resolves.toEqual({
+        released: true,
+        reason: null,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(cancel).not.toHaveBeenCalled();
+    expect((await bookingState(db, hold.bookingId)).events.at(-1)).toMatchObject({
+      kind: "option_released",
+      payload: { released: true, lapsedAt: booking.holdExpiresAt?.toISOString() },
+    });
+    cancel.mockRestore();
+  });
+
+  it("still asks the vendor where a lapsed option goes on holding the week", async () => {
+    const { db } = test;
+    const { hold, booking } = await holdOn("lapsed-held");
+    const cancel = vi.spyOn(inventory, "cancelOption");
+    const capabilities = vi
+      .spyOn(inventory, "capabilities")
+      .mockReturnValue({ ...inventory.capabilities(), lapsedOptionHoldsSlot: true });
+    vi.useFakeTimers({ now: (booking.holdExpiresAt?.getTime() ?? 0) + HOUR, toFake: ["Date"] });
+
+    try {
+      await expect(retryReleaseForBooking(db, inventory, hold.bookingId)).resolves.toEqual({
+        released: true,
+        reason: null,
+      });
+    } finally {
+      vi.useRealTimers();
+      capabilities.mockRestore();
+    }
+
+    expect(cancel).toHaveBeenCalledWith({
+      providerReservationId: booking.providerReservationId,
+      securityToken: booking.providerReservationUuid,
+    });
+    expect((await bookingState(db, hold.bookingId)).events.at(-1)).toMatchObject({
+      kind: "cancel_succeeded",
+    });
+    cancel.mockRestore();
   });
 });
 

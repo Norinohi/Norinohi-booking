@@ -4,6 +4,8 @@
     "title": "Bokningssammanfattning",
     "yacht": "Båt",
     "dates": "Datum",
+    "route": "Rutt",
+    "oneWay": "enkel resa",
     "crew": "Besättning",
     "people": "Personer",
     "extras": "Tillval",
@@ -25,7 +27,8 @@
     "dueNow": "Att betala nu",
     "terms": "Jag godkänner <link>de allmänna villkoren och hyresavtalet</link>.",
     "cancellation": "Jag accepterar <link>avbokningsvillkoren</link>.",
-    "operatorTerms": "Operatörens villkor, inklusive avbokningsvillkoren"
+    "operatorTerms": "Operatörens villkor, inklusive avbokningsvillkoren",
+    "returnNote": "Återlämning av båten"
   },
   "extras": {
     "mandatory": "Obligatoriskt",
@@ -156,6 +159,7 @@
     "summary": {
       "yacht": "Båt",
       "dates": "Datum",
+      "route": "Rutt",
       "crew": "Besättning",
       "mandatory": "Obligatoriskt",
       "selectedExtras": "Valda tillval",
@@ -337,6 +341,7 @@
     "guestsLabel": "Gäster",
     "crew": "Besättning",
     "marina": "Marina",
+    "route": "Rutt",
     "referenceLabel": "Referens",
     "settled": "Inget kvar att betala",
     "viewYacht": "Visa båtsidan",
@@ -354,8 +359,7 @@
     "crewList": {
       "title": "Besättningslista",
       "notice": "Charterbolaget måste lämna myndigheterna en lista över alla ombord innan ni seglar. Fyll i den här så skickar vi den till dem: det som saknas frågar basen efter i disken när ni kommer.",
-      "alsoAsked": "De frågar också efter {fields}, som basen samlar in i disken när ni kommer.",
-      "maxPassengers": "Deras lista rymmer högst {count} personer.",
+      "maxPassengers": "Deras lista rymmer högst {count, plural, one {# person} other {# personer}}.",
       "loading": "Laddar din besättningslista…",
       "empty": "Ingen tillagd än. Din bokning gäller {guests} gäster: lägg till alla som ska vara ombord, inklusive skepparen.",
       "member": "Besättningsmedlem {number}",
@@ -376,11 +380,8 @@
         "firstName": "Ange personens förnamn",
         "lastName": "Ange personens efternamn",
         "skipperEmail": "Ange en giltig e-postadress",
-        "oneSkipper": "Bara en person kan vara skeppare"
-      },
-      "requires": {
-        "shoeSize": "skostorlekar",
-        "disabledPerson": "om någon ombord har en funktionsnedsättning"
+        "oneSkipper": "Bara en person kan vara skeppare",
+        "maxPassengers": "Charterbolagets lista rymmer högst {count, plural, one {# person} other {# personer}}"
       },
       "legend": "Fält märkta med * är de som det här charterbolaget kräver.",
       "sent": "Skickad till charterbolaget {when}.",
@@ -407,7 +408,7 @@
       "skipperEmail": "Skepparens e-post",
       "skipperMobile": "Skepparens telefon",
       "note": "Något basen bör veta",
-      "notePlaceholder": "Ankomsttid, flightnummer, någon som behöver assistans…",
+      "notePlaceholder": "Någon som behöver hjälp, sen ankomst, allt basen bör planera för…",
       "documents": {
         "passport": "Pass",
         "idCard": "ID-kort",
@@ -418,7 +419,14 @@
         "female": "Kvinna"
       },
       "placeSearch": "Sök platser",
-      "placeEmpty": "Ingen plats med det namnet"
+      "placeEmpty": "Ingen plats med det namnet",
+      "shoeSize": "Skostorlek",
+      "shoeSizePlaceholder": "EU 42",
+      "disabledPerson": "Den här personen behöver hjälp ombord",
+      "flightNumber": "Flightnummer",
+      "flightNumberPlaceholder": "OU 412",
+      "arrivalTime": "Ankomsttid",
+      "airportTransfer": "Vi vill ha transfer från flygplatsen till basen"
     },
     "priceLineLabels": {
       "charterPrice": "Charterpris",

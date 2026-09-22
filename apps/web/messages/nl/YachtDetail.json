@@ -132,6 +132,8 @@
     "onRequest": "De prijs van dit jacht is op aanvraag",
     "onRequestHint": "We hebben data voor dit jacht, maar er is geen gepubliceerd tarief voor. Laat ons weten wanneer je wilt zeilen en we komen bij je terug met een prijs.",
     "dropOff": "Jachthaven voor terugbrengen",
+    "oneWayRoute": "Enkele reis",
+    "oneWayNote": "Het jacht wordt in een andere jachthaven ingeleverd dan waar het wordt opgehaald.",
     "pickUp": "Ophalen: {marina}",
     "boatPriceHintDiscounted": "Huurprijs na korting",
     "depositWhenInsured": "of {amount} met de schadeafkoop"

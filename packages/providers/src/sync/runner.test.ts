@@ -16,6 +16,7 @@ import {
   type CatalogueSyncStore,
   fromRawEntities,
   runCatalogueIngest,
+  withoutOperatorFinancials,
 } from "./runner";
 
 interface StoredRecord {
@@ -616,5 +617,44 @@ describe("runCatalogueIngest write batching", () => {
     expect(summary).toMatchObject({ status: "failed", aborted: true });
     // No per-record retry: an auth failure repeats on every one of them.
     expect(fake.writeBatches()).toEqual([["1", "2", "3"]]);
+  });
+});
+
+/* 1,261 of 1,292 Booking Manager companies carry a VAT code, and NauSYS files bank accounts. */
+describe("withoutOperatorFinancials", () => {
+  const record = (resourceType: ProviderResourceType, payload: JsonValue) => ({
+    resourceType,
+    externalId: "225",
+    payload,
+    sourceHash: "hash",
+    seenAt: new Date("2026-09-22T00:00:00Z"),
+  });
+
+  it("drops a company's tax registration and bank accounts, as either vendor spells them", () => {
+    const stored = withoutOperatorFinancials(
+      record("company", {
+        id: 225,
+        name: "Demo version",
+        vatCode: "HR12345678901",
+        bankAccountNumber: "HR1210010051863000160",
+        vatcode: "12345678901",
+        bankAccounts: [{ iban: "HR1210010051863000160" }],
+        bankAcounts: [{ iban: "HR1210010051863000160" }],
+        checkoutNote: " ",
+        maxDiscountFromCommissionPercentage: 10,
+      }),
+    );
+
+    expect(stored.payload).toEqual({
+      id: 225,
+      name: "Demo version",
+      checkoutNote: " ",
+      maxDiscountFromCommissionPercentage: 10,
+    });
+  });
+
+  it("leaves every other record as it came", () => {
+    const yacht = record("yacht", { id: 1, vatCode: "kept" });
+    expect(withoutOperatorFinancials(yacht)).toBe(yacht);
   });
 });

@@ -86,6 +86,7 @@ async function main(): Promise<void> {
     store: createDrizzlePricePeriodStore({ db, providerId }),
     listingIds,
     loadSeasonalPrices: (ids) => provider.loadSeasonalPrices(ids),
+    completeWithin: provider.seasonalPricesCompleteWithin?.(),
   });
 
   console.log(

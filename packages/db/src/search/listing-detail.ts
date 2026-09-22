@@ -7,6 +7,7 @@ import { AMENITY_GROUPS, amenityGroupFor } from "./amenity-groups";
 import { amenityIconFor } from "./amenity-icons";
 import { normalizeSearchRow, searchColumns, type SearchRow } from "./columns";
 import { crewOptionsFor } from "./crew";
+import { extraSoldFromFiledBase } from "./extra-scope-sql";
 import { foldFeeVariants, isSelectableExtra, pricedItem } from "./extras";
 import { valueForLabel } from "./filters";
 import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs } from "./localize";
@@ -14,6 +15,7 @@ import { normalizedKeySql } from "./normalize";
 import { docHasMainsail } from "./mainsail";
 import { placeLine, placeLineExcept } from "./place-line";
 import { comparablePrice, recommendedSortValue } from "./pricing-sql";
+import { readReturnNote } from "./return-note";
 import { nextCharterAfterLapseColumns } from "./sellable-starts";
 import type {
   FaqCategory,
@@ -202,20 +204,31 @@ export async function getListingDetailByIdOrSlug(
   const [localized] = await localizeSearchDocs(db, [raw], locale, translate);
   const listing = localized ?? raw;
 
-  const [infoRows, amenityRows, extraRows, faqRows, reviews, popularYachts, prose, route] =
-    await Promise.all([
-      db.execute<{
-        beamM: string | null;
-        draftM: string | null;
-        engines: number | null;
-        enginePower: string | null;
-        fuelCapacity: number | null;
-        waterCapacity: number | null;
-        checkInTime: string | null;
-        checkOutTime: string | null;
-        videoUrl: string | null;
-        tourUrl: string | null;
-      }>(sql`
+  const [
+    infoRows,
+    amenityRows,
+    extraRows,
+    faqRows,
+    reviews,
+    popularYachts,
+    prose,
+    returnNoteText,
+    route,
+  ] = await Promise.all([
+    db.execute<{
+      beamM: string | null;
+      draftM: string | null;
+      engines: number | null;
+      enginePower: string | null;
+      fuelCapacity: number | null;
+      waterCapacity: number | null;
+      checkInTime: string | null;
+      checkOutTime: string | null;
+      videoUrl: string | null;
+      tourUrl: string | null;
+      skipperLicenceRequired: boolean | null;
+      baseAddress: string | null;
+    }>(sql`
       select
         spec.beam_m as "beamM",
         spec.draft_m as "draftM",
@@ -223,12 +236,16 @@ export async function getListingDetailByIdOrSlug(
         spec.engine_power as "enginePower",
         spec.fuel_capacity as "fuelCapacity",
         spec.water_capacity as "waterCapacity",
-        bs.check_in_time as "checkInTime",
-        bs.check_out_time as "checkOutTime",
+        /* The priced offer's handover, then the listing's, then the shared base row's, which
+           keeps whichever operator at the marina was written last. */
+        coalesce(o.check_in_time, l.check_in_time, bs.check_in_time) as "checkInTime",
+        coalesce(o.check_out_time, l.check_out_time, bs.check_out_time) as "checkOutTime",
         /* Read from the offer the card is priced from, like the extras: two vendors selling
            one hull can film it separately, and the page shows one of them. */
         coalesce(o.video_url, l.video_url) as "videoUrl",
-        coalesce(o.tour_url, l.tour_url) as "tourUrl"
+        coalesce(o.tour_url, l.tour_url) as "tourUrl",
+        o.skipper_licence_required as "skipperLicenceRequired",
+        bs.address as "baseAddress"
       from listing l
       left join listing_specification spec on spec.listing_id = l.id
       left join base bs on bs.id = l.home_base_id
@@ -236,23 +253,24 @@ export async function getListingDetailByIdOrSlug(
       where l.id = ${listing.listingId}
       limit 1
     `),
-      readListingAmenities(db, listing.listingId),
-      db.execute<{
-        source: string;
-        kind: string;
-        externalId: string;
-        label: string;
-        sourceLabel: string;
-        obligatory: boolean;
-        crewRole: string | null;
-        priceMinor: number | null;
-        priceCurrency: string | null;
-        priceMeasure: string | null;
-        calculationType: string | null;
-        percentage: string | null;
-        payableInBase: boolean | null;
-        oneWayOnly: boolean;
-      }>(sql`
+    readListingAmenities(db, listing.listingId),
+    db.execute<{
+      source: string;
+      kind: string;
+      externalId: string;
+      label: string;
+      sourceLabel: string;
+      obligatory: boolean;
+      crewRole: string | null;
+      priceMinor: number | null;
+      priceCurrency: string | null;
+      priceMeasure: string | null;
+      calculationType: string | null;
+      percentage: string | null;
+      payableInBase: boolean | null;
+      oneWayOnly: boolean;
+      note: string | null;
+    }>(sql`
       select
         extra.source,
         extra.kind,
@@ -271,7 +289,8 @@ export async function getListingDetailByIdOrSlug(
         extra.calculation_type as "calculationType",
         extra.percentage,
         extra.payable_in_base as "payableInBase",
-        extra.one_way_only as "oneWayOnly"
+        extra.one_way_only as "oneWayOnly",
+        extra.note
       from provider_extra_catalogue extra
       left join provider_extra_translation translation
         on translation.source = extra.source
@@ -317,33 +336,29 @@ export async function getListingDetailByIdOrSlug(
          * valid only at others is somebody else's charter: listing it here told the customer
          * about a fee they will never be asked for.
          */
-        and (
-          extra.valid_for_base_ids is null
-          or extra.external_base_id is null
-          or extra.external_base_id = any(extra.valid_for_base_ids)
-        )
+        and ${extraSoldFromFiledBase()}
       /* Ordered on the vendor's name, not the translated one, so the sections keep the same
          order in every locale. */
       order by extra.obligatory desc, extra.price_minor, extra.name asc
     `),
-      /*
-       * Listing-specific entries and site-wide ones in one read, the listing's own first.
-       * A site-wide entry is the row with a null listing_id; `category` groups it on the page
-       * and orders it here by the enum's declaration order, which is the client's order.
-       *
-       * An entry with no answer is dropped rather than returned blank: the client sent the
-       * questions before the answers, and a question rendered under a heading with nothing
-       * under it reads as a broken page rather than as work in progress.
-       *
-       * Locale is matched exactly, with no fallback, for the same reason providerDescription
-       * refuses one: an English answer served under lang="uk" is worse than a shorter page.
-       */
-      db.execute<{
-        id: string;
-        question: string;
-        answer: string;
-        category: FaqCategory | null;
-      }>(sql`
+    /*
+     * Listing-specific entries and site-wide ones in one read, the listing's own first.
+     * A site-wide entry is the row with a null listing_id; `category` groups it on the page
+     * and orders it here by the enum's declaration order, which is the client's order.
+     *
+     * An entry with no answer is dropped rather than returned blank: the client sent the
+     * questions before the answers, and a question rendered under a heading with nothing
+     * under it reads as a broken page rather than as work in progress.
+     *
+     * Locale is matched exactly, with no fallback, for the same reason providerDescription
+     * refuses one: an English answer served under lang="uk" is worse than a shorter page.
+     */
+    db.execute<{
+      id: string;
+      question: string;
+      answer: string;
+      category: FaqCategory | null;
+    }>(sql`
       select id, question, answer, category
       from faq
       where (listing_id = ${listing.listingId} or listing_id is null)
@@ -351,16 +366,21 @@ export async function getListingDetailByIdOrSlug(
         and nullif(btrim(answer), '') is not null
       order by (listing_id is null), category, sort_order asc, created_at asc
     `),
-      listListingReviews(db, listing.listingId),
-      /* Localized with the same translator as the page around them: these render as ordinary
+    listListingReviews(db, listing.listingId),
+    /* Localized with the same translator as the page around them: these render as ordinary
          search cards, and a Ukrainian page whose "popular yachts" strip says "Sailing yacht"
          next to its own "Вітрильна яхта" is the drift the shared table exists to prevent. */
-      listSimilarListings(db, listing.listingId).then((docs) =>
-        localizeSearchDocs(db, docs, locale, translate),
-      ),
-      providerDescription(db, listing.listingId, locale),
-      suggestedRouteFor(db, listing.baseId, locale),
-    ]);
+    listSimilarListings(db, listing.listingId).then((docs) =>
+      localizeSearchDocs(db, docs, locale, translate),
+    ),
+    providerDescription(db, listing.listingId, locale),
+    readReturnNote(db, {
+      listingId: listing.listingId,
+      listingOfferId: listing.bestOfferId ?? null,
+      locale,
+    }),
+    suggestedRouteFor(db, listing.baseId, locale),
+  ]);
   const info = infoRows.rows[0];
   const amenities = amenityRows.rows.map((item) => ({
     ...item,
@@ -435,6 +455,7 @@ export async function getListingDetailByIdOrSlug(
     percentage: item.percentage,
     payableInBase: item.payableInBase,
     oneWayOnly: item.oneWayOnly,
+    note: item.note,
     selectable: isSelectableExtra(item.source, item.kind),
   }));
   const mandatoryExtras = foldFeeVariants(
@@ -503,12 +524,16 @@ export async function getListingDetailByIdOrSlug(
        * whatever dates the visitor later picks.
        */
       yachtPickup: { time: info?.checkInTime ?? null },
-      yachtDropOff: { time: info?.checkOutTime ?? null },
+      yachtDropOff: { time: info?.checkOutTime ?? null, returnNote: returnNoteText ?? null },
       cancellationPaymentPolicies: "varies_by_selection",
       /* Off the crew this listing can actually be taken with, not off the operator's label:
          a hull whose skipper is an obligatory charge never sails without one, so telling its
-         customer to bring a licence asks for a document the charter does not need. */
-      sailingLicenseRequired: crewOptions.includes("bareboat") ? "required" : "not_required",
+         customer to bring a licence asks for a document the charter does not need. Nor does a
+         hull the vendor says can be taken without one, which Booking Manager states per boat. */
+      sailingLicenseRequired:
+        crewOptions.includes("bareboat") && info?.skipperLicenceRequired !== false
+          ? "required"
+          : "not_required",
       /*
        * Absence of the flag is not a prohibition. NauSYS publishes no pets field at all, so
        * `pets_allowed` is false for the whole fleet, and the old copy turned "we were not told"
@@ -528,7 +553,7 @@ export async function getListingDetailByIdOrSlug(
       },
       marinaContact: {
         name: listing.baseName,
-        address: placeLine(listing.baseName, listing.location, listing.country),
+        address: placeLine(listing.baseName, info?.baseAddress, listing.location, listing.country),
         email: listing.baseEmail,
         phone: listing.basePhone,
         website: listing.baseWebsite,

@@ -39,6 +39,13 @@ export type BookingConfirmedEmailProps = {
   checkIn: string;
   checkOut: string;
   marina: string;
+  /**
+   * Where a one-way charter runs, "A → B (one-way)", pre-formatted. Absent for a round trip:
+   * `marina` names only the start, and a customer finishing elsewhere has to be told.
+   */
+  oneWayRoute?: string;
+  /** The operator's rule for bringing the boat back, "Return on the evening before is obligatory!". */
+  returnNote?: string;
   guests: number;
   total: string;
   paid: string;
@@ -84,6 +91,8 @@ export function BookingConfirmedEmail({
   checkIn,
   checkOut,
   marina,
+  oneWayRoute,
+  returnNote,
   guests,
   total,
   paid,
@@ -118,6 +127,8 @@ export function BookingConfirmedEmail({
 
       <FactList>
         <Fact label="Marina" value={marina} />
+        {oneWayRoute ? <Fact label="Route" value={oneWayRoute} /> : null}
+        {returnNote ? <Fact label="Returning the boat" value={returnNote} /> : null}
         <Fact label="Guests" value={String(guests)} />
         {providerReference ? <Fact label="Operator reference" value={providerReference} /> : null}
       </FactList>
@@ -169,6 +180,7 @@ BookingConfirmedEmail.PreviewProps = {
   checkIn: "15 Aug 2026",
   checkOut: "22 Aug 2026",
   marina: "ACI Marina Cres, Croatia",
+  returnNote: "Return on the evening before is obligatory!",
   guests: 2,
   total: "€4,870",
   paid: "€2,435",

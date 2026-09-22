@@ -4,6 +4,8 @@
     "title": "Resumen de la reserva",
     "yacht": "Yate",
     "dates": "Fechas",
+    "route": "Ruta",
+    "oneWay": "solo ida",
     "crew": "Tripulación",
     "people": "Personas",
     "extras": "Extras",
@@ -25,7 +27,8 @@
     "dueNow": "A pagar ahora",
     "terms": "Acepto los <link>Términos y condiciones y el contrato de alquiler</link>.",
     "cancellation": "Acepto la <link>Política de cancelación</link>.",
-    "operatorTerms": "Términos del operador, incluida la política de cancelación"
+    "operatorTerms": "Términos del operador, incluida la política de cancelación",
+    "returnNote": "Entrega del yate"
   },
   "extras": {
     "mandatory": "Obligatorio",
@@ -156,6 +159,7 @@
     "summary": {
       "yacht": "Yate",
       "dates": "Fechas",
+      "route": "Ruta",
       "crew": "Tripulación",
       "mandatory": "Obligatorio",
       "selectedExtras": "Extras seleccionados",
@@ -337,6 +341,7 @@
     "guestsLabel": "Huéspedes",
     "crew": "Tripulación",
     "marina": "Marina",
+    "route": "Ruta",
     "referenceLabel": "Referencia",
     "settled": "Nada pendiente de pago",
     "viewYacht": "Ver el yate",
@@ -354,8 +359,7 @@
     "crewList": {
       "title": "Lista de tripulación",
       "notice": "La empresa de chárter debe entregar a las autoridades la lista de todos los que van a bordo antes de zarpar. Complétala aquí y se la enviamos: lo que falte, la base lo pedirá en el mostrador cuando llegues.",
-      "alsoAsked": "También pide {fields}, que la base recogerá en el mostrador cuando llegues.",
-      "maxPassengers": "Su lista admite como máximo {count} personas.",
+      "maxPassengers": "Su lista admite como máximo {count, plural, one {# persona} other {# personas}}.",
       "loading": "Cargando tu lista de tripulación…",
       "empty": "Aún no has añadido a nadie. Tu reserva es para {guests} huéspedes: añade a cada persona que vaya a bordo, incluido el patrón.",
       "member": "Tripulante {number}",
@@ -376,11 +380,8 @@
         "firstName": "Escribe el nombre de esta persona",
         "lastName": "Escribe los apellidos de esta persona",
         "skipperEmail": "Escribe un correo electrónico válido",
-        "oneSkipper": "Solo una persona puede ser el patrón"
-      },
-      "requires": {
-        "shoeSize": "las tallas de calzado",
-        "disabledPerson": "si alguien a bordo tiene una discapacidad"
+        "oneSkipper": "Solo una persona puede ser el patrón",
+        "maxPassengers": "La lista de esta empresa de chárter admite como máximo {count, plural, one {# persona} other {# personas}}"
       },
       "legend": "Los campos marcados con * son los que exige esta empresa de chárter.",
       "sent": "Enviada a la empresa de chárter el {when}.",
@@ -407,7 +408,7 @@
       "skipperEmail": "Correo del patrón",
       "skipperMobile": "Teléfono del patrón",
       "note": "Lo que la base deba saber",
-      "notePlaceholder": "Hora de llegada, número de vuelo, alguien que necesite asistencia…",
+      "notePlaceholder": "Alguien que necesite asistencia, una llegada tardía, cualquier cosa que la base deba prever…",
       "documents": {
         "passport": "Pasaporte",
         "idCard": "DNI",
@@ -418,7 +419,14 @@
         "female": "Mujer"
       },
       "placeSearch": "Buscar localidades",
-      "placeEmpty": "Ninguna localidad con ese nombre"
+      "placeEmpty": "Ninguna localidad con ese nombre",
+      "shoeSize": "Talla de calzado",
+      "shoeSizePlaceholder": "EU 42",
+      "disabledPerson": "Esta persona necesita asistencia a bordo",
+      "flightNumber": "Número de vuelo",
+      "flightNumberPlaceholder": "OU 412",
+      "arrivalTime": "Hora de llegada",
+      "airportTransfer": "Queremos un traslado del aeropuerto a la base"
     },
     "priceLineLabels": {
       "charterPrice": "Precio del chárter",

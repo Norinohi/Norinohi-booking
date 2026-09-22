@@ -8,14 +8,17 @@ import facetLabelsJson from "./facet-labels.json" with { type: "json" };
  * Curated facet labels for vocabulary no provider translates, in every locale the site serves.
  *
  * The catalogue sync fills `facet_media_translation` from what a provider publishes, and two
- * gaps fall outside that: Booking Manager ships no translations at all, so its regions,
- * countries and equipment arrive with none; and `sail_type` has no reference list behind it in
- * either provider, so it reaches the search document as a bare string.
+ * gaps fall outside that: Booking Manager translates only its equipment names, and not into
+ * Ukrainian or Danish, so its regions and countries arrive with none; and `sail_type` has no
+ * reference list behind it in either provider, so it reaches the search document as a bare
+ * string.
  *
- * The equipment set below is that first gap where it shows. `equipmentFilterAllowlist` in
- * seed.ts and the canonical side of `AMENITY_GROUPS` are written in Booking Manager's
- * vocabulary, so every value there that NauSYS does not also publish reached a translated page
- * in English — in the filter, and on the cards, where the curated ranks put the same words.
+ * The equipment set below predates the sync reading Booking Manager's own equipment names, and
+ * still covers Ukrainian and Danish. `equipmentFilterAllowlist` in seed.ts and the canonical
+ * side of `AMENITY_GROUPS` are written in Booking Manager's vocabulary, so every value there
+ * that NauSYS does not also publish reached a translated page in English - in the filter, and
+ * on the cards, where the curated ranks put the same words. The sync never overwrites a row
+ * written from here, so where both exist this set is what the page shows.
  *
  * Small on purpose. This is the exception list for what the sync cannot reach, not a second
  * catalogue — a value that a provider does translate belongs to the sync, which refreshes it

@@ -259,7 +259,8 @@ export const env = createEnv({
      * nothing wider - so a production credential's ~1300 companies were ~1300 reads
      * end to end, an hour of wall clock at the latency the vendor answers with. The
      * spend is almost entirely waiting, which is what makes overlapping them the
-     * whole fix. Unlike NauSYS, Booking Manager does not forbid parallel calls.
+     * whole fix. Unlike NauSYS, Booking Manager allows parallel calls, up to 20 in
+     * flight per account; past that it blocks the key until its nightly restart.
      *
      * 12 is measured rather than guessed: full-scale runs against a production
      * credential on 2026-08-20 took 15.2 min of ingest at 6 and 7.3 min at 12, with
@@ -268,9 +269,9 @@ export const env = createEnv({
      *
      * It stays a variable because the vendor has published no rate limit at all, so
      * two clean runs are evidence and not a guarantee: a 429 appearing in sync_error
-     * is answered by lowering this, no deploy needed. Raising it much further is not
-     * worth much - by 12 the price sweep has stopped improving, and the ingest no
-     * longer dominates the run.
+     * is answered by lowering this, no deploy needed. It cannot go higher: 12 is the
+     * sweep's share of the account's 20 once the live and background callers have
+     * theirs, and `resolveBookingManagerConfig` refuses more (BM_MAX_SWEEP_CONCURRENCY).
      */
     BOOKING_MANAGER_SWEEP_CONCURRENCY: z.coerce.number().int().min(1).max(32).default(12),
     /*
@@ -281,14 +282,17 @@ export const env = createEnv({
      * waiting for. Measured read-only on 2026-09-18: Booking Manager answered 1, 3, 6 and 10
      * parallel `/offers` calls in 2.4s, 2.9s, 3.4s and 4.3s, all 200.
      *
-     * Capped at 8 rather than at the account ceiling because a nightly run that trips the
-     * vendor's concurrency rule costs a day of live quotes too, and this pass buys little above
-     * that point.
+     * Capped at 8, under the sweep's share of the account ceiling, because a nightly run that
+     * trips the vendor's concurrency rule costs a day of live quotes too, and this pass buys
+     * little above that point.
      */
     BOOKING_MANAGER_PRICE_WEEKS_CONCURRENCY: z.coerce.number().int().min(1).max(8).default(4),
     // We must release a hold before the vendor auto-expires it, otherwise we sell
     // a slot Booking Manager has already dropped.
     BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: z.coerce.number().int().nonnegative().default(15),
+    // Days before the vendor's balance date that the customer's balance falls due. The vendor's
+    // date is also the day we owe the operator, so the customer has to pay ahead of it.
+    BOOKING_MANAGER_BALANCE_LEAD_DAYS: z.coerce.number().int().nonnegative().max(60).default(7),
     // MMK support confirmed (Aug 2026) every non-/offers datetime is a fixed CET
     // clock that observes daylight saving, so this must stay a real IANA zone.
     BOOKING_MANAGER_TIMEZONE: z.string().min(1).default("Europe/Zagreb"),

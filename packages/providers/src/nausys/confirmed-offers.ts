@@ -1,11 +1,14 @@
+import { log } from "evlog";
 import { z } from "zod";
 
+import type { JsonValue } from "../shared/json";
 import type { SweepPeriod } from "../shared/sweep-periods";
 import type { ConfirmedOffer, ConfirmedOfferPage } from "../sync/availability-writer";
 import type { NausysClient } from "./client";
 import { decimalStringToMinor } from "../shared/money";
 import { reconciledListPriceMinor } from "./discounts";
 import { extraLineMinor } from "./extras";
+import { preferredFreeYachtRow } from "./quote";
 import { stableSourceHash } from "../shared/raw-retention";
 import { formatNausysDate, parseNausysDate } from "../shared/dates";
 import {
@@ -16,6 +19,18 @@ import {
 } from "./endpoints";
 
 type RestFreeYacht = z.infer<typeof restFreeYachtSchema>;
+
+/** The response with its rows unread, so each hull is parsed, and refused, on its own. */
+const freeYachtsEnvelopeSchema = restFreeYachtsResponseSchema.extend({
+  freeYachts: z.array(z.json()).optional(),
+});
+
+const yachtIdSchema = z.looseObject({ yachtId: z.number().int() });
+
+function yachtIdOf(row: JsonValue): number | null {
+  const parsed = yachtIdSchema.safeParse(row);
+  return parsed.success ? parsed.data.yachtId : null;
+}
 
 /**
  * The weeks NauSYS will actually sell, priced, read from `freeYachts` a batch of hulls at a
@@ -50,6 +65,14 @@ export type NausysConfirmedCursor = z.infer<typeof nausysConfirmedCursorSchema>;
 
 /** PAYMENT_PLAN carries the instalment schedule, ADDITIONAL_EXTRAS the optional services. */
 const EXTENDED_DATA_SET = "PAYMENT_PLAN,ADDITIONAL_EXTRAS";
+
+/**
+ * The party the swept price is for. Per-head obligatory lines (tourist tax, cruising permit)
+ * are priced for whatever party is named, and naming none prices them for a full boat: the
+ * card then showed a couple ten berths' worth of tax that the sidebar, opening on two guests,
+ * did not charge. Two, because that is the party the sidebar opens on.
+ */
+const SWEPT_PARTY = 2;
 
 const freeYachtsRequestSchema = restFreeYachtsRequestSchema.omit({ credentials: true });
 
@@ -101,75 +124,171 @@ export async function* streamNausysConfirmedOffers(
 
   /* Only the grid moves it; an advertised period is re-walked next run by design. */
   let windowIndex = from.windowIndex;
-  for (const period of pending) {
-    /*
-     * Only the hulls advertising this charter, where the caller named them.
-     *
-     * Asking the whole fleet about every window is the same answer bought 65 times over: the
-     * 60 advertised periods cover 6,952 hull-weeks between them, against 449,040 for the fleet
-     * crossed with the windows. At ~3.4s per 250-hull batch that is the difference between
-     * finishing three periods inside the pass's five-minute budget and finishing all sixty,
-     * and a window the budget cuts in half leaves its unasked hulls with neither a price nor a
-     * refusal -- which is exactly the state 4,248 unpriced cards were in.
-     *
-     * Intersected with the fleet list rather than trusted: the ids come from the read model and
-     * the fleet from `listing_source`, and a hull that has left the account between the two
-     * reads is not one to ask about.
-     */
-    const askedIds = period.yachtIds ? period.yachtIds.filter((id) => listed.has(id)) : fleetIds;
-    const yachtIds = period.yachtIds ? toYachtNumbers(askedIds) : fleet;
-    if (yachtIds.length === 0) {
-      if (period.source === "grid") windowIndex += 1;
-      /* No `swept`: a window nobody was asked about says nothing about anybody. */
-      yield { offers: [], cursor: { windowIndex, page: 1 } };
-      continue;
-    }
-
+  for (const group of periodGroups(pending, listed, fleet, fleetIds)) {
     /*
      * One page per period, not per batch. `swept` is what licenses the writer to read a hull's
      * absence as a refusal, and a batch is only part of the answer: emitting it per chunk
      * would refuse every hull outside the 250 just asked about.
      */
-    const offers: ConfirmedOffer[] = [];
-    for (let at = 0; at < yachtIds.length; at += chunkSize) {
-      const request = freeYachtsRequestSchema.parse({
-        periodFrom: formatNausysDate(period.startDate),
-        periodTo: formatNausysDate(period.endDate),
-        yachts: yachtIds.slice(at, at + chunkSize),
-        extendedDataSet: EXTENDED_DATA_SET,
-        ...(options.currency ? { currency: options.currency } : null),
-      });
+    const rowsByPeriod =
+      group.yachtIds.length === 0
+        ? new Map<string, RestFreeYacht[]>()
+        : await askAbout(client, group, chunkSize, options.currency);
 
-      const response = await client.bookingCall(
-        nausysEndpoints.availability.freeYachts,
-        restFreeYachtsResponseSchema,
-        { ...request },
-      );
-
-      for (const yacht of response.freeYachts ?? []) {
-        const offer = mapFreeYachtToConfirmedOffer(yacht);
+    for (const period of group.periods) {
+      const readable = rowsByPeriod.get(periodKey(period)) ?? [];
+      const offers: ConfirmedOffer[] = [];
+      /* One offer per hull, the round trip where the vendor also answered a one-way: the
+         writer kept whichever row came last, so a card could show a one-way price. */
+      for (const yachtId of new Set(readable.map((yacht) => yacht.yachtId))) {
+        const yacht = preferredFreeYachtRow(readable.filter((row) => row.yachtId === yachtId));
+        const offer = yacht ? mapFreeYachtToConfirmedOffer(yacht) : null;
         if (offer) offers.push(offer);
       }
-    }
 
-    if (period.source === "grid") windowIndex += 1;
-    /* A period asked about only to price it prices what came back and refuses nobody. */
-    if (period.judgesSilence === false) {
-      yield { offers, cursor: { windowIndex, page: 1 } };
+      if (period.source === "grid") windowIndex += 1;
+      /* No `swept` where nobody was asked: a window nobody was asked about says nothing about
+         anybody, and one asked about only to price it refuses nobody. */
+      if (group.yachtIds.length === 0 || period.judgesSilence === false) {
+        yield { offers, cursor: { windowIndex, page: 1 } };
+        continue;
+      }
+      yield {
+        offers,
+        cursor: { windowIndex, page: 1 },
+        swept: {
+          startDate: period.startDate,
+          endDate: period.endDate,
+          scopeKeys,
+          /* Null where the whole fleet was asked, so the writer keeps judging by the scope alone. */
+          externalYachtIds: period.yachtIds ? group.askedIds : null,
+        },
+      };
+    }
+  }
+}
+
+/**
+ * How many periods one `freeYachts` call carries. The vendor takes a `periods` array in place
+ * of one period, and on the test company (Sep 2026) four October weeks for 109 hulls came back
+ * in 2.1s against 3.3s asked one by one, row for row and price for price the same. Kept small
+ * so a budget that stops the pass mid-group throws little away.
+ */
+const PERIODS_PER_CALL = 4;
+
+interface PeriodGroup {
+  periods: SweepPeriod[];
+  /** Ours, for the writer's `swept`; the vendor's numbers for the call. */
+  askedIds: readonly string[];
+  yachtIds: number[];
+}
+
+/**
+ * Consecutive periods that ask about the same hulls, a call's worth at a time. The grid always
+ * asks the whole fleet, so it groups; an advertised period names its own hulls and groups only
+ * with a neighbour naming the same ones, since asking a hull about a week it does not advertise
+ * is a hull-week the budget pays for and nobody reads.
+ *
+ * Only the hulls advertising a charter, where the caller named them. Asking the whole fleet
+ * about every window is the same answer bought 65 times over: the 60 advertised periods cover
+ * 6,952 hull-weeks between them, against 449,040 for the fleet crossed with the windows.
+ * Intersected with the fleet list rather than trusted: the ids come from the read model and the
+ * fleet from `listing_source`, and a hull that has left the account between the two reads is
+ * not one to ask about.
+ */
+function periodGroups(
+  pending: readonly SweepPeriod[],
+  listed: ReadonlySet<string>,
+  fleet: number[],
+  fleetIds: readonly string[],
+): PeriodGroup[] {
+  const groups: (PeriodGroup & { key: string })[] = [];
+  for (const period of pending) {
+    const askedIds = period.yachtIds ? period.yachtIds.filter((id) => listed.has(id)) : fleetIds;
+    const key = period.yachtIds ? askedIds.join(",") : "*";
+    const last = groups.at(-1);
+    if (last && last.key === key && last.periods.length < PERIODS_PER_CALL) {
+      last.periods.push(period);
       continue;
     }
-    yield {
-      offers,
-      cursor: { windowIndex, page: 1 },
-      swept: {
-        startDate: period.startDate,
-        endDate: period.endDate,
-        scopeKeys,
-        /* Null where the whole fleet was asked, so the writer keeps judging by the scope alone. */
-        externalYachtIds: period.yachtIds ? askedIds : null,
-      },
-    };
+    groups.push({
+      key,
+      periods: [period],
+      askedIds,
+      yachtIds: period.yachtIds ? toYachtNumbers(askedIds) : fleet,
+    });
   }
+  return groups;
+}
+
+function periodKey(period: { startDate: string; endDate: string }): string {
+  return `${period.startDate}/${period.endDate}`;
+}
+
+/** Every hull in the group about every period in it, the rows filed under the period they answer. */
+async function askAbout(
+  client: NausysClient,
+  group: PeriodGroup,
+  chunkSize: number,
+  currency: string | undefined,
+): Promise<Map<string, RestFreeYacht[]>> {
+  const [first] = group.periods;
+  const rowsByPeriod = new Map<string, RestFreeYacht[]>();
+  if (!first) return rowsByPeriod;
+
+  for (let at = 0; at < group.yachtIds.length; at += chunkSize) {
+    const request = freeYachtsRequestSchema.parse({
+      /* Required by the schema and ignored by the vendor once `periods` is sent. */
+      periodFrom: formatNausysDate(first.startDate),
+      periodTo: formatNausysDate(first.endDate),
+      ...(group.periods.length > 1
+        ? {
+            periods: group.periods.map((period) => ({
+              periodFrom: formatNausysDate(period.startDate),
+              periodTo: formatNausysDate(period.endDate),
+            })),
+          }
+        : null),
+      yachts: group.yachtIds.slice(at, at + chunkSize),
+      extendedDataSet: EXTENDED_DATA_SET,
+      numberOfPersons: SWEPT_PARTY,
+      ...(currency ? { currency } : null),
+    });
+
+    const response = await client.bookingCall(
+      nausysEndpoints.availability.freeYachts,
+      freeYachtsEnvelopeSchema,
+      { ...request },
+    );
+
+    for (const row of response.freeYachts ?? []) {
+      /*
+       * Row by row. One hull the schema refuses (a missing status or currency, a new status
+       * literal) failed the whole batch of 250, and advertised weeks are re-walked first on
+       * every run, so the same row stalled the fleet's confirmed prices run after run. A hull
+       * dropped here is read as silence, like any hull the vendor did not answer for.
+       */
+      const yacht = restFreeYachtSchema.safeParse(row);
+      if (!yacht.success) {
+        log.warn({
+          action: "nausys.sweep_row_unreadable",
+          yachtId: yachtIdOf(row),
+          periodFrom: request.periodFrom,
+          issues: yacht.error.issues
+            .slice(0, 3)
+            .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+            .join("; "),
+        });
+        continue;
+      }
+      const key = periodKey({
+        startDate: parseNausysDate(yacht.data.periodFrom),
+        endDate: parseNausysDate(yacht.data.periodTo),
+      });
+      rowsByPeriod.set(key, [...(rowsByPeriod.get(key) ?? []), yacht.data]);
+    }
+  }
+  return rowsByPeriod;
 }
 
 /** The vendor keys hulls by integer; anything else in our own id column is not one of its. */
@@ -249,6 +368,7 @@ function obligatoryExtrasTotal(yacht: RestFreeYacht, currency: string): number |
   const basis = {
     listMinor: minorOrUndefined(yacht.price.priceListPrice, currency),
     clientMinor: minorOrUndefined(yacht.price.clientPrice, currency),
+    days: daysOf(yacht.periodFrom, yacht.periodTo),
   };
 
   return extras.reduce((total, extra) => total + extraLineMinor(extra, currency, basis), 0);
@@ -296,4 +416,15 @@ function commissionPctOf(
   if (commissionMinor === undefined || priceMinor <= 0) return undefined;
   const pct = Math.round((commissionMinor / priceMinor) * 1_000_000) / 10_000;
   return pct >= 0 && pct <= 100 ? pct : undefined;
+}
+
+/** The charter's length in days from the vendor's own period, or undefined if unreadable. */
+function daysOf(periodFrom: string, periodTo: string): number | undefined {
+  try {
+    const from = Date.parse(`${parseNausysDate(periodFrom.split(" ")[0] ?? periodFrom)}T00:00:00Z`);
+    const to = Date.parse(`${parseNausysDate(periodTo.split(" ")[0] ?? periodTo)}T00:00:00Z`);
+    return Math.round((to - from) / 86_400_000);
+  } catch {
+    return undefined;
+  }
 }

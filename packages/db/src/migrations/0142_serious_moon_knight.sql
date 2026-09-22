@@ -1,0 +1,1 @@
+ALTER TYPE "public"."listing_text_kind" ADD VALUE 'return_note';

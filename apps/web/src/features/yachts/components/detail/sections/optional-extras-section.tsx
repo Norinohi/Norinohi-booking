@@ -4,8 +4,11 @@ import { Checkbox } from "@yacht-charter/ui/components/form/checkbox";
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { useTranslations } from "next-intl";
 
+import { ExtraNote } from "@/components/shared/extra-note";
+import { ExtraVariantGroup } from "@/components/shared/extra-variant-group";
 import { useBooking } from "@/features/booking";
 import { useExtraPrice } from "@/hooks/use-extra-price";
+import { notBilledAsMandatory } from "@/lib/extra-code";
 import { useMoney } from "@/hooks/use-money";
 import { extraPriceKind } from "@/lib/extra-price-kind";
 
@@ -75,31 +78,46 @@ export default function OptionalExtrasSection() {
     : null;
   const isOffered = (code: string) => offered === null || offered.has(code);
 
-  const sellable = data.optionalExtras.filter((item) => item.selectable && isOffered(item.code));
-  const notOnTheseDates = data.optionalExtras.filter(
-    (item) => item.selectable && !isOffered(item.code),
-  );
-  const arrangeAtBase = data.optionalExtras.filter((item) => !item.selectable);
+  const optional = data.optionalExtras.filter(notBilledAsMandatory(quote?.lines));
+  const sellable = optional.filter((item) => item.selectable && isOffered(item.code));
+  const notOnTheseDates = optional.filter((item) => item.selectable && !isOffered(item.code));
+  const arrangeAtBase = optional.filter((item) => !item.selectable);
 
   return (
     <DetailSection id="optional-extras" title={t("sections.optionalExtras")}>
       <div className="flex flex-col">
-        {sellable.map((item) => (
-          <label
-            key={item.code}
-            className="flex cursor-pointer items-start gap-2 border-b border-dashed border-border pt-3 pb-2.75"
-          >
-            <Checkbox
-              checked={extras.includes(item.code)}
-              onCheckedChange={(checked) =>
-                selectExtras(
-                  checked ? [...extras, item.code] : extras.filter((code) => code !== item.code),
-                )
-              }
+        {sellable.map((item) => {
+          const variants = offered?.get(item.code)?.variants;
+          return variants && variants.length > 0 ? (
+            <ExtraVariantGroup
+              key={item.code}
+              label={item.label}
+              variants={variants}
+              selected={extras}
+              onChange={selectExtras}
+              repricing={isPending}
             />
-            <ExtraRow item={item} offered={offered?.get(item.code) ?? null} repricing={isPending} />
-          </label>
-        ))}
+          ) : (
+            <label
+              key={item.code}
+              className="flex cursor-pointer items-start gap-2 border-b border-dashed border-border pt-3 pb-2.75"
+            >
+              <Checkbox
+                checked={extras.includes(item.code)}
+                onCheckedChange={(checked) =>
+                  selectExtras(
+                    checked ? [...extras, item.code] : extras.filter((code) => code !== item.code),
+                  )
+                }
+              />
+              <ExtraRow
+                item={item}
+                offered={offered?.get(item.code) ?? null}
+                repricing={isPending}
+              />
+            </label>
+          );
+        })}
 
         {[
           { items: notOnTheseDates, note: tBooking("notOnTheseDatesAsk") },
@@ -187,6 +205,7 @@ function ExtraRow({
         {caption === null ? null : (
           <p className="text-xs font-semibold text-natural-300">{caption}</p>
         )}
+        <ExtraNote note={offered?.note ?? item.note} />
       </div>
       {repricing ? (
         <Skeleton className="h-5.5 w-24 shrink-0" />

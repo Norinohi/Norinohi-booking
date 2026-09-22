@@ -13,6 +13,8 @@
     "confirmWithBase": "Cena nieopublikowana, potwierdź ją w bazie czarterowej",
     "percentageOfCharter": "{percent}% ceny czarteru",
     "oneWayOnly": "Tylko czartery w jedną stronę",
+    "chooseVariants": "Wybierz potrzebne warianty",
+    "fromPrice": "od {price}",
     "measure": {
       "booking": "{price} za rezerwację",
       "day": "{price} za dzień",
@@ -47,7 +49,8 @@
       "nauticalMile": "{price} za milę morską",
       "roundTrip": "{price} w obie strony",
       "litre": "{price} za litr",
-      "weekStartedPerson": "{price} za osobę za każdy rozpoczęty tydzień"
+      "weekStartedPerson": "{price} za osobę za każdy rozpoczęty tydzień",
+      "unit": "{price} za jednostkę"
     }
   },
   "resultsCount": "{count, plural, one {Znaleziono # jacht} few {Znaleziono # jachty} many {Znaleziono # jachtów} other {Znaleziono # jachtu}}",

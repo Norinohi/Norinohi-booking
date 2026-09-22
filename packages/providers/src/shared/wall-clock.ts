@@ -1,4 +1,6 @@
 const CLOCK = /(?:^|[ T])(\d{1,2}):(\d{2})(?::\d{2})?$/;
+/* The NauSYS PDF's own base example writes check-in as `"17"`. */
+const BARE_HOUR = /^(\d{1,2})$/;
 
 /**
  * The "HH:mm" a vendor wrote for a check-in or check-out, from any of the shapes they use:
@@ -8,7 +10,10 @@ const CLOCK = /(?:^|[ T])(\d{1,2}):(\d{2})(?::\d{2})?$/;
  * the vendor saying nothing, and a midnight made up here would read as a real handover.
  */
 export function wallClockTime(value: string | null | undefined): string | undefined {
-  const match = value?.trim().match(CLOCK);
+  const trimmed = value?.trim();
+  const hour = trimmed?.match(BARE_HOUR)?.[1];
+  if (hour !== undefined) return Number(hour) > 23 ? undefined : `${hour.padStart(2, "0")}:00`;
+  const match = trimmed?.match(CLOCK);
   if (!match?.[1] || !match[2]) return undefined;
 
   const hours = Number(match[1]);

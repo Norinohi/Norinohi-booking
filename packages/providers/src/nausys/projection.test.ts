@@ -120,6 +120,55 @@ describe("projectNausysCatalogue", () => {
     });
   });
 
+  describe("a base the operator has shut", () => {
+    const closed = (overrides: Payload) =>
+      recorded.base.map((item) => (item.id === 102754 ? { ...item, ...overrides } : item));
+    const baseIds = (bases: Payload[]) =>
+      projectNausysCatalogue(fixtureRecords(recorded.yacht, { base: bases }), {
+        today: "2026-09-22",
+      }).bases.map((item) => item.externalId);
+
+    it("is left out once disabled or past its closing date", () => {
+      expect(baseIds(closed({ disabled: true }))).not.toContain("102754");
+      expect(baseIds(closed({ closedBaseDate: "01.04.2025" }))).not.toContain("102754");
+      expect(baseIds(closed({ disabledDate: "22.09.2026" }))).not.toContain("102754");
+    });
+
+    it("stays while its closing date is ahead", () => {
+      expect(baseIds(closed({ closedBaseDate: "01.11.2026" }))).toContain("102754");
+    });
+
+    it("takes its marina's coordinates when it has none of its own", () => {
+      const bases = recorded.base.map((item) =>
+        item.id === 102751 ? { ...item, lat: null, lon: "" } : item,
+      );
+      const base = projectNausysCatalogue(
+        fixtureRecords(recorded.yacht, { base: bases }),
+      ).bases.find((item) => item.externalId === "102751");
+      const marina = recorded.location.find((item) => item.id === 57);
+
+      expect(base?.lat).toBe(marina?.lat);
+      expect(base?.lng).toBe(marina?.lon);
+    });
+
+    it("stays while a yacht still sails from it", () => {
+      // 102755 is dated closed in 2024 and still carries yacht 103454.
+      expect(baseIds(recorded.base)).toContain("102755");
+    });
+  });
+
+  it("carries the home base's return rule onto the listing, the delay note after it", () => {
+    const texts = listingOf(maria())?.texts.filter((item) => item.kind === "return_note");
+
+    expect(texts).toContainEqual({
+      kind: "return_note",
+      locale: "en",
+      value:
+        "Return on the evening before is desirable! In case of returning on evening before after 18:00 hours contact the base!",
+    });
+    expect(texts?.map((item) => item.locale)).toContain("de");
+  });
+
   it("reads a builder the vendor calls Unknown as no builder at all", () => {
     const builders = recorded.builder.map((item) =>
       item.id === 1 ? { ...item, name: "Unknown" } : item,
@@ -285,6 +334,21 @@ describe("projectNausysCatalogue", () => {
     });
   });
 
+  describe("handover times", () => {
+    it("takes the boat's home base's, not whichever operator last wrote the marina", () => {
+      // Maria sails from 102751, whose own times are 17:00 and 09:00.
+      expect(listingOf(maria())).toMatchObject({ checkInTime: "17:00", checkOutTime: "09:00" });
+    });
+
+    it("prefers a time the boat states itself, and reads a blank one as none", () => {
+      const own = maria();
+      own.checkInTime = "18:00";
+      own.checkOutTime = "";
+
+      expect(listingOf(own)).toMatchObject({ checkInTime: "18:00", checkOutTime: "09:00" });
+    });
+  });
+
   describe("specification", () => {
     it("takes length and beam from the model, which is where the vendor keeps them", () => {
       expect(listingOf(maria())?.spec).toMatchObject({
@@ -296,6 +360,48 @@ describe("projectNausysCatalogue", () => {
         heads: 2,
         yearBuilt: 2003,
       });
+    });
+
+    it("keeps the legal limit on board and the engine apart from the berths", () => {
+      const yacht = maria();
+      yacht.berthsTotal = 13;
+      yacht.maxPersons = 12;
+      yacht.enginePower = 45;
+      yacht.fuelType = "DIESEL";
+      yacht.propulsionType = "SAILDRIVE";
+
+      expect(listingOf(yacht)?.spec).toMatchObject({
+        berths: 13,
+        maxPersons: 12,
+        enginePower: "45 hp",
+        fuelType: "diesel",
+        propulsionType: "saildrive",
+      });
+    });
+
+    it("names the steering from the vendor's list, whatever its spelling", () => {
+      const steering = [
+        { id: 1, name: { textEN: "2 Steering Wheels" } },
+        { id: 3, name: { textEN: "Tiller steereing" } },
+      ];
+      const steeringOf = (id: number) => {
+        const yacht = maria();
+        yacht.steeringTypeId = id;
+        return projectNausysCatalogue(
+          fixtureRecords([yacht], { steering_type: payloadsSchema.parse(steering) }),
+        ).listings[0]?.spec.steeringType;
+      };
+
+      expect(steeringOf(1)).toBe("twin wheel");
+      expect(steeringOf(3)).toBe("tiller");
+      expect(steeringOf(99)).toBeUndefined();
+    });
+
+    it("reads a zero limit on board as unstated", () => {
+      const yacht = maria();
+      yacht.maxPersons = 0;
+
+      expect(listingOf(yacht)?.spec.maxPersons).toBeUndefined();
     });
 
     it("projects the shower count the vendor states, separately from the heads", () => {
@@ -424,8 +530,12 @@ describe("projectNausysCatalogue", () => {
   });
 
   describe("texts", () => {
+    /* The yacht's own prose; the base's return rule is covered on its own. */
+    const yachtTexts = (yacht: Payload) =>
+      listingOf(yacht)?.texts.filter((item) => item.kind !== "return_note");
+
     it("strips the vendor's HTML out of every locale of the highlights", () => {
-      expect(listingOf(maria())?.texts).toEqual([
+      expect(yachtTexts(maria())).toEqual([
         { kind: "description", locale: "en", value: "ana banana test\n\nevo baby blue boja" },
         { kind: "description", locale: "de", value: "ana banana test\n\nevo baby blue boja" },
         { kind: "description", locale: "hr", value: "ana banana test\n\nevo baby blue boja" },
@@ -436,7 +546,7 @@ describe("projectNausysCatalogue", () => {
       // Recorded as "<mark>Yacht note</mark>" in EN, plain text in DE and HR.
       const kan = recordedYacht(1);
 
-      expect(listingOf(kan)?.texts).toEqual([
+      expect(yachtTexts(kan)).toEqual([
         { kind: "notes", locale: "en", value: "Yacht note" },
         { kind: "notes", locale: "de", value: "Jacht bemerkung" },
         { kind: "notes", locale: "hr", value: "Napomena na plovilu" },
@@ -447,7 +557,7 @@ describe("projectNausysCatalogue", () => {
       const yacht = maria();
       yacht.highlightsIntText = { textEN: "<p>Fish &amp; chips</p><p>&lt;script&gt;</p>" };
 
-      expect(listingOf(yacht)?.texts).toEqual([
+      expect(yachtTexts(yacht)).toEqual([
         { kind: "description", locale: "en", value: "Fish & chips\n<script>" },
       ]);
     });
@@ -457,7 +567,7 @@ describe("projectNausysCatalogue", () => {
       delete yacht.highlightsIntText;
       yacht.highlights = "AC / Winch";
 
-      expect(listingOf(yacht)?.texts).toEqual([
+      expect(yachtTexts(yacht)).toEqual([
         { kind: "description", locale: "en", value: "AC / Winch" },
       ]);
     });
@@ -466,7 +576,7 @@ describe("projectNausysCatalogue", () => {
       const yacht = maria();
       yacht.highlightsIntText = { textEN: "<div>  </div>" };
 
-      expect(listingOf(yacht)?.texts).toEqual([]);
+      expect(yachtTexts(yacht)).toEqual([]);
     });
   });
 
@@ -759,6 +869,36 @@ describe("projectNausysCatalogue", () => {
       );
     });
 
+    /* The PDF's own equipment example: 15% of the client price, which read as 0.15 EUR. */
+    it("files a percentage-priced add-on as a rate, not as money", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      yacht.seasonSpecificData = [
+        {
+          ...season,
+          additionalYachtEquipment: [
+            {
+              equipmentId: 17,
+              amount: "0.1500",
+              amountIsPercentage: true,
+              percentageCalculationType: "CLIENT_PRICE",
+              currency: "EUR",
+            },
+          ],
+        },
+      ];
+
+      expect(listingOf(yacht)?.extras).toContainEqual(
+        expect.objectContaining({
+          kind: "equipment",
+          externalId: "17",
+          priceMinor: 0,
+          percentage: 0.15,
+          percentageBasis: "CLIENT_PRICE",
+        }),
+      );
+    });
+
     /*
      * Not a fixture gap to paper over: the vendor prices add-ons the equipment
      * dump does not describe, and the same id resolving for one yacht and not
@@ -794,6 +934,24 @@ describe("projectNausysCatalogue", () => {
       const extras = listingOf(yacht)?.extras ?? [];
 
       expect(extras.filter((extra) => extra.kind === "service")).toEqual([]);
+    });
+
+    /* Yacht 9155510 lists its damage waiver as a fee and again as an add-on, in one season. */
+    it("states a service listed both ways as the obligatory fee", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      const optional = { serviceId: 52, price: "350.00", currency: "EUR", obligatory: false };
+      const fee = { serviceId: 52, price: "420.00", currency: "EUR", obligatory: true };
+
+      for (const services of [
+        [optional, fee],
+        [fee, optional],
+      ]) {
+        yacht.seasonSpecificData = [{ ...season, services }];
+        expect(listingOf(yacht)?.extras.filter((extra) => extra.externalId === "52")).toEqual([
+          expect.objectContaining({ obligatory: true, priceMinor: 42_000 }),
+        ]);
+      }
     });
 
     it("drops an extra the vendor withholds from the agency portal", () => {
@@ -1295,5 +1453,130 @@ describe("what counts as crew", () => {
   it("still reads a cook and a hostess", () => {
     expect(serviceNamed("Cook")?.crewRole).toBe("cook");
     expect(serviceNamed("Hostess")?.crewRole).toBe("hostess");
+  });
+});
+
+/*
+ * `pac`: "private access company (offline company)". NauSYS does not run their bookings live,
+ * so a paid hold may never be honoured; their boats are sold as requests the operator confirms.
+ */
+describe("offline charter companies", () => {
+  const withPac = (pac: boolean | number) =>
+    recorded.company.map((company) => ({ ...company, pac }));
+  /* A hull that needs no approval of its own, so only the company can make it a request. */
+  const unapproved = () => ({ ...maria(), needsOptionApproval: false });
+
+  it("sells an offline company's yachts as requests", () => {
+    for (const pac of [1, true]) {
+      const [listing] = projectNausysCatalogue(
+        fixtureRecords([unapproved()], { company: withPac(pac) }),
+      ).listings;
+      expect(listing?.optionApprovalRequired).toBe(true);
+    }
+  });
+
+  it("leaves an online company's yachts as the vendor set them", () => {
+    for (const pac of [0, false]) {
+      const [listing] = projectNausysCatalogue(
+        fixtureRecords([unapproved()], { company: withPac(pac) }),
+      ).listings;
+      expect(listing?.optionApprovalRequired).toBe(false);
+    }
+  });
+});
+
+/*
+ * The test company's yacht 479287 carries season 2026 (id 50952199) and 2027 (64125042) side by
+ * side. The higher season id won, so every 2026 charter was shown 2027's fees.
+ */
+describe("which season's price a listing states", () => {
+  const seasons = [
+    { id: 50952199, season: "2026", from: "01.01.2026", to: "31.12.2026" },
+    { id: 64125042, season: "2027", from: "01.01.2027", to: "31.12.2027" },
+  ];
+
+  function twoSeasons() {
+    const yacht = maria();
+    const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+    const cleaning = (price: string) => [
+      { serviceId: 52, price, currency: "EUR", obligatory: true },
+    ];
+    yacht.seasonSpecificData = [
+      { ...season, seasonId: 50952199, services: cleaning("125.00") },
+      { ...season, seasonId: 64125042, services: cleaning("150.00") },
+    ];
+    return yacht;
+  }
+
+  const cleaningOn = (today?: string) =>
+    projectNausysCatalogue(fixtureRecords([twoSeasons()], { season: seasons }), {
+      ...(today ? { today } : null),
+    }).listings[0]?.extras.find((extra) => extra.externalId === "52")?.priceMinor;
+
+  it("states the season running today", () => {
+    expect(cleaningOn("2026-09-22")).toBe(12_500);
+  });
+
+  it("states the next season once this one is over", () => {
+    expect(cleaningOn("2027-03-01")).toBe(15_000);
+  });
+
+  it("states the next to open when none is running", () => {
+    expect(cleaningOn("2025-11-01")).toBe(12_500);
+  });
+});
+
+/*
+ * The catalogue's own terms: a service's `description`, an equipment row's `condition`. For
+ * additional equipment, which never reaches the offer, they are the only terms there are.
+ */
+describe("the operator's terms on a catalogue extra", () => {
+  it("keeps a service's description and an equipment row's condition as its note", () => {
+    const yacht = maria();
+    const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+    yacht.seasonSpecificData = [
+      {
+        ...season,
+        services: [
+          {
+            serviceId: 52,
+            price: "150.00",
+            currency: "EUR",
+            obligatory: true,
+            description: { textEN: "+ 200 EUR refundable" },
+          },
+        ],
+        additionalYachtEquipment: [
+          {
+            equipmentId: 17,
+            amount: "100.00",
+            currency: "EUR",
+            condition: { textEN: "one set per cabin" },
+          },
+        ],
+      },
+    ];
+
+    const extras = listingOf(yacht)?.extras ?? [];
+
+    expect(extras.find((extra) => extra.externalId === "52")?.note).toBe("+ 200 EUR refundable");
+    expect(extras.find((extra) => extra.externalId === "17")?.note).toBe("one set per cabin");
+  });
+});
+
+describe("a price measure the catalogue cannot name", () => {
+  it("is kept as a measure nothing counts, not as per booking", () => {
+    const yacht = maria();
+    const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+    yacht.seasonSpecificData = [
+      {
+        ...season,
+        services: [{ serviceId: 52, price: "80.00", currency: "EUR", priceMeasureId: 999_999 }],
+      },
+    ];
+
+    const extra = listingOf(yacht)?.extras.find((item) => item.externalId === "52");
+
+    expect(extra?.priceMeasure).toBe("per unit");
   });
 });

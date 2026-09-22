@@ -2,11 +2,13 @@ import type { z } from "zod";
 
 import type { JsonField } from "../shared/json";
 import { parseBookingManagerDate } from "./dates";
-import { regionFor } from "./geography";
+import { coarseAreaRegion, placeNamingAreas, regionFor, type SailingArea } from "./geography";
+import { crewRoleOf } from "../shared/crew-role";
 import { stripHtml } from "../shared/html-text";
 import { decimalStringToMinor } from "../shared/money";
 import { isPlaceholderBuilder } from "../shared/placeholder-builders";
 import { mergeYachtTitle } from "../shared/yacht-title";
+import { wallClockTime } from "../shared/wall-clock";
 import {
   currencyOf,
   idOf,
@@ -22,6 +24,7 @@ import {
   type CanonicalCatalogue,
   type CatalogueProjectionContext,
   type CanonicalExtra,
+  type CrewType,
   type ProviderRecordSet,
 } from "../types";
 import {
@@ -29,6 +32,8 @@ import {
   restCompanySchema,
   restCountrySchema,
   restEquipmentSchema,
+  restExtrasSchema,
+  restProductSchema,
   restSailingAreaSchema,
   restShipyardSchema,
   restYachtSchema,
@@ -46,14 +51,17 @@ import {
 const PROVIDER_PREFIX = "booking_manager";
 
 /**
- * Booking Manager returns one language per request and the catalogue sync asks
- * for none, so every string here is the vendor's default. Recorded responses are
- * English; flagged as an assumption rather than something the vendor states.
+ * Booking Manager returns one language per request and the catalogue sync asks for none
+ * except on `/equipment`, whose names per locale arrive as `translations` on each item. Every
+ * other string here is the vendor's default, which recorded responses show to be English.
  */
 const CATALOGUE_LOCALE = "en";
 
-/** Used only when a yacht names equipment the `/equipment` dump does not categorise. */
-const UNCATEGORISED_AMENITY_CATEGORY = { externalId: "uncategorised", name: "Equipment" };
+/**
+ * Used only when no yacht files an `/equipment` item under any category. Not "Equipment": the
+ * writer keys categories by name, and that is also a category operators name themselves.
+ */
+const UNCATEGORISED_AMENITY_CATEGORY = { externalId: "uncategorised", name: "Uncategorised" };
 
 /**
  * `descriptions[]` is category-keyed free text with no kind of its own, so the
@@ -96,8 +104,17 @@ export function projectBookingManagerCatalogue(
   const models = projectModels(yachts, knownShipyards);
   const baseTimes = baseTimesOf(yachts);
 
+  const sailingAreasByBase = sailingAreasByBaseOf(parseAll(records, "base", restBaseSchema));
+
   const listings = yachts
-    .map((yacht) => projectYacht(yacht, { categoryIdByKind, knownEquipment, knownShipyards }))
+    .map((yacht) =>
+      projectYacht(yacht, {
+        categoryIdByKind,
+        knownEquipment,
+        knownShipyards,
+        sailingAreasByBase,
+      }),
+    )
     .filter((item): item is NonNullable<typeof item> => item !== null);
 
   return canonicalCatalogueSchema.parse({
@@ -130,6 +147,8 @@ export function projectBookingManagerCatalogue(
         // The only place the vendor publishes a cancellation policy, inside the
         // wider terms; see `termsAndConditions` on `restCompanySchema`.
         termsAndConditions: text(item.termsAndConditions),
+        // Trimmed away when blank: company 225 and others send a single space.
+        checkoutNote: text(item.checkoutNote),
       };
     }),
     builders: shipyards.map((item) => {
@@ -159,6 +178,8 @@ export function projectBookingManagerCatalogue(
 type RestBase = z.infer<typeof restBaseSchema>;
 type RestCountry = z.infer<typeof restCountrySchema>;
 type RestYacht = z.infer<typeof restYachtSchema>;
+type RestProduct = z.infer<typeof restProductSchema>;
+type RestExtras = z.infer<typeof restExtrasSchema>;
 
 /**
  * Booking Manager's geography is not our geography.
@@ -178,9 +199,10 @@ type RestYacht = z.infer<typeof restYachtSchema>;
  * The location is the base's town, which the vendor states and our other vendor does
  * not, so it also fills `location.city`.
  *
- * Bases already written somewhere else are moved by `geography:repair-bm`, which
- * keeps their ids and the routes attached to them. A sync that gets there first
- * creates new base rows instead and strands those routes.
+ * The placement can change under a base that never moved, when the other vendor starts
+ * sailing from a new region. The writer finds a base by its vendor id (`base_source`), not
+ * by this placement, and moves the row in place, so its id and the boats and routes on it
+ * go with it.
  */
 export function projectBookingManagerGeography(
   records: ProviderRecordSet,
@@ -211,6 +233,7 @@ export function projectBookingManagerGeography(
     name: string;
     lat?: number;
     lng?: number;
+    address?: string;
   }[] = [];
 
   for (const item of bases) {
@@ -221,31 +244,35 @@ export function projectBookingManagerGeography(
 
     const country = countryById.get(countryId);
     const countryName = text(country?.name) ?? text(country?.long) ?? `Country ${countryId}`;
-    const lat = coordinateOf(item.latitude);
-    const lng = coordinateOf(item.longitude);
+    const point = pointOf(item);
+    const lat = point?.lat;
+    const lng = point?.lng;
 
-    const sailingAreaNames = (item.sailingAreas ?? [])
-      .map((value) => {
-        const id = idOf(value);
-        return id === null ? undefined : sailingAreaNameById.get(id);
-      })
-      .filter((name): name is string => name !== undefined);
+    const areas = (item.sailingAreas ?? []).flatMap((value): SailingArea[] => {
+      const id = idOf(value);
+      const name = id === null ? undefined : sailingAreaNameById.get(id);
+      return id === null || name === undefined ? [] : [{ id, name }];
+    });
+    const countryCode = country === undefined ? undefined : countryCodeOf(country);
+    const namedArea =
+      countryCode === undefined ? areas[0] : placeNamingAreas(areas, countryCode)[0];
 
     const regionName =
-      (country === undefined
+      (countryCode === undefined
         ? undefined
         : regionFor(
             {
-              countryCode: countryCodeOf(country),
-              sailingAreas: sailingAreaNames,
+              countryCode,
+              sailingAreas: areas.map((area) => area.name),
               point: lat === undefined || lng === undefined ? undefined : { lat, lng },
             },
             context.referenceRegions,
           )) ??
-      sailingAreaNames[0] ??
+      namedArea?.name ??
+      (countryCode === undefined ? undefined : coarseAreaRegion(areas, countryCode, countryName)) ??
       countryName;
     const city = text(item.city);
-    const locationName = city ?? sailingAreaNames[0] ?? regionName;
+    const locationName = city ?? namedArea?.name ?? regionName;
 
     // Keyed by name within the country: two sailing areas placed into one region are
     // one region, and a town is one location however many areas list it.
@@ -270,6 +297,7 @@ export function projectBookingManagerGeography(
       name: baseNameOf(item),
       lat,
       lng,
+      address: text(item.address),
     });
   }
 
@@ -324,15 +352,28 @@ function baseTimesOf(yachts: RestYacht[]) {
 /* ---------------------------------------------------------------- taxonomy */
 
 /**
- * Amenity categories exist nowhere in the vendor's reference data: `/equipment` is
- * a flat id/name list, and the only mention of a category is `categoryName` inside
- * a yacht's `equipmentRaw`. So the categories are derived from the fleet and the
- * amenities filed against them by id, falling back to a name match because the raw
- * inventory rows may not share the `/equipment` id space (Q-BM-EQUIPMENT-ID).
+ * Amenity categories exist nowhere in the vendor's reference data: `/equipment` is a flat
+ * id/name list, and the only mention of a category is `categoryName` on a yacht's
+ * `equipmentRaw` rows, which each operator writes for itself.
+ *
+ * A raw row's own `id` is in a different space from `/equipment` (0 of 327 matches on company
+ * 225); its `parentId` is the `/equipment` id it specialises, and `-1` marks an item the operator
+ * added that `/equipment` does not list. So an amenity takes the category its fleet files it
+ * under most, read through `parentId`, and only an amenity no row points at falls back to rows
+ * of the same name. One fitting arrives under several categories (Radar as "Instruments" and as
+ * "Equipment"), and the catch-alls say nothing about where it belongs, so a specific category
+ * beats them; the rest is decided by count, then name, so a re-sync never flips it.
  */
 function projectAmenities(equipment: z.infer<typeof restEquipmentSchema>[], yachts: RestYacht[]) {
   const categoryNames = new Map<string, string>();
-  const categoryByKey = new Map<string, string>();
+  const byParent = new Map<string, Map<string, number>>();
+  const byName = new Map<string, Map<string, number>>();
+
+  const tally = (index: Map<string, Map<string, number>>, key: string, categoryId: string) => {
+    const counts = index.get(key) ?? new Map<string, number>();
+    counts.set(categoryId, (counts.get(categoryId) ?? 0) + 1);
+    index.set(key, counts);
+  };
 
   for (const yacht of yachts) {
     for (const item of yacht.equipmentRaw ?? []) {
@@ -341,20 +382,21 @@ function projectAmenities(equipment: z.infer<typeof restEquipmentSchema>[], yach
 
       const categoryId = slugify(categoryName);
       if (categoryId === "") continue;
-      categoryNames.set(categoryId, categoryName);
+      if (!categoryNames.has(categoryId)) categoryNames.set(categoryId, categoryName);
 
-      const id = idOf(item.id);
-      if (id !== null) categoryByKey.set(`id:${id}`, categoryId);
+      const parentId = idOf(item.parentId);
+      if (parentId !== null && parentId !== "-1") tally(byParent, parentId, categoryId);
       const name = text(item.name);
-      if (name !== undefined) categoryByKey.set(`name:${name.toLowerCase()}`, categoryId);
+      if (name !== undefined) tally(byName, name.toLowerCase(), categoryId);
     }
   }
 
   let needsFallback = false;
   const amenities = equipment.map((item) => {
     const name = text(item.name) ?? `Equipment ${item.id}`;
-    const categoryId =
-      categoryByKey.get(`id:${item.id}`) ?? categoryByKey.get(`name:${name.toLowerCase()}`);
+    const categoryId = likeliestCategory(
+      byParent.get(String(item.id)) ?? byName.get(name.toLowerCase()),
+    );
     if (categoryId === undefined) needsFallback = true;
 
     return {
@@ -364,6 +406,7 @@ function projectAmenities(equipment: z.infer<typeof restEquipmentSchema>[], yach
       // shape is load-bearing, not cosmetic.
       code: `${PROVIDER_PREFIX}:${item.id}`,
       name,
+      translations: translationsOf(item.translations, name),
     };
   });
 
@@ -374,6 +417,50 @@ function projectAmenities(equipment: z.infer<typeof restEquipmentSchema>[], yach
   if (needsFallback) categories.push({ ...UNCATEGORISED_AMENITY_CATEGORY });
 
   return { categories, amenities };
+}
+
+/**
+ * The names `/equipment` returned per language, less those that are only the English again: the
+ * vendor leaves about a quarter of its items untranslated in every language, and a copy stored
+ * as a translation would outrank the curated label for that locale.
+ */
+function translationsOf(
+  names: Record<string, string> | null | undefined,
+  english: string,
+): Record<string, string> | undefined {
+  const translated = Object.entries(names ?? {}).flatMap(([locale, value]) => {
+    const name = text(value);
+    return name === undefined || name.toLowerCase() === english.toLowerCase()
+      ? []
+      : [[locale, name] as const];
+  });
+  return translated.length === 0 ? undefined : Object.fromEntries(translated);
+}
+
+/** The operators' names for "everything else", by slug. */
+const CATCH_ALL_CATEGORIES = new Set([
+  "equipment",
+  "other-equipment",
+  "standard-equipment",
+  "more-equipment",
+  "all-equipment",
+  "additional",
+  "amenities",
+  "facilities",
+  "miscellaneous",
+  "general",
+  "inventory",
+]);
+
+function likeliestCategory(counts: ReadonlyMap<string, number> | undefined): string | undefined {
+  if (counts === undefined) return undefined;
+  const ranked = [...counts.entries()].sort(
+    ([leftId, leftCount], [rightId, rightCount]) =>
+      Number(CATCH_ALL_CATEGORIES.has(leftId)) - Number(CATCH_ALL_CATEGORIES.has(rightId)) ||
+      rightCount - leftCount ||
+      leftId.localeCompare(rightId),
+  );
+  return ranked[0]?.[0];
 }
 
 /**
@@ -420,6 +507,7 @@ function projectYacht(
     categoryIdByKind: Map<string, string>;
     knownEquipment: Set<string>;
     knownShipyards: Set<string>;
+    sailingAreasByBase: ReadonlyMap<string, ReadonlySet<string>>;
   },
 ) {
   const companyId = idOf(yacht.companyId);
@@ -455,24 +543,31 @@ function projectYacht(
       draftM: numberOf(yacht.draught),
       cabins: intOf(yacht.cabins) ?? 0,
       berths: intOf(yacht.berths) ?? 0,
+      // Stated on about half the account's yachts, below the berths on 215 of them.
+      maxPersons: positiveInt(yacht.maxPeopleOnBoard),
       heads: intOf(yacht.wc) ?? 0,
       // The vendor publishes `wc` and nothing about showers, so the count stays unknown.
       yearBuilt: intOf(yacht.year) ?? 0,
-      // `engine` is a free-text description ("2 x 75hp Volvo"), never a count.
-      engines: undefined,
+      ...engineOf(text(yacht.engine)),
       fuelCapacity: capacityOf(yacht.fuelCapacity),
       waterCapacity: capacityOf(yacht.waterCapacity),
+      sailType: sailTypeOf(text(yacht.mainsailType)),
     },
+    crewType: crewTypeOf(soldProductOf(yacht)),
+    skipperLicenceRequired: licenceRequiredOf(yacht.requiredSkipperLicense),
     media: mediaOf(yacht),
     amenities: amenityIdsOf(yacht).filter((id) => context.knownEquipment.has(id)),
-    extras: extrasOf(yacht, currency),
+    extras: extrasOf(yacht, currency, context.sailingAreasByBase.get(baseId)),
     texts: textsOf(yacht),
     checkinRules: checkinRulesOf(yacht),
     // The catalogue states no one-way periods; `/offers` is where a one-way charter
     // shows up, as a start base that differs from the end base.
     oneWayRules: [],
     defaultCurrency: currency,
+    checkInTime: wallClockTime(text(yacht.defaultCheckInTime)),
+    checkOutTime: wallClockTime(text(yacht.defaultCheckOutTime)),
     securityDepositMinor: minorOf(yacht.deposit, currency),
+    securityDepositWhenInsuredMinor: waivedDepositOf(yacht, currency),
     // Booking Manager prices the yacht and its deposit in one currency.
     securityDepositCurrency: currency,
     // Booking Manager publishes no review aggregate, and absent must stay absent: a
@@ -503,34 +598,45 @@ function amenityIdsOf(yacht: RestYacht): string[] {
   return [];
 }
 
+type MediaRole = "main" | "layout" | "gallery";
+
 /**
- * `sortOrder` is the vendor's own ordering and the first image is the cover shot;
- * nothing in the payload marks an accommodation layout, so no image is ever filed
- * as one. Duplicate URLs are dropped because the same photo repeats across
- * products on recorded yachts.
+ * The operator labels each picture in `description`: "Main image" is the cover it chose, "Plan
+ * image" the accommodation layout, "Interior image" and a blank the rest. Taking the first
+ * picture as the cover put a deck plan on about 1,370 cards and an interior on about 1,280; on
+ * company 225 "Main image" is first on 5 of the 20 yachts with pictures.
+ *
+ * `sortOrder` is 0 on every picture of that fleet and on most account-wide, so it orders only
+ * where it is set: a picture carrying none follows every one that does, and the vendor's array
+ * order decides the rest. A yacht naming no main image
+ * takes its first picture that is not a plan; one showing only plans has no cover at all, which
+ * ranks its layouts behind any other offer's photos rather than presenting a drawing as the boat.
+ * Duplicate URLs are dropped because the same photo repeats across products.
  */
 function mediaOf(yacht: RestYacht) {
   const images = [...(yacht.images ?? [])]
     .map((image, index) => ({
       url: text(image.url),
-      sortOrder: intOf(image.sortOrder) ?? index,
+      label: text(image.description)?.toLowerCase(),
+      sortOrder: intOf(image.sortOrder) ?? Number.MAX_SAFE_INTEGER,
       index,
     }))
-    .filter((image): image is { url: string; sortOrder: number; index: number } => {
-      return image.url !== undefined;
-    })
+    .filter((image): image is typeof image & { url: string } => image.url !== undefined)
     .sort((left, right) => left.sortOrder - right.sortOrder || left.index - right.index);
 
-  const media: { externalUrl: string; role: "main" | "gallery"; sortOrder: number }[] = [];
+  const cover =
+    images.find((image) => image.label === "main image") ??
+    images.find((image) => image.label !== "plan image");
+
+  const media: { externalUrl: string; role: MediaRole; sortOrder: number }[] = [];
   const seen = new Set<string>();
 
-  for (const image of images) {
-    const url = image.url;
-    if (seen.has(url)) continue;
-    seen.add(url);
+  for (const image of cover === undefined ? images : [cover, ...images]) {
+    if (seen.has(image.url)) continue;
+    seen.add(image.url);
     media.push({
-      externalUrl: url,
-      role: media.length === 0 ? "main" : "gallery",
+      externalUrl: image.url,
+      role: image === cover ? "main" : image.label === "plan image" ? "layout" : "gallery",
       sortOrder: media.length,
     });
   }
@@ -595,6 +701,7 @@ function textKindOf(category: string | undefined): TextKind {
  */
 function checkinRulesOf(yacht: RestYacht) {
   const minNights = positiveInt(yacht.minimumCharterDuration);
+  const maxNights = maxNightsOf(yacht, minNights);
 
   const days = Array.isArray(yacht.allCheckInDays)
     ? yacht.allCheckInDays.map(weekdayOf).filter((day): day is number => day !== undefined)
@@ -604,10 +711,8 @@ function checkinRulesOf(yacht: RestYacht) {
   ].filter((day): day is number => day !== undefined);
 
   if (offered.length === 7 || offered.length === 0) {
-    if (offered.length === 0 && minNights === undefined) return [];
-    return [
-      { checkinWeekday: undefined, checkoutWeekday: undefined, minNights, maxNights: undefined },
-    ];
+    if (offered.length === 0 && minNights === undefined && maxNights === undefined) return [];
+    return [{ checkinWeekday: undefined, checkoutWeekday: undefined, minNights, maxNights }];
   }
 
   return offered.flatMap((checkin) =>
@@ -615,9 +720,28 @@ function checkinRulesOf(yacht: RestYacht) {
       checkinWeekday: checkin,
       checkoutWeekday: checkout,
       minNights,
-      maxNights: undefined,
+      maxNights,
     })),
   );
+}
+
+/**
+ * `maximumCharterDuration`, in the same nights as the minimum beside it. Checked against the
+ * confirming `/offers` sweep: of every priced charter stored for the yachts stating a limit under
+ * 60, none ran longer than it. 90 is the fleet default and caps nothing a week search asks.
+ *
+ * A limit below the minimum contradicts it, and no charter at all was priced on those yachts,
+ * so the minimum is kept alone rather than publishing a rule nothing can satisfy.
+ */
+export function maxNightsOf(
+  yacht: Pick<RestYacht, "maximumCharterDuration">,
+  minNights: number | undefined,
+): number | undefined {
+  const maxNights = positiveInt(yacht.maximumCharterDuration);
+  if (maxNights === undefined || (minNights !== undefined && maxNights < minNights)) {
+    return undefined;
+  }
+  return maxNights;
 }
 
 /**
@@ -639,6 +763,55 @@ function weekdayOf(value: JsonField): number | undefined {
   return parsed - 1;
 }
 
+/**
+ * The mainsail in the vocabulary NauSYS resolves its `sailTypes` to, so one Mainsail filter
+ * finds both fleets and the curated `sail_type` labels translate it.
+ *
+ * The vendor's list is closed: every yacht on the account sends one of these three or "None".
+ * "Semi full batten" is NauSYS's half batten, battens run full length only part-way down.
+ * "None" (German "Keine") is how the vendor writes a boat with no mainsail, not a rig called
+ * None, and anything outside the list is left unset rather than published as a new facet.
+ * `genoaType` has nowhere to go: the spec block and the filters know the mainsail only.
+ */
+const SAIL_TYPES = new Map([
+  ["full batten", "full batten"],
+  ["semi full batten", "half batten"],
+  ["furling", "furling/roll"],
+]);
+
+function sailTypeOf(value: string | undefined): string | undefined {
+  return value === undefined ? undefined : SAIL_TYPES.get(value.toLowerCase());
+}
+
+/**
+ * `engine` is the operator's own line ("2 x 38 HP", "Volvo 40 h.p.", "Yanmar Diesel"), so the
+ * power is read where it carries a unit and the count only where it is written as a multiple.
+ * A bare figure ("78", "27.3") could be either unit and is left unread, as is a brand alone.
+ * Metric horsepower (PS, CV, KS) is written as hp, the unit the rest of the catalogue prints;
+ * the two differ by 1.4%.
+ */
+const ENGINE_POWER = /(\d+(?:[.,]\d+)?)\s*(b?hp|h\.\s?p\.?|ps|cv|ks|kw)(?![a-z])/i;
+const ENGINE_COUNT = /(?<![\d.,])([1-4])\s*[x\u00d7]/i;
+
+type EngineSpec = { engines?: number; enginePower?: string };
+
+function engineOf(value: string | undefined): EngineSpec {
+  const engine: EngineSpec = {};
+  if (value === undefined) return engine;
+
+  const count = ENGINE_COUNT.exec(value)?.[1];
+  if (count !== undefined) engine.engines = Number(count);
+
+  const power = ENGINE_POWER.exec(value);
+  const figure = power?.[1]?.replace(",", ".");
+  if (power !== null && figure !== undefined && Number(figure) > 0) {
+    const unit = power[2]?.toLowerCase() === "kw" ? "kW" : "hp";
+    engine.enginePower = `${Number(figure)} ${unit}`;
+  }
+
+  return engine;
+}
+
 /* ----------------------------------------------------------------- helpers */
 
 /** Turnaround times stay wall-clock strings; only the shape is checked. */
@@ -654,11 +827,23 @@ function capacityOf(value: JsonField): number | undefined {
 }
 
 /** Coordinates arrive as strings, and "0" is the vendor's unset marker, not the Gulf of Guinea. */
-function coordinateOf(value: JsonField): number | undefined {
+function coordinateOf(value: JsonField, limit: number): number | undefined {
   const raw = text(value);
   if (raw === undefined) return undefined;
   const parsed = Number(raw.replace(",", "."));
-  return Number.isFinite(parsed) && parsed !== 0 ? parsed : undefined;
+  return Number.isFinite(parsed) && parsed !== 0 && Math.abs(parsed) <= limit ? parsed : undefined;
+}
+
+/**
+ * Both coordinates or neither. Half a point is not a place: Shelter Bay Marina in Panama arrives
+ * as latitude 0 and longitude 9.37, its latitude in the wrong field, and kept alone that longitude
+ * pinned the base off West Africa and pulled it towards whatever region lies nearest there.
+ * "to be reused" carries 363931 / 280454, which no reading of degrees makes a place either.
+ */
+function pointOf(item: RestBase): { lat: number; lng: number } | undefined {
+  const lat = coordinateOf(item.latitude, 90);
+  const lng = coordinateOf(item.longitude, 180);
+  return lat === undefined || lng === undefined ? undefined : { lat, lng };
 }
 
 function countryCodeOf(country: RestCountry): string {
@@ -671,15 +856,6 @@ function countryCodeOf(country: RestCountry): string {
 }
 
 /**
- * The priced extras behind the listing's two paid sections. Unlike NauSYS these
- * name themselves, so no reference list has to resolve them.
- *
- * The vendor hangs extras off products rather than off the yacht, and the same
- * extra is normally repeated by every product that sells it. The default
- * product's price is the published one, so its entries are taken first and later
- * repeats of the same id are ignored.
- */
-/**
  * The vendor's whole-number percentage as the rate the rest of the codebase carries: 40 -> 0.4.
  *
  * Zero and absent are the same answer here -- a fee of nothing is money, not a share -- so both
@@ -690,59 +866,221 @@ function percentageRateOf(percentage: number | null | undefined): number | undef
   return percentage / 100;
 }
 
-function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] {
-  const products = [...(yacht.products ?? [])].sort(
-    (left, right) =>
-      Number(right.isDefaultProduct === true) - Number(left.isDefaultProduct === true),
-  );
-
+/**
+ * The priced extras behind the listing's two paid sections. Unlike NauSYS these
+ * name themselves, so no reference list has to resolve them.
+ *
+ * Taken from the product the listing sells and no other. Every product carries its own
+ * extras ("each product has its own elaboration of applicable extras"), and `/offers`,
+ * `/prices` and the reservation all go to the default product when none is named, which
+ * nothing here does. Merging every product's list put a Flotilla fleet's 800 EUR
+ * obligatory package on the bareboat card of about 165 listings, and a Crewed product's
+ * obligatory skipper turned a bareboat into a skippered one.
+ */
+function extrasOf(
+  yacht: RestYacht,
+  fallbackCurrency: string,
+  homeSailingAreas: ReadonlySet<string> | undefined,
+): CanonicalExtra[] {
+  const homeBaseId = idOf(yacht.homeBaseId);
   const chosen = new Map<string, CanonicalExtra>();
-  for (const product of products) {
-    for (const item of product.extras ?? []) {
-      const externalId = idOf(item.id);
-      const label = text(item.name);
-      // An extra with no id cannot be kept stable across syncs, and one with no
-      // name cannot be shown to a buyer.
-      if (externalId === null || label === undefined) continue;
-      if (chosen.has(externalId)) continue;
+  for (const item of soldProductOf(yacht)?.extras ?? []) {
+    const externalId = idOf(item.id);
+    const label = text(item.name);
+    // An extra with no id cannot be kept stable across syncs, and one with no
+    // name cannot be shown to a buyer.
+    if (externalId === null || label === undefined) continue;
+    if (chosen.has(externalId)) continue;
+    if (!soldInSailingArea(item, homeSailingAreas)) continue;
 
-      const priceCurrency = currencyOf(item.currency, fallbackCurrency);
-      /*
-       * A fee the operator states as a share of the charter rather than as money. The vendor
-       * populates `percentage` and leaves `price` at zero -- the quote path has always read it
-       * (`percentageOfCharter`), and the catalogue never did, so 335 obligatory fees across 278
-       * listings reached the card as free. An APA at 40% is the common one, and a crewed yacht
-       * advertised 56,500 EUR against a quote of 76,501.
-       */
-      const rate = percentageRateOf(item.percentage);
-      const priceMinor = rate === undefined ? minorOf(item.price, priceCurrency) : 0;
-      if (priceMinor === undefined) continue;
+    const priceCurrency = currencyOf(item.currency, fallbackCurrency);
+    /*
+     * A fee the operator states as a share of the charter rather than as money. The vendor
+     * populates `percentage` and leaves `price` at zero -- the quote path has always read it
+     * (`percentageOfCharter`), and the catalogue never did, so 335 obligatory fees across 278
+     * listings reached the card as free. An APA at 40% is the common one, and a crewed yacht
+     * advertised 56,500 EUR against a quote of 76,501.
+     */
+    const rate = percentageRateOf(item.percentage);
+    const priceMinor = rate === undefined ? minorOf(item.price, priceCurrency) : 0;
+    if (priceMinor === undefined) continue;
 
-      chosen.set(externalId, {
-        // The vendor numbers extras in one space of its own, with no separate
-        // equipment pricing list to tell apart.
-        kind: "service",
-        externalId,
-        name: label,
-        obligatory: item.obligatory === true,
-        ...(rate === undefined ? null : { percentage: rate }),
-        priceMinor,
-        priceCurrency,
-        priceMeasure: text(item.unit),
-        calculationType: undefined,
-        // `false` here is a real statement, so it is kept apart from the vendor saying nothing.
-        payableInBase: item.payableInBase ?? undefined,
-        seasonStart: sailingDateOf(item.sailingDateFrom),
-        seasonEnd: sailingDateOf(item.sailingDateTo),
-        validNightsFrom: positiveInt(item.validDaysFrom),
-        validNightsTo: positiveInt(item.validDaysTo),
-        // `validForBases` pairs a start base with an end base, which only a one-way fee needs.
-        oneWayOnly: (item.validForBases ?? []).length > 0 || undefined,
-        onRequestOnly: false,
-      });
-    }
+    chosen.set(externalId, {
+      // The vendor numbers extras in one space of its own, with no separate
+      // equipment pricing list to tell apart.
+      kind: "service",
+      externalId,
+      name: label,
+      obligatory: item.obligatory === true,
+      ...(rate === undefined ? null : { percentage: rate }),
+      priceMinor,
+      priceCurrency,
+      priceMeasure: text(item.unit),
+      calculationType: undefined,
+      // `false` here is a real statement, so it is kept apart from the vendor saying nothing.
+      payableInBase: item.payableInBase ?? undefined,
+      seasonStart: sailingDateOf(item.sailingDateFrom),
+      seasonEnd: sailingDateOf(item.sailingDateTo),
+      validNightsFrom: positiveInt(item.validDaysFrom),
+      validNightsTo: positiveInt(item.validDaysTo),
+      ...routeScopeOf(item),
+      ...includedIdsOf(item, externalId),
+      ...quantityOf(item),
+      // The operator's own fine print: "Applies only when skipper is chosen", a pack's contents.
+      note: stripHtml(text(item.description)),
+      onRequestOnly: false,
+      ...((item.includesDepositWaiver ?? item.includedDepositWaiver) === true
+        ? { depositInsurance: true }
+        : null),
+      ...obligatoryCrewRoleOf(item, label, priceMinor, rate),
+      // Filed under the home base, which is where the card's charter starts and ends, so the
+      // read model can test the base and route conditions above against it.
+      externalBaseId: homeBaseId ?? undefined,
+    });
   }
   return [...chosen.values()];
+}
+
+type ExtraRouteScope = Pick<CanonicalExtra, "oneWayOnly" | "validForBaseIds" | "validRoutes">;
+
+/**
+ * Where an extra is charged, from the two ways the vendor restricts one.
+ *
+ * `validForBases` is a list of allowed routes, each any base of `from` to any base of `to`.
+ * A fee is one-way only when none of those routes returns to where it started; "APA 25%",
+ * "VAT - Greece 6.5%" and "Skipper obligatory" arrive restricted to a return from the home
+ * base on about 120 hulls, and treating every restricted fee as one-way took them off the card.
+ *
+ * `availableInBase` names the one base an extra is sold at, `-1` meaning all of them.
+ */
+function routeScopeOf(item: RestExtras): ExtraRouteScope {
+  const scope: ExtraRouteScope = {};
+
+  const routes = new Map<string, { from: string; to: string }>();
+  for (const pairs of item.validForBases ?? []) {
+    for (const from of pairs.from ?? []) {
+      for (const to of pairs.to ?? []) routes.set(`${from}>${to}`, { from, to });
+    }
+  }
+  if (routes.size > 0) {
+    scope.validRoutes = [...routes.values()];
+    if (!scope.validRoutes.some((route) => route.from === route.to)) scope.oneWayOnly = true;
+  }
+
+  const base = item.availableInBase;
+  if (base != null && base !== "-1") scope.validForBaseIds = [base];
+
+  return scope;
+}
+
+/** Undocumented; see `includedExtras` on `restExtrasSchema`. An extra never bundles itself. */
+function includedIdsOf(
+  item: RestExtras,
+  externalId: string,
+): Pick<CanonicalExtra, "includedExternalIds"> {
+  const ids = [...new Set(item.includedExtras ?? [])].filter((id) => id !== externalId);
+  return ids.length > 0 ? { includedExternalIds: ids } : {};
+}
+
+/**
+ * Whether an extra restricted to sailing areas is sold where this yacht is based. An operator
+ * files one extras list across a fleet spread over several areas, so "CharterPack Caribbean
+ * (Cleaning + Bedlinen + Towels + First Gas bottle)" at 750 EUR obligatory arrives on its
+ * Mediterranean hulls too. A base whose areas the dump did not name keeps the extra: silence is
+ * not a reason to hide a fee.
+ */
+function soldInSailingArea(
+  item: RestExtras,
+  homeSailingAreas: ReadonlySet<string> | undefined,
+): boolean {
+  const areas = item.validSailingAreas ?? [];
+  if (areas.length === 0 || homeSailingAreas === undefined || homeSailingAreas.size === 0) {
+    return true;
+  }
+  return areas.some((area) => homeSailingAreas.has(area));
+}
+
+function sailingAreasByBaseOf(bases: readonly RestBase[]): Map<string, Set<string>> {
+  const byBase = new Map<string, Set<string>>();
+  for (const item of bases) {
+    const areas = (item.sailingAreas ?? [])
+      .map((value) => idOf(value))
+      .filter((area): area is string => area !== null);
+    byBase.set(String(item.id), new Set(areas));
+  }
+  return byBase;
+}
+
+/** `-1` is the vendor's unlimited, and so is a limit it did not send. */
+function quantityOf(
+  item: RestExtras,
+): Pick<CanonicalExtra, "quantityLimit" | "quantitySelectable"> {
+  const limit = item.quantityLimit;
+  const quantity: Pick<CanonicalExtra, "quantityLimit" | "quantitySelectable"> = {};
+  if (limit != null && Number.isInteger(limit) && limit >= 0) quantity.quantityLimit = limit;
+  if (item.quantityIsSelectable != null) quantity.quantitySelectable = item.quantityIsSelectable;
+  return quantity;
+}
+
+/**
+ * How the listing is sold, read off the product it sells, which is also the product every
+ * `/offers` call prices when none is named.
+ *
+ * `crewedByDefault` is the vendor's own answer and is set on every product account-wide
+ * (Crewed 1,520 default products, Powered 81, AllInclusive 19, DailyCharter 11). Skippered (53)
+ * is crewed too, but only by the skipper the customer still sails with. Bareboat and every
+ * Flotilla variant are sailed by the customer. Cabin (154) and Berth are left unset: they sell
+ * a place aboard with whatever crew the operator names in its extras, and `crew_type` backs a
+ * search filter, so a guess would file the boat under a charter it does not offer.
+ */
+function crewTypeOf(product: RestProduct | undefined): CrewType | undefined {
+  if (product === undefined) return undefined;
+  const name = text(product.name)?.toLowerCase();
+  const crewed = product.crewedByDefault ?? (name === "crewed" || name === "skippered");
+
+  if (crewed) return name === "skippered" ? "skipper" : "full-crew";
+  if (name === "bareboat" || name?.startsWith("flotilla")) return "bareboat";
+  return undefined;
+}
+
+/**
+ * `requiredSkipperLicense` is 1 or 0 on every yacht of the account (1 on about 9,300, 0 on
+ * about 1,900, among them company 225's Giulia). Anything else is not an answer.
+ */
+function licenceRequiredOf(value: JsonField): boolean | undefined {
+  const flag = intOf(value);
+  return flag === 1 ? true : flag === 0 ? false : undefined;
+}
+
+/**
+ * The crew role of an extra the operator bills whatever the customer picks, so the detail page
+ * stops asking a skippered charter's customer for a licence and the card files it as skippered.
+ *
+ * Only obligatory ones. An optional Booking Manager skipper is bought as a requested extra: the
+ * vendor's `/offers` prices no optional extra, and the Crew control would move it out of that
+ * list into a choice our quote does not charge. An obligatory one is already inside the offer's
+ * `obligatoryExtrasPrice`. A zero-priced line is a statement, not a fee ("6% to added on the
+ * invoice when the skipper is hired" on 42 hulls), so it names no role either.
+ */
+function obligatoryCrewRoleOf(
+  item: RestExtras,
+  label: string,
+  priceMinor: number,
+  rate: number | undefined,
+): Pick<CanonicalExtra, "crewRole"> {
+  if (item.obligatory !== true || (priceMinor <= 0 && rate === undefined)) return {};
+  const crewRole = crewRoleOf(label);
+  return crewRole === undefined ? {} : { crewRole };
+}
+
+/**
+ * The product `/offers` prices when it is not given one. Every recorded yacht flags exactly
+ * one (11,218 of 11,218 account-wide, and all 29 on company 225), so the fallback to the
+ * first is only for a payload that flags none, where the vendor's own order is all there is.
+ */
+export function soldProductOf(yacht: Pick<RestYacht, "products">): RestProduct | undefined {
+  const products = yacht.products ?? [];
+  return products.find((product) => product.isDefaultProduct === true) ?? products[0];
 }
 
 /**
@@ -760,6 +1098,19 @@ function sailingDateOf(value: JsonField): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * The deposit once the waiver is bought, where it is really a reduction. Zero is the vendor
+ * configuring no waiver, and a figure at or above the full deposit reduces nothing, so both
+ * leave the ordinary deposit standing alone.
+ */
+function waivedDepositOf(yacht: RestYacht, currency: string): number | undefined {
+  const waived = minorOf(yacht.depositWithWaiver, currency);
+  if (waived === undefined || waived <= 0) return undefined;
+
+  const deposit = minorOf(yacht.deposit, currency);
+  return deposit !== undefined && waived >= deposit ? undefined : waived;
 }
 
 /**

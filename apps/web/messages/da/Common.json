@@ -13,6 +13,8 @@
     "confirmWithBase": "Prisen er ikke offentliggjort, bekræft med basen",
     "percentageOfCharter": "{percent} % af charterprisen",
     "oneWayOnly": "Kun ved enkeltvejscharter",
+    "chooseVariants": "Vælg de muligheder, du har brug for",
+    "fromPrice": "fra {price}",
     "measure": {
       "booking": "{price} pr. booking",
       "day": "{price} pr. dag",
@@ -47,7 +49,8 @@
       "nauticalMile": "{price} pr. sømil",
       "roundTrip": "{price} tur-retur",
       "litre": "{price} pr. liter",
-      "weekStartedPerson": "{price} pr. person pr. påbegyndt uge"
+      "weekStartedPerson": "{price} pr. person pr. påbegyndt uge",
+      "unit": "{price} pr. enhed"
     }
   },
   "resultsCount": "{count, plural, one {# båd fundet} other {# både fundet}}",

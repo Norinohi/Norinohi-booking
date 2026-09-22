@@ -12,6 +12,8 @@
     "priceOnRequest": "Preis auf Anfrage",
     "confirmWithBase": "Kein Preis angegeben, bei der Basis erfragen",
     "percentageOfCharter": "{percent}% des Charterpreises",
+    "chooseVariants": "Wählen Sie die gewünschten Varianten",
+    "fromPrice": "ab {price}",
     "measure": {
       "booking": "{price} pro Buchung",
       "day": "{price} pro Tag",
@@ -46,7 +48,8 @@
       "nauticalMile": "{price} pro Seemeile",
       "roundTrip": "{price} Hin- und Rückfahrt",
       "litre": "{price} pro Liter",
-      "weekStartedPerson": "{price} pro Person pro angefangene Woche"
+      "weekStartedPerson": "{price} pro Person pro angefangene Woche",
+      "unit": "{price} pro Einheit"
     },
     "oneWayOnly": "Nur für One-Way-Charter"
   },

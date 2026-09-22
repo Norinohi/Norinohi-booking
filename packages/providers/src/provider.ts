@@ -1,7 +1,7 @@
 import type { JsonValue } from "./shared/json";
 import type { SweepPeriod } from "./shared/sweep-periods";
 import type { AvailabilitySource } from "./sync/availability-writer";
-import type { SeasonalPrice } from "./sync/price-writer";
+import type { PriceWindow, SeasonalPrice } from "./sync/price-writer";
 import type { CatalogueSyncSource } from "./sync/runner";
 import type {
   AvailabilityCalendar,
@@ -14,8 +14,10 @@ import type {
   CrewListSubmission,
   CrewPlace,
   ListingPeriod,
+  Money,
   ProviderCapabilities,
   ProviderExtrasMutation,
+  ProviderInvoice,
   ProviderKey,
   ProviderQuote,
   ProviderRecordSet,
@@ -71,22 +73,35 @@ export interface InventoryProvider {
    */
   searchCrewPlaces?(query: string, limit: number): Promise<CrewPlace[]>;
   /**
+   * The most we may take off this priced charter of our own accord, stated exactly, where the
+   * vendor bounds it more tightly than the offer can say. Optional: only NauSYS does, from its
+   * commission net of VAT. Asked only when our discounts take anything, since it costs a call.
+   */
+  exactClientDiscountCap?(quote: ProviderQuote): Promise<Money | undefined>;
+  /**
    * The reservations this operator changed inside a window, so our copies can be checked
    * against theirs.
    *
-   * Optional: NauSYS filters its reservation list by modify time, Booking Manager does not
-   * publish such a feed, and a provider that cannot answer simply leaves its bookings
-   * unreconciled rather than blocking the pass.
+   * Optional, and a provider without it leaves its bookings unreconciled rather than blocking
+   * the pass. NauSYS answers by id or by modify time; Booking Manager only by id, one
+   * `GET /reservation/{id}` each, since neither of its lists is a delta we can trust.
    */
   listChangedReservations?(window: {
     since: Date;
     until: Date;
+    /** The reservations we hold open, for a provider that can be asked about them by id. */
+    reservationIds?: readonly string[] | undefined;
   }): Promise<ProviderReservationState[]>;
   /**
    * How many people the operator already has queued for a week it has sold out of. Optional:
    * NauSYS keeps such a queue, Booking Manager does not publish one.
    */
   getWaitingOptions?(input: ListingPeriod): Promise<WaitingOptions>;
+  /**
+   * The invoices the vendor issued in our name between two ISO dates. Optional: NauSYS
+   * exports them, Booking Manager does not.
+   */
+  listInvoices?(window: { from: string; to: string }): Promise<ProviderInvoice[]>;
   /**
    * A catalogue stream that reports scope completion, which `syncCatalogue` cannot. Optional:
    * without it the runner adapts `syncCatalogue` and announces scopes only once it ends.
@@ -104,6 +119,12 @@ export interface InventoryProvider {
    * dump at all, in which case the quote path is the only thing that prices its listings.
    */
   loadSeasonalPrices?(listingIds: string[]): Promise<Map<string, SeasonalPrice[]>>;
+  /**
+   * The weeks `loadSeasonalPrices` answers for in full, so that a week it leaves out of a
+   * listing's list is one the provider stopped pricing and its stored rate can go. Absent where
+   * the loader's silence says nothing, which is the NauSYS reading of a stored price list.
+   */
+  seasonalPricesCompleteWithin?(): PriceWindow | undefined;
   capabilities(): ProviderCapabilities;
 }
 

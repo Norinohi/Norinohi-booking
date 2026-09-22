@@ -424,6 +424,9 @@ async function onAuthorized(
    * `AUTHORIZATION_TTL_DAYS` if nothing else resolves it, which is the safe direction.
    */
   if (outcome.outcome === "skipped") return outcome.reason;
+  /* Nor while the provider has not said whether the charter exists: capture or release would
+     each be wrong in one of the two answers still possible. */
+  if (outcome.outcome === "indeterminate") return outcome.reason;
 
   if (outcome.outcome === "confirmed") {
     // Not guarded: a capture that fails leaves the event unprocessed for Stripe to redeliver,

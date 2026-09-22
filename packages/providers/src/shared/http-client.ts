@@ -57,7 +57,8 @@ export interface RawResponseEvent extends ProviderHttpResult {
 export type ResponseClassifier = (
   httpStatus: number,
   body: JsonValue,
-  context: { endpoint: string },
+  /** `text` is the body as it came, for a vendor that refuses in plain text `body` cannot hold. */
+  context: { endpoint: string; text?: string },
 ) => ProviderError | null;
 
 export interface ProviderHttpClientOptions {
@@ -130,7 +131,11 @@ export interface ProviderHttpClient {
     options?: ProviderRequestOptions,
   ): Promise<ProviderHttpResult>;
   del(endpoint: string): Promise<ProviderHttpResult>;
-  put(endpoint: string, body?: JsonRequestValue): Promise<ProviderHttpResult>;
+  put(
+    endpoint: string,
+    body?: JsonRequestValue,
+    options?: ProviderRequestOptions,
+  ): Promise<ProviderHttpResult>;
 }
 
 /**
@@ -273,7 +278,7 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
     // with the text carried on the error's payload below.
     await onRawResponse?.({ endpoint, ...result });
 
-    const error = classifyResponse(response.status, parsed, { endpoint });
+    const error = classifyResponse(response.status, parsed, { endpoint, text });
     if (error) {
       throw error;
     }
@@ -341,8 +346,16 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
     del(endpoint) {
       return send("DELETE", endpoint, null, false);
     },
-    put(endpoint, body) {
-      return send("PUT", endpoint, body ?? null, body !== undefined);
+    put(endpoint, body, requestOptions) {
+      return send(
+        "PUT",
+        endpoint,
+        body ?? null,
+        body !== undefined,
+        requestOptions?.queueKey,
+        requestOptions?.retry,
+        requestOptions?.timeoutMs,
+      );
     },
   };
 }

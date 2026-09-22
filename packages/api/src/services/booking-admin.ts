@@ -247,6 +247,15 @@ export async function getBookingForAdmin(
     provider: row.booking.provider,
     providerReservationId: row.booking.providerReservationId,
     providerStatus: row.booking.providerStatus,
+    providerAgencyReservationId: row.booking.providerAgencyReservationId,
+    operatorSettlement: row.booking.operatorSettlement
+      ? {
+          currency: row.booking.operatorSettlement.currency,
+          netMinor: row.booking.operatorSettlement.netMinor ?? null,
+          plan: row.booking.operatorSettlement.plan,
+          terms: row.booking.operatorSettlement.terms ?? null,
+        }
+      : null,
     holdExpiresAt: row.booking.holdExpiresAt?.toISOString() ?? null,
     confirmedAt: row.booking.confirmedAt?.toISOString() ?? null,
     crewType: row.quote.crewType,

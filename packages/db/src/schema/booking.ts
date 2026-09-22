@@ -162,6 +162,7 @@ export type CommercialSnapshot = {
   baseEmail?: string | null;
   basePhone?: string | null;
   baseWebsite?: string | null;
+  baseAddress?: string | null;
   depositInsuranceIncluded?: boolean;
   petsAllowed?: boolean;
   specs?: {
@@ -175,6 +176,14 @@ export type CommercialSnapshot = {
     sailType: string | null;
   };
   amenities?: string[];
+};
+
+/** Minor units in `currency`; `dueDate` is `yyyy-MM-dd`. */
+export type OperatorSettlement = {
+  currency: string;
+  netMinor?: number;
+  plan: { dueDate: string; amountMinor: number }[];
+  terms?: string;
 };
 
 /**
@@ -208,6 +217,18 @@ export const booking = pgTable(
     providerReservationId: text("provider_reservation_id"),
     providerOptionId: text("provider_option_id"),
     /**
+     * The vendor's other id for the same reservation, where it keeps two: Booking Manager's
+     * agency-side twin, which its reservation lists and `showOptions` name. We key on the
+     * charter-side id POST answers with; this is what matches the vendor's lists back to it.
+     */
+    providerAgencyReservationId: text("provider_agency_reservation_id"),
+    /**
+     * What we owe the operator, as the vendor stated it on the reservation: the net after our
+     * commission and when it falls due. It gives away our margin, so staff read it and no
+     * customer-facing surface does.
+     */
+    operatorSettlement: jsonb("operator_settlement").$type<OperatorSettlement>(),
+    /**
      * NauSYS rotates this per-reservation security token whenever important
      * reservation data changes, and every subsequent call must send the latest one.
      */
@@ -231,6 +252,15 @@ export const booking = pgTable(
     crewListAccepted: boolean("crew_list_accepted"),
     /** The vendor's own words on a refusal; never anything about a passenger. */
     crewListMessage: text("crew_list_message"),
+    /*
+     * What the customer told the base with the list, filed with it. The note is encrypted like
+     * the passengers' fields: "a wheelchair" is what it is for. The trip is not personal and is
+     * kept plain; `arrival_time` is `HH:mm` at the base.
+     */
+    crewListNote: text("crew_list_note"),
+    crewListFlightNumber: text("crew_list_flight_number"),
+    crewListArrivalTime: text("crew_list_arrival_time"),
+    crewListAirportTransfer: boolean("crew_list_airport_transfer"),
     providerStatus: text("provider_status"),
     holdExpiresAt: timestamp("hold_expires_at"),
     /*
@@ -324,6 +354,8 @@ export const bookingExtra = pgTable(
       .references(() => booking.id, { onDelete: "cascade" }),
     code: text("code").notNull(),
     label: text("label").notNull(),
+    /** The variant, for an extra the offer sold as several; see `QuoteLine.detail`. */
+    detail: text("detail"),
     pricingType: extraPricingType("pricing_type"),
     amountMinor: integer("amount_minor"),
     currency: text("currency"),
@@ -395,6 +427,9 @@ export const bookingTraveller = pgTable(
     vhfLicence: text("vhf_licence"),
     skipperEmail: text("skipper_email"),
     skipperMobile: text("skipper_mobile"),
+    /* Encrypted "true" or null: health data, even as a flag. */
+    disabledPerson: text("disabled_person"),
+    shoeSize: text("shoe_size"),
     ...timestamps,
   },
   (t) => [index("booking_traveller_booking_idx").on(t.bookingId)],

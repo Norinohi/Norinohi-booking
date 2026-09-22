@@ -250,6 +250,11 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
   cancelReason: z.string().nullable(),
   /** How the yacht was crewed, as priced. Null for a quote taken before the ask. */
   crewType: z.string().nullable(),
+  /**
+   * Where a one-way charter starts and ends, as it was priced; null for a round trip. Either
+   * name is null where the provider sent none, and the charter is still one-way.
+   */
+  oneWayRoute: z.object({ from: z.string().nullable(), to: z.string().nullable() }).nullable(),
   priceLines: z.array(bookingPriceLineSchema),
   extras: z.array(
     z.object({
@@ -314,6 +319,8 @@ export const travellerSchema = z.object({
   vhfLicence: z.string().nullable(),
   skipperEmail: z.string().nullable(),
   skipperMobile: z.string().nullable(),
+  disabledPerson: z.boolean(),
+  shoeSize: z.string().nullable(),
 });
 
 /** The three the operator's form offers; anything else is `OTHER` there too. */
@@ -348,6 +355,20 @@ export const travellerInputSchema = z.object({
   vhfLicence: z.string().trim().max(64).optional(),
   skipperEmail: z.email().max(200).optional(),
   skipperMobile: z.string().trim().max(32).optional(),
+  /** Needs assistance aboard. Asked only where the operator's list asks it. */
+  disabledPerson: z.boolean().optional(),
+  shoeSize: z.string().trim().max(16).optional(),
+});
+
+/** How the party reaches the base, filed with the list for the base to plan around. */
+export const crewTripSchema = z.object({
+  flightNumber: z.string().trim().max(16).optional(),
+  /** `HH:mm`, local to the base. */
+  arrivalTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .optional(),
+  airportTransfer: z.boolean().optional(),
 });
 
 export const travellerListInputSchema = z.object({ bookingId: idSchema });
@@ -399,6 +420,8 @@ export const travellerListSchema = z.object({
   bookingId: z.string(),
   travellers: z.array(travellerSchema),
   submission: crewListSubmissionSchema.nullable(),
+  note: z.string().nullable(),
+  trip: crewTripSchema,
 });
 
 /**
@@ -410,8 +433,9 @@ export const travellerSaveInputSchema = z
   .object({
     bookingId: idSchema,
     travellers: z.array(travellerInputSchema).max(50),
-    /** Anything the base should know: an arrival time, a wheelchair, a late flight. */
+    /** Anything the base should know: a wheelchair, a late arrival. */
     note: z.string().trim().max(500).optional(),
+    trip: crewTripSchema.optional(),
   })
   /* One boat, one person answering for it. The operator's list has a single skipper slot. */
   .refine(
@@ -574,6 +598,8 @@ export const guestDetailsSchema = z.object({
    */
   countryCode: z.string().trim().length(2).toUpperCase(),
   specialRequests: z.string().trim().max(2000).optional(),
+  /** The site language they booked in, which the operator files as the client's language. */
+  locale: z.string().trim().min(2).max(10).optional(),
 });
 
 /**
@@ -704,6 +730,20 @@ export const bookingAdminDetailSchema = bookingAdminRowSchema.extend({
    * vendor never let go of, and staff have to settle that by hand before the refund is paid.
    */
   providerStatus: z.string().nullable(),
+  /** The vendor's second id for the reservation, where it keeps two (Booking Manager). */
+  providerAgencyReservationId: z.string().nullable(),
+  /**
+   * What we owe the operator, as the vendor stated it on the reservation. Staff only: it gives
+   * away our margin.
+   */
+  operatorSettlement: z
+    .object({
+      currency: z.string(),
+      netMinor: z.number().int().nullable(),
+      plan: z.array(z.object({ dueDate: z.string(), amountMinor: z.number().int() })),
+      terms: z.string().nullable(),
+    })
+    .nullable(),
   holdExpiresAt: z.string().nullable(),
   confirmedAt: z.string().nullable(),
   crewType: z.string().nullable(),

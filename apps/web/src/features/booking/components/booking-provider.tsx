@@ -52,6 +52,8 @@ type BookingContextValue = {
   retryPricing: () => void;
   selectPeriod: (period: CharterPeriod) => void;
   setCrew: (next: CrewType) => void;
+  /** Which of a crew role's variants to price, for an offer that sells the role as several. */
+  selectCrewVariant: (code: string) => void;
   /**
    * Where the charter finishes, for a fleet that sells one-way. Null returns the yacht to the
    * base it left from, which is what a charter does unless someone says otherwise.
@@ -122,6 +124,7 @@ export function BookingProvider({
     extras,
     requestedExtras,
     setCrew,
+    selectCrewVariant,
     setDropOff,
     setGuests,
     selectExtras,
@@ -168,6 +171,7 @@ export function BookingProvider({
     retryPricing,
     selectPeriod,
     setCrew,
+    selectCrewVariant,
     setDropOff,
     setGuests,
     extras,

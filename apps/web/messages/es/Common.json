@@ -13,6 +13,8 @@
     "confirmWithBase": "Precio no publicado, confirma con la base",
     "percentageOfCharter": "{percent}% del precio del chárter",
     "oneWayOnly": "Solo en trayectos de ida",
+    "chooseVariants": "Elige las opciones que necesitas",
+    "fromPrice": "desde {price}",
     "measure": {
       "booking": "{price} por reserva",
       "day": "{price} por día",
@@ -47,7 +49,8 @@
       "nauticalMile": "{price} por milla náutica",
       "roundTrip": "{price} ida y vuelta",
       "litre": "{price} por litro",
-      "weekStartedPerson": "{price} por persona por semana iniciada"
+      "weekStartedPerson": "{price} por persona por semana iniciada",
+      "unit": "{price} por unidad"
     }
   },
   "resultsCount": "{count, plural, one {# yate encontrado} other {# yates encontrados}}",

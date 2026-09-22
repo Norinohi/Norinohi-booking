@@ -40,11 +40,21 @@ import {
   runCatalogueSyncJob,
 } from "@yacht-charter/providers/sync/runner";
 import { readSyncCursor } from "@yacht-charter/providers/sync/cursor";
+import { openWhenFree } from "@yacht-charter/providers/sync/run";
 import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
 
 const job = startJob("sync-catalogue");
 
 const PROGRESS_INTERVAL_MS = 30_000;
+
+/*
+ * Both vendors refuse the catalogue walk while their availability run is in flight
+ * (`EXCLUSIVE_PROVIDER_CODES`), and that run ticks at every half hour including this job's own
+ * minute. Twenty minutes covers a slow tick; a previous catalogue walk still going is not waited for.
+ */
+const LOCK_WAIT_MS = 20 * 60 * 1000;
+const LOCK_POLL_MS = 30_000;
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /*
  * Every enabled provider, not the one PROVIDER_MODE names. That variable selects
@@ -116,7 +126,13 @@ const syncProvider = async (provider: InventoryProvider) => {
 
   let syncRunId: string;
   try {
-    syncRunId = await openCatalogueSyncRun(db, providerId);
+    syncRunId = await openWhenFree(() => openCatalogueSyncRun(db, providerId), {
+      until: Date.now() + LOCK_WAIT_MS,
+      pollMs: LOCK_POLL_MS,
+      now: Date.now,
+      sleep,
+      onlyWhileHeldBy: "availability",
+    });
   } catch (error) {
     /*
      * A live run really is walking this provider: since `openSyncRun` reaps a lock whose

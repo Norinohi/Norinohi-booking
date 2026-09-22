@@ -8,16 +8,25 @@ import { looseJsonObject } from "../shared/json";
  * additive vendor change cannot fail a whole catalogue sync - the same posture as
  * `nausys/endpoints.ts`.
  *
- * Contract: SwaggerHub `mmksystems/bm-api` v2.2.1, surveyed against 2.1.4 on
- * 2026-08-25. The vendor publishes no changelog, so the delta was taken by
- * diffing the two definitions: 2.1.5 added `/yachtsOnSale`, 2.2.0 added
- * `/requests`, the `/payments` family and `/objects/{entity}/search/`, and 2.2.1
- * added `agencyPaymentPlan` and the `adults`/`children`/`seniors` parameters to
- * `/offers` - which the vendor changelog calls an alternative to
+ * Contract: SwaggerHub `mmksystems/bm-api` v2.2.2, checked field by field against
+ * live payloads from test company 225 on 2026-09-21. The vendor does keep a
+ * changelog, under "Document Changes" in the definition's `info.description`, and
+ * that is the list to diff when the version moves. Up to 2.2.2 it records:
+ * `skippered` in ProductEnum, `Yacht.modelConfigurationId` and
+ * `Price.startBaseId`/`endBaseId` (21.09.2026); `Extras.quantityLimit` and
+ * `quantityIsSelectable` (08.07.2026); `ReservationResponse.internalRemarks`
+ * (30.4.2026); `agencyPaymentPlan` and the `adults`/`children`/`seniors`
+ * parameters to `/offers` (7.3.2026), which it calls an alternative to
  * `passengersOnBoard` rather than a refinement of it, so the single headcount
- * `quote.ts` sends stays correct. Bump this line only alongside the same diff - several
- * fields below were absorbed from live payloads before the spec caught up, so
- * the version here is a statement about what was *checked*, not what compiles.
+ * `quote.ts` sends stays correct.
+ *
+ * The live payloads also carry keys no version of the spec mentions, and a few
+ * that disagree with it: `Yacht.comment`/`yearNote`, `Image.id`, `Company.rating`
+ * and `mobile2`, `Extras.includedExtras` and `includesDepositWaiver` (the spec
+ * says `includedDepositWaiver`), and `Description.documents` (the spec says
+ * `document`). Both spellings are declared where they disagree. Bump this line
+ * only alongside the same check - the version here is a statement about what was
+ * *checked*, not what compiles.
  */
 
 export const bookingManagerEndpoints = {
@@ -92,7 +101,7 @@ export const BM_RESERVATION_STATUS = {
   AVAILABLE: 0,
   RESERVATION: 1,
   OPTION: 2,
-  OPTION_IN_EXPIRATION: 3,
+  OPTION_EXPIRED: 3,
   SERVICE: 4,
   CANCELLED: 5,
   OWNER_WEEK: 6,
@@ -116,6 +125,13 @@ export const BM_RESERVATION_STATUS = {
  *   "second option, becomes active when the first expires".
  * - `11` ran to 388 rows in 2026 and 125 in 2027 (re-counted 2026-08-25), mostly
  *   single days, which fits Sleep Aboard.
+ * - `3` is "Option expired", not an option about to expire: that is its
+ *   `STATUS_TYPE.NAME` in `objects/Reservation/search`, with `BLOCKS_AVAILABILITY`
+ *   true (2026-09-22). Option 8192658760000107113 lapsed on 2026-09-01 and three
+ *   weeks later still read `3` and still kept its week out of `/offers`, even with
+ *   `showOptions`; 42 agency records in `/reservations/2026` sat at `3`, every one
+ *   past its `expirationDate`. Nothing moves it on by itself, so an expired option
+ *   of ours is ours to DELETE.
  *
  * Only `1`, `2`, `3`, `4` and `11` are ever emitted by `/availability`; the other
  * seven describe a free boat or a record the agency feed never carries.
@@ -124,7 +140,7 @@ export const BM_RESERVATION_STATUS_NAMES = new Map<number, string>([
   [BM_RESERVATION_STATUS.AVAILABLE, "AVAILABLE"],
   [BM_RESERVATION_STATUS.RESERVATION, "RESERVATION"],
   [BM_RESERVATION_STATUS.OPTION, "OPTION"],
-  [BM_RESERVATION_STATUS.OPTION_IN_EXPIRATION, "OPTION_IN_EXPIRATION"],
+  [BM_RESERVATION_STATUS.OPTION_EXPIRED, "OPTION_EXPIRED"],
   [BM_RESERVATION_STATUS.SERVICE, "SERVICE"],
   [BM_RESERVATION_STATUS.CANCELLED, "CANCELLED"],
   [BM_RESERVATION_STATUS.OWNER_WEEK, "OWNER_WEEK"],
@@ -134,6 +150,48 @@ export const BM_RESERVATION_STATUS_NAMES = new Map<number, string>([
   [BM_RESERVATION_STATUS.REGATTA, "REGATTA"],
   [BM_RESERVATION_STATUS.SLEEP_ABOARD, "SLEEP_ABOARD"],
 ]);
+
+/**
+ * Why `POST /reservation` refused, read off its `400`. The body is plain text, not JSON, and
+ * every refusal of the charter opens with "Yacht is not available"; what follows says which
+ * one it is. Measured on company 225, 2026-09-22 (`live/lifecycle/03-post-dup.json`,
+ * `19-post-option2.json`):
+ *
+ * - `OWN_OPTION_EXISTS`: "Yacht is not available, own Option exists." An option this agency
+ *   already holds on the slot, typically one a create that timed out opened after all.
+ * - `PRICE_NOT_DEFINED`: "Yacht is not available, price not defined." Nothing priced for what
+ *   was asked, measured with a product the yacht does not sell.
+ * - `NOT_AVAILABLE`: any other text after the same opening, the slot being taken.
+ */
+export const BM_RESERVATION_REFUSAL = {
+  OWN_OPTION_EXISTS: "OWN_OPTION_EXISTS",
+  PRICE_NOT_DEFINED: "PRICE_NOT_DEFINED",
+  NOT_AVAILABLE: "NOT_AVAILABLE",
+} as const;
+
+export type BookingManagerReservationRefusal =
+  (typeof BM_RESERVATION_REFUSAL)[keyof typeof BM_RESERVATION_REFUSAL];
+
+export function reservationRefusalOf(text: string): BookingManagerReservationRefusal | undefined {
+  if (!/^\s*yacht is not available/i.test(text)) return undefined;
+  if (/own option exists/i.test(text)) return BM_RESERVATION_REFUSAL.OWN_OPTION_EXISTS;
+  if (/price not defined/i.test(text)) return BM_RESERVATION_REFUSAL.PRICE_NOT_DEFINED;
+  return BM_RESERVATION_REFUSAL.NOT_AVAILABLE;
+}
+
+/**
+ * Whether two `ProductEnum` values name the same product. The spec spells them
+ * lowercase (`bareboat`), the vendor answers `Bareboat`, and it accepts either when
+ * asked, so a strict comparison between what we send and what comes back never
+ * matches. Measured on company 225, 2026-09-21.
+ */
+export function isSameBookingManagerProduct(
+  left: string | null | undefined,
+  right: string | null | undefined,
+): boolean {
+  if (left == null || right == null) return false;
+  return left.trim().toLowerCase() === right.trim().toLowerCase();
+}
 
 /** `format=3` on /shortAvailability: one character per day. */
 export const BM_SHORT_AVAILABILITY_FORMAT = { BINARY: 1, HEX: 2, STATUS: 3 } as const;
@@ -201,6 +259,8 @@ const optionalTextOrNumber = z
 const optionalId = id.optional().nullable();
 
 export const restImageSchema = looseJsonObject({
+  /** Undocumented, and the same 19-digit id as the image's document record. */
+  id: optionalId,
   name: optionalText,
   description: optionalText,
   url: optionalText,
@@ -215,9 +275,15 @@ export const restDocumentSchema = looseJsonObject({
   sortOrder: optionalNumeric,
 });
 
+/**
+ * One set of routes an extra is priced for: any base in `from` to any base in `to`. An extra
+ * carries a list of these, and a pair with the same base at both ends is an ordinary return
+ * charter, which is what "APA 25%" and "Skipper obligatory" are filed under on about 120
+ * hulls. Ids, not numbers: they are the same 19-digit base ids as everywhere else.
+ */
 export const restValidForBasesSchema = looseJsonObject({
-  from: z.array(numeric).optional().nullable(),
-  to: z.array(numeric).optional().nullable(),
+  from: z.array(id).optional().nullable(),
+  to: z.array(id).optional().nullable(),
 });
 
 /** One line of an offer's `discounts[]`. Undocumented; see `restOfferSchema`. */
@@ -252,7 +318,23 @@ export const restExtrasSchema = looseJsonObject({
   kind: optionalNumeric,
   percentage: optionalNumeric,
   payableInBase: z.boolean().optional().nullable(),
+  /**
+   * Whether buying this extra lowers the deposit to the yacht's `depositWithWaiver`. The spec
+   * lists `includedDepositWaiver` under properties and `includesDepositWaiver` under required;
+   * the vendor sends only the second (161 of 161 extras on company 225, 7,491 of them true
+   * account-wide), so both are read.
+   */
   includedDepositWaiver: z.boolean().optional().nullable(),
+  includesDepositWaiver: z.boolean().optional().nullable(),
+  /**
+   * Undocumented. A bundle names the extras it already contains: company 225's optional
+   * Charter Pack (250 EUR) lists Bed linen and Cleaning, while Cleaning is also sold on
+   * its own as obligatory. Ids of the same 19-digit kind as `id`.
+   */
+  includedExtras: z.array(id).optional().nullable(),
+  /** From 2.2.2 (08.07.2026). `-1` on every live extra, which reads as "no limit". */
+  quantityLimit: optionalNumeric,
+  quantityIsSelectable: z.boolean().optional().nullable(),
   validDaysFrom: optionalNumeric,
   validDaysTo: optionalNumeric,
   /**
@@ -263,13 +345,22 @@ export const restExtrasSchema = looseJsonObject({
    */
   sailingDateFrom: optionalText,
   sailingDateTo: optionalText,
-  /** Present only on a fee that applies to one route, which is what a one-way fee is. */
+  /**
+   * The routes this price applies to, absent on a fee that applies to every route. Company 225
+   * sends the key on none of its 161 extras; account-wide 20,344 of 191,163 carry it.
+   */
   validForBases: z.array(restValidForBasesSchema).optional().nullable(),
   validDateFrom: optionalText,
   validDateTo: optionalText,
   description: optionalText,
-  availableInBase: optionalNumeric,
-  validSailingAreas: z.array(numeric).optional().nullable(),
+  /** The one base this extra is sold at, or `-1` for every base. A base id, so read as one. */
+  availableInBase: optionalId,
+  /**
+   * The sailing areas this extra is sold in, empty for all of them: "CharterPack Caribbean" is
+   * filed `[28]` on a fleet that also sails elsewhere. The ids of `/sailingAreas`, which a base
+   * lists as its own `sailingAreas`.
+   */
+  validSailingAreas: z.array(id).optional().nullable(),
 });
 
 export const restProductSchema = looseJsonObject({
@@ -282,7 +373,9 @@ export const restProductSchema = looseJsonObject({
 export const restDescriptionSchema = looseJsonObject({
   category: optionalText,
   text: optionalText,
+  /** The spec's spelling. Live payloads send `documents`; a reader wants both. */
   document: z.array(restDocumentSchema).optional().nullable(),
+  documents: z.array(restDocumentSchema).optional().nullable(),
 });
 
 export const restCrewSchema = looseJsonObject({
@@ -319,12 +412,20 @@ export const restYachtSchema = looseJsonObject({
   model: optionalText,
   modelId: optionalId,
   kind: optionalText,
+  /**
+   * From 2.2.2. Text, not a number, whatever the spec's int64 says: live values keep
+   * leading zeros ("03221", "001") that a number would drop, and the spec's own example
+   * has 21 digits, past what int64 holds.
+   */
+  modelConfigurationId: optionalTextOrNumber,
   homeBaseId: optionalId,
   homeBase: optionalText,
   companyId: optionalId,
   company: optionalText,
   shipyardId: optionalId,
   year: optionalNumeric,
+  /** Undocumented free text beside `year`, empty on every live yacht. */
+  yearNote: optionalText,
   certificate: optionalText,
   draught: optionalNumeric,
   beam: optionalNumeric,
@@ -334,10 +435,10 @@ export const restYachtSchema = looseJsonObject({
   engine: optionalText,
   deposit: optionalNumeric,
   /**
-   * `0.0` on every yacht measured, which is indistinguishable from "no waiver
-   * product configured" - the vendor exposes no waiver, damage-insurance or
-   * deposit product among the extras either. Do not read `0` as "the waiver is
-   * free"; see VENDOR QUESTION Q3.
+   * The deposit asked of a charter that bought the waiver, the extra flagged
+   * `includesDepositWaiver`. Above zero on about 2,900 yachts account-wide, below `deposit` on
+   * 2,457 of them; `0` on all of company 225, which is "no waiver configured", never "the
+   * waiver leaves nothing to pay".
    */
   depositWithWaiver: optionalNumeric,
   currency: optionalText,
@@ -371,6 +472,11 @@ export const restYachtSchema = looseJsonObject({
   minimumCharterDuration: optionalNumeric,
   maximumCharterDuration: optionalNumeric,
   maxPeopleOnBoard: optionalNumeric,
+  /**
+   * Undocumented operator note ("Pets not allowed"). Most live yachts send a single
+   * space or nothing, so a blank here means no note.
+   */
+  comment: optionalText,
   images: z.array(restImageSchema).optional().nullable(),
   equipmentIds: z.array(id).optional().nullable(),
   equipment: z
@@ -410,6 +516,8 @@ export const restCompanySchema = looseJsonObject({
   telephone: optionalText,
   telephone2: optionalText,
   mobile: optionalText,
+  /** Undocumented, like `rating`. */
+  mobile2: optionalText,
   vatCode: optionalText,
   email: optionalText,
   web: optionalText,
@@ -423,6 +531,13 @@ export const restCompanySchema = looseJsonObject({
   termsAndConditions: optionalText,
   checkoutNote: optionalText,
   maxDiscountFromCommissionPercentage: optionalNumeric,
+  /**
+   * Undocumented; `{ average: 0, reviews: 0 }` on company 225. Whose reviews these
+   * count is a question for the vendor before anything shows it as an operator rating.
+   */
+  rating: looseJsonObject({ average: optionalNumeric, reviews: optionalNumeric })
+    .optional()
+    .nullable(),
 });
 
 export const restShipyardSchema = looseJsonObject({
@@ -453,7 +568,15 @@ export const restWorldRegionSchema = looseJsonObject({ id: numeric, name: option
 
 export const restSailingAreaSchema = looseJsonObject({ id: numeric, name: optionalText });
 
-export const restEquipmentSchema = looseJsonObject({ id: numeric, name: optionalText });
+export const restEquipmentSchema = looseJsonObject({
+  id: numeric,
+  name: optionalText,
+  /**
+   * Ours, not the vendor's: the item's name per site locale, collected by the catalogue step
+   * from `/equipment?language=` and stored on the record beside the English it came with.
+   */
+  translations: z.record(z.string(), z.string()).optional().nullable(),
+});
 
 export const restYachtTypeSchema = looseJsonObject({ name: z.string() });
 
@@ -513,6 +636,9 @@ export const restPriceSchema = looseJsonObject({
   currency: optionalText,
   startPrice: optionalNumeric,
   discountPercentage: optionalNumeric,
+  /** From 2.2.2. Rows for one-way pairs that `/offers` may still not sell. */
+  startBaseId: optionalId,
+  endBaseId: optionalId,
 });
 
 export const restAvailabilitySchema = looseJsonObject({
@@ -528,7 +654,7 @@ export const restAvailabilitySchema = looseJsonObject({
 
 export const restShortAvailabilitySchema = looseJsonObject({
   /** Yacht id - abbreviated by the vendor to keep the bulk payload small. */
-  y: numeric,
+  y: id,
   /** One character per day across the year, encoded per the `format` parameter. */
   bs: optionalText,
 });
@@ -582,9 +708,20 @@ export const restReservationSchema = looseJsonObject({
    */
   agencyPaymentPlan: z.array(restPaymentSchema).optional().nullable(),
   promoCode: optionalText,
+  /**
+   * The operator's hosted crew-list page, on both twins and already on the option: POST, GET
+   * and `/crewListLink/{id}` all answer with a link to the charter-side `reservation_id`, with a
+   * token that differs on every call (company 225, 2026-09-22).
+   */
+  crewListLink: optionalText,
   bankDetails: optionalText,
   termsOfPayment: optionalText,
   remarks: optionalText,
+  /**
+   * From 2.2.2 (30.4.2026). The operator's own note: `""` on the agency-side record,
+   * absent on the charter-side one. Not for the guest.
+   */
+  internalRemarks: optionalText,
 });
 
 /**

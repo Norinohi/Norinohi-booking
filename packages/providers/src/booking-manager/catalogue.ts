@@ -1,9 +1,12 @@
+import type { TranslatedLocale } from "@yacht-charter/db/locales";
+import { log, parseError } from "evlog";
 import { z } from "zod";
 
 import { AuthError, ContractError } from "../shared/errors";
 import type { JsonObject } from "../shared/json";
 import type { JsonValue } from "../shared/json";
-import { idOf, objectsOf } from "../shared/projection-helpers";
+import { thrownFields } from "../shared/log-fields";
+import { idOf, objectsOf, text } from "../shared/projection-helpers";
 import { type CompanyScope, unscopedCompanies } from "../shared/company-scope";
 import { fixedLimit, orderedWindow } from "../shared/ordered-window";
 import { retireOutOfScopeCompanies } from "../sync/retire-companies";
@@ -69,7 +72,7 @@ const CATALOGUE_STEPS: CatalogueStep[] = [
   {
     resourceType: "equipment_category",
     endpoint: bookingManagerEndpoints.equipment,
-    fetch: (client) => client.get(bookingManagerEndpoints.equipment, restEquipmentListSchema),
+    fetch: fetchEquipment,
   },
   {
     resourceType: "builder",
@@ -95,6 +98,68 @@ const CATALOGUE_STEPS: CatalogueStep[] = [
     fetch: (client) => client.get(bookingManagerEndpoints.bases, restBaseListSchema),
   },
 ];
+
+/**
+ * The site's languages the vendor translates `/equipment` into, each under its own code there.
+ *
+ * Probed on 2026-09-22: each of these renames 40 to 43 of the 52 items. Ukrainian is `ua` in
+ * the vendor's enum and comes back in English, as does Danish, which is not in it; the vendor
+ * answers any code with a 200, so an unsupported one is only visible as a copy of the English.
+ * `/yachts` is deliberately not asked in another language: it translates `kind`, which is how a
+ * yacht names its category, and the mainsail, but none of the extras, products or descriptions.
+ */
+const EQUIPMENT_LANGUAGES = [
+  "de",
+  "es",
+  "fr",
+  "it",
+  "nl",
+  "no",
+  "pl",
+  "sv",
+] as const satisfies readonly TranslatedLocale[];
+
+/**
+ * `/equipment` in English, each item carrying its name in the languages above as `translations`.
+ *
+ * A language that fails is logged and left out rather than failing the step: the English dump
+ * is what the amenities are, and a missing translation only leaves that locale on the curated
+ * labels until the next run.
+ */
+async function fetchEquipment(client: BookingManagerClient): Promise<JsonValue[]> {
+  const items = await client.get(bookingManagerEndpoints.equipment, restEquipmentListSchema);
+  const translations = new Map<string, Record<string, string>>();
+
+  for (const language of EQUIPMENT_LANGUAGES) {
+    let translated: typeof items;
+    try {
+      translated = await client.get(bookingManagerEndpoints.equipment, restEquipmentListSchema, {
+        language,
+      });
+    } catch (error) {
+      if (isFatal(error)) throw error;
+      log.warn({
+        action: "booking_manager.catalogue.equipment_language_failed",
+        language,
+        ...thrownFields(parseError(error)),
+      });
+      continue;
+    }
+
+    for (const item of translated) {
+      const name = text(item.name);
+      if (name === undefined) continue;
+      const names = translations.get(String(item.id)) ?? {};
+      names[language] = name;
+      translations.set(String(item.id), names);
+    }
+  }
+
+  return items.map((item) => {
+    const names = translations.get(String(item.id));
+    return names === undefined ? item : { ...item, translations: names };
+  });
+}
 
 /** The per-company yacht sweep, addressed as one more step so the cursor stays flat. */
 const YACHT_STEP = CATALOGUE_STEPS.length;
@@ -147,9 +212,10 @@ export interface BookingManagerCatalogueOptions {
    */
   companyScope?: CompanyScope;
   /**
-   * Companies our fleet is filed under, for retiring the ones now out of scope.
-   * Injected rather than queried here so this stream stays a pure function of the
-   * vendor client, which is what its tests fake.
+   * Companies our fleet is filed under, for retiring the ones now out of scope and for
+   * telling an operator whose boats vanished from one that never had any. Injected rather
+   * than queried here so this stream stays a pure function of the vendor client, which is
+   * what its tests fake.
    */
   listImportedCompanyIds?: () => Promise<readonly string[]>;
   /** Recoverable failures go here so the stream survives them; see below. */
@@ -308,6 +374,14 @@ export async function* syncBookingManagerCatalogue(
   const startCompany = resumeCompanyIndex(resume, companyIds);
   const concurrency = options.concurrency ?? client.config.sweepConcurrency;
 
+  /* Read once, and only if some operator answers with no boats at all. */
+  let importedCompanies: Promise<ReadonlySet<string>> | null = null;
+  const hadFleet = async (companyId: string): Promise<boolean> => {
+    if (options.listImportedCompanyIds === undefined) return false;
+    importedCompanies ??= options.listImportedCompanyIds().then((ids) => new Set(ids));
+    return (await importedCompanies).has(companyId);
+  };
+
   /*
    * The fleet, several operators at a time but delivered one at a time.
    *
@@ -321,8 +395,8 @@ export async function* syncBookingManagerCatalogue(
    *
    * Each lane keeps the client's `minIntervalMs` spacing, so this widens the sweep
    * without also removing the politeness margin. Unlike NauSYS, Booking Manager
-   * does not forbid parallel calls on one credential; it has published no limit at
-   * all, which is why the width is a variable and 1 restores the old walk.
+   * allows parallel calls on one credential, up to an account-wide 20 whose budget
+   * is in `call-budget.ts`; the width is a variable within it and 1 restores the old walk.
    */
   const sweep = orderedWindow(
     companyIds.slice(startCompany),
@@ -350,6 +424,25 @@ export async function* syncBookingManagerCatalogue(
         resourceType: "yacht",
         scopeKey: companyId,
         context: { endpoint: bookingManagerEndpoints.yachts, companyIndex: index },
+      });
+      continue;
+    }
+
+    /*
+     * A 200 with an empty list, for an operator whose boats we hold, is not believed. The
+     * scope-complete below would deactivate the whole fleet on the strength of one answer, and
+     * an empty answer is also what a vendor-side hiccup or a credential that lost the company's
+     * permission looks like. Left unswept, the boats keep their last-seen date and the next run
+     * that sees them settles it. An operator that really emptied its fleet stays listed until
+     * someone acts on the warning or it leaves the company dump, which retires it through
+     * `retireOutOfScopeCompanies`; its boats cannot be sold meanwhile, since `/offers` has
+     * nothing for them.
+     */
+    if (items.length === 0 && (await hadFleet(companyId))) {
+      log.warn({
+        action: "booking_manager.catalogue.empty_fleet_kept",
+        companyId,
+        companyIndex: index,
       });
       continue;
     }

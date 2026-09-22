@@ -54,6 +54,8 @@ export interface PercentageBasis {
   listMinor?: number | undefined;
   /** `CLIENT_PRICE`, the charter after the vendor's discounts. */
   clientMinor?: number | undefined;
+  /** The charter's length in days, for `DAILY_PRICE`, the list price per day. */
+  days?: number | undefined;
 }
 
 /**
@@ -73,14 +75,41 @@ function percentageLineMinor(extra: RestExtra, basis: PercentageBasis | undefine
    * price instead would overstate the fee by the commission, so it goes uncharged like any
    * other basis we cannot value.
    */
-  if (extra.percentageCalculationType === "AGENCY_PRICE") return 0;
-
-  const against =
-    extra.percentageCalculationType === "CLIENT_PRICE"
-      ? (basis.clientMinor ?? basis.listMinor)
-      : (basis.listMinor ?? basis.clientMinor);
-
+  const against = percentageBaseMinor(extra.percentageCalculationType, basis);
   return against === undefined ? 0 : Math.round(against * rate * quantityOf(extra));
+}
+
+/**
+ * The figure a rate is a share of, per the PDF's `percentageCalculationType`, or undefined for
+ * a basis we cannot value, which leaves the line uncharged.
+ *
+ * Every basis but CLIENT_PRICE and AGENCY_PRICE used to fall through to the list price: a
+ * DAILY_PRICE rate (list price divided by days) came out seven times over on a week, and a
+ * FINAL_CLIENT_PRICE one ignored the discounts. The VAT-exclusive bases and the one that adds
+ * advance-payment extras need figures we do not hold, so they are not guessed at.
+ */
+function percentageBaseMinor(type: string | undefined, basis: PercentageBasis): number | undefined {
+  switch (type) {
+    case "PRICELIST_PRICE":
+    case undefined:
+      return basis.listMinor ?? basis.clientMinor;
+    case "CLIENT_PRICE":
+      return basis.clientMinor ?? basis.listMinor;
+    /* "by default same calculation as CLIENT_PRICE" for DEFINED_IN_CUSTOM. */
+    case "FINAL_CLIENT_PRICE":
+    case "DEFINED_IN_CUSTOM":
+      return basis.clientMinor;
+    case "DAILY_PRICE":
+      return basis.listMinor === undefined || !basis.days
+        ? undefined
+        : basis.listMinor / basis.days;
+    /*
+     * AGENCY_PRICE is a share of what we pay the operator, which is our margin and is
+     * deliberately never carried into a customer-facing figure.
+     */
+    default:
+      return undefined;
+  }
 }
 
 /**
@@ -101,4 +130,20 @@ function quantityOf(extra: RestExtra): number {
   if (extra.quantity === undefined) return 1;
   const parsed = Number(extra.quantity.replace(",", "."));
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+/**
+ * What the operator wrote, in English where it wrote English. Each language sits in its own
+ * `textXX` key and none of them is ours, so any other it filled in beats nothing.
+ */
+export function internationalText(
+  text:
+    | { textEN?: string; textDE?: string; textIT?: string; textHR?: string; textSI?: string }
+    | undefined,
+): string | null {
+  if (text === undefined) return null;
+  const texts = [text.textEN, text.textDE, text.textIT, text.textHR, text.textSI];
+  return (
+    texts.map((entry) => entry?.trim()).find((entry) => entry !== undefined && entry !== "") ?? null
+  );
 }

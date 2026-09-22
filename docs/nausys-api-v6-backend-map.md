@@ -87,20 +87,20 @@ All catalogue calls are POST endpoints under
 `/CBMS-external/rest/catalogue/v6/` and use provider authentication. They feed
 local import tables and canonical read models.
 
-| Vendor endpoint / section                                           | Provider data                                                                    | Marketplace mapping                                                                                    |
-| ------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `cabins/{charterCompanyId}`                                         | Cabin IDs, position, type                                                        | `listing_cabin` only for cabin-charter support; not required for bareboat MVP                          |
-| `charterBases`                                                      | Base, location/company IDs, check-in/out time, coordinates, disabled dates/notes | `base`; map coordinates to map pins and booking handover details                                       |
-| `charterCompanies`                                                  | Operator identity, address/contact, tax/bank details                             | `operator`; retain sensitive financial fields only in encrypted raw payload unless business needs them |
-| `countries`, `countryStates`, `regions`, `locations`                | Geographic hierarchy and localized labels                                        | `country`, `region`, `location`; normalize for filters and destination pages                           |
-| `discountItems`                                                     | Provider discount definitions                                                    | `provider_discount_definition`; snapshot applied discounts into quotes                                 |
-| `engineBuilders`, `yachtBuilders`, `yachtModels`, `yachtCategories` | Taxonomy/model metadata                                                          | normalized lookup tables or provider taxonomies; expose selected names to filters/details              |
-| `equipment`, `equipmentCategories`                                  | Amenity taxonomy                                                                 | `amenity`, `amenity_category`, `listing_amenity`                                                       |
-| `leadSources`, `reservationTags`, `users`, `domains`                | Provider CRM/operator administration                                             | do not expose; retain only if required for agency reservation attribution or internal support          |
-| `packages`                                                          | Cabin-charter package metadata                                                   | later `charter_package`; out of bareboat MVP unless Figma includes it                                  |
-| `priceLists`, `priceMeasures`, `seasons`                            | Seasonal list-price configuration and units                                      | `provider_price_list` for audit/import only; live quote is the sellable price source                   |
-| `sailTypes`, `steeringTypes`                                        | Yacht characteristics                                                            | lookup values used by yacht specifications and filters                                                 |
-| `yachts/{companyId}` and `yacht/{yachtId}`                          | Full yacht catalogue record and images                                           | `provider_listing` plus derived canonical `listing`, `listing_media`, specs and constraints            |
+| Vendor endpoint / section                                           | Provider data                                                                    | Marketplace mapping                                                                           |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `cabins/{charterCompanyId}`                                         | Cabin IDs, position, type                                                        | `listing_cabin` only for cabin-charter support; not required for bareboat MVP                 |
+| `charterBases`                                                      | Base, location/company IDs, check-in/out time, coordinates, disabled dates/notes | `base`; map coordinates to map pins and booking handover details                              |
+| `charterCompanies`                                                  | Operator identity, address/contact, tax/bank details                             | `operator`; VAT and bank accounts are dropped before the raw payload is stored                |
+| `countries`, `countryStates`, `regions`, `locations`                | Geographic hierarchy and localized labels                                        | `country`, `region`, `location`; normalize for filters and destination pages                  |
+| `discountItems`                                                     | Provider discount definitions                                                    | `provider_discount_definition`; snapshot applied discounts into quotes                        |
+| `engineBuilders`, `yachtBuilders`, `yachtModels`, `yachtCategories` | Taxonomy/model metadata                                                          | normalized lookup tables or provider taxonomies; expose selected names to filters/details     |
+| `equipment`, `equipmentCategories`                                  | Amenity taxonomy                                                                 | `amenity`, `amenity_category`, `listing_amenity`                                              |
+| `leadSources`, `reservationTags`, `users`, `domains`                | Provider CRM/operator administration                                             | do not expose; retain only if required for agency reservation attribution or internal support |
+| `packages`                                                          | Cabin-charter package metadata                                                   | later `charter_package`; out of bareboat MVP unless Figma includes it                         |
+| `priceLists`, `priceMeasures`, `seasons`                            | Seasonal list-price configuration and units                                      | `provider_price_list` for audit/import only; live quote is the sellable price source          |
+| `sailTypes`, `steeringTypes`                                        | Yacht characteristics                                                            | lookup values used by yacht specifications and filters                                        |
+| `yachts/{companyId}` and `yacht/{yachtId}`                          | Full yacht catalogue record and images                                           | `provider_listing` plus derived canonical `listing`, `listing_media`, specs and constraints   |
 
 #### Yacht data (`RestYacht`, PDF pages 295-302)
 
@@ -199,6 +199,67 @@ Confirmed by NauSYS, Aug 2026, and implemented in `nausys/booking.ts`:
   the reservation's current status, so that refusal arrives as a classified
   provider error rather than a local guard.
 
+#### Extras sold as several variants
+
+An offer can list one additional service several times under the same `extraId`, one row per
+route, vehicle, party size or skipper type, told apart only by `condition` and by the row's own
+`id`. Measured Sep 2026 on 1,500 yachts over three weeks: 44% of yachts carry at least one such
+extra (Transfer, One way fee, Seabob, Liferaft, Skipper, Hostess...). The rows are alternatives,
+never add-ons; obligatory extras showed no repeats. Booking Manager gives each variant its own id,
+so it has no equivalent.
+
+The quote therefore addresses a repeated row by a variant code, `service:100511@66279570`
+(`formatExtraVariantCode` in `shared/extra-code.ts`), and the plain code of a many-row extra
+prices nothing. Crew roles take the customer's pick from the sidebar, else the cheapest row
+whose stated party size fits. The row `id` is also what `addExtras` wants: the PDF (p. 350)
+documents `RestYachtReservationServiceAddRequest.serviceId` as the id of the
+`RestYachtReservationExtra`, the season price row, not the catalogue service id.
+
+`createInfo` takes no extras, so the hold used to open a bare charter while the customer paid
+for crew and add-ons. `createOption` now re-prices through `getNausysQuoteWithRows`, which
+returns the rows the quote billed (`billedExtraRows`), and sends them to `addExtras` by row id
+(`services[].serviceId`, `equipments[].equipmentId`) straight after the option. A refusal
+stornos the option and fails the hold. Not yet verified live against a reservation.
+
+`addOrUpdateExtras` (editing extras on an existing reservation; no API caller yet) diffs the
+wanted codes against the reservation's own `listExtras`: the lines it carries, and the season
+price rows it can still take (`availableExtras`), which is where an addition's row id comes
+from. It cannot re-price through `freeYachts`: the vendor no longer reports a yacht we hold. A
+line is matched by catalogue id and, for a variant, its `condition`. Obligatory and crew lines
+are never removed; equipment lines are removed by `yachtReservationEquipmentId`.
+
+Verified live on the vendor's test company 102701 (Sep 2026), through the adapter itself:
+
+- the hold with `numberOfGuests: 2` and `addExtras` by row id put a per-person service and a
+  per-person equipment line on the option at quantity 2 (20.00 each), the skipper at 7 days
+  (1,050.00) and a per-booking service at 100.00, exactly the quote's 1,315.00 of extras;
+- the edit removed the per-person lines, kept the per-booking one and the skipper, and added a
+  new service from `availableExtras`;
+- reservations asked about by id come back in their current status from any of the three
+  lists; after `stornoOption` they read STORNO;
+- `createBooking` answers OPERATION_NOT_ALLOWED (101) on the test agency, so the confirmation
+  step is still unverified live;
+- the crew list refuses an OPTION (AUTHENTICATION_ERROR, and `crewlistlink` is null on the
+  option); on fixed reservations `crewlist/v6/get` accepts both the reservation `uuid` and the
+  32-hex token in `crewlistlink`, and refuses an arbitrary one;
+- `set2` on a past reservation answers CREW_LIST_LOCKED (301) with a status; the refusal the PDF
+  prints for an invalid period has none, and the adapter reads that shape as a refusal too;
+- `freeYachts` takes a `periods` array: four October weeks for 109 hulls in 2.1s against 3.3s
+  asked one by one, row for row and price for price the same, with `obligatoryExtras` still
+  itemised. The confirming sweep now asks up to four periods per call;
+- `sales/v6/invoices/agency/` answers with no `status` and one invoice per reservation: the
+  agency's own commission invoice to the operator (`AG-COMM-1`), in the agency currency, dated
+  `yyyy-MM-dd`.
+  never matched an extra.
+
+An additional row for a service the offer already bills as obligatory (a damage waiver at 420
+and again at 350 "when skipper is chosen") is neither offered nor billed, crew included, and the
+catalogue projection keeps the obligatory row when one season lists both.
+
+The price sweep sends `numberOfPersons: 2`, the party the sidebar opens on, so per-head
+obligatory lines on search cards are not priced for a full boat. `id` on `obligatoryExtras` is a
+64-bit value no JavaScript number holds exactly, so it is never used as an id.
+
 #### Extras pricing
 
 `amount` is the **unit price**, `quantity` the multiplier, and `totalPrice` the
@@ -208,6 +269,92 @@ their own documentation example — a `quantity: 10` extra that raises
 correct. The recorded response `{amount: "10.00", quantity: "10.00", totalPrice:
 "100.00"}` bills the customer 100.00. The connector uses `totalPrice` where the
 vendor sends it and `amount x quantity` where it does not.
+
+#### Writes are attempted once, and the party is on the reservation
+
+Every `booking/v6/*` call goes out once (`NON_IDEMPOTENT_ENDPOINTS` in `client.ts`): a timeout,
+5xx or UNKNOWN_ERROR may follow a write the vendor applied, and a retried `createBooking` with
+the rotated-away uuid had a fixed charter recorded as refused and refunded. `confirmBookingWithProvider`
+now answers a `TransientError` with `indeterminate`: the booking stays in CONFIRMING, the money
+is neither captured nor refunded, and the stale-confirming sweep and reconcile settle it.
+
+`createInfo` sends `numberOfGuests`; omitted, the vendor prices per-head extras on the
+reservation for the yacht's maximum. After `addExtras` the hold logs
+`nausys.hold_extras_drift` when the reservation bills extras at another figure than the quote.
+
+#### Reconcile reads all three reservation lists
+
+`reservations`, `options` and `stornos` take the same request, and a reservation lives in one
+of them by status: an operator cancellation moves to `stornos`, which nothing used to read.
+Reconcile now asks all three, by the reservation ids we hold open (the vendor then ignores the
+dates), and a cancellation outranks the others. Beyond status it reports `dates_changed`,
+`yacht_changed` and `price_changed` against the quote's dates and the yacht and price the
+adapter last recorded; nothing is applied to the customer's booking. The lists carry
+`paymentCurrency`, not `currency`.
+
+#### Rows are read one at a time
+
+`occupancy` and the sweep's `freeYachts` parse each row on its own. An occupancy row the schema
+refuses quarantines the yacht it names (a row naming none refuses that company-year), and an
+unreadable free-yacht row drops that hull (`nausys.sweep_row_unreadable`). A NauSYS availability
+run stops only on `AUTHENTICATION_ERROR`; a company answering `OPERATION_NOT_ALLOWED` costs that
+company. The status word now wins over `errorCode` for `providerCode`, since that refusal arrives
+with errorCode 100.
+
+When `freeYachts` answers one hull twice (a round trip and a one-way), the quote and the sweep
+take the round trip (`preferredFreeYachtRow`); a one-way-only answer is priced and logged
+(`nausys.quote_one_way_only`). The quote states the route it priced as `route` and a single
+`routeOptions` entry, marinas named from the stored location records: NauSYS fixes one-ways
+through the yacht's `oneWayPeriods` and `createInfo` takes no base, so it is shown, never
+offered as a choice. The sidebar and the review step say "one-way, A → B".
+
+`onRequestOnly` extras are left off the option and added after `createBooking`, by the row the
+reservation's `availableExtras` offers; a refusal there is logged
+(`nausys.on_request_extras_not_added`) and does not undo the booking.
+
+#### Catalogue: seasons, scoped price lists, offline companies, terms
+
+- **Seasons.** `catalogue/seasons` gives each season id its dates. A yacht carries this year's
+  and next year's `seasonSpecificData` side by side, and the catalogue keeps one row per extra;
+  the projection now states the season running today (passed in as `today`), else the next to
+  open. It used to take the highest season id, i.e. next year's fees all this year.
+- **Price lists.** A list with `locationsId` applies only to those locations and outranks a
+  general list (PDF, RestPriceList). The seasonal price loader drops a scoped list's rows for
+  yachts elsewhere and lets it replace a general list's overlapping periods; a yacht's location
+  is its own `locationId`, else its home base's. 333 of 1,770 synced lists are scoped.
+- **Offline companies.** `RestCharterCompany.pac` ("private access company (offline company)")
+  makes the company's yachts `optionApprovalRequired`, so they sell as requests.
+- **Terms.** A service's `description` and an equipment row's `condition` are kept as
+  `provider_extra_catalogue.note` and shown under the extra where the live offer carries no
+  condition of its own. For additional equipment they are the only terms there are.
+- **`approved: false`** on an option is logged (`nausys.option_awaiting_approval`) and kept on
+  the option event; the PDF does not describe the field.
+
+Not changed, on purpose: the client's `company`/`vatNr` on `createInfo` (the company is only
+collected later, for an invoice request, and the operator invoices the agency), and payment
+plans beyond two instalments (the balance is collected at the second date, which is earlier
+than we owe the operator the rest).
+
+#### Our client discount, within the operator's bound
+
+`maxDiscountFromCommission` is a fraction (every one of 7,408 synced hulls is between 0 and 1),
+of the client price or of the commission as `agencyDiscountType` says (`CLIENT_PRICE`: 0.05 on
+2,333 hulls; `AGENCY_COMMISSION`: 1 on 3,279; 240 hulls allow 0). The commission it means is
+net of VAT: a `createInfo` with `proposal: true` (answered without an id, stored nowhere) states
+`effectiveAgencyCommissionAmountWithoutVAT`, and on the test company 1,076.08 of it was accepted
+as `agencyClientDiscountAmount` where 1,076.09 was refused `DISCOUNT_TO_HIGH` (errorCode 409),
+against a gross commission of 1,345.10.
+
+So the quote carries `maxClientDiscount`, estimated from the rule and the offer's gross
+commission; the API's four discounts (price rules, promo code, referral welcome, credit) spend
+that budget in order, and when they take anything it asks the provider for the exact bound
+(`exactClientDiscountCap`, the proposal) and runs them again if it is tighter. What was given is
+kept as `quote.client_discount_minor` and sent on the hold as `agencyClientDiscountAmount` with
+type `AMOUNT`: the reservation then reads `agencyAdditionalDiscountAmount` and
+`agencyClientFinalPrice`, and `agencyPrice` (what we pay) does not move.
+
+Neither `commission` nor `maxClientDiscount` leaves the server: the public quote contract omits
+both. Until Sep 2026 it did not, and any visitor asking for a price was sent our commission.
 
 #### Waiting options, and what we deliberately do not do with them
 
@@ -319,7 +466,7 @@ reservation line id and `updateExtras` addresses services.
 | Area                      | Use                                                    | Data handling                                                                                      |
 | ------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
 | Crew list                 | Retrieve/set passenger/crew manifest                   | `crewlist/v6/get` for the operator's requirements, `crewlist/v6/set2` to file the list (see below) |
-| Invoices/linked documents | Provider invoice and document retrieval                | store metadata and provider reference; use object storage for permitted copies                     |
+| Invoices/linked documents | Provider invoice and document retrieval                | `sales/v6/invoices/agency/` read by the reconcile cron into `provider_invoice`, see below          |
 | Contacts2                 | Create, list, read, merge and update provider contacts | map a local customer to `provider_contact`; do not sync provider contacts into user accounts       |
 | Deprecated Contacts       | Legacy contact endpoints                               | do not implement; use Contacts2                                                                    |
 
@@ -328,6 +475,16 @@ email, telephone, document/passport-related data and crew-specific attributes.
 Treat this as sensitive personal data: encrypt at rest where stored, minimize
 retention, redact application logs, and never return it in generic profile or
 booking-list procedures.
+
+#### Agency invoices
+
+The agency export is not the operator's bill to us. It is the commission invoice NauSYS issues
+in the agency's name to the charter company, one per reservation. `syncProviderInvoices`
+(`packages/api/src/services/provider-invoices.ts`) reads the last 45 days on every reconcile run,
+upserts each into `provider_invoice` by number with the booking it names, and logs
+`provider_invoice.commission_mismatch` where the invoiced `AG-COMM` lines differ from the
+commission the quote was won on in the same currency. It reports and never corrects, and it fails
+nothing. The linked PDF (`documentLink`) is kept as a URL, not copied.
 
 #### Crew list: collected here, filed with the operator
 

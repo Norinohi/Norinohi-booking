@@ -22,12 +22,13 @@ import type {
   ProviderRecordSet,
   ProviderReservation,
   ProviderReservationRef,
+  ProviderReservationState,
   QuoteRequest,
   RawEntity,
 } from "../types";
 import type { CatalogueSyncSource } from "../sync/runner";
 import type { AvailabilitySource, AvailabilitySyncProvider } from "../sync/availability-writer";
-import type { SeasonalPrice } from "../sync/price-writer";
+import type { PriceWindow, SeasonalPrice } from "../sync/price-writer";
 import {
   type BookingManagerCatalogueCursor,
   bookingManagerCatalogueSource,
@@ -53,10 +54,13 @@ import { log } from "evlog";
 import { streamBookingManagerConfirmedOffers } from "./confirmed-offers";
 import { warmBookingManagerServers } from "./warmup";
 import { createBookingManagerAvailabilitySource } from "./occupancy";
-import { createBookingManagerSeasonalPriceLoader } from "./prices";
+import { loadBookingManagerPriceTerms, loadBookingManagerProductName } from "./price-terms";
+import { bookingManagerPriceWindow, createBookingManagerSeasonalPriceLoader } from "./prices";
 import { projectBookingManagerCatalogue } from "./projection";
-import { createBookingManagerQuoteService, repriceRequestFor } from "./quote";
+import { clientPriceOf, createBookingManagerQuoteService, repriceRequestFor } from "./quote";
 import { createBookingManagerBookingService } from "./booking";
+import { listChangedBookingManagerReservations } from "./reservations";
+import { loadBookingManagerDiscountCap } from "./discount-cap";
 
 import type { JsonField } from "../shared/json";
 
@@ -115,6 +119,9 @@ export class BookingManagerInventoryProvider
       resolver: this.resolver,
       config: this.config,
       loadExtraLabels: (listingId) => loadBookingManagerExtraLabels(this.db, listingId),
+      loadDiscountCapPercentage: (externalYachtId) =>
+        loadBookingManagerDiscountCap(this.db, externalYachtId),
+      loadProductName: (externalYachtId) => loadBookingManagerProductName(this.db, externalYachtId),
     });
 
     this.seasonalPrices = createBookingManagerSeasonalPriceLoader({
@@ -123,6 +130,7 @@ export class BookingManagerInventoryProvider
       config: this.config,
       years: this.years,
       currency: this.currency,
+      loadPriceTerms: (externalYachtIds) => loadBookingManagerPriceTerms(this.db, externalYachtIds),
     });
 
     this.bookings = createBookingManagerBookingService({
@@ -131,6 +139,7 @@ export class BookingManagerInventoryProvider
       config: this.config,
       db: this.db,
       currency: this.currency,
+      loadProductName: (externalYachtId) => loadBookingManagerProductName(this.db, externalYachtId),
       // The hold re-prices through the same live call the quote used, so a slot
       // that moved between quote and checkout is refused rather than held at a
       // price the vendor will not honour.
@@ -138,7 +147,7 @@ export class BookingManagerInventoryProvider
         const quote = await this.quotes.getBookingManagerQuote(
           repriceRequestFor(draft, this.currency),
         );
-        return quote.priceSourceHash;
+        return { hash: quote.priceSourceHash, clientPrice: clientPriceOf(quote) };
       },
     });
   }
@@ -305,11 +314,27 @@ export class BookingManagerInventoryProvider
     return this.bookings.addOrUpdateExtras(input);
   }
 
+  /**
+   * Read by id alone: the window is ignored, because neither vendor list is a delta (see
+   * `reservations.ts`). `until` is still the clock an option's expiry is read against.
+   */
+  listChangedReservations(window: {
+    since: Date;
+    until: Date;
+    reservationIds?: readonly string[] | undefined;
+  }): Promise<ProviderReservationState[]> {
+    return listChangedBookingManagerReservations(this.client, window, {
+      timeZone: this.config.timeZone,
+      now: window.until,
+    });
+  }
+
   capabilities(): ProviderCapabilities {
     return {
       supportsOptions: true,
       supportsWebhooks: false,
       optionExpiryOwnedByProvider: true,
+      lapsedOptionHoldsSlot: true,
       // The v2.1.4 spec exposes no reservation-extras mutation, so the booking
       // service refuses rather than pretending. Flipping this on needs a vendor
       // endpoint, not a code change here.
@@ -326,6 +351,15 @@ export class BookingManagerInventoryProvider
    */
   loadSeasonalPrices(listingIds: string[]): Promise<Map<string, SeasonalPrice[]>> {
     return this.seasonalPrices(listingIds);
+  }
+
+  /*
+   * The sweep asks every charter week of `years` for the whole scope, and a sweep that fails
+   * part way throws rather than answering short, so a week missing from a listing's rates is
+   * one `/prices` no longer prices for it.
+   */
+  seasonalPricesCompleteWithin(): PriceWindow | undefined {
+    return bookingManagerPriceWindow(this.years, this.today);
   }
 }
 

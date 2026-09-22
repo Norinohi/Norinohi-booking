@@ -7,8 +7,10 @@ import {
   type OfferRef,
   supportsSeasonalPrices,
   writeSeasonalPrices,
+  type PricePeriodRow,
   type PricePeriodStore,
   type PricePeriodWrite,
+  type PriceWindow,
   type SeasonalPrice,
 } from "./price-writer";
 
@@ -22,7 +24,12 @@ const price = (over: Partial<SeasonalPrice> = {}): SeasonalPrice => ({
 
 /** Stands in for the Drizzle store; the conflict behaviour is the SQL's business. */
 function fakeStore(sourceIds: Record<string, string | null> = {}) {
-  const batches: PricePeriodWrite[][] = [];
+  const batches: PricePeriodRow[][] = [];
+  const prunes: {
+    offerIds: string[];
+    window: PriceWindow;
+    kept: string[];
+  }[] = [];
 
   const store: PricePeriodStore = {
     loadSourceIds(listingIds) {
@@ -35,13 +42,21 @@ function fakeStore(sourceIds: Record<string, string | null> = {}) {
       }
       return Promise.resolve(found);
     },
-    writePricePeriods(writes) {
-      batches.push([...writes]);
-      return Promise.resolve(dedupePricePeriodRows(writes).rows.length);
+    writePricePeriods(rows) {
+      batches.push([...rows]);
+      return Promise.resolve(rows.length);
+    },
+    prunePricePeriods(offers, window, kept) {
+      prunes.push({
+        offerIds: offers.map((offer) => offer.listingOfferId),
+        window,
+        kept: kept.map((row) => `${row.listingOfferId}|${row.startDate}`),
+      });
+      return Promise.resolve(0);
     },
   };
 
-  return { store, batches };
+  return { store, batches, prunes };
 }
 
 describe("dedupePricePeriodRows", () => {
@@ -102,14 +117,13 @@ describe("writeSeasonalPrices", () => {
 
     expect(written).toBe(2);
     expect(batches).toEqual([
-      [
-        {
-          listingId: "ylst_marlin",
-          listingSourceId: "lsrc_marlin",
-          listingOfferId: "loff_lsrc_marlin",
-          prices,
-        },
-      ],
+      prices.map((rate) => ({
+        listingId: "ylst_marlin",
+        listingSourceId: "lsrc_marlin",
+        listingOfferId: "loff_lsrc_marlin",
+        kind: "weekly",
+        ...rate,
+      })),
     ]);
   });
 
@@ -150,6 +164,85 @@ describe("writeSeasonalPrices", () => {
 
     expect(written).toBe(1);
     expect(batches[0]?.map((batchWrite) => batchWrite.listingId)).toEqual(["a"]);
+  });
+
+  it("prunes nothing for a loader that does not vouch for its whole answer", async () => {
+    const { store, prunes } = fakeStore({ a: "src_a", b: "src_b" });
+
+    await writeSeasonalPrices({
+      store,
+      listingIds: ["a", "b"],
+      loadSeasonalPrices: () => Promise.resolve(new Map([["a", [price()]]])),
+    });
+
+    expect(prunes).toEqual([]);
+  });
+
+  /*
+   * Booking Manager's sweep asks every week for the whole scope, so there silence is the
+   * statement: a week it no longer prices must stop opening the season.
+   */
+  it("prunes inside a complete window, a listing left with no rates included", async () => {
+    const { store, batches, prunes } = fakeStore({ a: "src_a", b: "src_b" });
+    const window = { start: "2026-09-22", end: "2028-01-01" };
+
+    await writeSeasonalPrices({
+      store,
+      listingIds: ["a", "b", "orphan"],
+      loadSeasonalPrices: () => Promise.resolve(new Map([["a", [price()]]])),
+      completeWithin: window,
+    });
+
+    expect(prunes).toEqual([
+      { offerIds: ["loff_src_a", "loff_src_b"], window, kept: ["loff_src_a|2026-07-04"] },
+    ]);
+    expect(batches).toHaveLength(1);
+  });
+
+  /* A week whose fresh rate the column refused is not restated, so its stale rate goes too. */
+  it("keeps only the rows it wrote, so a rejected week is pruned", async () => {
+    const { store, batches, prunes } = fakeStore({ a: "src_a" });
+    const window = { start: "2026-06-01", end: "2028-01-01" };
+
+    await writeSeasonalPrices({
+      store,
+      listingIds: ["a"],
+      loadSeasonalPrices: () =>
+        Promise.resolve(
+          new Map([
+            [
+              "a",
+              [
+                price(),
+                price({
+                  startDate: "2026-07-11",
+                  endDate: "2026-07-18",
+                  priceMinor: 8_883_888_500,
+                }),
+              ],
+            ],
+          ]),
+        ),
+      completeWithin: window,
+    });
+
+    expect(batches[0]?.map((row) => row.startDate)).toEqual(["2026-07-04"]);
+    expect(prunes).toEqual([{ offerIds: ["loff_src_a"], window, kept: ["loff_src_a|2026-07-04"] }]);
+  });
+
+  it("prunes nothing when the write before it fails", async () => {
+    const { store, prunes } = fakeStore({ a: "src_a" });
+    store.writePricePeriods = () => Promise.reject(new Error("write failed"));
+
+    await expect(
+      writeSeasonalPrices({
+        store,
+        listingIds: ["a"],
+        loadSeasonalPrices: () => Promise.resolve(new Map([["a", [price()]]])),
+        completeWithin: { start: "2026-09-22", end: "2028-01-01" },
+      }),
+    ).rejects.toThrow("write failed");
+    expect(prunes).toEqual([]);
   });
 
   it("leaves a listing with no active offer unpriced rather than unattributed", async () => {

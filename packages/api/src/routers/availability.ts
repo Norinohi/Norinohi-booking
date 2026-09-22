@@ -152,6 +152,7 @@ export const availabilityRouter = {
           requestedExtras: input.requestedExtras,
           crewType: input.crewType,
           endBaseId: input.endBaseId,
+          startBaseId: input.startBaseId,
           discountCode: input.discountCode,
           applyCredit: input.applyCredit,
         },

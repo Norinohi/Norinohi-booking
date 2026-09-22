@@ -5,9 +5,11 @@ import {
 } from "../lib/provider-failure";
 import { booking, payment, providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import { quote } from "@yacht-charter/db/schema/quote";
+import { readReturnNote } from "@yacht-charter/db/search/return-note";
 import type { InventoryProvider } from "@yacht-charter/providers";
+import { TransientError } from "@yacht-charter/providers/shared/errors";
 import { and, eq } from "drizzle-orm";
-import { parseError } from "evlog";
+import { log, parseError } from "evlog";
 
 import type { Database } from "../context";
 import { announceBookingToStaff, notifyBookingConfirmed } from "./booking-email";
@@ -15,6 +17,7 @@ import { canTransition, type BookingStatus } from "./booking-state";
 import { recordProviderFailure } from "./error-audit";
 import { outstandingMinor } from "./checkout-amounts";
 import { awardReferralCredit } from "./loyalty";
+import { releaseProviderOption } from "./provider-option";
 import { asCrewType, learnFromProviderRefusal } from "./quote";
 
 type ConfirmRequest = Parameters<InventoryProvider["confirmBooking"]>[0];
@@ -22,7 +25,9 @@ type ConfirmRequest = Parameters<InventoryProvider["confirmBooking"]>[0];
 export type ConfirmOutcome =
   | { outcome: "confirmed"; providerReservationId: string | null }
   | { outcome: "rejected"; message: string }
-  | { outcome: "skipped"; reason: string };
+  | { outcome: "skipped"; reason: string }
+  /** The provider may or may not have committed it; see the catch in `confirmBookingWithProvider`. */
+  | { outcome: "indeterminate"; reason: string };
 
 /**
  * Commits a paid booking with the provider.
@@ -82,6 +87,9 @@ export async function confirmBookingWithProvider(
       extras: priced.extras,
       currency: priced.currency,
       priceSourceHash: priced.priceSourceHash,
+      /* The pair the option was opened on, for a provider that restates the charter when it
+         confirms it. */
+      route: priced.route,
       customer: {
         name: row.guestFullName ?? "Guest",
         email: row.guestEmail ?? "unknown@example.com",
@@ -104,6 +112,34 @@ export async function confirmBookingWithProvider(
 
     const reservation = await provider.confirmBooking(request);
 
+    /*
+     * An answer that is not a confirmation is not one, whatever else it says. Booking Manager can
+     * answer its confirm with the reservation still an option, and marking that CONFIRMED sold a
+     * charter the operator never fixed. It is not a refusal either, so it is left the way a
+     * timeout is: CONFIRMING, money neither refunded nor captured, for a person to settle with
+     * the vendor's status word that reservation-reconcile records on the booking.
+     */
+    if (reservation.status !== "confirmed") {
+      log.warn({
+        action: "booking.confirm_not_applied",
+        bookingId,
+        provider: row.provider,
+        providerStatus: reservation.status,
+      });
+      await db.insert(providerReservationEvent).values({
+        bookingId,
+        kind: "confirm_failed",
+        provider: row.provider,
+        providerReference: reservation.providerReservationId ?? row.providerReservationId,
+        payload: {
+          indeterminate: true,
+          providerStatus: reservation.status,
+          note: "The provider answered the confirmation without confirming; ask it where the reservation stands before refunding.",
+        },
+      });
+      return { outcome: "indeterminate", reason: "The provider did not confirm the reservation" };
+    }
+
     await markConfirmed(db, bookingId, row.provider, row.userId, reservation);
     await announceConfirmation(db, row, priced, reservation);
 
@@ -112,6 +148,33 @@ export async function confirmBookingWithProvider(
       providerReservationId: reservation.providerReservationId ?? null,
     };
   } catch (error) {
+    /*
+     * A timeout, a 5xx page or the vendor's own UNKNOWN_ERROR is not a refusal: the booking may
+     * have been committed before the answer was lost. Treating it as one refunded a charter the
+     * operator had already fixed and took its week off the card. The booking stays in
+     * CONFIRMING, where the stale-confirming sweep flags it for a person after fifteen minutes
+     * and reservation-reconcile records the vendor's own status on it, for both vendors; the
+     * money is neither refunded nor captured until that person decides.
+     */
+    if (error instanceof TransientError) {
+      reportProviderRefusal("confirm", error, { bookingId, provider: row.provider });
+      await recordProviderFailure(db, "confirm", parseError(error), {
+        bookingId,
+        provider: row.provider,
+      });
+      await db.insert(providerReservationEvent).values({
+        bookingId,
+        kind: "confirm_failed",
+        provider: row.provider,
+        providerReference: row.providerReservationId,
+        payload: {
+          indeterminate: true,
+          note: "No answer from the provider; ask it whether the reservation exists before refunding.",
+        },
+      });
+      return { outcome: "indeterminate", reason: "The provider did not answer the confirmation" };
+    }
+
     // Two messages, not one: the vendor's text goes to the event log, and the
     // customer-facing wording is what the invoice screen and the confirmation
     // poll are allowed to print.
@@ -123,6 +186,15 @@ export async function confirmBookingWithProvider(
       provider: row.provider,
     });
     await markRejected(db, bookingId, row.provider, failure);
+    /*
+     * A refused confirm leaves our option where it was. Where the vendor keeps a lapsed option
+     * blocking its week until it is deleted, as Booking Manager does with status 3, nothing else
+     * would ever hand it back: the sweeps release held bookings only, and this one is now owed a
+     * refund. A release that does not land is queued or listed there like any other.
+     */
+    if (provider.capabilities().lapsedOptionHoldsSlot) {
+      await releaseProviderOption(db, provider, row);
+    }
     /*
      * And take the week off the card, where the vendor said it is the week that is gone.
      *
@@ -181,6 +253,10 @@ async function markConfirmed(
   // Same rule, different reason: the hold may already have carried a crew-list
   // link, and a confirmation that omits it is silence, not a retraction.
   if (reservation.crewListLink) changes.crewListLink = reservation.crewListLink;
+  if (reservation.providerAgencyReservationId) {
+    changes.providerAgencyReservationId = reservation.providerAgencyReservationId;
+  }
+  if (reservation.operatorSettlement) changes.operatorSettlement = reservation.operatorSettlement;
 
   await db
     .update(booking)
@@ -230,6 +306,12 @@ async function announceConfirmation(
   const paidMinor = settled.reduce((total, entry) => total + entry.amountMinor, 0);
   const owed = outstandingMinor(priced, paidMinor);
   const providerReference = reservation.providerReservationId ?? row.providerReservationId;
+  /* The mail is English, so is the note it quotes. */
+  const returnNote = await readReturnNote(db, {
+    listingId: priced.listingId,
+    listingOfferId: priced.listingOfferId ?? row.listingOfferId,
+    locale: "en",
+  });
 
   // The customer's mail is the one with an address to fail on; the staff alert reads its own
   // out of the environment and goes out either way.
@@ -246,6 +328,7 @@ async function announceConfirmation(
       providerReference,
       // A confirmation that returns no link has not retracted the one the hold carried.
       crewListLink: reservation.crewListLink ?? row.crewListLink,
+      returnNote: returnNote ?? null,
     });
   }
 

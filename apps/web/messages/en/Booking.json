@@ -4,6 +4,8 @@
     "title": "Booking Summary",
     "yacht": "Yacht",
     "dates": "Dates",
+    "route": "Route",
+    "oneWay": "one-way",
     "crew": "Crew",
     "people": "People",
     "extras": "Extras",
@@ -25,7 +27,8 @@
     "dueNow": "Due now",
     "terms": "I agree to the <link>Terms & Conditions and the Rental Agreement</link>.",
     "cancellation": "I accept the <link>Cancellation Policy</link>.",
-    "operatorTerms": "Operator's terms, including the cancellation policy"
+    "operatorTerms": "Operator's terms, including the cancellation policy",
+    "returnNote": "Yacht drop-off"
   },
   "extras": {
     "mandatory": "Mandatory",
@@ -156,6 +159,7 @@
     "summary": {
       "yacht": "Yacht",
       "dates": "Dates",
+      "route": "Route",
       "crew": "Crew",
       "mandatory": "Mandatory",
       "selectedExtras": "Selected extras",
@@ -337,6 +341,7 @@
     "guestsLabel": "Guests",
     "crew": "Crew",
     "marina": "Marina",
+    "route": "Route",
     "referenceLabel": "Reference",
     "settled": "Nothing left to pay",
     "viewYacht": "View yacht page",
@@ -354,8 +359,7 @@
     "crewList": {
       "title": "Crew list",
       "notice": "The charter company has to give the authorities a list of everyone aboard before you sail. Fill it in here and we'll send it to them - anything missing, the base will ask for at the desk when you arrive.",
-      "alsoAsked": "It also asks for {fields}, which the base will collect at the desk when you arrive.",
-      "maxPassengers": "Its list holds at most {count} people.",
+      "maxPassengers": "Its list holds at most {count, plural, one {# person} other {# people}}.",
       "loading": "Loading your crew list…",
       "empty": "No one added yet. Your booking is for {guests} guests - add each person who will be aboard, including the skipper.",
       "member": "Crew member {number}",
@@ -376,11 +380,8 @@
         "firstName": "Enter this person's first name",
         "lastName": "Enter this person's last name",
         "skipperEmail": "Enter a valid email address",
-        "oneSkipper": "Only one person can be the skipper"
-      },
-      "requires": {
-        "shoeSize": "shoe sizes",
-        "disabledPerson": "whether anyone aboard has a disability"
+        "oneSkipper": "Only one person can be the skipper",
+        "maxPassengers": "This charter company's list holds at most {count, plural, one {# person} other {# people}}"
       },
       "legend": "Fields marked * are the ones this charter company insists on.",
       "sent": "Sent to the charter company on {when}.",
@@ -407,7 +408,7 @@
       "skipperEmail": "Skipper's email",
       "skipperMobile": "Skipper's phone",
       "note": "Anything the base should know",
-      "notePlaceholder": "Arrival time, flight number, anyone needing assistance…",
+      "notePlaceholder": "Anyone needing assistance, a late arrival, anything else the base should plan for…",
       "documents": {
         "passport": "Passport",
         "idCard": "ID card",
@@ -418,7 +419,14 @@
         "female": "Female"
       },
       "placeSearch": "Search places",
-      "placeEmpty": "No place by that name"
+      "placeEmpty": "No place by that name",
+      "shoeSize": "Shoe size",
+      "shoeSizePlaceholder": "EU 42",
+      "disabledPerson": "This person needs assistance aboard",
+      "flightNumber": "Flight number",
+      "flightNumberPlaceholder": "OU 412",
+      "arrivalTime": "Arrival time",
+      "airportTransfer": "We'd like a transfer from the airport to the base"
     },
     "priceLineLabels": {
       "charterPrice": "Charter price",

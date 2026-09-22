@@ -4,6 +4,8 @@
     "title": "Récapitulatif de la réservation",
     "yacht": "Yacht",
     "dates": "Dates",
+    "route": "Itinéraire",
+    "oneWay": "aller simple",
     "crew": "Équipage",
     "people": "Personnes",
     "extras": "Suppléments",
@@ -25,7 +27,8 @@
     "dueNow": "À payer maintenant",
     "terms": "J’accepte les <link>Conditions générales et le Contrat de location</link>.",
     "cancellation": "J’accepte la <link>Politique d’annulation</link>.",
-    "operatorTerms": "Conditions de l'opérateur, y compris la politique d'annulation"
+    "operatorTerms": "Conditions de l'opérateur, y compris la politique d'annulation",
+    "returnNote": "Restitution du yacht"
   },
   "extras": {
     "mandatory": "Obligatoires",
@@ -156,6 +159,7 @@
     "summary": {
       "yacht": "Yacht",
       "dates": "Dates",
+      "route": "Itinéraire",
       "crew": "Équipage",
       "mandatory": "Obligatoires",
       "selectedExtras": "Suppléments sélectionnés",
@@ -337,6 +341,7 @@
     "guestsLabel": "Passagers",
     "crew": "Équipage",
     "marina": "Marina",
+    "route": "Itinéraire",
     "referenceLabel": "Référence",
     "settled": "Plus rien à payer",
     "viewYacht": "Voir la page du yacht",
@@ -354,8 +359,7 @@
     "crewList": {
       "title": "Liste d'équipage",
       "notice": "La société de location doit transmettre aux autorités la liste de toutes les personnes à bord avant le départ. Remplissez-la ici et nous la leur enverrons - pour toute information manquante, la base vous la demandera au comptoir à votre arrivée.",
-      "alsoAsked": "Elle demande également {fields}, que la base recueillera au comptoir à votre arrivée.",
-      "maxPassengers": "Sa liste peut contenir au maximum {count} personnes.",
+      "maxPassengers": "Sa liste peut contenir au maximum {count, plural, one {# personne} other {# personnes}}.",
       "loading": "Chargement de votre liste d'équipage…",
       "empty": "Personne n’a encore été ajouté. Votre réservation concerne {guests} passagers - ajoutez chaque personne qui sera à bord, skipper compris.",
       "member": "Membre d’équipage {number}",
@@ -376,11 +380,8 @@
         "firstName": "Saisissez le prénom de cette personne",
         "lastName": "Saisissez le nom de famille de cette personne",
         "skipperEmail": "Saisissez une adresse e-mail valide",
-        "oneSkipper": "Une seule personne peut être le skipper"
-      },
-      "requires": {
-        "shoeSize": "les pointures",
-        "disabledPerson": "si une personne à bord est en situation de handicap"
+        "oneSkipper": "Une seule personne peut être le skipper",
+        "maxPassengers": "La liste de ce loueur accepte au plus {count, plural, one {# personne} other {# personnes}}"
       },
       "legend": "Les champs marqués d'un * sont ceux exigés par cette société de location.",
       "sent": "Envoyée à la société de location le {when}.",
@@ -407,7 +408,7 @@
       "skipperEmail": "E-mail du skipper",
       "skipperMobile": "Téléphone du skipper",
       "note": "Informations utiles pour la base",
-      "notePlaceholder": "Heure d'arrivée, numéro de vol, personne ayant besoin d'assistance…",
+      "notePlaceholder": "Une personne ayant besoin d'assistance, une arrivée tardive, tout ce que la base doit prévoir…",
       "documents": {
         "passport": "Passeport",
         "idCard": "Carte d'identité",
@@ -418,7 +419,14 @@
         "female": "Femme"
       },
       "placeSearch": "Rechercher un lieu",
-      "placeEmpty": "Aucun lieu de ce nom"
+      "placeEmpty": "Aucun lieu de ce nom",
+      "shoeSize": "Pointure",
+      "shoeSizePlaceholder": "EU 42",
+      "disabledPerson": "Cette personne a besoin d'assistance à bord",
+      "flightNumber": "Numéro de vol",
+      "flightNumberPlaceholder": "OU 412",
+      "arrivalTime": "Heure d'arrivée",
+      "airportTransfer": "Nous souhaitons un transfert de l'aéroport à la base"
     },
     "priceLineLabels": {
       "charterPrice": "Prix de la location",

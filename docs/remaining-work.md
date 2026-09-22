@@ -67,10 +67,16 @@ These are ours to fix, not questions for anyone.
 5. **NauSYS crew-list submission.** The panel on `/bookings/[id]` collects and encrypts crew data
    that reaches no operator, because `crewlist/v6/set2` is not discoverable on our credential. The
    customer is promised something we do not do. Blocked on the vendor spec (§4).
-6. **Booking Manager reservation safety.** `POST /reservation` has no idempotency key we could
-   find, so a timed-out create cannot be told from a successful one without risking a double
-   booking, and a confirmed reservation has no cancel path that works. Either the vendor answers
-   (§4), or we design around it with a pre-create probe and a reconciliation sweep.
+6. **Booking Manager reservation safety.** `POST /reservation` still has no idempotency key, so
+   the connector designs around it (backend map §3.4): the create is sent once, a create that
+   timed out or found our option on the slot looks the option up and takes it over or deletes it,
+   the confirm reads the record before and after one PUT and never repeats blind, and the
+   reconcile cron reads every held reservation and reports operator cancellations and lapsed
+   options. What is left: a confirmed reservation still has no cancel path through the API
+   (vendor Q7), the confirm's answers on a repeat or a non-1 status are unmeasured, since a PUT
+   would fix a charter on test company 225 (§4), and options on the agency's list that no
+   booking of ours matches are not reported, because they cannot be told from ones staff make
+   by hand in Booking Manager. That last one needs a decision, not code.
 7. **Invoice legal identifiers.** `packages/api/src/lib/company.ts` ships placeholder VAT,
    registration and IBAN values. One line of work, but no real invoice can be issued until they
    are real.
@@ -114,7 +120,19 @@ before it needs code.
 14. **Daily rates.** The NauSYS loader maps `WEEKLY` price lists and drops `DAILY`. 104 of 109
     yachts advertise `minimumShortPeriodDuration: 3` while only 2 have a daily price list, so short
     breaks are advertised and unsellable. `listing_price_period.kind` is ready for them.
-15. **`max_nights` is null on every listing**, so the calendar cannot cap a range from above.
+    **Booking Manager, decided: no short-charter price list.** `/prices` is swept Saturday to
+    Saturday only, as the vendor's integration guide prescribes (backend map §8b), although it
+    takes `tripDuration` and prices a 3-day trip exactly as `/offers` does on company 225 (West
+    Wind, Escape, Queen II, all stating no minimum). A price list per length would be one
+    fleet-wide call per length per start day on top of the ~104 weekly ones, and it would still
+    need filtering: `/prices` also prices lengths the yacht's own minimum refuses (Giulia,
+    minimum 7, has a 3-day price `/offers` will not sell), which the listing's check-in rules
+    already refuse to sell. Short charters are priced by `/offers` instead: the
+    confirming sweep asks the short charters the cards name (`listShortCharterPeriods`), and the
+    quote always prices live. What that leaves is a short charter nobody has searched for yet,
+    which shows no vendor price until the sweep reaches it.
+15. **`max_nights` is null on every NauSYS listing**, so the calendar cannot cap a range from
+    above there. Booking Manager listings carry it from `maximumCharterDuration`.
 16. **Seasonal check-in rules.** `listing_checkin_rule` has no validity period, so a listing whose
     check-in day changes by season cannot be expressed.
 
@@ -287,18 +305,34 @@ went out 2026-08-20 and is unanswered. What matters most:
   `8178244520000100225`.
 - **Q8**: is there any amendment path at all?
 - **Q4 agency payment plan.** We currently derive the guest's deposit from our own supplier
-  obligation, because nothing in the payload distinguishes the two.
+  obligation, because nothing in the payload distinguishes the two. Meanwhile the guest's
+  balance falls due `BOOKING_MANAGER_BALANCE_LEAD_DAYS` (default 7) before ours, the option's
+  `agencyPaymentPlan` is kept as what we owe the operator and shown to staff, and a schedule that
+  would leave us paying the operator first is logged.
 - **Price semantics.** NauSYS confirmed the customer pays `clientPrice`, VAT included. Which fields
   correspond in Booking Manager? (Q1 on the VAT base, Q2 on the discount cap, Q3 on the security
   deposit, Q5 on reservation status 11.)
-- **Rate limit.** Not published. We measured `SWEEP_CONCURRENCY=12` as workable (7.3 min for a full
-  run, no `sync_error` rows), but that is empirical. What is the real limit, and what comes back
-  when it is exceeded?
+- **Rate limit.** MMK stated 20 calls in flight per account (2026-08-25), with the key blocked
+  until an overnight restart past that, and nothing answering 429 first. The connector keeps a
+  budget of 20 across its processes on one key (backend map §2), which assumes one server replica.
+  Still open: whether it counts per account, key or IP, and whether any signal precedes the block.
 - **Delta endpoint.** `/yachts` takes only `companyId`, so a production credential means roughly
   1300 requests per run. Is there a bulk or changed-since call, and is `lastSyncPoint` it?
 - Five documentation defects to confirm, including `companyId` versus `company` on `/availability`
   (following the spec silently widens every request to the whole account) and two different FX
   tables inside one response.
+
+**Open after the 2026-09-22 audit on company 225** (backend map §10.3, sendable as section H of
+[`booking-manager-vendor-questions.md`](./booking-manager-vendor-questions.md)): what a repeated
+confirm and a confirm at a status other than 1 answer; how `validForBases`, `availableInBase` and
+`validSailingAreas` enter `obligatoryExtrasPrice`; whether a status 9 option is visible and
+deletable; whether an agency key may create clients (`POST /users`), record payments (and how to
+get a `paymentMethodId`) or export invoices without locking the operator's; how an option
+extension (`POST /requests` type 0) is answered; why an expired option (status 3) keeps blocking
+its week and whether deleting it frees it; which of the two exchange rates in one offer is
+authoritative; what `includedExtras` means; whether `/prices` promises nothing about a sale; and
+whether the base collects `transitLog`. **Never call `/invoices`** until the invoice question is
+answered: an export may lock the operator's invoices.
 
 ### Both providers
 

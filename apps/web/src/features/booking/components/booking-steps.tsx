@@ -10,7 +10,7 @@ import {
 import { ORPCError } from "@orpc/client";
 import { useMutation } from "@tanstack/react-query";
 import { Check, ChevronDown } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useRef, useState } from "react";
 import { type Path, useFormContext, useWatch } from "react-hook-form";
@@ -98,6 +98,7 @@ export default function BookingSteps() {
     setRequestedExtras,
   } = useBooking();
   const createHold = useMutation(createHoldMutationOptions());
+  const locale = useLocale();
   const [openStep, setOpenStep] = useQueryState("step", stepParser);
   /*
    * Null is a real state the URL cannot hold: after the last Continue every step is shut. It is
@@ -276,6 +277,7 @@ export default function BookingSteps() {
           phone: guest.phone,
           countryCode: guest.countryCode,
           specialRequests: guest.specialRequests || undefined,
+          locale,
         },
         consents: { terms: true, cancellationPolicy: true },
       });

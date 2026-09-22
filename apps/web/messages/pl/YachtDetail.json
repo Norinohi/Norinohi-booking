@@ -132,6 +132,8 @@
     "onRequest": "Cena tego jachtu na zapytanie",
     "onRequestHint": "Mamy dla niego terminy, ale żadna opublikowana stawka ich nie obejmuje. Napisz, kiedy chcesz żeglować, a wrócimy do Ciebie z ceną.",
     "dropOff": "Marina zwrotu",
+    "oneWayRoute": "Rejs w jedną stronę",
+    "oneWayNote": "Jacht zwraca się w innej marinie niż ta, w której się go odbiera.",
     "pickUp": "Odbiór: {marina}",
     "boatPriceHintDiscounted": "Cena czarteru po rabacie",
     "depositWhenInsured": "lub {amount} z ubezpieczeniem od szkód"

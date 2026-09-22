@@ -1118,6 +1118,8 @@
     "guestAccount": "Gastaccount",
     "guests": "{count, plural, one {# gast} other {# gasten}}",
     "noReservationId": "Nog geen reserverings-ID",
+    "agencyReservationId": "Agentschaps-ID {id}",
+    "operatorDue": "{amount} uiterlijk {date}",
     "outstanding": "{amount} openstaand",
     "dueAtCheckIn": "{amount} te betalen in de jachthaven",
     "createdAt": "Aangemaakt {at}",
@@ -1132,7 +1134,8 @@
       "total": "Totaal",
       "collected": "Geïnd",
       "timeline": "Tijdlijn",
-      "commission": "Commissie"
+      "commission": "Commissie",
+      "operatorSettlement": "Verschuldigd aan de operator"
     },
     "invoice": {
       "title": "Factuuraanvraag",

@@ -19,7 +19,27 @@ import type { JsonObject, JsonValue } from "../shared/json";
 import { queueForInterval, SequentialQueue } from "../shared/queue";
 import type { RetryPolicy } from "../shared/retry";
 import type { NausysConfig } from "./config";
-import { NAUSYS_STATUS_CODES, NAUSYS_STATUS_NAMES, restStatusSchema } from "./endpoints";
+import {
+  NAUSYS_STATUS_CODES,
+  NAUSYS_STATUS_NAMES,
+  nausysEndpoints,
+  restStatusSchema,
+} from "./endpoints";
+
+/**
+ * Every call that changes a reservation, attempted once.
+ *
+ * The retry policy treats a timeout, a 5xx page and UNKNOWN_ERROR as transient, which is right
+ * for a read and wrong here: the vendor may have applied the write before the answer was lost.
+ * A retried createBooking then carries a uuid the first attempt already rotated, is refused, and
+ * the booking the operator just fixed is recorded as rejected and refunded. Booking Manager's
+ * client opts its creates out the same way. The failure surfaces once, for the caller and
+ * reservation-reconcile to settle against the vendor's own record.
+ */
+const NON_IDEMPOTENT_ENDPOINTS = new Set<string>(Object.values(nausysEndpoints.booking));
+
+/* Answers with its payload and no `status` when it succeeds; a refusal still carries one. */
+const STATUSLESS_ENDPOINTS = new Set<string>([nausysEndpoints.sales.agencyInvoices]);
 
 type ErrorFactory = (
   message: string,
@@ -83,6 +103,7 @@ export function classifyNausysResponse(
   }
 
   const envelope = restStatusSchema.safeParse(body);
+  if (!envelope.success && STATUSLESS_ENDPOINTS.has(context.endpoint)) return null;
   if (!envelope.success) {
     return new ContractError(`NauSYS response from ${context.endpoint} carried no status`, {
       endpoint: context.endpoint,
@@ -96,9 +117,13 @@ export function classifyNausysResponse(
     return null;
   }
 
+  /* The status word where it is one of the vendor's names: an agency refused a company's
+     occupancy is answered `OPERATION_NOT_ALLOWED` with errorCode 100, and labelling that
+     AUTHENTICATION_ERROR off the number made a per-company refusal read as a dead credential. */
+  const named = statusCodesByName.has(status) ? status : undefined;
   const options = {
     endpoint: context.endpoint,
-    providerCode: code === undefined ? status : (NAUSYS_STATUS_NAMES[code] ?? status),
+    providerCode: named ?? (code === undefined ? status : (NAUSYS_STATUS_NAMES[code] ?? status)),
     payload: body,
   };
   const factory = code === undefined ? contractError : (ERROR_BY_CODE.get(code) ?? contractError);
@@ -267,6 +292,7 @@ export class NausysClient {
   ): Promise<TOut> {
     const response = await this.http.post(endpoint, body, {
       queueKey: this.queueKeyFor(lane),
+      ...(NON_IDEMPOTENT_ENDPOINTS.has(endpoint) ? { retry: { maxAttempts: 1 } } : null),
     });
     const parsed = schema.safeParse(response.body);
     if (!parsed.success) {

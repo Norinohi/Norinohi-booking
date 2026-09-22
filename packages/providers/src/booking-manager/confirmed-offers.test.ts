@@ -22,16 +22,18 @@ const config: BookingManagerConfig = resolveBookingManagerConfig({
   BOOKING_MANAGER_TIMEZONE: "Europe/Zagreb",
 });
 
-type Query = { dateFrom?: unknown; dateTo?: unknown };
+type Query = { dateFrom?: unknown; dateTo?: unknown; passengersOnBoard?: unknown };
 
 /** Records the periods that actually reach the vendor, which is what this pass chooses. */
 function recordingClient() {
   const asked: { from: string; to: string }[] = [];
+  const queries: Query[] = [];
   // SAFETY: a stub with nothing behind it; any method these paths do not use is absent, so
   // reaching for one is a TypeError rather than a wrong answer.
   const client = Object.assign({} as BookingManagerClient, {
     sweepLane: () => ({}),
     get: (_endpoint: string, _schema: z.ZodType<RestOffer[]>, query?: Query) => {
+      if (query) queries.push(query);
       asked.push({
         from: String(query?.dateFrom).slice(0, 10),
         to: String(query?.dateTo).slice(0, 10),
@@ -39,7 +41,7 @@ function recordingClient() {
       return Promise.resolve([]);
     },
   });
-  return { client, asked };
+  return { client, asked, queries };
 }
 
 async function sweep(options: {
@@ -48,7 +50,7 @@ async function sweep(options: {
   years?: number[];
   weekIndex?: number;
 }) {
-  const { client, asked } = recordingClient();
+  const { client, asked, queries } = recordingClient();
   const pages = [];
   for await (const page of streamBookingManagerConfirmedOffers(
     {
@@ -65,7 +67,7 @@ async function sweep(options: {
   )) {
     pages.push(page);
   }
-  return { asked, pages };
+  return { asked, pages, queries };
 }
 
 /*
@@ -145,6 +147,19 @@ describe("the periods the confirming sweep asks about", () => {
 
     expect(asked[0]).toEqual({ from: "2026-10-05", to: "2026-10-08" });
     expect(pages[0]).not.toHaveProperty("swept");
+  });
+});
+
+/*
+ * Company 225, 2027-06-05: asked without a party, West Wind's obligatory extras came to 1807 with
+ * Towels priced for two; with one aboard, 1737, which is what the catalogue fallback counts.
+ */
+describe("the party the sweep prices for", () => {
+  it("asks for one passenger on every period, never the vendor's default of two", async () => {
+    const { queries } = await sweep({ today: "2026-12-01" });
+
+    expect(queries.length).toBeGreaterThan(0);
+    expect(new Set(queries.map((query) => query.passengersOnBoard))).toEqual(new Set([1]));
   });
 });
 

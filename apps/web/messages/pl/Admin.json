@@ -1118,6 +1118,8 @@
     "guestAccount": "Konto gościa",
     "guests": "{count, plural, one {# gość} few {# gości} many {# gości} other {# gościa}}",
     "noReservationId": "Brak jeszcze identyfikatora rezerwacji",
+    "agencyReservationId": "Identyfikator agencji {id}",
+    "operatorDue": "{amount} do {date}",
     "outstanding": "Do zapłaty: {amount}",
     "dueAtCheckIn": "{amount} płatne w marinie",
     "createdAt": "Utworzono {at}",
@@ -1132,7 +1134,8 @@
       "total": "Suma",
       "collected": "Pobrano",
       "timeline": "Historia",
-      "commission": "Prowizja"
+      "commission": "Prowizja",
+      "operatorSettlement": "Należne operatorowi"
     },
     "invoice": {
       "title": "Prośba o fakturę",

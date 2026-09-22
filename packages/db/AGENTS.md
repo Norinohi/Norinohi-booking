@@ -121,8 +121,9 @@ Anything spatial goes in `src/geo/`, pure where it can be:
 - `reference-regions.ts` - `listReferenceRegions`, the regions other providers' offers sail from
   with their base coordinates, which Booking Manager's projection places its bases into.
 - `relocate-bases.ts` - `relocateBases` moves existing base rows to a new placement keeping their
-  ids (merging into a same-named base at the destination), `pruneEmptyGeography` deletes the
-  bases, locations and regions nothing references. Used by `geography:repair-bm` in
+  ids (merging into a same-named base at the destination, and repointing its `base_source`
+  bindings), `pruneEmptyGeography` deletes the bases, locations and regions nothing references.
+  Used by the catalogue writer for every base bound to a row, and by `geography:repair-bm` in
   packages/providers; `geo/relocate-bases.db.test.ts` pins both.
 
 A new route or map query belongs in one of these folders; `search/` is for the listing catalogue.

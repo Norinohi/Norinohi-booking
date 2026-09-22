@@ -49,6 +49,29 @@ const CATEGORY_GROUPS = {
   entertainment: "entertainment-and-water-toys",
   yachtelectrics: "systems-and-power",
   yachtelectronics: "systems-and-power",
+  /* Booking Manager operators name their own categories; these are the specific ones its
+     `/equipment` items are filed under most often across the account. */
+  instruments: "navigation-and-safety",
+  safetyequipment: "navigation-and-safety",
+  safetygear: "navigation-and-safety",
+  ondeck: "deck-and-cockpit",
+  exterior: "deck-and-cockpit",
+  dinghy: "deck-and-cockpit",
+  sailscovers: "deck-and-cockpit",
+  riggingsails: "deck-and-cockpit",
+  cockpitflybridge: "deck-and-cockpit",
+  interiorequipment: "interior-and-cabins",
+  heatingcoolingsystem: "interior-and-cabins",
+  saloon: "interior-and-cabins",
+  cabins: "interior-and-cabins",
+  kitchen: "galley",
+  kitchenfeatures: "galley",
+  audiovisuals: "entertainment-and-water-toys",
+  sportsequipment: "entertainment-and-water-toys",
+  electrical: "systems-and-power",
+  electricalsystems: "systems-and-power",
+  electricity: "systems-and-power",
+  electronics: "systems-and-power",
 } satisfies Record<string, AmenityGroup>;
 
 /**

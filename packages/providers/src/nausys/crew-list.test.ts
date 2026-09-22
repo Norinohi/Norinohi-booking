@@ -224,6 +224,52 @@ describe("submitting a crew list", () => {
     });
   });
 
+  /* RestCrewListResponse2 as the PDF prints it: the period, and no status for the transport to
+     name, which it reports as a body carrying no status at all. */
+  it("reads the documented refusal body, which has no status, as a refusal", async () => {
+    const { client } = submittingClient(
+      new ContractError("NauSYS response from set2 carried no status", {
+        payload: {
+          reservationId: 3618721,
+          yachtName: "Romina",
+          passengers: [],
+          invalidPeriodFrom: "08.11.2025",
+          invalidPeriodTo: "15.11.2025",
+        },
+      }),
+    );
+
+    await expect(submitNausysCrewList(client, "1", "token", [GUEST])).resolves.toMatchObject({
+      accepted: false,
+      providerCode: "CREW_LIST_VALIDATION_FAILED",
+      invalidPeriod: { from: "2025-11-08", to: "2025-11-15" },
+    });
+  });
+
+  it("files the trip in the vendor's own fields, and each person's extras on their row", async () => {
+    const { client, posted } = submittingClient({ status: "OK" });
+
+    await submitNausysCrewList(
+      client,
+      "1",
+      "token",
+      [{ ...GUEST, disabledPerson: true, shoeSize: "44" }],
+      undefined,
+      { flightNumber: "OU 412", arrivalTime: "23:40", airportTransfer: true },
+    );
+
+    expect(posted[0]?.body).toMatchObject({
+      flightNumber: "OU 412",
+      arrivalTime: "23:40",
+      airportToBaseTransfer: true,
+    });
+    expect(posted[0]?.body).not.toHaveProperty("crewListNote");
+    expect(passengersOf(posted[0]?.body ?? {})[0]).toMatchObject({
+      disabledPerson: true,
+      shoeSize: "44",
+    });
+  });
+
   it("reads a locked list as a refusal too, with nothing to fix", async () => {
     const { client } = submittingClient(
       new ContractError("locked", { providerCode: "CREW_LIST_LOCKED" }),

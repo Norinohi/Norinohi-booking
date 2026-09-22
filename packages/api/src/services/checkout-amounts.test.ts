@@ -47,6 +47,7 @@ const quoteRow = (lines: QuoteLine[], over: Partial<QuoteRow> = {}): QuoteRow =>
     discountId: null,
     discountCode: null,
     creditAppliedMinor: 0,
+    clientDiscountMinor: 0,
     route: null,
     routeOptions: [],
     checkInTime: null,

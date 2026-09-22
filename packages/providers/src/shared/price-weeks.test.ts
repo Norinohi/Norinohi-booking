@@ -449,11 +449,13 @@ describe("price weeks through the NauSYS confirming stream", () => {
     const { transport, pages } = nausysWeeks(null);
     await pages;
 
+    const weeks = [
+      { periodFrom: "19.09.2026", periodTo: "26.09.2026" },
+      { periodFrom: "26.09.2026", periodTo: "03.10.2026" },
+    ];
     expect(transport.calls.map((call) => call.body)).toMatchObject([
-      { periodFrom: "19.09.2026", periodTo: "26.09.2026", yachts: [4_711_001, 4_711_002] },
-      { periodFrom: "19.09.2026", periodTo: "26.09.2026", yachts: [4_711_003] },
-      { periodFrom: "26.09.2026", periodTo: "03.10.2026", yachts: [4_711_001, 4_711_002] },
-      { periodFrom: "26.09.2026", periodTo: "03.10.2026", yachts: [4_711_003] },
+      { periods: weeks, yachts: [4_711_001, 4_711_002] },
+      { periods: weeks, yachts: [4_711_003] },
     ]);
     expect(transport.maxConcurrent).toBe(1);
   });

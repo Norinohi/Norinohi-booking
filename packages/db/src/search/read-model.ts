@@ -154,20 +154,22 @@ export async function rebuildListingSearchDocs(
       bs.email,
       bs.phone,
       bs.website,
-      bs.check_in_time,
-      bs.check_out_time,
+      /* The boat's own handover first: the base row is shared by every operator at the marina. */
+      coalesce(l.check_in_time, bs.check_in_time),
+      coalesce(l.check_out_time, bs.check_out_time),
       spec.length_m,
       spec.cabins,
       spec.berths,
       /*
        * What the boat can actually be sold to.
        *
-       * Berths are what it sleeps; a vendor's offers engine may sell fewer and say so nowhere
-       * -- Booking Manager's maxPeopleOnBoard is null on all 12,813 products we hold. What we
-       * have instead is what it has already refused, learned at quote time, and one below that
-       * is the most we know it will take.
+       * Berths are what it sleeps, and max_persons is the legal limit where the vendor states
+       * one: NauSYS below the berths on 297 hulls, Booking Manager's yacht-level
+       * maxPeopleOnBoard on about half its fleet. Where neither says, an offers engine may still
+       * sell fewer and say so nowhere, so what it has already refused, learned at quote time,
+       * caps it one below. least() skips a null.
        */
-      least(spec.berths, best.guests_refused_from - 1) as max_guests,
+      least(spec.berths, spec.max_persons, best.guests_refused_from - 1) as max_guests,
       spec.heads,
       spec.showers,
       spec.year_built,

@@ -4,6 +4,8 @@
     "title": "Buchungsübersicht",
     "yacht": "Yacht",
     "dates": "Zeitraum",
+    "route": "Route",
+    "oneWay": "Einweg",
     "crew": "Crew",
     "people": "Personen",
     "extras": "Extras",
@@ -25,7 +27,8 @@
     "dueNow": "Jetzt fällig",
     "terms": "Ich akzeptiere die <link>AGB und den Chartervertrag</link>.",
     "cancellation": "Ich akzeptiere die <link>Stornierungsbedingungen</link>.",
-    "operatorTerms": "Bedingungen des Anbieters, einschliesslich Stornierungsbedingungen"
+    "operatorTerms": "Bedingungen des Anbieters, einschliesslich Stornierungsbedingungen",
+    "returnNote": "Yachtrückgabe"
   },
   "extras": {
     "mandatory": "Obligatorisch",
@@ -156,6 +159,7 @@
     "summary": {
       "yacht": "Yacht",
       "dates": "Zeitraum",
+      "route": "Route",
       "crew": "Crew",
       "mandatory": "Obligatorisch",
       "selectedExtras": "Gewählte Extras",
@@ -337,6 +341,7 @@
     "guestsLabel": "Gäste",
     "crew": "Crew",
     "marina": "Marina",
+    "route": "Route",
     "referenceLabel": "Buchungsnummer",
     "settled": "Nichts mehr zu zahlen",
     "viewYacht": "Yachtseite ansehen",
@@ -354,8 +359,7 @@
     "crewList": {
       "title": "Crewliste",
       "notice": "Die Charterfirma muss den Behörden vor dem Ablegen eine Liste aller an Bord melden. Füllen Sie sie hier aus, wir leiten sie weiter - was fehlt, fragt die Basis bei der Ankunft am Schalter ab.",
-      "alsoAsked": "Sie fragt außerdem nach {fields}; das nimmt die Basis bei der Ankunft am Schalter auf.",
-      "maxPassengers": "Ihre Liste fasst höchstens {count} Personen.",
+      "maxPassengers": "Ihre Liste fasst höchstens {count, plural, one {# Person} other {# Personen}}.",
       "loading": "Ihre Crewliste wird geladen…",
       "empty": "Noch niemand hinzugefügt. Ihre Buchung gilt für {guests} Gäste - fügen Sie jede Person an Bord hinzu, einschließlich des Skippers.",
       "member": "Crewmitglied {number}",
@@ -376,11 +380,8 @@
         "firstName": "Bitte den Vornamen angeben",
         "lastName": "Bitte den Nachnamen angeben",
         "skipperEmail": "Bitte eine gültige E-Mail-Adresse angeben",
-        "oneSkipper": "Nur eine Person kann der Skipper sein"
-      },
-      "requires": {
-        "shoeSize": "Schuhgrößen",
-        "disabledPerson": "ob jemand an Bord eine Behinderung hat"
+        "oneSkipper": "Nur eine Person kann der Skipper sein",
+        "maxPassengers": "Die Liste dieser Charterfirma fasst höchstens {count, plural, one {# Person} other {# Personen}}"
       },
       "legend": "Mit * markierte Felder verlangt diese Charterfirma.",
       "sent": "Am {when} an die Charterfirma gesendet.",
@@ -407,7 +408,7 @@
       "skipperEmail": "E-Mail des Skippers",
       "skipperMobile": "Telefon des Skippers",
       "note": "Was die Basis wissen sollte",
-      "notePlaceholder": "Ankunftszeit, Flugnummer, jemand mit Assistenzbedarf…",
+      "notePlaceholder": "Jemand braucht Unterstützung, späte Ankunft, alles, worauf sich die Basis einstellen sollte…",
       "documents": {
         "passport": "Reisepass",
         "idCard": "Personalausweis",
@@ -418,7 +419,14 @@
         "female": "Weiblich"
       },
       "placeSearch": "Orte suchen",
-      "placeEmpty": "Kein Ort dieses Namens"
+      "placeEmpty": "Kein Ort dieses Namens",
+      "shoeSize": "Schuhgröße",
+      "shoeSizePlaceholder": "EU 42",
+      "disabledPerson": "Diese Person braucht Unterstützung an Bord",
+      "flightNumber": "Flugnummer",
+      "flightNumberPlaceholder": "OU 412",
+      "arrivalTime": "Ankunftszeit",
+      "airportTransfer": "Wir möchten einen Transfer vom Flughafen zur Basis"
     },
     "priceLineLabels": {
       "charterPrice": "Charterpreis",

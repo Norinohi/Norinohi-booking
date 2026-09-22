@@ -2,9 +2,9 @@ import { z } from "zod";
 
 import { ProviderError } from "../shared/errors";
 import type { JsonObject } from "../shared/json";
-import type { CrewListMember, CrewListReceipt, CrewPlace } from "../types";
+import type { CrewListMember, CrewListReceipt, CrewListSubmission, CrewPlace } from "../types";
 import type { NausysClient } from "./client";
-import { nausysEndpoints, restCountriesResponseSchema } from "./endpoints";
+import { nausysEndpoints } from "./endpoints";
 
 /**
  * What the fleet operator insists on knowing about the people aboard.
@@ -15,9 +15,9 @@ import { nausysEndpoints, restCountriesResponseSchema } from "./endpoints";
  * for the same four things everywhere and the customer discovered the rest — a birth place, a
  * document type, a skipper's licence — only on the operator's own page, if at all.
  *
- * Read rather than submitted. NauSYS sanctioned forwarding its hosted crew-list page instead of
- * posting passenger data through `crewlist/v6/set2` (see `crewListLinkOf`), so this endpoint is
- * used for what it can tell us about the ask, never to answer it.
+ * The same token opens the list for reading and for filing (`set2` below). Only a confirmed
+ * reservation has one: on an option the vendor answers AUTHENTICATION_ERROR, which is why a
+ * failed read costs the hint rather than the page.
  */
 export interface NausysCrewRequirements {
   /** Vendor field names, verbatim: `birthDate`, `documentNumber`, `nationality`, and so on. */
@@ -28,12 +28,13 @@ export interface NausysCrewRequirements {
   skipperRequired: boolean | null;
 }
 
-/* Loose like the vendor's other structures: it adds fields between minor releases. */
+/* Loose like the vendor's other structures: it adds fields between minor releases. Nullish,
+   because one null used to fail the whole read and drop every requirement with it. */
 const restCrewListSchema = z.looseObject({
-  reservationId: z.number().int().optional(),
-  maxPassengers: z.number().int().optional(),
-  insertSkipper: z.boolean().optional(),
-  requiredFields: z.array(z.string()).optional(),
+  reservationId: z.number().int().nullish(),
+  maxPassengers: z.number().int().nullish(),
+  insertSkipper: z.boolean().nullish(),
+  requiredFields: z.array(z.string()).nullish(),
 });
 
 /**
@@ -69,12 +70,15 @@ export async function nausysCrewListBody(
   client: NausysClient,
   members: readonly CrewListMember[],
   note?: string,
+  trip?: CrewListSubmission["trip"],
 ): Promise<JsonObject> {
   const alpha3 = await nausysAlpha3Codes(client);
-  return {
-    passengers: members.map((member) => passengerOf(member, alpha3)),
-    ...(note === undefined ? null : { crewListNote: note }),
-  };
+  const body: JsonObject = { passengers: members.map((member) => passengerOf(member, alpha3)) };
+  if (note !== undefined && note !== "") body.crewListNote = note;
+  if (trip?.flightNumber) body.flightNumber = trip.flightNumber;
+  if (trip?.arrivalTime) body.arrivalTime = trip.arrivalTime;
+  if (trip?.airportTransfer !== undefined) body.airportToBaseTransfer = trip.airportTransfer;
+  return body;
 }
 
 /**
@@ -101,8 +105,15 @@ const restCrewListSetResponseSchema = z.looseObject({
   invalidPeriodTo: z.string().optional(),
 });
 
+const VALIDATION_FAILED = "CREW_LIST_VALIDATION_FAILED";
+
 /** The two answers that are the operator's decision rather than our mistake. */
-const REFUSALS = new Set(["CREW_LIST_VALIDATION_FAILED", "CREW_LIST_LOCKED"]);
+const REFUSALS = new Set([VALIDATION_FAILED, "CREW_LIST_LOCKED"]);
+
+function namesAnInvalidPeriod(payload: ProviderError["payload"]): boolean {
+  const answer = restCrewListSetResponseSchema.safeParse(payload);
+  return answer.success && Boolean(answer.data.invalidPeriodFrom && answer.data.invalidPeriodTo);
+}
 
 export async function submitNausysCrewList(
   client: NausysClient,
@@ -110,8 +121,9 @@ export async function submitNausysCrewList(
   securityCode: string,
   members: readonly CrewListMember[],
   note?: string,
+  trip?: CrewListSubmission["trip"],
 ): Promise<CrewListReceipt> {
-  const body = await nausysCrewListBody(client, members, note);
+  const body = await nausysCrewListBody(client, members, note, trip);
 
   try {
     const answer = await client.postJson(
@@ -138,7 +150,10 @@ export async function submitNausysCrewList(
  * status we do not know -- keeps throwing, because the customer's list did not reach anyone.
  */
 function refusalOf(error: ProviderError): CrewListReceipt | null {
-  const code = error.providerCode;
+  /* RestCrewListResponse2 as the PDF prints it carries the period and no status at all, which
+     the transport reports as a body with no status. The period is the refusal either way. */
+  const code =
+    error.providerCode ?? (namesAnInvalidPeriod(error.payload) ? VALIDATION_FAILED : undefined);
   if (code === undefined || !REFUSALS.has(code)) return null;
 
   const receipt: CrewListReceipt = { accepted: false, providerCode: code, message: error.message };
@@ -181,6 +196,8 @@ function passengerOf(member: CrewListMember, alpha3: ReadonlyMap<string, string>
     gender: member.gender,
     livingPlace: member.livingPlace,
     livingCountry: alpha3Of(member.livingCountry, alpha3),
+    disabledPerson: member.disabledPerson,
+    shoeSize: member.shoeSize,
     embarkmentDate: nausysDateOf(member.embarkDate),
     disembarkmentDate: nausysDateOf(member.disembarkDate),
     ...(member.skipper
@@ -233,6 +250,12 @@ function alpha3Of(
  * It is a static list of 250 rows behind a credentialed call, so refetching it per crew list
  * would put a catalogue call in front of a customer pressing Save.
  */
+const countryRowsSchema = z.looseObject({ countries: z.array(z.json()).optional() });
+const countryCodesSchema = z.looseObject({
+  code: z.string().optional(),
+  code2: z.string().optional(),
+});
+
 const alpha3ByClient = new WeakMap<NausysClient, Promise<ReadonlyMap<string, string>>>();
 
 function nausysAlpha3Codes(client: NausysClient): Promise<ReadonlyMap<string, string>> {
@@ -248,12 +271,17 @@ async function loadAlpha3Codes(client: NausysClient): Promise<ReadonlyMap<string
   try {
     const response = await client.catalogueCall(
       nausysEndpoints.catalogue.countries,
-      restCountriesResponseSchema,
+      countryRowsSchema,
     );
 
+    /* Row by row, and only the two codes: one country with a malformed name used to fail the
+       whole table, and with it every crew-list save. */
     const codes = new Map<string, string>();
-    for (const country of response.countries ?? []) {
-      if (country.code && country.code2) codes.set(country.code2.toUpperCase(), country.code);
+    for (const row of response.countries ?? []) {
+      const country = countryCodesSchema.safeParse(row);
+      if (!country.success) continue;
+      const { code, code2 } = country.data;
+      if (code && code2) codes.set(code2.toUpperCase(), code);
     }
     return codes;
   } catch (failure) {

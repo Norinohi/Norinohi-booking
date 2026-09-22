@@ -1,9 +1,16 @@
+import { log } from "evlog";
 import type { z } from "zod";
 
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
-import { ContractError, SlotUnavailableError } from "../shared/errors";
+import {
+  ContractError,
+  PRODUCT_NOT_OFFERED,
+  ROUTE_NOT_OFFERED,
+  SlotUnavailableError,
+} from "../shared/errors";
 import { formatExtraCode } from "../shared/extra-code";
-import { toExactPositiveIntId } from "../shared/projection-helpers";
+import { stripHtml } from "../shared/html-text";
+import { text, toExactPositiveIntId } from "../shared/projection-helpers";
 import { stableSourceHash } from "../shared/raw-retention";
 import { DEFAULT_LINE_LABELS } from "../shared/generic-labels";
 import { wallClockTime } from "../shared/wall-clock";
@@ -25,6 +32,7 @@ import { allInPrice, isOneWay, rankOffers } from "./offer-ranking";
 import {
   BM_EXTRA_KIND,
   bookingManagerEndpoints,
+  isSameBookingManagerProduct,
   restOfferListSchema,
   type RestExtras,
   type RestOffer,
@@ -57,11 +65,12 @@ export interface BookingManagerQuoteServiceOptions {
    */
   quoteTtlMs?: number;
   /**
-   * Maps the customer's crew choice to a Booking Manager product name. Products
-   * are per-yacht catalogue data (`yacht.products[].name`), so no static table
-   * can answer this; omitted means the vendor prices its default product.
+   * The product the listing sells for this vendor yacht, off its stored record: the default
+   * one, whose extras, crew and weekly rates the catalogue shows. Named on the call rather than
+   * left to the vendor's default so the quote and the reservation name one product even when
+   * the operator changes its default between the two. Undefined leaves it to the vendor.
    */
-  productNameFor?: (crewType: CrewType) => string | undefined;
+  loadProductName?: (externalYachtId: string) => Promise<string | undefined>;
   /** Resolves a vendor extra id to a customer-facing line label. */
   labelFor?: (externalId: string) => string | undefined;
   /**
@@ -72,6 +81,11 @@ export interface BookingManagerQuoteServiceOptions {
    * tell they are one charge.
    */
   loadExtraLabels?: (listingId: string) => Promise<ReadonlyMap<string, string>>;
+  /**
+   * The operator's `maxDiscountFromCommissionPercentage` for the quoted yacht, by its vendor id,
+   * else its company's, off the stored catalogue. Undefined where neither states one.
+   */
+  loadDiscountCapPercentage?: (externalYachtId: string) => Promise<number | undefined>;
   now?: () => number;
 }
 
@@ -79,12 +93,43 @@ export interface BookingManagerQuoteService {
   getBookingManagerQuote(input: QuoteRequest): Promise<ProviderQuote>;
 }
 
+/** An `/offers` query for one yacht's charter; `productName` undefined asks for its default. */
+type OfferQuery = {
+  dateFrom: string;
+  dateTo: string;
+  yachtId: [string];
+  currency: string;
+  passengersOnBoard: number;
+  productName: string | undefined;
+};
+
 export function createBookingManagerQuoteService(
   options: BookingManagerQuoteServiceOptions,
 ): BookingManagerQuoteService {
   const { client, resolver } = options;
   const quoteTtlMs = options.quoteTtlMs ?? DEFAULT_QUOTE_TTL_MS;
   const now = options.now ?? Date.now;
+
+  /** The products the yacht sells this charter as, from this answer or else the vendor's default. */
+  async function productsOnSale(
+    answered: readonly RestOffer[],
+    query: OfferQuery,
+    checkIn: string,
+    checkOut: string,
+  ): Promise<string[]> {
+    const [yachtId] = query.yachtId;
+    let sold = offersForPeriod(answered, yachtId, checkIn, checkOut, undefined);
+    if (sold.length === 0) {
+      const unnamed = await client.get(
+        bookingManagerEndpoints.offers,
+        restOfferListSchema,
+        { ...query, productName: undefined },
+        client.liveLane(),
+      );
+      sold = offersForPeriod(unnamed, yachtId, checkIn, checkOut, undefined);
+    }
+    return [...new Set(sold.map((offer) => offer.product?.trim() || "an unnamed product"))];
+  }
 
   return {
     async getBookingManagerQuote(input: QuoteRequest): Promise<ProviderQuote> {
@@ -96,12 +141,12 @@ export function createBookingManagerQuoteService(
         provider: "Booking Manager",
         what: "the yacht id",
       });
-      const productName = parsed.crewType ? options.productNameFor?.(parsed.crewType) : undefined;
+      const productName = await options.loadProductName?.(yachtId);
 
       // Midnight is mandatory here, not a placeholder: MMK confirmed the vendor
       // substitutes the base's own check-in/check-out time and returns it on the
       // offer, so sending a time of our own is refused or silently overridden.
-      const offerQuery = {
+      const offerQuery: OfferQuery = {
         dateFrom: formatBookingManagerDateTime(parsed.checkIn),
         dateTo: formatBookingManagerDateTime(parsed.checkOut),
         yachtId: [yachtId],
@@ -109,7 +154,7 @@ export function createBookingManagerQuoteService(
         passengersOnBoard: parsed.guests,
         // An undefined value is dropped from the query string, so an unnamed
         // product asks for the vendor's default rather than for an empty one.
-        productName: productName || undefined,
+        productName,
       };
 
       const offers = await client.get(
@@ -120,22 +165,69 @@ export function createBookingManagerQuoteService(
         client.liveLane(),
       );
 
+      const route: RequestedRoute = {
+        startBaseId: parsed.startBaseId,
+        endBaseId: parsed.endBaseId,
+      };
       const offer = selectOffer(
         offers,
         yachtId,
         parsed.checkIn,
         parsed.checkOut,
         productName,
-        parsed.endBaseId,
+        route,
       );
       if (!offer) {
+        const onSaleElsewhere =
+          (route.startBaseId !== undefined || route.endBaseId !== undefined) &&
+          selectOffer(offers, yachtId, parsed.checkIn, parsed.checkOut, productName) !== undefined;
+        if (onSaleElsewhere) {
+          throw new SlotUnavailableError(
+            `Booking Manager sells yacht ${yachtId} from ${parsed.checkIn} to ${parsed.checkOut}, but not from base ${route.startBaseId ?? "any"} to base ${route.endBaseId ?? "any"}`,
+            { endpoint: bookingManagerEndpoints.offers, providerCode: ROUTE_NOT_OFFERED },
+          );
+        }
+        /*
+         * The product is named from the stored yacht, which is only as fresh as the last
+         * catalogue sync. An operator who renamed or dropped it since gets silence for it,
+         * and read as the week going that silence would take a week still on sale off the
+         * card. So the vendor is asked once more, unnamed, which answers its default product.
+         */
+        if (productName !== undefined) {
+          const offered = await productsOnSale(offers, offerQuery, parsed.checkIn, parsed.checkOut);
+          if (offered.length > 0) {
+            log.warn({
+              action: "booking_manager.quote.product_not_offered",
+              yachtId,
+              checkIn: parsed.checkIn,
+              productName,
+              offered: offered.join(", "),
+            });
+            throw new SlotUnavailableError(
+              `Booking Manager sells yacht ${yachtId} from ${parsed.checkIn} to ${parsed.checkOut} as ${offered.join(", ")}, not as ${productName}`,
+              { endpoint: bookingManagerEndpoints.offers, providerCode: PRODUCT_NOT_OFFERED },
+            );
+          }
+        }
         throw new SlotUnavailableError(
           `Booking Manager has no offer for yacht ${yachtId} from ${parsed.checkIn} to ${parsed.checkOut}`,
           { endpoint: bookingManagerEndpoints.offers, providerCode: "NO_OFFER" },
         );
       }
 
-      const extraLabels = await options.loadExtraLabels?.(parsed.listingId);
+      const [extraLabels, maxDiscountFromCommissionPercentage] = await Promise.all([
+        options.loadExtraLabels?.(parsed.listingId),
+        options.loadDiscountCapPercentage?.(yachtId),
+      ]);
+
+      const instalments = (offer.paymentPlan ?? []).filter((entry) => entry.amount != null);
+      if (instalments.length > 2) {
+        log.info({
+          action: "booking_manager.quote.payment_plan_collapsed",
+          yachtId,
+          instalments: instalments.length,
+        });
+      }
 
       return mapOfferToProviderQuote({
         offer,
@@ -145,7 +237,10 @@ export function createBookingManagerQuoteService(
         guests: parsed.guests,
         crewType: parsed.crewType,
         requestedCurrency: parsed.currency,
+        maxDiscountFromCommissionPercentage,
         expiresAt: new Date(now() + quoteTtlMs).toISOString(),
+        balanceLeadDays: options.config.balanceLeadDays,
+        today: new Date(now()).toISOString().slice(0, 10),
         /* The catalogue answers first; an extra the sync never recorded falls
            through to whatever the caller knows. */
         labelFor: (externalId) =>
@@ -174,19 +269,46 @@ export function createBookingManagerQuoteService(
  * `selectOffer` narrows to a pair only when it is given one, so a re-price that drops the
  * customer's drop-off prices the same-base return `rankOffers` puts first - and refuses every
  * one-way with PRICE_CHANGED for a price that never moved.
+ *
+ * The currency is the quote's for the same reason: `/offers` converts to whatever it is asked
+ * for, so a quote read in GBP and re-priced in the account's EUR compares two different figures.
+ * `fallbackCurrency` stands only for a draft that carries none.
  */
-export function repriceRequestFor(draft: BookingDraft, currency: string): QuoteRequest {
+export function repriceRequestFor(draft: BookingDraft, fallbackCurrency: string): QuoteRequest {
   const request: QuoteRequest = {
     listingId: draft.listingId,
     checkIn: draft.checkIn,
     checkOut: draft.checkOut,
     guests: draft.guests,
     extras: draft.extras,
-    currency,
+    currency: draft.currency ?? fallbackCurrency,
   };
   if (draft.crewType) request.crewType = draft.crewType;
+  if (draft.route?.startBaseId) request.startBaseId = draft.route.startBaseId;
   if (draft.route?.endBaseId) request.endBaseId = draft.route.endBaseId;
   return request;
+}
+
+/**
+ * What a reservation opened on this quote answers as `clientPrice`: every line paid through us,
+ * that is the charter net of the vendor's discounts plus each obligatory extra not payable at
+ * the base. The vendor adds those extras itself on POST, so the figure is theirs as much as the
+ * charter is. Measured on company 225: West Wind's option came back at 501.00 on a 1.00 charter
+ * carrying the 500.00 APA, and the 112 reservations saved from it agree once "Agency discount",
+ * which is our commission and never the customer's, is left out. The quote's discount lines are
+ * all the vendor's; ours are applied later.
+ */
+export function clientPriceOf(quote: ProviderQuote): Money {
+  const amountMinor = quote.lines
+    .filter((line) => line.payWhen === "now")
+    .reduce((total, line) => total + line.amount.amountMinor, 0);
+  return { amountMinor, currency: quote.currency };
+}
+
+/** The base pair a quote request pinned; either end left undefined is the adapter's to pick. */
+export interface RequestedRoute {
+  startBaseId?: string | undefined;
+  endBaseId?: string | undefined;
 }
 
 /**
@@ -204,6 +326,12 @@ export function repriceRequestFor(draft: BookingDraft, currency: string): QuoteR
  * the request said one-way: this listing publishes no `listing_one_way_rule`, so the booking
  * flow has no drop-off control at all and the customer could not have asked for it. We were
  * charging for a route chosen by array order.
+ *
+ * A pinned end narrows rather than ranks, and an empty result is not silently widened: pricing
+ * a return charter for someone who asked to finish elsewhere would quote a trip they did not ask
+ * for. The start is pinned beside it for the same reason. Narrowed by the drop-off alone, a week
+ * sold from Carrick and Portumna answered "Carrick to Portumna" with "Portumna to Portumna",
+ * because a round trip ranks first.
  */
 export function selectOffer(
   offers: readonly RestOffer[],
@@ -211,23 +339,26 @@ export function selectOffer(
   checkIn: string,
   checkOut: string,
   productName: string | undefined,
-  endBaseId?: string,
+  route: RequestedRoute = {},
 ): RestOffer | undefined {
-  const ofProduct = offersForPeriod(offers, yachtId, checkIn, checkOut, productName);
-
-  /*
-   * A chosen drop-off narrows rather than ranks, and an empty result is not silently widened:
-   * pricing a return charter for someone who asked to finish elsewhere would quote a trip they
-   * did not ask for, and the caller reads "no offer" as the vendor declining, which it did.
-   */
-  if (endBaseId !== undefined) {
-    return rankOffers(ofProduct.filter((offer) => offer.endBaseId === endBaseId))[0];
-  }
-
-  return rankOffers(ofProduct)[0];
+  const { startBaseId, endBaseId } = route;
+  return rankOffers(
+    offersForPeriod(offers, yachtId, checkIn, checkOut, productName).filter(
+      (offer) =>
+        (startBaseId === undefined || offer.startBaseId === startBaseId) &&
+        (endBaseId === undefined || offer.endBaseId === endBaseId),
+    ),
+  )[0];
 }
 
-/** The offers for exactly this charter, narrowed to the product when one was asked for. */
+/**
+ * The offers for exactly this charter, of the product asked for where one was.
+ *
+ * An offer of another product is dropped rather than taken in its place: it is another charter,
+ * with its own crew and extras, and a reservation opened for the product we named would not be
+ * the one priced. So is one at no price, before the ranking, where it would otherwise win as the
+ * cheapest: the availability sweep skips it the same way, so the card and the quote agree.
+ */
 function offersForPeriod(
   offers: readonly RestOffer[],
   yachtId: string,
@@ -235,20 +366,17 @@ function offersForPeriod(
   checkOut: string,
   productName: string | undefined,
 ): RestOffer[] {
-  const candidates = offers.filter(
+  return offers.filter(
     (offer) =>
       offer.yachtId === yachtId &&
       offer.dateFrom != null &&
       offer.dateTo != null &&
       parseBookingManagerDate(offer.dateFrom) === checkIn &&
-      parseBookingManagerDate(offer.dateTo) === checkOut,
+      parseBookingManagerDate(offer.dateTo) === checkOut &&
+      offer.price != null &&
+      offer.price > 0 &&
+      (productName === undefined || isSameBookingManagerProduct(offer.product, productName)),
   );
-
-  const ofProduct = productName
-    ? candidates.filter((offer) => offer.product === productName)
-    : candidates;
-
-  return ofProduct.length > 0 ? ofProduct : candidates;
 }
 
 /**
@@ -323,9 +451,21 @@ export interface OfferMapping {
   /** Every route the vendor offered for this charter; see `routeOptions` on the quote. */
   routeOptions?: ProviderQuote["routeOptions"];
   requestedCurrency: string;
+  /** The operator's bound on our client discount, as a percentage of the commission. */
+  maxDiscountFromCommissionPercentage?: number | undefined;
   expiresAt: string;
   labelFor?: ((externalId: string) => string | undefined) | undefined;
+  /** Days before the vendor's balance date that the customer's falls due; see `toPaymentPolicy`. */
+  balanceLeadDays?: number | undefined;
+  /** ISO `yyyy-MM-dd` of the moment the quote is made, for a plan whose first instalment is undated. */
+  today?: string | undefined;
 }
+
+/**
+ * The default for `balanceLeadDays`: a week covers a SEPA transfer and a reminder answered late,
+ * and stays well inside the 4 weeks before the charter where BM plans put their second date.
+ */
+export const BM_BALANCE_LEAD_DAYS = 7;
 
 /** Pure `RestOffer → ProviderQuote`. No I/O, no clock, no vendor field beyond this file. */
 export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
@@ -404,7 +544,13 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
   }
 
   const payableNowMinor = sumMinor(lines.filter((line) => line.payWhen === "now"));
-  const { policy, depositMinor } = toPaymentPolicy(offer, currency, payableNowMinor);
+  const { policy, depositMinor } = toPaymentPolicy(
+    offer,
+    currency,
+    payableNowMinor,
+    input.balanceLeadDays ?? BM_BALANCE_LEAD_DAYS,
+    input.today,
+  );
   const priceSourceHash = priceObservationHash(offer, currency);
   const securityDeposit = securityDepositOf(offer, currency);
 
@@ -440,6 +586,13 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
   };
   const commission = commissionOf(offer, currency);
   if (commission) quoteInput.commission = commission;
+  const maxClientDiscount = maxClientDiscountOf(
+    commission?.amount.amountMinor,
+    input.maxDiscountFromCommissionPercentage,
+  );
+  if (maxClientDiscount !== undefined) {
+    quoteInput.maxClientDiscount = { amountMinor: maxClientDiscount, currency };
+  }
   if (securityDeposit) quoteInput.securityDeposit = securityDeposit;
   const times = readOfferTimes(offer);
   if (times.checkInTime) quoteInput.checkInTime = times.checkInTime;
@@ -461,6 +614,28 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
  */
 function customerPriceMinor(offer: RestOffer, price: number, currency: string): number {
   return numberToMinor(price, currency, `offer ${offer.yachtId} price`);
+}
+
+/**
+ * How much of the price we may give away of our own accord, in minor units, or undefined for no
+ * bound.
+ *
+ * Booking Manager states the bound per company and yacht as `maxDiscountFromCommissionPercentage`
+ * (10 on company 225, whose commission is 15; 0 on about 2,900 of 11,400 yachts account-wide).
+ * The spec gives only an example value, so it is read as a share of the commission, the smaller
+ * of the two readings its name allows, until the vendor answers Q2 in
+ * docs/vendor/booking-manager-questions-v2.md: a share of the price would allow over six times
+ * more on 225. Never more than the commission itself, past which we would sell below what we pay
+ * the operator, and a bound stated against a commission the offer did not report allows nothing.
+ */
+function maxClientDiscountOf(
+  commissionMinor: number | undefined,
+  percentage: number | undefined,
+): number | undefined {
+  if (percentage === undefined || !Number.isFinite(percentage)) return commissionMinor;
+  if (commissionMinor === undefined) return 0;
+  const share = Math.min(Math.max(percentage, 0), 100) / 100;
+  return Math.floor(commissionMinor * share);
 }
 
 /**
@@ -500,11 +675,14 @@ function commissionOf(offer: RestOffer, currency: string): ProviderQuoteCommissi
 /* ------------------------------------------------------------------- lines */
 
 /**
- * `price` is already net of `discountPercentage`; `startPrice` is what the same
- * charter costs without it. The discount is shown as its own line only when the
- * two reconcile exactly, so a customer sees where the reduction came from. When
- * they do not, `price` wins and the discount is dropped from the quote rather
- * than guessed at: it is the only number the vendor bills against.
+ * `price` is already net of `discountPercentage`; `startPrice` is what the same charter costs
+ * without it. The reduction is shown as lines of its own only where the vendor accounts for it,
+ * so a customer sees where it came from: one line per `discounts` entry, under the operator's
+ * name for it ("Early booking 2027"), where those add up to `startPrice - price`; else one
+ * unnamed line where `discountPercentage` explains it. Each check allows a cent per figure,
+ * because every figure is rounded on its own (30.000002 percent on one live offer). Where
+ * neither accounts for it, `price` wins and the discount is dropped from the quote rather than
+ * guessed at: it is the only number the vendor bills against.
  */
 function buildCharterLines(offer: RestOffer, currency: string, priceMinor: number): QuoteLine[] {
   const base = (amountMinor: number): QuoteLine => ({
@@ -514,32 +692,66 @@ function buildCharterLines(offer: RestOffer, currency: string, priceMinor: numbe
     payWhen: "now",
     kind: "base",
   });
+  const discount = (code: string, label: string, amountMinor: number): QuoteLine => ({
+    code,
+    label,
+    amount: { amountMinor: -amountMinor, currency },
+    payWhen: "now",
+    kind: "discount",
+  });
 
-  if (offer.startPrice == null || !offer.discountPercentage) {
-    return [base(priceMinor)];
-  }
-
+  if (offer.startPrice == null) return [base(priceMinor)];
   const startPriceMinor = numberToMinor(offer.startPrice, currency, "startPrice");
   const discountMinor = startPriceMinor - priceMinor;
-  if (discountMinor <= 0) {
-    return [base(priceMinor)];
+  if (discountMinor <= 0) return [base(priceMinor)];
+
+  const named = namedDiscounts(offer, currency);
+  const namedMinor = named.reduce((total, entry) => total + entry.amountMinor, 0);
+  if (named.length > 0 && Math.abs(discountMinor - namedMinor) <= named.length) {
+    const largest = named.reduce((top, entry) =>
+      entry.amountMinor > top.amountMinor ? entry : top,
+    );
+    largest.amountMinor += discountMinor - namedMinor;
+    return [
+      base(startPriceMinor),
+      ...named.map((entry) => discount(entry.code, entry.label, entry.amountMinor)),
+    ];
   }
 
-  const expected = Math.round((startPriceMinor * offer.discountPercentage) / 100);
-  if (expected !== discountMinor) {
-    return [base(priceMinor)];
+  if (offer.discountPercentage) {
+    const expected = Math.round((startPriceMinor * offer.discountPercentage) / 100);
+    if (Math.abs(expected - discountMinor) <= 1) {
+      return [
+        base(startPriceMinor),
+        discount("bm-discount", DEFAULT_LABELS.discount, discountMinor),
+      ];
+    }
   }
 
-  return [
-    base(startPriceMinor),
-    {
-      code: "bm-discount",
-      label: DEFAULT_LABELS.discount,
-      amount: { amountMinor: -discountMinor, currency },
-      payWhen: "now",
-      kind: "discount",
-    },
-  ];
+  return [base(priceMinor)];
+}
+
+interface NamedDiscount {
+  code: string;
+  label: string;
+  amountMinor: number;
+}
+
+/** The offer's itemised discounts, or none where any one of them cannot be read as a reduction. */
+function namedDiscounts(offer: RestOffer, currency: string): NamedDiscount[] {
+  const entries = offer.discounts ?? [];
+  const named: NamedDiscount[] = [];
+  for (const [index, entry] of entries.entries()) {
+    if (entry.price == null || (entry.currency && entry.currency !== currency)) return [];
+    const amountMinor = numberToMinor(entry.price, currency, "discounts[].price");
+    if (amountMinor <= 0) return [];
+    named.push({
+      code: `bm-discount-${entry.id ?? index + 1}`,
+      label: entry.name?.trim() || DEFAULT_LABELS.discount,
+      amountMinor,
+    });
+  }
+  return named;
 }
 
 /**
@@ -587,14 +799,17 @@ function toExtraLine(
         { endpoint: bookingManagerEndpoints.offers, providerCode: "PERCENTAGE_EXTRA" },
       );
     }
-    return {
-      code: formatExtraCode(EXTRA_KIND, externalId),
-      label: input.labelFor?.(externalId) ?? extra.name?.trim() ?? DEFAULT_LABELS.extra,
-      amount: { amountMinor: percentageOfCharter(offer, extra.percentage, currency), currency },
-      payWhen: extra.payableInBase ? "at_check_in" : "now",
-      kind: "extra",
-      group: "mandatory",
-    };
+    return withNote(
+      {
+        code: formatExtraCode(EXTRA_KIND, externalId),
+        label: input.labelFor?.(externalId) ?? extra.name?.trim() ?? DEFAULT_LABELS.extra,
+        amount: { amountMinor: percentageOfCharter(offer, extra.percentage, currency), currency },
+        payWhen: extra.payableInBase ? "at_check_in" : "now",
+        kind: "extra",
+        group: "mandatory",
+      },
+      extra,
+    );
   }
   if (extra.price == null) {
     throw new ContractError(
@@ -608,16 +823,29 @@ function toExtraLine(
   // live `/offers` on 2026-08-20 by re-reading one yacht at 1/2/4/6/8 passengers,
   // where a per-person extra came back at 70, 140, 280, 420, 560 while the base
   // price held. Multiplying by `guests` here would double-count the headcount.
-  return {
-    code: formatExtraCode(EXTRA_KIND, externalId),
-    label: input.labelFor?.(externalId) ?? extra.name?.trim() ?? DEFAULT_LABELS.extra,
-    amount: { amountMinor: numberToMinor(extra.price, currency, `extra ${externalId}`), currency },
-    // Settled with the base on arrival: it counts toward the total but never
-    // toward what we collect now.
-    payWhen: extra.payableInBase ? "at_check_in" : "now",
-    kind: "extra",
-    group: "mandatory",
-  };
+  return withNote(
+    {
+      code: formatExtraCode(EXTRA_KIND, externalId),
+      label: input.labelFor?.(externalId) ?? extra.name?.trim() ?? DEFAULT_LABELS.extra,
+      amount: {
+        amountMinor: numberToMinor(extra.price, currency, `extra ${externalId}`),
+        currency,
+      },
+      // Settled with the base on arrival: it counts toward the total but never
+      // toward what we collect now.
+      payWhen: extra.payableInBase ? "at_check_in" : "now",
+      kind: "extra",
+      group: "mandatory",
+    },
+    extra,
+  );
+}
+
+/** The operator's own terms for the charge, as plain text; the catalogue files the same note. */
+function withNote(line: QuoteLine, extra: RestExtras): QuoteLine {
+  const note = stripHtml(text(extra.description));
+  if (note) line.note = note;
+  return line;
 }
 
 function sumMinor(lines: readonly QuoteLine[]): number {
@@ -646,11 +874,25 @@ interface ResolvedPaymentPolicy {
  * the deposit is taken from the plan verbatim and the percentage is derived for
  * the canonical policy, never the other way round: rebuilding an amount from a
  * rounded percentage would bill a figure the vendor never asked for.
+ *
+ * A plan of three or more is collapsed on purpose into the first instalment and one balance due
+ * on the second one's date. The policy has room for a deposit and a balance only, as has
+ * everything that collects against it (schedule, reminders, Stripe), and the earliest date is
+ * the safe one: we never owe the operator an instalment we have not yet collected. The service
+ * logs each collapse, so how often it happens is measured rather than guessed.
+ *
+ * The customer's balance falls due `balanceLeadDays` before the vendor's date, not on it. The
+ * vendor's date is the day we owe the operator too: on company 225 `paymentPlan` and
+ * `agencyPaymentPlan` carried the same date, so a balance due that day leaves nothing for a late
+ * payer or a bank transfer in flight. A balance that would then fall due by the day the plan
+ * opens, or by today where that is later, is taken now, in full.
  */
 function toPaymentPolicy(
   offer: RestOffer,
   currency: string,
   payableNowMinor: number,
+  balanceLeadDays: number,
+  today: string | undefined,
 ): ResolvedPaymentPolicy {
   const plan = (offer.paymentPlan ?? []).filter((entry) => entry.amount != null);
   const [first, second] = plan;
@@ -680,8 +922,29 @@ function toPaymentPolicy(
     mode: "deposit",
     depositPct: depositMinor / planTotalMinor,
   };
-  if (second?.date) policy.balanceDueAt = parseBookingManagerDate(second.date);
+  if (second?.date) {
+    const balanceDueAt = daysBefore(parseBookingManagerDate(second.date), balanceLeadDays);
+    const opensOn = latestDate(first.date ? parseBookingManagerDate(first.date) : undefined, today);
+    if (opensOn !== undefined && balanceDueAt <= opensOn) {
+      return { policy: { mode: "full", depositPct: 1 }, depositMinor: payableNowMinor };
+    }
+    policy.balanceDueAt = balanceDueAt;
+  }
   return { policy, depositMinor };
+}
+
+function latestDate(...dates: (string | undefined)[]): string | undefined {
+  return dates.reduce<string | undefined>(
+    (latest, date) =>
+      date !== undefined && (latest === undefined || date > latest) ? date : latest,
+    undefined,
+  );
+}
+
+function daysBefore(date: string, days: number): string {
+  const at = new Date(`${date}T00:00:00Z`);
+  at.setUTCDate(at.getUTCDate() - days);
+  return at.toISOString().slice(0, 10);
 }
 
 /**

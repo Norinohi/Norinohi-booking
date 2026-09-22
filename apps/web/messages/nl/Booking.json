@@ -4,6 +4,8 @@
     "title": "Boekingsoverzicht",
     "yacht": "Jacht",
     "dates": "Data",
+    "route": "Route",
+    "oneWay": "enkele reis",
     "crew": "Bemanning",
     "people": "Personen",
     "extras": "Extra's",
@@ -25,7 +27,8 @@
     "dueNow": "Nu te betalen",
     "terms": "Ik ga akkoord met de <link>Algemene voorwaarden en de huurovereenkomst</link>.",
     "cancellation": "Ik accepteer het <link>Annuleringsbeleid</link>.",
-    "operatorTerms": "Voorwaarden van de operator, inclusief het annuleringsbeleid"
+    "operatorTerms": "Voorwaarden van de operator, inclusief het annuleringsbeleid",
+    "returnNote": "Terugbrengen jacht"
   },
   "extras": {
     "mandatory": "Verplicht",
@@ -156,6 +159,7 @@
     "summary": {
       "yacht": "Jacht",
       "dates": "Data",
+      "route": "Route",
       "crew": "Bemanning",
       "mandatory": "Verplicht",
       "selectedExtras": "Gekozen extra's",
@@ -337,6 +341,7 @@
     "guestsLabel": "Gasten",
     "crew": "Bemanning",
     "marina": "Jachthaven",
+    "route": "Route",
     "referenceLabel": "Referentie",
     "settled": "Niets meer te betalen",
     "viewYacht": "Jachtpagina bekijken",
@@ -354,8 +359,7 @@
     "crewList": {
       "title": "Bemanningslijst",
       "notice": "Het charterbedrijf moet de autoriteiten een lijst geven van iedereen aan boord voordat je vertrekt. Vul die hier in en wij sturen hem door - wat ontbreekt, vraagt de basis bij aankomst aan de balie.",
-      "alsoAsked": "Er wordt ook gevraagd naar {fields}, wat de basis bij aankomst aan de balie verzamelt.",
-      "maxPassengers": "De lijst bevat maximaal {count} personen.",
+      "maxPassengers": "De lijst bevat maximaal {count, plural, one {# persoon} other {# personen}}.",
       "loading": "Je bemanningslijst wordt geladen…",
       "empty": "Nog niemand toegevoegd. Je boeking is voor {guests} gasten - voeg iedereen toe die aan boord gaat, ook de schipper.",
       "member": "Bemanningslid {number}",
@@ -376,11 +380,8 @@
         "firstName": "Voer de voornaam van deze persoon in",
         "lastName": "Voer de achternaam van deze persoon in",
         "skipperEmail": "Voer een geldig e-mailadres in",
-        "oneSkipper": "Er kan maar één persoon schipper zijn"
-      },
-      "requires": {
-        "shoeSize": "schoenmaten",
-        "disabledPerson": "of iemand aan boord een beperking heeft"
+        "oneSkipper": "Er kan maar één persoon schipper zijn",
+        "maxPassengers": "De lijst van deze charteraar bevat hoogstens {count, plural, one {# persoon} other {# personen}}"
       },
       "legend": "Velden met * zijn verplicht voor dit charterbedrijf.",
       "sent": "Op {when} naar het charterbedrijf verstuurd.",
@@ -407,7 +408,7 @@
       "skipperEmail": "E-mailadres van de schipper",
       "skipperMobile": "Telefoonnummer van de schipper",
       "note": "Wat de basis moet weten",
-      "notePlaceholder": "Aankomsttijd, vluchtnummer, iemand die hulp nodig heeft…",
+      "notePlaceholder": "Iemand die hulp nodig heeft, een late aankomst, alles waar de basis rekening mee moet houden…",
       "documents": {
         "passport": "Paspoort",
         "idCard": "Identiteitskaart",
@@ -418,7 +419,14 @@
         "female": "Vrouw"
       },
       "placeSearch": "Plaatsen zoeken",
-      "placeEmpty": "Geen plaats met die naam"
+      "placeEmpty": "Geen plaats met die naam",
+      "shoeSize": "Schoenmaat",
+      "shoeSizePlaceholder": "EU 42",
+      "disabledPerson": "Deze persoon heeft hulp aan boord nodig",
+      "flightNumber": "Vluchtnummer",
+      "flightNumberPlaceholder": "OU 412",
+      "arrivalTime": "Aankomsttijd",
+      "airportTransfer": "We willen graag een transfer van het vliegveld naar de basis"
     },
     "priceLineLabels": {
       "charterPrice": "Charterprijs",

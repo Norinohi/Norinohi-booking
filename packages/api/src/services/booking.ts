@@ -22,7 +22,7 @@ import {
   type FacetTranslator,
 } from "@yacht-charter/db/search";
 import type { InventoryProvider } from "@yacht-charter/providers";
-import { parseError } from "evlog";
+import { log, parseError } from "evlog";
 import { and, count, desc, eq, gte, inArray, lte, notInArray, sql } from "drizzle-orm";
 import type { z } from "zod";
 
@@ -49,6 +49,7 @@ import {
   type BookingStatus,
 } from "./booking-state";
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
+import { oneWayRouteOf } from "../lib/one-way-route";
 import { appendRequestedExtras } from "./requested-extras";
 import { notifyBookingCancelled } from "./booking-email";
 import { type AuditEntry, writeAuditLog } from "./audit";
@@ -57,6 +58,7 @@ import { amountDue, atCheckInMinor, outstandingMinor, payableNowFor } from "./ch
 import { enqueueOutbox, kickOutbox } from "./outbox";
 import { redeemDiscount } from "./discount-redemption";
 import { redeemCredit } from "./loyalty";
+import { operatorDueBeforeCustomer, payableNowMinor } from "./pricing";
 import { paginatedQuery, totalFrom } from "./pagination";
 import { recordEvent, releaseProviderOption, type ProviderRelease } from "./provider-option";
 import { isUniqueViolation, violatedConstraint } from "./pg-errors";
@@ -197,6 +199,7 @@ export async function getBooking(
     cancelledAt: row.booking.cancelledAt?.toISOString() ?? null,
     cancelReason: row.booking.cancelReason,
     crewType: row.quote.crewType,
+    oneWayRoute: oneWayRouteOf(row.quote),
     priceLines: lines.map((line) => ({
       code: line.code,
       label: line.label,
@@ -410,7 +413,14 @@ export async function createHold(
    * throws out of holdOption, which is also the right moment to send nothing: there is no
    * hold to write to them about.
    */
-  const held = await holdOption(db, provider, created, priced, account, redeem);
+  const held = await holdOption(
+    db,
+    provider,
+    created,
+    priced,
+    { ...account, ...(guest.locale ? { language: guest.locale } : null) },
+    redeem,
+  );
   await announce(held);
   kickOutbox(db);
 
@@ -529,6 +539,7 @@ async function copyQuoteExtras(
       bookingId,
       code: line.code,
       label: line.label,
+      detail: line.detail ?? null,
       // Mirrors pricedItemSchema in contracts/catalog.ts, which is what the
       // listing page uses for the same items.
       pricingType:
@@ -549,7 +560,7 @@ async function holdOption(
   provider: InventoryProvider,
   created: BookingRow,
   priced: typeof quote.$inferSelect,
-  account: { name: string; email: string },
+  account: { name: string; email: string; language?: string },
   redeem: () => Promise<void>,
 ): Promise<BookingRow> {
   const pending = await transition(db, created, "OPTION_PENDING");
@@ -571,6 +582,9 @@ async function holdOption(
       // which is what makes the two observations comparable.
       currency: priced.currency,
       priceSourceHash: priced.priceSourceHash,
+      ...(priced.clientDiscountMinor > 0
+        ? { clientDiscount: { amountMinor: priced.clientDiscountMinor, currency: priced.currency } }
+        : null),
       // The base pair the price was for, which is not always the listing's own.
       route: priced.route,
       customer: {
@@ -578,6 +592,7 @@ async function holdOption(
         email: account.email,
         phone: created.guestPhone ?? undefined,
         countryCode: created.guestCountryCode ?? undefined,
+        ...(account.language ? { language: account.language } : null),
       },
     };
 
@@ -596,6 +611,8 @@ async function holdOption(
         providerStatus: reservation.status,
         holdExpiresAt: reservation.holdExpiresAt ? new Date(reservation.holdExpiresAt) : null,
         crewListLink: reservation.crewListLink ?? null,
+        providerAgencyReservationId: reservation.providerAgencyReservationId ?? null,
+        operatorSettlement: reservation.operatorSettlement ?? null,
         commercialSnapshot: withHandoverTimes(pending.commercialSnapshot, reservation),
       });
     } catch (error) {
@@ -616,6 +633,26 @@ async function holdOption(
     await recordEvent(db, held.id, "option_created", held.provider, reservation.providerOptionId, {
       reservation,
     });
+
+    /* The operator's own plan arrives only now, with the option; a customer schedule that
+       leaves us paying first is ours to cover, so it is said out loud rather than found later. */
+    if (reservation.operatorSettlement) {
+      const exposedOn = operatorDueBeforeCustomer(
+        priced.paymentPolicy,
+        priced.depositMinor,
+        payableNowMinor(priced.lines),
+        reservation.operatorSettlement,
+      );
+      if (exposedOn) {
+        log.warn({
+          action: "booking.operator_due_before_customer",
+          bookingId: held.id,
+          provider: held.provider,
+          operatorDueOn: exposedOn,
+          balanceDueAt: priced.paymentPolicy.balanceDueAt ?? null,
+        });
+      }
+    }
 
     // Only now that the slot is ours.
     await redeem();
@@ -1050,7 +1087,11 @@ async function buildSnapshot(db: Database, listingId: string): Promise<Commercia
   if (!doc) throw new NotFoundError({ message: "Unknown listing" });
 
   const [baseRow] = await db
-    .select({ checkInTime: base.checkInTime, checkOutTime: base.checkOutTime })
+    .select({
+      checkInTime: base.checkInTime,
+      checkOutTime: base.checkOutTime,
+      address: base.address,
+    })
     .from(base)
     .where(eq(base.id, doc.baseId))
     .limit(1);
@@ -1073,6 +1114,7 @@ async function buildSnapshot(db: Database, listingId: string): Promise<Commercia
     baseEmail: doc.baseEmail,
     basePhone: doc.basePhone,
     baseWebsite: doc.baseWebsite,
+    baseAddress: baseRow?.address ?? null,
     depositInsuranceIncluded: doc.depositInsuranceIncluded,
     petsAllowed: doc.petsAllowed,
     specs: {
@@ -1182,7 +1224,12 @@ function presentSummary(
       name: snapshot.baseName,
       locationName: snapshot.locationName,
       countryName: snapshot.countryName,
-      address: placeLine(snapshot.baseName, snapshot.locationName, snapshot.countryName),
+      address: placeLine(
+        snapshot.baseName,
+        snapshot.baseAddress,
+        snapshot.locationName,
+        snapshot.countryName,
+      ),
       coordinates: { lat: snapshot.baseLat ?? 0, lng: snapshot.baseLng ?? 0 },
       timeZone: BASE_TIME_ZONE,
       phone: snapshot.basePhone ?? null,

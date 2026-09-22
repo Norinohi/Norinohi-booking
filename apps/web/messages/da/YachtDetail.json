@@ -132,6 +132,8 @@
     "onRequest": "Prisen på denne båd er på forespørgsel",
     "onRequestHint": "Vi har datoer til den, men ingen offentliggjort takst dækker dem. Fortæl os, hvornår du gerne vil sejle, så vender vi tilbage med en pris.",
     "dropOff": "Marina for aflevering",
+    "oneWayRoute": "Envejsrute",
+    "oneWayNote": "Båden afleveres i en anden marina, end den hentes i.",
     "pickUp": "Afhentning: {marina}",
     "boatPriceHintDiscounted": "Lejepris efter rabat",
     "depositWhenInsured": "eller {amount} med selvrisikodækning"

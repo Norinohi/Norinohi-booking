@@ -74,7 +74,11 @@ export default function ImportantInfoSection() {
     /* The live offer's handover over the base's, as the sidebar reads it: NauSYS bases say
        16:00/09:00 where the operator's offer for the same charter says 17:00/08:00. */
     { key: "pickUp", value: quote?.checkInTime ?? info.yachtPickup.time ?? "" },
-    { key: "dropOff", value: quote?.checkOutTime ?? info.yachtDropOff.time ?? "" },
+    {
+      key: "dropOff",
+      value: quote?.checkOutTime ?? info.yachtDropOff.time ?? "",
+      note: info.yachtDropOff.returnNote ?? undefined,
+    },
     { key: "policies", value: tInfo(POLICY_KEY[info.cancellationPaymentPolicies]) },
     ...(deposit
       ? [

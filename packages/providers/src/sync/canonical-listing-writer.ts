@@ -38,6 +38,9 @@ type OfferRow = {
   title: string | null;
   operatorId: string | null;
   homeBaseId: string | null;
+  /* Rides with `homeBaseId`: the handover belongs to the base the winner sails from. */
+  checkInTime: string | null;
+  checkOutTime: string | null;
   builderId: string | null;
   modelId: string | null;
   categoryId: string | null;
@@ -65,6 +68,7 @@ type SpecRow = {
   yearBuilt: number | null;
   cabins: number | null;
   berths: number | null;
+  maxPersons: number | null;
   heads: number | null;
   showers: number | null;
   engines: number | null;
@@ -84,6 +88,7 @@ const SPEC_COLUMNS: readonly (keyof SpecRow)[] = [
   "yearBuilt",
   "cabins",
   "berths",
+  "maxPersons",
   "heads",
   "showers",
   "engines",
@@ -155,6 +160,8 @@ export async function resolveCanonicalListings(
         title: title.title ?? "",
         operatorId: operator.operatorId,
         homeBaseId: base.homeBaseId,
+        checkInTime: base.checkInTime,
+        checkOutTime: base.checkOutTime,
         builderId: taxonomy?.builderId ?? null,
         modelId: taxonomy?.modelId ?? null,
         categoryId: taxonomy?.categoryId ?? null,
@@ -203,6 +210,8 @@ async function loadOffers(db: Database, listingIds: readonly string[]): Promise<
       title: listingOffer.title,
       operatorId: listingOffer.operatorId,
       homeBaseId: listingOffer.homeBaseId,
+      checkInTime: listingOffer.checkInTime,
+      checkOutTime: listingOffer.checkOutTime,
       builderId: listingOffer.builderId,
       modelId: listingOffer.modelId,
       categoryId: listingOffer.categoryId,
@@ -232,6 +241,7 @@ async function loadOffers(db: Database, listingIds: readonly string[]): Promise<
         yearBuilt: listingOfferSpecification.yearBuilt,
         cabins: listingOfferSpecification.cabins,
         berths: listingOfferSpecification.berths,
+        maxPersons: listingOfferSpecification.maxPersons,
         heads: listingOfferSpecification.heads,
         showers: listingOfferSpecification.showers,
         engines: listingOfferSpecification.engines,
@@ -348,6 +358,8 @@ async function writeListings(
           title: sql`excluded.title`,
           operatorId: sql`excluded.operator_id`,
           homeBaseId: sql`excluded.home_base_id`,
+          checkInTime: sql`excluded.check_in_time`,
+          checkOutTime: sql`excluded.check_out_time`,
           builderId: sql`excluded.builder_id`,
           modelId: sql`excluded.model_id`,
           categoryId: sql`excluded.category_id`,

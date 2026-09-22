@@ -130,6 +130,16 @@ export const quoteRequestSchema = z.object({
    * and lands the customer in a different town, so it has to be something they chose.
    */
   endBaseId: z.string().optional(),
+  /**
+   * Provider-side base the charter was quoted from, pinned so a re-price answers the same
+   * charter. A week can be sold from two bases, and a drop-off asked for alone matches both a
+   * one-way from the quoted start and a round trip from the other base, which the ranking
+   * prefers: the customer asked to finish elsewhere and was re-quoted a pickup they never chose.
+   *
+   * Omitted leaves the start to the adapter, which is right only while nothing about the
+   * charter has been chosen yet.
+   */
+  startBaseId: z.string().optional(),
   currency: z.string().length(3).default("EUR"),
 });
 
@@ -177,6 +187,18 @@ export const providerQuoteSchema = z.object({
        * extras the offer would not price, at the catalogue rate.
        */
       group: z.enum(["mandatory", "optional", "crew", "requested"]).optional(),
+      /**
+       * Which of an extra's variants this line is, in the operator's words, where the offer
+       * sells it as several. `label` already ends with it, so a reader that shows only the label
+       * still names the variant; this is kept apart so a translated label can be given it back.
+       */
+      detail: z.string().optional(),
+      /**
+       * The operator's own terms for this charge, where it wrote any: "Applies only when
+       * skipper is chosen", "includes final cleaning, gas, bed linen". Fine print for the
+       * customer, never used to price anything.
+       */
+      note: z.string().optional(),
     }),
   ),
   total: moneySchema,
@@ -213,6 +235,10 @@ export const providerQuoteSchema = z.object({
    *
    * Null means "the offer does not report it", never "none": a provider that
    * publishes no per-period extras must not have its whole list greyed out.
+   *
+   * `variants` is set where the offer sells the extra as several alternatives, a transfer by
+   * route and vehicle, say. Those are chosen by their own codes, the plain code prices nothing,
+   * and `amount` is then the cheapest of them.
    */
   offeredExtras: z
     .array(
@@ -220,6 +246,19 @@ export const providerQuoteSchema = z.object({
         code: z.string(),
         amount: moneySchema,
         payWhen: z.enum(["now", "at_check_in"]),
+        /** The operator's terms for an extra it sells once; see `note` on a line. */
+        note: z.string().optional(),
+        variants: z
+          .array(
+            z.object({
+              code: z.string(),
+              /** The operator's description of the variant; null where it wrote none. */
+              detail: z.string().nullable(),
+              amount: moneySchema,
+              payWhen: z.enum(["now", "at_check_in"]),
+            }),
+          )
+          .optional(),
       }),
     )
     .nullable()
@@ -279,6 +318,13 @@ export const providerQuoteSchema = z.object({
       pct: z.number().nonnegative().max(100).optional(),
     })
     .optional(),
+  /**
+   * The most we may take off this charter's price of our own accord, where the provider bounds
+   * it. As internal as `commission`, which it is carved out of: NauSYS lets an agency discount
+   * a client only out of its commission, up to `maxDiscountFromCommission`, a share of the
+   * client price or of the commission as `agencyDiscountType` says. Absent means unbounded.
+   */
+  maxClientDiscount: moneySchema.optional(),
   priceSourceHash: z.string(),
   expiresAt: z.string(),
   repriced: z.boolean(),
@@ -353,7 +399,15 @@ export const bookingDraftSchema = z.object({
     zip: z.string().optional(),
     city: z.string().optional(),
     countryCode: z.string().optional(),
+    /** BCP 47, the site language they booked in. */
+    language: z.string().optional(),
   }),
+  /**
+   * What we took off the provider's price for this client, where anything. NauSYS records it
+   * on the reservation as the agency's client discount, so the operator's copy shows the price
+   * the client actually pays.
+   */
+  clientDiscount: moneySchema.optional(),
   /** Carried from the option step: confirming needs the handle it produced. */
   reservation: z
     .object({
@@ -379,7 +433,7 @@ export type BookingDraft = z.infer<typeof bookingDraftSchema>;
  * How many people are already queued for a boat the operator has sold out of, and where in the
  * line they are.
  *
- * Read-only on our side, on purpose. NauSYS will also *join* the queue -- `createInfo` takes a
+ * Read-only on our side, on purpose. NauSYS will also *join* the queue -- `createOption` takes a
  * `fallbackToWaitingOption` that files a waiting option instead of failing when the week is
  * gone -- and that is a product decision nobody has taken: what the customer is promised, what
  * we do when the boat frees up, and whether money moves. This answers the question support is
@@ -394,11 +448,23 @@ export interface WaitingOptions {
 
 export const providerReservationStateSchema = z.object({
   providerReservationId: z.string(),
-  status: z.enum(["option_held", "confirmed", "cancelled"]),
+  /**
+   * `unrecognised` is a record the vendor still keeps under our id in a status that is none of
+   * ours (a Booking Manager service week, an owner's week, a waiting option): not something to
+   * guess a meaning for, and not something to drop either, so the pass reports it.
+   */
+  status: z.enum(["option_held", "confirmed", "cancelled", "unrecognised"]),
   /** Rotates on every write, so the vendor's copy is newer than ours by definition. */
   securityToken: z.string().optional(),
   /** The vendor's own word for the status, kept for the operator reading the report. */
   providerStatus: z.string(),
+  /**
+   * A hold that ran out at the vendor rather than one anybody cancelled; `status` is then
+   * `cancelled`. Booking Manager goes on blocking the week until the record is deleted.
+   */
+  lapsed: z.boolean().optional(),
+  /** The vendor's yacht, which an operator can swap under a booking. */
+  externalYachtId: z.string().optional(),
   checkIn: z.string().optional(),
   checkOut: z.string().optional(),
   priceMinor: z.number().int().optional(),
@@ -408,6 +474,20 @@ export const providerReservationStateSchema = z.object({
 });
 export type ProviderReservationState = z.infer<typeof providerReservationStateSchema>;
 
+/**
+ * What we owe the operator for a reservation, as the vendor states it: the net after our
+ * commission and the dates it falls due. Commercially sensitive, since it gives away our margin,
+ * so it is for staff and never for a customer-facing surface.
+ */
+export const operatorSettlementSchema = z.object({
+  currency: z.string().length(3),
+  netMinor: z.number().int().optional(),
+  plan: z.array(z.object({ dueDate: z.iso.date(), amountMinor: z.number().int() })),
+  /** The operator's own payment terms as written ("50% after booking ..."). */
+  terms: z.string().optional(),
+});
+export type OperatorSettlement = z.infer<typeof operatorSettlementSchema>;
+
 export const providerReservationSchema = z.object({
   id: z.string(),
   provider: providerKeySchema,
@@ -416,6 +496,13 @@ export const providerReservationSchema = z.object({
   status: z.enum(["option_held", "confirmed", "cancelled"]),
   providerReservationId: z.string().optional(),
   providerOptionId: z.string().optional(),
+  /**
+   * The vendor's other id for the same reservation, where it keeps two. Booking Manager files
+   * every reservation as a charter-side record, whose id POST answers with and we key on, and an
+   * agency-side twin, whose id its lists and `showOptions` carry; this is the twin's.
+   */
+  providerAgencyReservationId: z.string().optional(),
+  operatorSettlement: operatorSettlementSchema.optional(),
   /**
    * Rotating per-reservation security token (the NauSYS `uuid`). It changes
    * whenever important reservation data changes, so the caller must persist the
@@ -450,6 +537,20 @@ export type ProviderReservationRef = z.infer<typeof providerReservationRefSchema
 export const providerExtrasMutationSchema = z.object({
   ref: providerReservationRefSchema,
   extras: z.array(z.string()),
+  /**
+   * The charter the reservation is for. NauSYS reads the listing from it to know which lines
+   * are crew, which an extras edit leaves to the crew type.
+   */
+  charter: z
+    .object({
+      listingId: z.string(),
+      checkIn: z.iso.date(),
+      checkOut: z.iso.date(),
+      guests: z.number().int().positive(),
+      crewType: crewTypeSchema.optional(),
+      currency: z.string().length(3).optional(),
+    })
+    .optional(),
 });
 export type ProviderExtrasMutation = z.infer<typeof providerExtrasMutationSchema>;
 
@@ -512,6 +613,12 @@ export const providerCapabilitiesSchema = z.object({
    * adding one means implementing that branch, not just the adapter.
    */
   optionExpiryOwnedByProvider: z.boolean(),
+  /**
+   * Whether an option past its deadline still keeps the period off sale until it is released.
+   * Booking Manager's does (status 3, "Option expired"); NauSYS drops its own. Absent means the
+   * lapse frees the period.
+   */
+  lapsedOptionHoldsSlot: z.boolean().optional(),
   supportsExtrasMutation: z.boolean(),
   supportsLiveQuote: z.boolean(),
   /** Shortest hold the provider grants, when it owns the expiry. */
@@ -569,6 +676,7 @@ const canonicalBaseSchema = z.object({
   email: z.string().optional(),
   phone: z.string().optional(),
   website: z.string().optional(),
+  address: z.string().optional(),
   checkInTime: z.string().optional(),
   checkOutTime: z.string().optional(),
 });
@@ -587,6 +695,8 @@ const canonicalOperatorSchema = z.object({
    * Booking Manager publishes one for 45% of companies, NauSYS for none.
    */
   termsAndConditions: z.string().optional(),
+  /** How to bring the boat back, where the operator states it for its whole fleet. */
+  checkoutNote: z.string().optional(),
 });
 
 const canonicalBuilderSchema = z.object({
@@ -673,6 +783,10 @@ export const crewListMemberSchema = z.object({
   vhfLicence: z.string().optional(),
   skipperEmail: z.string().optional(),
   skipperMobile: z.string().optional(),
+  /** Needs assistance aboard; the base plans boarding around it. */
+  disabledPerson: z.boolean().optional(),
+  /** Free text, as the vendor takes it: operators that lend deck shoes ask for it. */
+  shoeSize: z.string().optional(),
   /**
    * When this person is aboard, ISO `yyyy-mm-dd`. Not asked of the customer: an operator that
    * requires them means the charter dates, which the booking already knows, and a passenger
@@ -687,6 +801,18 @@ export const crewListSubmissionSchema = z.object({
   ref: providerReservationRefSchema,
   members: z.array(crewListMemberSchema).max(50),
   note: z.string().optional(),
+  /** How the party reaches the base. The base acts on the transfer request. */
+  trip: z
+    .object({
+      flightNumber: z.string().optional(),
+      /** `HH:mm`, local to the base. */
+      arrivalTime: z
+        .string()
+        .regex(/^\d{2}:\d{2}$/)
+        .optional(),
+      airportTransfer: z.boolean().optional(),
+    })
+    .optional(),
 });
 export type CrewListSubmission = z.infer<typeof crewListSubmissionSchema>;
 
@@ -704,6 +830,22 @@ export type CrewListSubmission = z.infer<typeof crewListSubmissionSchema>;
 export interface CrewPlace {
   name: string;
   label: string;
+}
+
+/**
+ * An invoice the vendor issued in our name, as it states it. Amounts in `currency`, minor units.
+ * See `listInvoices` on the provider.
+ */
+export interface ProviderInvoice {
+  number: string;
+  /** ISO date. */
+  issuedOn: string;
+  providerReservationId?: string;
+  currency: string;
+  totalMinor: number;
+  netMinor: number;
+  documentUrl?: string;
+  lines: { code: string; label: string; netMinor: number; vatRate?: number }[];
 }
 
 export interface CrewListReceipt {
@@ -734,6 +876,8 @@ export const canonicalExtraSchema = z.object({
   percentage: z.number().positive().optional(),
   /** What the rate applies to, in the vendor's own words: PRICELIST_PRICE, CLIENT_PRICE, ... */
   percentageBasis: z.string().optional(),
+  /** The operator's own terms for the extra, where it wrote any. Fine print, never priced. */
+  note: z.string().optional(),
   /**
    * Whether the operator collects this at the base rather than in the prepayment. Left unset
    * where the provider says nothing, which is not the same as false: claiming a fee is due on
@@ -766,6 +910,27 @@ export const canonicalExtraSchema = z.object({
    * one, and applying them everywhere put fees on cards no charter from that base pays.
    */
   validForBaseIds: z.array(z.string()).optional(),
+  /**
+   * The start and end bases a charter must sail between for this price to apply, by the
+   * provider's own base ids, where it pairs them. Absent means every route. A pair with the
+   * same base at both ends is a return charter from there, so a fee restricted this way is not
+   * a one-way fee unless no pair returns: Booking Manager files "APA 25%" and "VAT - Greece
+   * 6.5%" as a return from the home base, and reading any pair as one-way hid them.
+   */
+  validRoutes: z.array(z.object({ from: z.string(), to: z.string() })).optional(),
+  /**
+   * The provider's ids, in this extra's own id space, of the extras this one bundles. Company
+   * 225's optional Charter Pack (250 EUR) contains Bed linen and Cleaning while Cleaning is also
+   * obligatory on its own, so a customer who adds the pack has already paid for part of it.
+   */
+  includedExternalIds: z.array(z.string()).optional(),
+  /**
+   * How many of this extra one charter may book, where the provider caps it; absent means no
+   * cap. Booking Manager's `quantityLimit`, `-1` for unlimited on nearly every row.
+   */
+  quantityLimit: z.number().int().nonnegative().optional(),
+  /** Whether the customer picks a quantity rather than taking the extra once. */
+  quantitySelectable: z.boolean().optional(),
   /**
    * A floor the provider sets under a computed total, in minor units. Only meaningful beside a
    * percentage: a 3% fee with a 50 EUR minimum is 50 EUR on a small charter, not 30.
@@ -823,15 +988,32 @@ const canonicalListingSchema = z.object({
      * than none.
      */
     showers: z.number().int().optional(),
+    /**
+     * The most people the boat may legally carry, where the vendor states it. Not `berths`:
+     * NauSYS registers 297 hulls for fewer people than they sleep (13 berths, 12 persons), and
+     * selling one to a party of 13 is a request the operator cannot accept.
+     */
+    maxPersons: z.number().int().positive().optional(),
     yearBuilt: z.number().int(),
     engines: z.number().int().optional(),
+    /** Per engine, with its unit: "45 hp". */
+    enginePower: z.string().optional(),
+    fuelType: z.string().optional(),
+    propulsionType: z.string().optional(),
     fuelCapacity: z.number().int().optional(),
     waterCapacity: z.number().int().optional(),
     /** Rig, resolved against the provider's own reference list rather than left as an id. */
     sailType: z.string().optional(),
+    /** "wheel", "twin wheel", "tiller" or "joystick". */
+    steeringType: z.string().optional(),
   }),
   /** How the boat is sold. Backs the Crew filter, so it is left unset rather than guessed. */
   crewType: crewTypeSchema.optional(),
+  /**
+   * Whether a customer sailing the boat themselves needs a licence to. Unset where the vendor
+   * does not say; `false` is a vendor stating it does not.
+   */
+  skipperLicenceRequired: z.boolean().optional(),
   media: z.array(
     z.object({
       externalUrl: z.string(),
@@ -844,7 +1026,7 @@ const canonicalListingSchema = z.object({
   extras: z.array(canonicalExtraSchema).default([]),
   texts: z.array(
     z.object({
-      kind: z.enum(["description", "notes", "conditions", "one_way_note"]),
+      kind: z.enum(["description", "notes", "conditions", "one_way_note", "return_note"]),
       locale: z.string(),
       value: z.string(),
     }),
@@ -885,6 +1067,13 @@ const canonicalListingSchema = z.object({
   /** A walkthrough the operator filmed, and a 360 tour of the same boat. Both are links. */
   videoUrl: z.url().optional(),
   tourUrl: z.url().optional(),
+  /**
+   * This boat's own handover, `HH:mm`. Not the base's: a base row is shared by every operator
+   * at the marina and keeps whichever wrote last, which put another operator's times on 3,158
+   * NauSYS listings.
+   */
+  checkInTime: z.string().optional(),
+  checkOutTime: z.string().optional(),
   securityDepositMinor: z.number().int().optional(),
   /**
    * What the deposit falls to when the charter carries deposit insurance. Absent unless the

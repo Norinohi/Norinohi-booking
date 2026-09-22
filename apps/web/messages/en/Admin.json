@@ -1118,6 +1118,8 @@
     "guestAccount": "Guest account",
     "guests": "{count, plural, one {# guest} other {# guests}}",
     "noReservationId": "No reservation id yet",
+    "agencyReservationId": "Agency id {id}",
+    "operatorDue": "{amount} by {date}",
     "outstanding": "{amount} outstanding",
     "dueAtCheckIn": "{amount} due at the marina",
     "createdAt": "Created {at}",
@@ -1132,7 +1134,8 @@
       "total": "Total",
       "collected": "Collected",
       "timeline": "Timeline",
-      "commission": "Commission"
+      "commission": "Commission",
+      "operatorSettlement": "Owed to the operator"
     },
     "invoice": {
       "title": "Invoice request",

@@ -87,6 +87,8 @@ const pricedItemSchema = includedItemSchema.extend({
    * translate, and stating the wrong unit is what this exists to stop.
    */
   priceMeasure: z.string().nullable(),
+  /** The operator's own terms for the extra, from the catalogue; null where it wrote none. */
+  note: z.string().nullable(),
   /** A share of the charter rather than an amount: 0.35 is 35%. Null on the ordinary ones. */
   percentage: z.number().nullable(),
   /** Where the fee is collected; null where the provider said nothing, so the page says nothing. */
@@ -399,7 +401,8 @@ export const listingDetailSchema = listingSummarySchema.extend({
     yachtPickupAddress: z.string(),
     /* Times only: a listing page has no charter, so it has no pickup date to state. */
     yachtPickup: z.object({ time: z.string().nullable() }),
-    yachtDropOff: z.object({ time: z.string().nullable() }),
+    /* `returnNote` is the operator's own words, "Return on the evening before is obligatory!". */
+    yachtDropOff: z.object({ time: z.string().nullable(), returnNote: z.string().nullable() }),
     /* Which sentence applies, not the sentence: the copy is in the web app's message files. */
     cancellationPaymentPolicies: z.literal("varies_by_selection"),
     sailingLicenseRequired: z.enum(["required", "not_required"]),

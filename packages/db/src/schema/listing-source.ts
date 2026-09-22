@@ -120,8 +120,8 @@ export const providerExtraCatalogue = pgTable(
     validNightsFrom: integer("valid_nights_from"),
     validNightsTo: integer("valid_nights_to"),
     /**
-     * Charged only where the charter ends at a different base than it started. Booking Manager
-     * states it as `validForBases`, a from/to base pairing that only a one-way fee carries.
+     * Charged only where the charter ends at a different base than it started: Booking Manager
+     * restricts the fee to routes and none of them returns. See `validRoutes`.
      */
     oneWayOnly: boolean("one_way_only").default(false).notNull(),
     /**
@@ -130,6 +130,27 @@ export const providerExtraCatalogue = pgTable(
      * unconditional put fees on cards that no charter from that base is charged.
      */
     validForBaseIds: text("valid_for_base_ids").array(),
+    /**
+     * The routes this price applies to, as `from>to` pairs of the provider's own base ids, null
+     * meaning every route. Booking Manager restricts about 20,000 extras this way, and a pair
+     * with one base at both ends is a return from there: its "APA 25%" and "Skipper obligatory"
+     * are filed as a return from the home base, not as one-way fees.
+     */
+    validRoutes: text("valid_routes").array(),
+    /**
+     * The extras this one bundles, by `external_id` in the same `kind`. Booking Manager's
+     * `includedExtras`, which no spec documents: an optional charter pack that contains a
+     * cleaning fee the charter already pays, so the pack only adds what is not paid already.
+     */
+    includedExternalIds: text("included_external_ids").array(),
+    /**
+     * How many of this extra one charter may book, null for no cap, and whether the customer
+     * picks the quantity. Booking Manager's `quantityLimit` and `quantityIsSelectable` (API
+     * 2.2.2); nothing here books more than one of anything yet, so they are kept for the
+     * checkout that will.
+     */
+    quantityLimit: integer("quantity_limit"),
+    quantitySelectable: boolean("quantity_selectable"),
     /**
      * A floor under a computed total, in minor units. Only meaningful beside `percentage`: a
      * 3% fee with a 50 EUR minimum is 50 EUR on a small charter, not 30.
@@ -141,6 +162,12 @@ export const providerExtraCatalogue = pgTable(
      */
     minimumPriceMinor: integer("minimum_price_minor"),
     onRequestOnly: boolean("on_request_only").default(false).notNull(),
+    /**
+     * The operator's own terms for this extra, in the catalogue: a service's `description`, an
+     * equipment row's `condition` ("+ 200 EUR refundable deposit"). The only place additional
+     * equipment states them, since it never reaches the offer.
+     */
+    note: text("note"),
     /**
      * Buying this lowers the security deposit rather than adding anything to the charter, so
      * the quote answers with the operator's reduced figure instead of the ordinary one.

@@ -1,0 +1,1 @@
+ALTER TABLE "quote" ADD COLUMN "client_discount_minor" integer DEFAULT 0 NOT NULL;

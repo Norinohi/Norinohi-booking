@@ -9,6 +9,14 @@ describe("amenityGroupFor", () => {
     expect(amenityGroupFor("Lazy jack", ["Sails"])).toBe("deck-and-cockpit");
   });
 
+  it("files Booking Manager's operator-named categories", () => {
+    expect(amenityGroupFor("Radar", ["Instruments"])).toBe("navigation-and-safety");
+    expect(amenityGroupFor("Generator", ["Electrical systems"])).toBe("systems-and-power");
+    expect(amenityGroupFor("Bimini", ["On-Deck"])).toBe("deck-and-cockpit");
+    expect(amenityGroupFor("TV", ["Audio / Visuals"])).toBe("entertainment-and-water-toys");
+    expect(amenityGroupFor("Heating", ["Heating/Cooling system"])).toBe("interior-and-cabins");
+  });
+
   it("reads a shouted or punctuated category the same as its plain spelling", () => {
     expect(amenityGroupFor("Solar panel", ["DECK EQUIPMENT"])).toBe("deck-and-cockpit");
     expect(amenityGroupFor("Outboard engine", ["Deck / Cockpit"])).toBe("deck-and-cockpit");

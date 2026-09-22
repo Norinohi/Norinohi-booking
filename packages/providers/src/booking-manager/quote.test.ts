@@ -1,12 +1,25 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 import type { z } from "zod";
 
+import type { CatalogueResolver } from "../shared/catalogue-resolver";
+import { unscopedCompanies } from "../shared/company-scope";
+import { parseExactJson } from "../shared/exact-json";
+import { refusesOnlyTheTerms, SlotUnavailableError } from "../shared/errors";
+import { SequentialQueue } from "../shared/queue";
+import { providerRejection } from "../testing/contracts";
 import { bookingDraftSchema } from "../types";
-import { restExtrasSchema, restOfferSchema } from "./endpoints";
+import { BookingManagerClient } from "./client";
+import type { BookingManagerConfig } from "./config";
+import { restExtrasSchema, restOfferListSchema, restOfferSchema } from "./endpoints";
 import {
+  createBookingManagerQuoteService,
+  clientPriceOf,
   mapOfferToProviderQuote,
   type OfferMapping,
   repriceRequestFor,
+  routeOptionsFor,
   selectOffer,
 } from "./quote";
 
@@ -159,6 +172,22 @@ describe("mapOfferToProviderQuote extras", () => {
     expect(quote.lines.find((line) => line.kind === "extra")?.label).toBe("Final cleaning");
   });
 
+  it("carries the operator's terms for an extra as the line's note, as plain text", () => {
+    const quote = mapOfferToProviderQuote(
+      mappingFor({ ...cleaning, description: "<p>Includes <b>final</b> cleaning &amp; gas</p>" }),
+    );
+
+    expect(quote.lines.find((line) => line.kind === "extra")?.note).toBe(
+      "Includes final cleaning & gas",
+    );
+  });
+
+  it("writes no note where the operator left the description empty", () => {
+    const quote = mapOfferToProviderQuote(mappingFor({ ...cleaning, description: "" }));
+
+    expect(quote.lines.find((line) => line.kind === "extra")).not.toHaveProperty("note");
+  });
+
   it("falls back to the offer's own name when the catalogue does not know the extra", () => {
     const quote = mapOfferToProviderQuote(
       mappingFor({ ...cleaning, name: "Final cleaning" }, () => undefined),
@@ -249,6 +278,75 @@ describe("selectOffer", () => {
     expect(chosen?.product).toBe("Crewed");
   });
 
+  it("never prices another product in place of the one asked for", () => {
+    const crewed = restOfferSchema.parse({
+      ...JSON.parse(JSON.stringify(sameBase)),
+      product: "Crewed",
+    });
+
+    expect(selectOffer([crewed], "9001", "2026-09-26", "2026-10-03", "Bareboat")).toBeUndefined();
+  });
+
+  /*
+   * The Shannon week of 26 September 2026 sells both ends from both bases: Carrick (100) and
+   * Portumna (200). Each pair asked for is the pair priced, and a drop-off asked for with its
+   * start never comes back as the round trip from the other base, which ranks first.
+   */
+  describe("on a week sold from two bases", () => {
+    const pairs = [
+      pair("100", "100", 150),
+      pair("100", "200", 305),
+      pair("200", "200", 120),
+      pair("200", "100", 305),
+    ];
+    const pick = (route: { startBaseId?: string; endBaseId?: string }) => {
+      const chosen = selectOffer(pairs, "9001", "2026-09-26", "2026-10-03", undefined, route);
+      return chosen && `${chosen.startBaseId}>${chosen.endBaseId}`;
+    };
+
+    it.each([
+      ["100", "100"],
+      ["100", "200"],
+      ["200", "200"],
+      ["200", "100"],
+    ])("prices %s to %s when that pair is asked for", (startBaseId, endBaseId) => {
+      expect(pick({ startBaseId, endBaseId })).toBe(`${startBaseId}>${endBaseId}`);
+    });
+
+    it("keeps a one-way from the quoted start rather than the other base's round trip", () => {
+      expect(pick({ startBaseId: "100", endBaseId: "200" })).toBe("100>200");
+      // What the drop-off alone used to answer: the cheaper round trip from the other base.
+      expect(pick({ endBaseId: "200" })).toBe("200>200");
+    });
+
+    it("returns to the pinned start when no drop-off is asked for", () => {
+      expect(pick({ startBaseId: "100" })).toBe("100>100");
+      expect(pick({ startBaseId: "200" })).toBe("200>200");
+    });
+
+    it("answers nothing for a pair the week does not sell", () => {
+      expect(pick({ startBaseId: "100", endBaseId: "300" })).toBeUndefined();
+    });
+  });
+
+  it("never ranks an offer at no price ahead of a priced one", () => {
+    const unpriced = restOfferSchema.parse({ ...JSON.parse(JSON.stringify(sameBase)), price: 0 });
+    const dearer = pair("200", "200", 400);
+
+    expect(selectOffer([unpriced, dearer], "9001", "2026-09-26", "2026-10-03", undefined)).toBe(
+      dearer,
+    );
+    expect(selectOffer([unpriced], "9001", "2026-09-26", "2026-10-03", undefined)).toBeUndefined();
+  });
+
+  it("offers no route at no price", () => {
+    const unpriced = restOfferSchema.parse({ ...JSON.parse(JSON.stringify(oneWay)), price: 0 });
+
+    expect(
+      routeOptionsFor([sameBase, unpriced], "9001", "2026-09-26", "2026-10-03", undefined, "EUR"),
+    ).toEqual([expect.objectContaining({ startBaseId: "100", endBaseId: "100" })]);
+  });
+
   it("ignores offers the vendor echoed for other dates", () => {
     const otherWeek = restOfferSchema.parse({
       ...JSON.parse(JSON.stringify(sameBase)),
@@ -257,6 +355,159 @@ describe("selectOffer", () => {
     });
 
     expect(selectOffer([otherWeek], "9001", "2026-09-26", "2026-10-03", undefined)).toBeUndefined();
+  });
+});
+
+/*
+ * Rumba on company 225, week of 5 June 2027, exactly as `/offers` answered it. Its base is
+ * Marina Cienfuegos, whose id is 0, beside neighbours with ids like 25 and 127 and the usual
+ * 19 digits: nothing may read the 0 as "no base" or assume an id's length.
+ */
+describe("an offer on the vendor's short base ids", () => {
+  const [rumba] = restOfferListSchema.parse(
+    parseExactJson(
+      '[{"yachtId":123325530000100225,"yacht":"Rumba","startBaseId":0,"endBaseId":0,' +
+        '"startBase":"Cienfuegos / Marina Cienfuegos","endBase":"Cienfuegos / Marina Cienfuegos",' +
+        '"dateFrom":"2027-06-05 17:00:00","dateTo":"2027-06-12 09:00:00","status":0,' +
+        '"product":"Bareboat","price":4600.0,"currency":"EUR","startPrice":5000.0,' +
+        '"obligatoryExtrasPrice":0.0,"obligatoryExtras":[],"paymentPlan":[' +
+        '{"date":"2026-09-29 00:18:12","amount":2300.0},{"date":"2027-05-08 00:00:00","amount":2300.0}],' +
+        '"discounts":[{"id":8294180160000100225,"name":"Early booking 2027","percentage":8.0,' +
+        '"price":400.0,"currency":"EUR"}],"securityDeposit":2500.0,"commissionPercentage":15.0,' +
+        '"commissionValue":690.0,"discountPercentage":8.0}]',
+    ),
+  );
+  if (rumba === undefined) throw new Error("fixture did not parse");
+  const yachtId = "123325530000100225";
+
+  it("keeps base 0 as a base", () => {
+    expect(rumba).toMatchObject({ yachtId, startBaseId: "0", endBaseId: "0" });
+  });
+
+  it("finds the offer when the drop-off asked for is base 0", () => {
+    expect(
+      selectOffer([rumba], yachtId, "2027-06-05", "2027-06-12", undefined, { endBaseId: "0" }),
+    ).toBe(rumba);
+  });
+
+  it("names the discount the way the operator does", () => {
+    const quote = mapOfferToProviderQuote({
+      offer: rumba,
+      listingId: "lst_rumba",
+      checkIn: "2027-06-05",
+      checkOut: "2027-06-12",
+      guests: 4,
+      requestedCurrency: "EUR",
+      expiresAt: "2027-05-01T00:00:00.000Z",
+    });
+
+    expect(quote.lines).toEqual([
+      expect.objectContaining({
+        code: "base-charter",
+        amount: { amountMinor: 500_000, currency: "EUR" },
+      }),
+      expect.objectContaining({
+        code: "bm-discount-8294180160000100225",
+        label: "Early booking 2027",
+        kind: "discount",
+        amount: { amountMinor: -40_000, currency: "EUR" },
+      }),
+    ]);
+    expect(quote.total.amountMinor).toBe(460_000);
+  });
+
+  it("names the discount off its percentage where the steps do not add up", () => {
+    const quote = mapOfferToProviderQuote({
+      offer: { ...rumba, discounts: [{ id: "1", name: "Early booking 2027", price: 350 }] },
+      listingId: "lst_rumba",
+      checkIn: "2027-06-05",
+      checkOut: "2027-06-12",
+      guests: 4,
+      requestedCurrency: "EUR",
+      expiresAt: "2027-05-01T00:00:00.000Z",
+    });
+
+    expect(quote.lines.filter((line) => line.kind === "discount")).toEqual([
+      expect.objectContaining({ code: "bm-discount", label: "Charter discount" }),
+    ]);
+  });
+
+  it("names base 0 on the quote's route", () => {
+    const quote = mapOfferToProviderQuote({
+      offer: rumba,
+      listingId: "lst_rumba",
+      checkIn: "2027-06-05",
+      checkOut: "2027-06-12",
+      guests: 4,
+      requestedCurrency: "EUR",
+      expiresAt: "2027-05-01T00:00:00.000Z",
+    });
+
+    expect(quote.route).toEqual({ startBaseId: "0", endBaseId: "0" });
+  });
+
+  /* The spec spells ProductEnum lowercase; the vendor answers "Bareboat" and accepts both. */
+  it.each(["bareboat", "BAREBOAT", " Bareboat "])(
+    "matches the product whatever case it is spelled in (%o)",
+    (productName) => {
+      const crewed = restOfferSchema.parse({
+        ...JSON.parse(JSON.stringify(rumba)),
+        product: "Crewed",
+      });
+
+      expect(
+        selectOffer([crewed, rumba], yachtId, "2027-06-05", "2027-06-12", productName)?.product,
+      ).toBe("Bareboat");
+    },
+  );
+});
+
+/*
+ * Company 225 states maxDiscountFromCommissionPercentage 10 on itself and on all 29 yachts, beside
+ * a commission of 15 percent: Rumba's 690.00 commission leaves 69.00 we may give away.
+ */
+describe("the operator's bound on our client discount", () => {
+  const rumba = restOfferSchema.parse({
+    yachtId: "123325530000100225",
+    dateFrom: "2027-06-05 17:00:00",
+    dateTo: "2027-06-12 09:00:00",
+    price: 4600,
+    currency: "EUR",
+    commissionPercentage: 15,
+    commissionValue: 690,
+  });
+  const capOf = (
+    offer: z.infer<typeof restOfferSchema>,
+    maxDiscountFromCommissionPercentage: number | undefined,
+  ) =>
+    mapOfferToProviderQuote({
+      offer,
+      listingId: "lst_rumba",
+      checkIn: "2027-06-05",
+      checkOut: "2027-06-12",
+      guests: 4,
+      requestedCurrency: "EUR",
+      maxDiscountFromCommissionPercentage,
+      expiresAt: "2027-05-01T00:00:00.000Z",
+    }).maxClientDiscount;
+
+  it("allows the stated share of the commission", () => {
+    expect(capOf(rumba, 10)).toEqual({ amountMinor: 6_900, currency: "EUR" });
+  });
+
+  it("allows nothing where the operator allows nothing", () => {
+    expect(capOf(rumba, 0)?.amountMinor).toBe(0);
+  });
+
+  it("never allows more than the commission", () => {
+    expect(capOf(rumba, 250)?.amountMinor).toBe(69_000);
+    expect(capOf(rumba, undefined)?.amountMinor).toBe(69_000);
+  });
+
+  it("allows nothing against a commission the offer does not report", () => {
+    const silent = restOfferSchema.parse({ ...rumba, commissionValue: null });
+    expect(capOf(silent, 10)?.amountMinor).toBe(0);
+    expect(capOf(silent, undefined)).toBeUndefined();
   });
 });
 
@@ -285,6 +536,7 @@ describe("repriceRequestFor", () => {
         extras: ["service:77"],
         crewType: "bareboat",
         currency: "EUR",
+        startBaseId: "100",
         endBaseId: "200",
       },
     );
@@ -296,13 +548,140 @@ describe("repriceRequestFor", () => {
     // the same way twice.
     expect(repriceRequestFor(draft({ startBaseId: "100", endBaseId: "100" }), "EUR")).toMatchObject(
       {
+        startBaseId: "100",
         endBaseId: "100",
       },
     );
   });
 
+  it("re-prices in the currency the quote was read in", () => {
+    expect(repriceRequestFor({ ...draft(null), currency: "GBP" }, "EUR").currency).toBe("GBP");
+    expect(repriceRequestFor(draft(null), "EUR").currency).toBe("EUR");
+  });
+
   it("asks unfiltered where the provider named no bases", () => {
-    expect(repriceRequestFor(draft(null), "EUR")).not.toHaveProperty("endBaseId");
+    const request = repriceRequestFor(draft(null), "EUR");
+    expect(request).not.toHaveProperty("startBaseId");
+    expect(request).not.toHaveProperty("endBaseId");
+  });
+});
+
+describe("a payment plan of three instalments", () => {
+  const quote = mapOfferToProviderQuote({
+    offer: restOfferSchema.parse({
+      yachtId: "9001",
+      dateFrom: "2027-06-05 17:00:00",
+      dateTo: "2027-06-12 09:00:00",
+      price: 6000,
+      currency: "EUR",
+      paymentPlan: [
+        { date: "2026-09-29 00:00:00", amount: 1800 },
+        { date: "2027-03-01 00:00:00", amount: 2100 },
+        { date: "2027-05-01 00:00:00", amount: 2100 },
+      ],
+    }),
+    listingId: "lst_1",
+    checkIn: "2027-06-05",
+    checkOut: "2027-06-12",
+    guests: 2,
+    requestedCurrency: "EUR",
+    expiresAt: "2027-05-01T00:00:00.000Z",
+  });
+
+  it("takes the first as the deposit and the rest as one balance due ahead of the second", () => {
+    expect(quote.deposit).toEqual({ amountMinor: 180_000, currency: "EUR" });
+    expect(quote.paymentPolicy).toEqual({
+      mode: "deposit",
+      depositPct: 0.3,
+      balanceDueAt: "2027-02-22",
+    });
+  });
+});
+
+/*
+ * The vendor's balance date is the day we owe the operator as well: on company 225 an option's
+ * `paymentPlan` and `agencyPaymentPlan` both fell due 2026-09-29. The customer pays ahead of it.
+ */
+describe("the customer's balance date", () => {
+  const planned = (
+    plan: { date?: string; amount: number }[],
+    balanceLeadDays?: number,
+    today?: string,
+  ) =>
+    mapOfferToProviderQuote({
+      offer: restOfferSchema.parse({
+        yachtId: "9001",
+        dateFrom: "2027-06-05 17:00:00",
+        dateTo: "2027-06-12 09:00:00",
+        price: 4000,
+        currency: "EUR",
+        paymentPlan: plan,
+      }),
+      listingId: "lst_1",
+      checkIn: "2027-06-05",
+      checkOut: "2027-06-12",
+      guests: 2,
+      requestedCurrency: "EUR",
+      expiresAt: "2026-09-22T12:00:00.000Z",
+      balanceLeadDays,
+      today,
+    });
+  const halves = [
+    { date: "2026-09-22 00:18:26", amount: 2000 },
+    { date: "2027-05-08 00:00:00", amount: 2000 },
+  ];
+
+  it("falls due a week before the vendor's, by default", () => {
+    expect(planned(halves).paymentPolicy).toMatchObject({
+      mode: "deposit",
+      balanceDueAt: "2027-05-01",
+    });
+  });
+
+  it("follows the configured lead", () => {
+    expect(planned(halves, 14).paymentPolicy.balanceDueAt).toBe("2027-04-24");
+    expect(planned(halves, 0).paymentPolicy.balanceDueAt).toBe("2027-05-08");
+  });
+
+  it("is taken now in full when the lead would put it on or before today", () => {
+    const soon = [
+      { date: "2026-09-22 00:18:26", amount: 2000 },
+      { date: "2026-09-27 00:00:00", amount: 2000 },
+    ];
+
+    const quote = planned(soon);
+
+    expect(quote.paymentPolicy).toEqual({ mode: "full", depositPct: 1 });
+    expect(quote.deposit).toEqual({ amountMinor: 400_000, currency: "EUR" });
+  });
+  it("is taken now in full when the lead puts it by today and the first instalment is undated", () => {
+    const undated = [{ amount: 2000 }, { date: "2026-09-27 00:00:00", amount: 2000 }];
+
+    expect(planned(undated, undefined, "2026-09-22").paymentPolicy).toEqual({
+      mode: "full",
+      depositPct: 1,
+    });
+    expect(planned(undated, undefined, "2026-09-10").paymentPolicy).toEqual({
+      mode: "deposit",
+      depositPct: 0.5,
+      balanceDueAt: "2026-09-20",
+    });
+  });
+
+  it("is taken now in full when today is past both the first date and the shifted one", () => {
+    const answeredEarlier = [
+      { date: "2026-09-01 10:00:00", amount: 2000 },
+      { date: "2026-09-28 00:00:00", amount: 2000 },
+    ];
+
+    expect(planned(answeredEarlier, undefined, "2026-09-22").paymentPolicy).toEqual({
+      mode: "full",
+      depositPct: 1,
+    });
+    expect(planned(answeredEarlier, undefined, "2026-09-20").paymentPolicy).toMatchObject({
+      mode: "deposit",
+      balanceDueAt: "2026-09-21",
+    });
   });
 });
 
@@ -358,5 +737,331 @@ describe("priceSourceHash and the payment plan", () => {
     ];
 
     expect(hashOf(early)).not.toBe(hashOf(late));
+  });
+});
+
+const QUOTE_CONFIG: BookingManagerConfig = {
+  baseUrl: "https://www.booking-manager.com/api/v2",
+  apiToken: "t0ken",
+  timeoutMs: 1000,
+  syncTimeoutMs: 5000,
+  minIntervalMs: 0,
+  sweepConcurrency: 1,
+  priceWeeksConcurrency: 4,
+  optionSafetyMarginMinutes: 15,
+  timeZone: "Europe/Zagreb",
+  companyScope: unscopedCompanies,
+  queueKey: "booking-manager:test",
+};
+
+const RUMBA_ID = "123325530000100225";
+
+const rumbaResolver: CatalogueResolver = {
+  providerId: () => Promise.resolve("prv_booking_manager"),
+  toExternalListing: () =>
+    Promise.resolve({
+      externalYachtId: RUMBA_ID,
+      externalCompanyId: "225",
+      externalBaseId: "0",
+      listingSourceId: "lsrc_rumba",
+    }),
+  toExternalYachtIds: () => Promise.reject(new Error("not used by a quote")),
+  toListingId: () => Promise.reject(new Error("not used by a quote")),
+  toExternalCountryId: () => Promise.reject(new Error("not used by a quote")),
+  loadListingSummary: () => Promise.reject(new Error("not used by a quote")),
+  listExternalCompanyIds: () => Promise.reject(new Error("not used by a quote")),
+  listYachtCompanyScopeKeys: () => Promise.reject(new Error("not used by a quote")),
+};
+
+/** A client answering every `/offers` call with `body`, and the URLs it was asked. */
+function clientAnswering(...bodies: [string, ...string[]]) {
+  const asked: URL[] = [];
+  const client = new BookingManagerClient({
+    config: QUOTE_CONFIG,
+    queue: new SequentialQueue(),
+    retry: { maxAttempts: 1 },
+    fetchImpl: (url) => {
+      asked.push(new URL(String(url)));
+      const body = bodies[Math.min(asked.length, bodies.length) - 1] ?? bodies[0];
+      return Promise.resolve({ status: 200, text: () => Promise.resolve(body) });
+    },
+  });
+  return { client, asked };
+}
+
+const RUMBA_WEEK = {
+  listingId: "lst_rumba",
+  checkIn: "2027-06-05",
+  checkOut: "2027-06-12",
+  guests: 4,
+  extras: [],
+  currency: "EUR",
+};
+
+/*
+ * The listing may keep an older Booking Manager hull beside the one it sells; the bound is looked
+ * up by the vendor yacht id `/offers` priced, never by the listing.
+ */
+describe("getBookingManagerQuote's discount bound", () => {
+  const offers =
+    `[{"yachtId":${RUMBA_ID},"yacht":"Rumba","startBaseId":0,"endBaseId":0,` +
+    '"dateFrom":"2027-06-05 17:00:00","dateTo":"2027-06-12 09:00:00","status":0,' +
+    '"product":"Bareboat","price":4600.0,"currency":"EUR","obligatoryExtras":[],' +
+    '"commissionPercentage":15.0,"commissionValue":690.0}]';
+
+  it("asks for the bound of the yacht it priced", async () => {
+    const asked: string[] = [];
+    const service = createBookingManagerQuoteService({
+      client: clientAnswering(offers).client,
+      resolver: rumbaResolver,
+      config: QUOTE_CONFIG,
+      loadDiscountCapPercentage: (externalYachtId) => {
+        asked.push(externalYachtId);
+        return Promise.resolve(10);
+      },
+    });
+
+    const quote = await service.getBookingManagerQuote(RUMBA_WEEK);
+
+    expect(asked).toEqual([RUMBA_ID]);
+    expect(quote.maxClientDiscount).toEqual({ amountMinor: 6_900, currency: "EUR" });
+  });
+});
+
+/* An undated pay-now instalment leaves only the quote's own clock to say when the plan opens. */
+describe("getBookingManagerQuote's balance date against its own clock", () => {
+  const offers =
+    `[{"yachtId":${RUMBA_ID},"startBaseId":0,"endBaseId":0,` +
+    '"dateFrom":"2027-06-05 17:00:00","dateTo":"2027-06-12 09:00:00",' +
+    '"product":"Bareboat","price":4600.0,"currency":"EUR","obligatoryExtras":[],' +
+    '"paymentPlan":[{"amount":2300.0},{"date":"2027-06-01 00:00:00","amount":2300.0}]}]';
+  const quotedAt = (iso: string) =>
+    createBookingManagerQuoteService({
+      client: clientAnswering(offers).client,
+      resolver: rumbaResolver,
+      config: QUOTE_CONFIG,
+      now: () => Date.parse(iso),
+    }).getBookingManagerQuote(RUMBA_WEEK);
+
+  it("keeps the deposit while the shifted date is still ahead", async () => {
+    const quote = await quotedAt("2027-05-20T09:00:00.000Z");
+    expect(quote.paymentPolicy).toMatchObject({ mode: "deposit", balanceDueAt: "2027-05-25" });
+  });
+
+  it("takes it in full once the shifted date has passed", async () => {
+    const quote = await quotedAt("2027-05-30T09:00:00.000Z");
+    expect(quote.paymentPolicy).toEqual({ mode: "full", depositPct: 1 });
+  });
+});
+
+/*
+ * A pinned pair the week does not sell is the customer's route refused, not the week: the API
+ * takes a week off the card on a plain refusal, which would hide a charter still on sale.
+ */
+describe("getBookingManagerQuote on a pinned route", () => {
+  const offers =
+    `[{"yachtId":${RUMBA_ID},"startBaseId":0,"endBaseId":0,` +
+    '"dateFrom":"2027-06-05 17:00:00","dateTo":"2027-06-12 09:00:00",' +
+    '"product":"Bareboat","price":4600.0,"currency":"EUR","obligatoryExtras":[]}]';
+  const quoteOn = (route: { startBaseId?: string; endBaseId?: string }, body = offers) =>
+    createBookingManagerQuoteService({
+      client: clientAnswering(body).client,
+      resolver: rumbaResolver,
+      config: QUOTE_CONFIG,
+    }).getBookingManagerQuote({ ...RUMBA_WEEK, ...route });
+
+  it("prices the pair asked for", async () => {
+    const quote = await quoteOn({ startBaseId: "0", endBaseId: "0" });
+    expect(quote.route).toEqual({ startBaseId: "0", endBaseId: "0" });
+  });
+
+  it("refuses only the route when the week is sold on another pair", async () => {
+    const error = await providerRejection(quoteOn({ startBaseId: "0", endBaseId: "25" }));
+    expect(error).toBeInstanceOf(SlotUnavailableError);
+    expect(error.providerCode).toBe("ROUTE_NOT_OFFERED");
+    expect(refusesOnlyTheTerms(error)).toBe(true);
+  });
+
+  it("refuses the week when nothing is on sale", async () => {
+    const error = await providerRejection(quoteOn({ startBaseId: "0" }, "[]"));
+    expect(error).toBeInstanceOf(SlotUnavailableError);
+    expect(refusesOnlyTheTerms(error)).toBe(false);
+  });
+});
+
+/*
+ * Without `productName` the vendor prices its own default, which is the product the catalogue
+ * shows too, until the operator changes it. Named on the call, the quote and the reservation
+ * agree on one product whatever the default is by then.
+ */
+describe("getBookingManagerQuote's product", () => {
+  const offers =
+    `[{"yachtId":${RUMBA_ID},"startBaseId":0,"endBaseId":0,` +
+    '"dateFrom":"2027-06-05 17:00:00","dateTo":"2027-06-12 09:00:00",' +
+    '"product":"Bareboat","price":4600.0,"currency":"EUR","obligatoryExtras":[]}]';
+
+  it("asks /offers for the listing's product", async () => {
+    const { client, asked } = clientAnswering(offers);
+    await createBookingManagerQuoteService({
+      client,
+      resolver: rumbaResolver,
+      config: QUOTE_CONFIG,
+      loadProductName: () => Promise.resolve("Bareboat"),
+    }).getBookingManagerQuote(RUMBA_WEEK);
+
+    expect(asked[0]?.searchParams.get("productName")).toBe("Bareboat");
+  });
+
+  it("leaves the product to the vendor where the listing names none", async () => {
+    const { client, asked } = clientAnswering(offers);
+    await createBookingManagerQuoteService({
+      client,
+      resolver: rumbaResolver,
+      config: QUOTE_CONFIG,
+      loadProductName: () => Promise.resolve(undefined),
+    }).getBookingManagerQuote(RUMBA_WEEK);
+
+    expect(asked[0]?.searchParams.has("productName")).toBe(false);
+  });
+
+  const quoteAs = (productName: string, client: BookingManagerClient) =>
+    providerRejection(
+      createBookingManagerQuoteService({
+        client,
+        resolver: rumbaResolver,
+        config: QUOTE_CONFIG,
+        loadProductName: () => Promise.resolve(productName),
+      }).getBookingManagerQuote(RUMBA_WEEK),
+    );
+
+  it("refuses an answer for another product, but not the week", async () => {
+    const { client, asked } = clientAnswering(offers);
+    const error = await quoteAs("Crewed", client);
+
+    expect(error).toBeInstanceOf(SlotUnavailableError);
+    expect(error.providerCode).toBe("PRODUCT_NOT_OFFERED");
+    expect(error.message).toMatch(/as Bareboat, not as Crewed/);
+    expect(refusesOnlyTheTerms(error)).toBe(true);
+    expect(asked).toHaveLength(1);
+  });
+
+  /*
+   * What the vendor does with a product the yacht is not priced for: on 225, productName=Cabin
+   * for West Wind answered no rows, while the same call unnamed sold it as Bareboat.
+   */
+  it("asks for the vendor's default before calling a silent product a week gone", async () => {
+    const { client, asked } = clientAnswering("[]", offers);
+    const error = await quoteAs("Cabin", client);
+
+    expect(error.providerCode).toBe("PRODUCT_NOT_OFFERED");
+    expect(asked).toHaveLength(2);
+    expect(asked[0]?.searchParams.get("productName")).toBe("Cabin");
+    expect(asked[1]?.searchParams.has("productName")).toBe(false);
+    expect(asked[1]?.searchParams.get("passengersOnBoard")).toBe("4");
+  });
+
+  it("refuses the week when the default is not on sale either", async () => {
+    const { client, asked } = clientAnswering("[]", "[]");
+    const error = await quoteAs("Bareboat", client);
+
+    expect(error.providerCode).toBe("NO_OFFER");
+    expect(refusesOnlyTheTerms(error)).toBe(false);
+    expect(asked).toHaveLength(2);
+  });
+
+  it("asks once where no product was named", async () => {
+    const { client, asked } = clientAnswering("[]");
+    const error = await providerRejection(
+      createBookingManagerQuoteService({
+        client,
+        resolver: rumbaResolver,
+        config: QUOTE_CONFIG,
+        loadProductName: () => Promise.resolve(undefined),
+      }).getBookingManagerQuote(RUMBA_WEEK),
+    );
+
+    expect(error.providerCode).toBe("NO_OFFER");
+    expect(asked).toHaveLength(1);
+  });
+});
+
+/*
+ * West Wind on company 225, week of 5 June 2027, asked in GBP. The vendor converts the charter,
+ * its plan and its discount at one rate (0.8698) and the extras and the deposit at another
+ * (0.8454), so every total is built from the lines it returned and nothing is converted here.
+ */
+describe("a quote the vendor converted", () => {
+  const [westWind] = restOfferListSchema.parse(
+    parseExactJson(
+      readFileSync(new URL("fixtures/offers-225-2027-06-05-gbp.json", import.meta.url), "utf8"),
+    ),
+  );
+  if (westWind === undefined) throw new Error("fixture did not parse");
+  const quote = mapOfferToProviderQuote({
+    offer: westWind,
+    listingId: "lst_west_wind",
+    checkIn: "2027-06-05",
+    checkOut: "2027-06-12",
+    guests: 2,
+    requestedCurrency: "GBP",
+    expiresAt: "2027-05-01T00:00:00.000Z",
+  });
+
+  it("prices every line in the money it was asked in", () => {
+    expect(quote.currency).toBe("GBP");
+    expect(new Set(quote.lines.map((line) => line.amount.currency))).toEqual(new Set(["GBP"]));
+  });
+
+  it("totals the charter and the extras as the vendor stated them", () => {
+    expect(quote.total.amountMinor).toBe(480_100 + 152_764);
+    expect(quote.total.amountMinor).toBe(
+      quote.lines.reduce((sum, line) => sum + line.amount.amountMinor, 0),
+    );
+  });
+
+  it("takes the deposit off the plan, which follows the charter's rate", () => {
+    expect(quote.deposit).toEqual({ amountMinor: 240_050, currency: "GBP" });
+    expect(quote.paymentPolicy).toMatchObject({ mode: "deposit", depositPct: 0.5 });
+  });
+
+  it("drops a discount whose steps were rounded at another rate than the price", () => {
+    // 8% of 5,219 is 417.52, while the rounded price leaves 418 between the two figures.
+    expect(quote.lines.filter((line) => line.kind === "discount")).toEqual([]);
+  });
+
+  it("asks the reservation for the charter plus the APA paid online, in the quote's money", () => {
+    const apa = quote.lines.find((line) => line.kind === "extra" && line.payWhen === "now");
+    expect(apa?.amount).toEqual({ amountMinor: 42_270, currency: "GBP" });
+    expect(clientPriceOf(quote)).toEqual({ amountMinor: 480_100 + 42_270, currency: "GBP" });
+  });
+});
+
+/*
+ * The same yacht and week in EUR. A reservation opened on it answers `clientPrice` with the
+ * charter and the 500.00 APA the vendor adds on POST, never the extras settled at the base: on
+ * 225 reservation 8192657220000107113 came back at 501.00 for a 1.00 charter of this hull.
+ */
+describe("the price a reservation answers with", () => {
+  const westWind = restOfferListSchema
+    .parse(
+      parseExactJson(
+        readFileSync(new URL("fixtures/offers-225-2027-06-05.json", import.meta.url), "utf8"),
+      ),
+    )
+    .find((offer) => offer.yachtId === "978989630000100225");
+  if (westWind === undefined) throw new Error("fixture has no West Wind");
+  const quote = mapOfferToProviderQuote({
+    offer: westWind,
+    listingId: "lst_west_wind",
+    checkIn: "2027-06-05",
+    checkOut: "2027-06-12",
+    guests: 2,
+    requestedCurrency: "EUR",
+    expiresAt: "2027-05-01T00:00:00.000Z",
+  });
+
+  it("is the charter and the extras paid online, not those paid at the base", () => {
+    expect(quote.total.amountMinor).toBe(552_000 + 180_700);
+    expect(clientPriceOf(quote)).toEqual({ amountMinor: 552_000 + 50_000, currency: "EUR" });
   });
 });

@@ -132,6 +132,8 @@
     "onRequest": "This yacht is priced on request",
     "onRequestHint": "We have dates for it, but no published rate covers them. Tell us when you would like to sail and we will come back with a price.",
     "dropOff": "Drop-off marina",
+    "oneWayRoute": "One-way route",
+    "oneWayNote": "The yacht is returned to a different marina than it is collected from.",
     "pickUp": "Pick-up: {marina}",
     "boatPriceHintDiscounted": "Rental price after discount",
     "depositWhenInsured": "or {amount} with the damage waiver"

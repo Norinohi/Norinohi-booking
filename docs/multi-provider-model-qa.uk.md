@@ -71,8 +71,8 @@ NauSYS частково перетинаються, фото в Booking Manager 
 - NauSYS `OPTION` - попередньо зарезервована (`on hold`)
 - NauSYS `SERVICE` - заблокована (`blocked`)
 - Booking Manager `RESERVATION` - заброньована (`reserved` / `booked`)
-- Booking Manager `OPTION` / `OPTION_IN_EXPIRATION` - попередньо зарезервована (`on hold`)
-- Booking Manager `SERVICE` / `OWNER_WEEK` / `REGATTA` / `SLEEP_ABOARD` - заблокована
+- Booking Manager `OPTION` - попередньо зарезервована (`on hold`)
+- Booking Manager `OPTION_EXPIRED` / `SERVICE` / `OWNER_WEEK` / `REGATTA` / `SLEEP_ABOARD` - заблокована
   (`blocked`)
 - Невідомий статус (`unknown status`) - заблокована (`blocked`)
 

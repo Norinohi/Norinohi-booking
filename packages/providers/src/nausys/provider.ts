@@ -13,7 +13,9 @@ import type {
   ListingPeriod,
   ProviderCapabilities,
   ProviderExtrasMutation,
+  ProviderInvoice,
   ProviderKey,
+  Money,
   ProviderQuote,
   ProviderRecordSet,
   ProviderReservation,
@@ -46,7 +48,11 @@ import {
   type NausysHotWindow,
 } from "./occupancy";
 import { listingSource, providerExtraCatalogue } from "@yacht-charter/db/schema/listing-source";
-import { provider as providerTable, providerRecord } from "@yacht-charter/db/schema/provider";
+import {
+  provider as providerTable,
+  providerRawPayload,
+  providerRecord,
+} from "@yacht-charter/db/schema/provider";
 import {
   listAdvertisedCharterPeriods,
   listUnadvertisedYachtIds,
@@ -63,8 +69,9 @@ import {
 import { DEFAULT_RATE_LIMIT_PAUSE, priceWeeksSource } from "../shared/price-weeks";
 import { streamNausysConfirmedOffers } from "./confirmed-offers";
 import { DEFAULT_HOT_WINDOW_COUNT, sweepWindows, upcomingCharterWeeks } from "./sweep-windows";
-import { and, eq, isNotNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { log, parseError } from "evlog";
+import { z } from "zod";
 import { thrownFields } from "../shared/log-fields";
 
 import {
@@ -74,8 +81,9 @@ import {
 } from "./crew-list";
 import { projectNausysCatalogue } from "./projection";
 import { listChangedNausysReservations, readNausysWaitingOptions } from "./reservations";
+import { listNausysAgencyInvoices } from "./invoices";
 import { formatExtraCode } from "../shared/extra-code";
-import { createNausysQuoteService, type CrewRoleService } from "./quote";
+import { createNausysQuoteService, type CrewRoleService, type DiscountRule } from "./quote";
 import { createNausysBookingService, createSecurityTokenSink } from "./booking";
 
 import type { JsonField } from "../shared/json";
@@ -149,6 +157,9 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
       config: this.config,
       loadCrewRoles: (listingId) => loadNausysCrewRoles(this.db, listingId),
       loadExtraLabels: (listingId) => loadNausysExtraLabels(this.db, listingId),
+      loadLocationNames: (ids) => loadNausysLocationNames(this.db, ids),
+      loadDiscountNames: (ids) => loadNausysCatalogueNames(this.db, "discount_item", ids),
+      loadDiscountRule: (listingId) => loadNausysDiscountRule(this.db, listingId),
       loadDepositInsuranceCodes: (listingId) => loadNausysDepositInsuranceCodes(this.db, listingId),
     });
 
@@ -161,7 +172,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
       // that moved between quote and checkout is refused rather than held at a
       // price the vendor will not honour.
       verifyPrice: async (draft) => {
-        const quote = await this.quotes.getNausysQuote({
+        const { quote, billedRows } = await this.quotes.getNausysQuoteWithRows({
           listingId: draft.listingId,
           checkIn: draft.checkIn,
           checkOut: draft.checkOut,
@@ -172,8 +183,15 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
              observes a different price and fails the comparison it exists to make. */
           currency: draft.currency ?? this.currency,
         });
-        return quote.priceSourceHash;
+        const extrasMinor = quote.lines
+          .filter((line) => line.kind === "extra")
+          .reduce((sum, line) => sum + line.amount.amountMinor, 0);
+        return { hash: quote.priceSourceHash, billedRows, extrasMinor };
       },
+      loadCrewRoleServiceIds: async (listingId) =>
+        new Set((await loadNausysCrewRoles(this.db, listingId)).map((role) => role.externalId)),
+      loadExtraLabels: (listingId) => loadNausysExtraLabels(this.db, listingId),
+      loadOnRequestCodes: (listingId) => loadNausysOnRequestCodes(this.db, listingId),
       recordEvent: createReservationEventRecorder(this.db, "nausys"),
       persistSecurityToken: createSecurityTokenSink(this.db),
     });
@@ -246,6 +264,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
       ref.securityToken,
       submission.members,
       submission.note,
+      submission.trip,
     );
   }
 
@@ -255,11 +274,25 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
    * On the sync client rather than the live one: this is background work with a whole window
    * of reservations behind it, and it must not compete with a customer waiting on a price.
    */
+  exactClientDiscountCap(quote: ProviderQuote): Promise<Money | undefined> {
+    return this.quotes
+      .getExactDiscountCap(quote)
+      .then((amountMinor) =>
+        amountMinor === undefined ? undefined : { amountMinor, currency: quote.currency },
+      );
+  }
+
   listChangedReservations(window: {
     since: Date;
     until: Date;
+    reservationIds?: readonly string[] | undefined;
   }): Promise<ProviderReservationState[]> {
     return listChangedNausysReservations(this.syncClient, window, this.config.optionTimeZone);
+  }
+
+  /** On the sync lane: a back-office read nobody is waiting on. */
+  listInvoices(window: { from: string; to: string }): Promise<ProviderInvoice[]> {
+    return listNausysAgencyInvoices(this.syncClient, window);
   }
 
   /** Public on the vendor's side, so this needs no credential and no reservation. */
@@ -268,7 +301,10 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
   }
 
   projectCatalogue(records: ProviderRecordSet): CanonicalCatalogue {
-    return projectNausysCatalogue(records, { agencyId: this.config.agencyId });
+    return projectNausysCatalogue(records, {
+      agencyId: this.config.agencyId,
+      today: new Date().toISOString().slice(0, 10),
+    });
   }
 
   createAvailabilitySource(options: { resume?: JsonField }): AvailabilitySource {
@@ -415,7 +451,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
   /**
    * How many people the operator already has queued for this week.
    *
-   * Read-only: joining the queue is a `createInfo` away (`fallbackToWaitingOption`) and is a
+   * Read-only: joining the queue is a `createOption` away (`fallbackToWaitingOption`) and is a
    * product decision nobody has taken, so this answers the question support is asked and
    * changes nothing on the vendor's side.
    */
@@ -561,6 +597,90 @@ async function loadNausysExtraLabels(
  * the codes the customer ticked and nothing else about them, and buying one of these lowers
  * the deposit instead of adding to the price.
  */
+const discountRuleSchema = z.object({
+  basis: z.enum(["CLIENT_PRICE", "AGENCY_COMMISSION"]),
+  fraction: z.coerce.number().finite(),
+});
+
+/**
+ * The operator's bound on our client discount for this listing's NauSYS yacht, read off the
+ * stored catalogue payload. Undefined where the yacht states none or states it unreadably.
+ */
+async function loadNausysDiscountRule(
+  db: Database,
+  listingId: string,
+): Promise<DiscountRule | undefined> {
+  const [row] = await db
+    .select({
+      basis: sql<string | null>`${providerRawPayload.payload}->>'agencyDiscountType'`,
+      fraction: sql<string | null>`${providerRawPayload.payload}->>'maxDiscountFromCommission'`,
+    })
+    .from(listingSource)
+    .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
+    .innerJoin(providerTable, eq(providerTable.id, providerRecord.providerId))
+    .innerJoin(providerRawPayload, eq(providerRawPayload.id, providerRecord.rawPayloadId))
+    .where(and(eq(listingSource.listingId, listingId), eq(providerTable.code, "nausys")))
+    .limit(1);
+
+  const parsed = discountRuleSchema.safeParse(row);
+  return parsed.success ? parsed.data : undefined;
+}
+
+/** NauSYS location names by the vendor's own id, off the stored catalogue payloads. */
+function loadNausysLocationNames(
+  db: Database,
+  locationIds: readonly string[],
+): Promise<ReadonlyMap<string, string>> {
+  return loadNausysCatalogueNames(db, "location", locationIds);
+}
+
+/** English names of NauSYS catalogue records by id, off their stored payloads. */
+async function loadNausysCatalogueNames(
+  db: Database,
+  resourceType: "location" | "discount_item",
+  ids: readonly string[],
+): Promise<ReadonlyMap<string, string>> {
+  const rows = await db
+    .select({
+      externalId: providerRecord.externalId,
+      name: sql<string | null>`${providerRawPayload.payload}->'name'->>'textEN'`,
+    })
+    .from(providerRecord)
+    .innerJoin(providerTable, eq(providerTable.id, providerRecord.providerId))
+    .innerJoin(providerRawPayload, eq(providerRawPayload.id, providerRecord.rawPayloadId))
+    .where(
+      and(
+        eq(providerTable.code, "nausys"),
+        eq(providerRecord.resourceType, resourceType),
+        inArray(providerRecord.externalId, [...ids]),
+      ),
+    );
+
+  return new Map(rows.flatMap((row) => (row.name ? [[row.externalId, row.name] as const] : [])));
+}
+
+/** The listing's extras the operator sells only on a fixed reservation, by canonical code. */
+async function loadNausysOnRequestCodes(
+  db: Database,
+  listingId: string,
+): Promise<ReadonlySet<string>> {
+  const rows = await db
+    .select({
+      kind: providerExtraCatalogue.kind,
+      externalId: providerExtraCatalogue.externalId,
+    })
+    .from(providerExtraCatalogue)
+    .where(
+      and(
+        eq(providerExtraCatalogue.listingId, listingId),
+        eq(providerExtraCatalogue.source, "nausys"),
+        eq(providerExtraCatalogue.onRequestOnly, true),
+      ),
+    );
+
+  return new Set(rows.map((row) => formatExtraCode(row.kind, row.externalId)));
+}
+
 async function loadNausysDepositInsuranceCodes(
   db: Database,
   listingId: string,

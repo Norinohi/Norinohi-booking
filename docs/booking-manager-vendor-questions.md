@@ -74,6 +74,8 @@ Ordered by what it costs us to be wrong.
    `dateFrom=Sat, dateTo=next Sat`. If it is inclusive, every occupied period we
    store is one night short, which is exactly the case that oversells a
    turnaround day.
+   _Answered by measurement on company 225, 2026-09-22:_ exclusive. A row
+   26.12-31.12.2026 leaves 31 December free in `/shortAvailability` format 3.
 
 7. **Is the reservation `status` enum closed at 4?** (`Q-BM-STATUS`) Documented:
    1 Reservation, 2 Option, 3 Option in expiration, 4 Service.
@@ -82,6 +84,9 @@ Ordered by what it costs us to be wrong.
    oversell.
    _Please confirm_ the meaning of 3 in particular: is the option still holding
    the week, or has it lapsed and the boat is bookable again?
+   _Answered by measurement on company 225, 2026-09-22:_ 3 is "Option expired" in
+   your own status list, and it keeps its week out of `/offers` indefinitely. What is
+   left is question 39 in section H.
 
 8. **Can a period legitimately start and end on the same day?** We now read that
    as a one day block. Previously it was rejected, which would have failed a
@@ -96,11 +101,17 @@ Ordered by what it costs us to be wrong.
     _We assume:_ a full replace, so we resend the whole body with `status: 1`
     rather than only `{status}`, on the theory that a partial body might clear
     the fields we omit. Confirming lets us send the smaller, safer request.
+    _Answered by measurement (questions-v2 Q8):_ neither. Every field of the
+    body is ignored and the option is confirmed; the spec declares no body and a
+    `sendNotification` query parameter, which is all we now send.
 
 11. **How is a new end client created?** (`Q-BM-CLIENT`) We currently send only
     `clientName` and omit `clientId`. Is there a supported way to create or look
     up a client through the API, and which client and crew fields are mandatory
     for a confirmed booking?
+    _Narrowed by measurement:_ `POST /reservation` keeps only `clientName` and
+    `clientId`, and without `clientId` every option lands on one shared charter-side
+    client. What is left is question 41 in section H.
 
 12. **Option expiry.** How long is a hold granted for, is the duration per
     operator, and is `expirationDate` always populated on create? We release our
@@ -117,6 +128,10 @@ Ordered by what it costs us to be wrong.
 15. **One-way charters.** We currently set `baseFromId` and `baseToId` to the
     listing's home base. What is the correct way to book a one-way, and are
     `oneWayPeriods` or equivalent exposed?
+    _Settled by measurement:_ the quote now sends the chosen `startBaseId` and
+    `endBaseId` to `/offers` and the same pair on `POST /reservation`, and refuses a
+    hold whose answer carries another pair, since the vendor silently rewrites one it
+    does not sell.
 
 ## D. Operational
 
@@ -143,7 +158,10 @@ Ordered by what it costs us to be wrong.
 21. **`inventory=raw` on `/yachts`.** We pass it to get `equipmentRaw`, which is
     our only source of equipment category names. Is it supported and stable, and
     do `equipmentRaw[].id` values share an id space with `/equipment`?
-    (`Q-BM-EQUIPMENT-ID`)
+    (`Q-BM-EQUIPMENT-ID`) Answered by the live data of company 225 (Sep 2026): the
+    raw row's own `id` matches `/equipment` 0 times in 327, its `parentId` 172 times,
+    and `parentId: -1` marks an item the operator added. The projection joins on
+    `parentId`; only the stability of `inventory=raw` is still a question.
 
 22. **`defaultCheckInDay` numbering.** (`Q-BM-CHECKIN-DAY`) Not an assumption any
     more, and worth documenting for the next integrator. Production sends `7` for
@@ -237,3 +255,75 @@ is absent from the documentation, so they are the ones most worth your time.
     whether a sync and a live customer quote can safely share one credential -
     today they do, and a customer waiting on a quote is the one request that must
     not queue behind a nightly import. It is the practical form of question 16.
+
+## H. Open after the audit of 2026-09-22 on company 225
+
+The audit checked every endpoint of spec 2.2.2 against the connector and measured what
+the rules allow on test company 225. These are what the measurement could not settle.
+The number in brackets is the audit's own, which the backend map §10.3 uses.
+
+36. **A repeated confirm** (audit 1). What does a second `PUT /reservation/{id}` on an
+    already confirmed record answer: 200 at status 1, or a 4xx? Is `sendNotification`
+    read only as a query parameter, and does it affect an agency key or only charter
+    calls? _We ship:_ a record already at 1 is taken as confirmed and not sent again.
+
+37. **What a confirm can answer** (audit 2). Can the `PUT` answer carry a status other
+    than 1 (2, 3, 5), and what does each mean: operator approval pending, option already
+    expired? _We ship:_ anything but 1 leaves the booking in our confirming state for a
+    person to settle, with no charge and no refund.
+
+38. **How `validForBases`, `availableInBase` and `validSailingAreas` enter
+    `obligatoryExtrasPrice`** (audit 4). _We ship:_ `validForBases` pairs are allowed
+    routes, where `from = to = home base` is an ordinary round trip, and an extra counts
+    only on a route, base and sailing area it names. Company 225 sends none of them, so
+    this is unmeasured.
+
+39. **Expired options** (audit 19). Why does an option at status 3 keep blocking its
+    week (the yacht is absent from `/offers`)? Should an agency `DELETE` its expired
+    options, and does that free the week? _We ship:_ we delete ours on release, and
+    list any the vendor refuses to delete for a person to chase. The 42 stale status 3
+    records on 225 are not ours and were left alone.
+
+40. **Status 9, OPTION_ON_WAITING** (audit 7). Does it appear on `/reservations/{year}`
+    or `/offers?showOptions=true`, and can it be deleted before it activates? _We ship:_
+    a create answered at 9 is deleted and the hold refused.
+
+41. **Creating clients** (audit 14). May an agency key call `POST /users` and link the
+    record through `Reservation.clientId`? _We ship:_ `clientName` only.
+
+42. **Recording payments** (audit 15). May an agency key create a payment with
+    `POST /reservation/{id}/payments`, on which record (agency or charter twin), and how
+    is `paymentMethodId` obtained without `/objects/PaymentMethod/search/`, which our
+    key cannot read? _We ship:_ no payment is recorded in Booking Manager.
+
+43. **Invoices** (audit 16). Does `GET /invoices/{invoiceType}` with an agency key lock
+    the operator's invoices ("locked and unchangeable")? _We ship:_ never called, not
+    even as a probe, until this is answered.
+
+44. **Extending an option** (audit 17). `POST /requests` type 0 answered 200 with an
+    empty body, and neither twin's `expirationDate` changed. How do we learn whether the
+    operator approved or refused it? _We ship:_ no extension request is sent.
+
+45. **The account concurrency limit** (audit 12). Is the 20-call ceiling per account,
+    per key or per IP, and is there any signal before or during the block? _We ship:_ a
+    budget of 20 across all our processes on one key, which assumes one server replica.
+
+46. **Two exchange rates in one offer** (audit 20). In a converted offer, `price` and
+    `startPrice` use one rate and the extras, deposit and commission another. Which rate
+    is authoritative for the reservation and the invoice? _We ship:_ every quote in EUR,
+    and totals built only from your own lines.
+
+47. **`Extras.includedExtras`** (audit 21). It is not in the spec. Does it list what a
+    pack contains, and are those contents taken out of `obligatoryExtrasPrice` when the
+    pack is chosen? _We ship:_ a requested pack is charged net of the obligatory extras
+    it contains that the quote already bills (225's Charter Pack 250 containing Cleaning
+    100 is charged 150).
+
+48. **`/prices` against `/offers`** (audit 22). `/prices` prices one-way pairs that
+    `/offers` does not sell, lengths shorter than the yacht's
+    `minimumCharterDuration`, and weeks `/offers` never offers (Alien on 225). Is
+    `/prices` a price list with no promise that the week is sold? _We ship:_ exactly that
+    reading. A week a whole-scope `/offers` answer leaves out is refused on the card.
+
+49. **`Yacht.transitLog`** (audit 18). It is outside `obligatoryExtrasPrice` and the
+    extras. Does the base collect it from the client? _We ship:_ not shown.

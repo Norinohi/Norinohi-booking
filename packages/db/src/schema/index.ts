@@ -17,6 +17,7 @@ export * from "./discount";
 export * from "./availability";
 export * from "./quote";
 export * from "./booking";
+export * from "./provider-invoice";
 export * from "./checkout";
 export * from "./lead";
 export * from "./engagement";

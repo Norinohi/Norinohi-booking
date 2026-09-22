@@ -4,6 +4,8 @@
     "title": "Bookingoversigt",
     "yacht": "Båd",
     "dates": "Datoer",
+    "route": "Rute",
+    "oneWay": "envejs",
     "crew": "Besætning",
     "people": "Personer",
     "extras": "Tillæg",
@@ -25,7 +27,8 @@
     "dueNow": "Forfalder nu",
     "terms": "Jeg accepterer <link>vilkår og betingelser samt lejeaftalen</link>.",
     "cancellation": "Jeg accepterer <link>afbestillingsbetingelserne</link>.",
-    "operatorTerms": "Udbyderens vilkår, herunder afbestillingsbetingelserne"
+    "operatorTerms": "Udbyderens vilkår, herunder afbestillingsbetingelserne",
+    "returnNote": "Aflevering af båden"
   },
   "extras": {
     "mandatory": "Obligatorisk",
@@ -156,6 +159,7 @@
     "summary": {
       "yacht": "Båd",
       "dates": "Datoer",
+      "route": "Rute",
       "crew": "Besætning",
       "mandatory": "Obligatorisk",
       "selectedExtras": "Valgte tillæg",
@@ -337,6 +341,7 @@
     "guestsLabel": "Gæster",
     "crew": "Besætning",
     "marina": "Marina",
+    "route": "Rute",
     "referenceLabel": "Reference",
     "settled": "Der er ikke mere at betale",
     "viewYacht": "Se bådens side",
@@ -354,8 +359,7 @@
     "crewList": {
       "title": "Besætningsliste",
       "notice": "Charterfirmaet skal give myndighederne en liste over alle om bord, før I sejler. Udfyld den her, så sender vi den videre - mangler der noget, spørger basen om det i skranken, når I ankommer.",
-      "alsoAsked": "Der spørges også om {fields}, som basen indhenter i skranken, når I ankommer.",
-      "maxPassengers": "Listen kan rumme højst {count} personer.",
+      "maxPassengers": "Listen kan rumme højst {count, plural, one {# person} other {# personer}}.",
       "loading": "Indlæser din besætningsliste…",
       "empty": "Der er ikke tilføjet nogen endnu. Din booking er til {guests} gæster - tilføj hver person, der kommer om bord, inklusive skipperen.",
       "member": "Besætningsmedlem {number}",
@@ -376,11 +380,8 @@
         "firstName": "Indtast personens fornavn",
         "lastName": "Indtast personens efternavn",
         "skipperEmail": "Indtast en gyldig e-mailadresse",
-        "oneSkipper": "Kun én person kan være skipper"
-      },
-      "requires": {
-        "shoeSize": "skostørrelser",
-        "disabledPerson": "om nogen om bord har et handicap"
+        "oneSkipper": "Kun én person kan være skipper",
+        "maxPassengers": "Dette charterfirmas liste kan højst rumme {count, plural, one {# person} other {# personer}}"
       },
       "legend": "Felter markeret med * er dem, dette charterfirma kræver.",
       "sent": "Sendt til charterfirmaet den {when}.",
@@ -407,7 +408,7 @@
       "skipperEmail": "Skipperens e-mail",
       "skipperMobile": "Skipperens telefon",
       "note": "Noget, basen bør vide",
-      "notePlaceholder": "Ankomsttidspunkt, flynummer, hvis nogen har brug for hjælp…",
+      "notePlaceholder": "Nogen der har brug for hjælp, sen ankomst, alt basen bør planlægge efter…",
       "documents": {
         "passport": "Pas",
         "idCard": "Id-kort",
@@ -418,7 +419,14 @@
         "female": "Kvinde"
       },
       "placeSearch": "Søg steder",
-      "placeEmpty": "Intet sted med det navn"
+      "placeEmpty": "Intet sted med det navn",
+      "shoeSize": "Skostørrelse",
+      "shoeSizePlaceholder": "EU 42",
+      "disabledPerson": "Denne person har brug for hjælp om bord",
+      "flightNumber": "Flynummer",
+      "flightNumberPlaceholder": "OU 412",
+      "arrivalTime": "Ankomsttid",
+      "airportTransfer": "Vi vil gerne have transfer fra lufthavnen til basen"
     },
     "priceLineLabels": {
       "charterPrice": "Charterpris",

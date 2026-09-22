@@ -1,3 +1,4 @@
+import { log } from "evlog";
 import { describe, expect, it, vi } from "vitest";
 import type { z } from "zod";
 
@@ -59,10 +60,19 @@ describe("mapBookingManagerAvailability", () => {
     });
   });
 
+  it("carries the bases the charter leaves from and ends at", () => {
+    expect(
+      mapBookingManagerAvailability(row({ baseFromId: "25", baseToId: "0" }), config),
+    ).toMatchObject({ startBaseId: "25", endBaseId: "0" });
+    expect(
+      mapBookingManagerAvailability(row({ baseFromId: null, baseToId: undefined }), config),
+    ).not.toHaveProperty("endBaseId");
+  });
+
   it.each([
     [BM_RESERVATION_STATUS.RESERVATION, "occupied"],
     [BM_RESERVATION_STATUS.OPTION, "option"],
-    [BM_RESERVATION_STATUS.OPTION_IN_EXPIRATION, "option"],
+    [BM_RESERVATION_STATUS.OPTION_EXPIRED, "blocked"],
     // A vendor maintenance or delivery block is not a sale.
     [BM_RESERVATION_STATUS.SERVICE, "blocked"],
   ])("maps status %i to %s", (status, expected) => {
@@ -181,6 +191,76 @@ describe("mapBookingManagerOccupancyDump", () => {
     // the rest of its slots stale with nothing to tidy them.
     expect(dump.intervals).toEqual([]);
     expect(dump.quarantinedYachtIds).toEqual(["99"]);
+  });
+
+  /*
+   * A DELETE on company 225 left both twins at 5 while `/offers` sold the week again, so a
+   * cancelled row the feed still lists must not keep the week off sale.
+   */
+  it("skips a cancelled row, even one it could not otherwise read", () => {
+    const dump = mapBookingManagerOccupancyDump(
+      [
+        row({ id: "1" }),
+        row({ id: "2", status: BM_RESERVATION_STATUS.CANCELLED }),
+        row({
+          id: "3",
+          yachtId: "99",
+          status: BM_RESERVATION_STATUS.CANCELLED,
+          dateFrom: "2026-08-15 00:00:00",
+          dateTo: "2026-08-08 00:00:00",
+        }),
+      ],
+      config,
+    );
+
+    expect(dump.intervals).toHaveLength(1);
+    expect(dump.quarantinedYachtIds).toBeUndefined();
+  });
+
+  it("reports the statuses it had to read as blocked, once per dump with their counts", () => {
+    const warn = vi.spyOn(log, "warn").mockImplementation(() => undefined);
+    try {
+      const dump = mapBookingManagerOccupancyDump(
+        [
+          row({ id: "1" }),
+          row({ id: "2", status: 99 }),
+          row({ id: "3", status: 99 }),
+          row({ id: "4", status: null }),
+          row({ id: "5", status: BM_RESERVATION_STATUS.SLEEP_ABOARD }),
+        ],
+        config,
+      );
+
+      expect(dump.intervals.map((interval) => interval.status)).toEqual([
+        "occupied",
+        "blocked",
+        "blocked",
+        "blocked",
+        "blocked",
+      ]);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith({
+        action: "booking_manager.availability.unknown_status",
+        reason: "read as blocked",
+        count: 3,
+        statuses: "99:2, none:1",
+      });
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("says nothing about a dump whose statuses are all known", () => {
+    const warn = vi.spyOn(log, "warn").mockImplementation(() => undefined);
+    try {
+      mapBookingManagerOccupancyDump(
+        [row(), row({ id: "2", status: BM_RESERVATION_STATUS.OPTION })],
+        config,
+      );
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it("caps the reported issues", () => {

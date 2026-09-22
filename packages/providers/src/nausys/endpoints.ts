@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { crewListLinkFrom } from "../shared/crew-list-link";
 import { looseJsonObject } from "../shared/json";
 
 /**
@@ -14,6 +15,7 @@ import { looseJsonObject } from "../shared/json";
 const CATALOGUE = "/CBMS-external/rest/catalogue/v6";
 const YACHT_RESERVATION = "/CBMS-external/rest/yachtReservation/v6";
 const BOOKING = "/CBMS-external/rest/booking/v6";
+const SALES = "/CBMS-external/rest/sales/v6";
 
 export type NausysId = number | string;
 
@@ -65,6 +67,10 @@ export const nausysEndpoints = {
     stornoOption: `${BOOKING}/stornoOption`,
     addExtras: `${BOOKING}/addExtras`,
     updateExtras: `${BOOKING}/updateExtras`,
+  },
+  sales: {
+    /* The trailing slash is the vendor's own spelling of the URL. */
+    agencyInvoices: `${SALES}/invoices/agency/`,
   },
 } as const;
 
@@ -161,12 +167,29 @@ export const restRegionSchema = looseJsonObject({
   name: restInternationalTextSchema,
 });
 
+/**
+ * A Decimal coordinate, which a strict number would lose the whole row over if it ever came as
+ * a string or a null: a base dropped that way takes every listing sailing from it along.
+ */
+const coordinateSchema = z.union([z.number(), z.string()]).nullish();
+
 export const restLocationSchema = looseJsonObject({
   id: z.number().int(),
   regionId: z.number().int(),
   name: restInternationalTextSchema,
-  lat: z.number().optional(),
-  lon: z.number().optional(),
+  lat: coordinateSchema,
+  lon: coordinateSchema,
+});
+
+/** A company's season: which dates its `seasonSpecificData` price rows apply to. */
+export const restSeasonSchema = looseJsonObject({
+  id: z.number().int(),
+  season: z.string().optional(),
+  from: nausysDate,
+  to: nausysDate,
+  charterCompanyId: z.number().int().optional(),
+  locationsId: z.array(z.number().int()).optional(),
+  defaultSeason: z.boolean().optional(),
 });
 
 export const restCharterCompanySchema = looseJsonObject({
@@ -182,6 +205,11 @@ export const restCharterCompanySchema = looseJsonObject({
   web: z.string().optional(),
   // Lower-case `c`, unlike every neighbouring camelCase field.
   vatcode: z.string().optional(),
+  /**
+   * "private access company (offline company)". Documented as an Integer, sent as 0 in the
+   * recorded dump and as a boolean in the PDF's examples, so both are read as a boolean.
+   */
+  pac: z.union([z.boolean(), z.number().transform((value) => value !== 0)]).optional(),
 });
 
 export const restCharterBaseSchema = looseJsonObject({
@@ -189,10 +217,17 @@ export const restCharterBaseSchema = looseJsonObject({
   locationId: z.number().int(),
   companyId: z.number().int(),
   disabled: z.boolean().optional(),
+  /** dd.MM.yyyy. A base the operator has shut, or will; 28 of the 2,493 carry one. */
+  closedBaseDate: z.string().optional(),
+  disabledDate: z.string().optional(),
   checkInTime: z.string().optional(),
   checkOutTime: z.string().optional(),
-  lat: z.number().optional(),
-  lon: z.number().optional(),
+  lat: coordinateSchema,
+  lon: coordinateSchema,
+  /** International text: "Return on the evening before is obligatory!" on nearly every base. */
+  returnToBaseNote: restInternationalTextSchema.optional(),
+  /** International text: what to do when that return runs late. */
+  returnToBaseDelayNote: restInternationalTextSchema.optional(),
 });
 
 export const restEquipmentCategorySchema = looseJsonObject({
@@ -206,7 +241,8 @@ export const restEquipmentCategorySchema = looseJsonObject({
  * are better dropped at the parse than carried as an orphan.
  */
 export const restEquipmentSchema = looseJsonObject({
-  id: z.number().int(),
+  /* The PDF types this id as a String ("4"); the dump sends numbers. Either is one id. */
+  id: z.union([z.number().int(), z.string().regex(/^\d+$/).transform(Number)]),
   categoryId: z.number().int(),
   name: restInternationalTextSchema,
 });
@@ -447,6 +483,9 @@ const euminiaSchema = looseJsonObject({
 });
 
 export const restYachtSchema = looseJsonObject({
+  /* Set on 20 of 7,529 hulls, as an empty string on the rest; the base's times apply there. */
+  checkInTime: z.string().nullish(),
+  checkOutTime: z.string().nullish(),
   id: z.number().int(),
   name: z.string(),
   companyId: z.number().int(),
@@ -469,6 +508,10 @@ export const restYachtSchema = looseJsonObject({
   draft: z.number().optional(),
   engines: z.number().int().optional(),
   enginePower: z.number().optional(),
+  /** DIESEL, PETROL, ELECTRIC or HYBRID. */
+  fuelType: z.string().optional(),
+  /** SAILDRIVE, SHAFT, ZDRIVE, IPS, OUTBOARD, SURFACE or JET. */
+  propulsionType: z.string().optional(),
   engineBuilderId: z.number().int().optional(),
   fuelTank: z.number().optional(),
   waterTank: z.number().optional(),
@@ -681,8 +724,20 @@ export const restPaymentPlanSchema = looseJsonObject({
  * text rather than a string (frequently `{}`).
  */
 export const restExtraSchema = looseJsonObject({
-  /** Present on obligatory extras. */
+  /**
+   * The season price row this entry was priced from, unique within the offer where the other
+   * ids are not: one service can arrive as several rows, one per route or vehicle. It is the
+   * id `addExtras` takes (`RestYachtReservationServiceAddRequest.serviceId`).
+   *
+   * Not validated as an integer: on `obligatoryExtras` the live account sends 64-bit values
+   * (8662719459186772932, -6253611674196455678) that no JavaScript number holds exactly, and
+   * refusing them refused every quote. Only a safe integer is ever used as an id.
+   */
+  id: z.number().optional(),
+  /** Present on obligatory extras, and on a reservation's service lines. */
   serviceId: z.number().int().optional(),
+  /** Present on a reservation's equipment lines, where `serviceId` is not. */
+  equipmentId: z.number().int().optional(),
   /** Present on additional extras, alongside `extrasType`. */
   extraId: z.number().int().optional(),
   extrasType: z.string().optional(),
@@ -691,6 +746,10 @@ export const restExtraSchema = looseJsonObject({
   listPrice: decimal.optional(),
   currency: z.string(),
   quantity: decimal.optional(),
+  /** The unit count, where `quantity` is units times the price measure (deprecated). */
+  quantityExtras: decimal.optional(),
+  /** Added against a season quantity the operator has not released: not charged yet. */
+  onPending: z.boolean().optional(),
   priceMeasureId: z.number().int().optional(),
   calculationType: z.string().optional(),
   /** See `restYachtServicePriceSchema`: a rate to four decimals, never money. */
@@ -732,6 +791,8 @@ const restReservationServiceSchema = looseJsonObject({
   id: z.number().int(),
   serviceId: z.number().int(),
   quantity: decimal.optional(),
+  /** The unit count, where `quantity` is units times the price measure (deprecated). */
+  quantityExtras: decimal.optional(),
   editable: z.boolean().optional(),
   obligatory: z.boolean().optional(),
   /**
@@ -740,12 +801,30 @@ const restReservationServiceSchema = looseJsonObject({
    * is ahead of itself.
    */
   onPending: z.boolean().optional(),
+  /** Which variant the line is, in the operator's words; see `restExtraSchema`. */
+  condition: restInternationalTextSchema.optional(),
+});
+
+/** The same line for additional equipment, keyed by `equipmentId` rather than `serviceId`. */
+const restReservationEquipmentSchema = looseJsonObject({
+  id: z.number().int(),
+  equipmentId: z.number().int().optional(),
+  quantity: decimal.optional(),
+  /** The unit count, where `quantity` is units times the price measure (deprecated). */
+  quantityExtras: decimal.optional(),
+  /** Added against a season quantity the operator has not released: not charged yet. */
+  onPending: z.boolean().optional(),
+  editable: z.boolean().optional(),
+  obligatory: z.boolean().optional(),
+  condition: restInternationalTextSchema.optional(),
 });
 
 export const restListedExtrasSchema = looseJsonObject({
   ...statusFields,
   addedServices: z.array(restReservationServiceSchema).optional(),
-  addedEquipment: z.array(looseJsonObject({ id: z.number().int() })).optional(),
+  addedEquipment: z.array(restReservationEquipmentSchema).optional(),
+  /** What could still be added, as season price rows: `id` is what `addExtras` takes. */
+  availableExtras: z.array(restExtraSchema).optional(),
 });
 
 export const restFreeYachtsRequestSchema = z.object({
@@ -764,6 +843,8 @@ export const restFreeYachtsRequestSchema = z.object({
    * seven nights, 93.10) for a couple who owe 14 (18.62).
    */
   numberOfPersons: z.number().int().positive().optional(),
+  /** Several periods in one call; the vendor then ignores `periodFrom`/`periodTo`. */
+  periods: z.array(z.object({ periodFrom: nausysDate, periodTo: nausysDate })).optional(),
 });
 export type RestFreeYachtsRequest = z.infer<typeof restFreeYachtsRequestSchema>;
 
@@ -805,8 +886,9 @@ export const restFreeYachtsSearchRequestSchema = z.object({
   ignoreOptions: z.boolean().optional(),
   extendedDataSet: z.string().optional(),
   specialSearchType: z.enum(["REGULAR_OFFERS", "SHORT_OFFERS", "ONE_WAY_OFFERS"]).optional(),
-  specialSearchRangeFrom: nausysDate.optional(),
-  specialSearchRangeTo: nausysDate.optional(),
+  /* Day counts, not dates: 1-6 for SHORT_OFFERS, 1-30 for ONE_WAY_OFFERS. */
+  specialSearchRangeFrom: z.number().int().optional(),
+  specialSearchRangeTo: z.number().int().optional(),
 });
 export type RestFreeYachtsSearchRequest = z.infer<typeof restFreeYachtsSearchRequestSchema>;
 
@@ -890,8 +972,11 @@ export const restClientSchema = looseJsonObject({
   email: blankableString,
   phone: blankableString,
   mobile: blankableString,
+  /** "ENGLISH", "GERMAN", ...: the vendor's own names for the languages it knows. */
+  language: z.string().optional(),
 });
-export type RestClient = z.infer<typeof restClientSchema>;
+/** The request side: `company` goes out as the boolean the vendor documents. */
+export type RestClient = z.input<typeof restClientSchema>;
 
 export const restReservationStatusSchema = z.enum(["INFO", "OPTION", "RESERVATION", "STORNO"]);
 
@@ -934,39 +1019,19 @@ export type RestYachtReservation = z.infer<typeof restYachtReservationSchema>;
  */
 export const restYachtReservationResponseSchema = restYachtReservationSchema.extend(statusFields);
 
-/** Only these reach a customer's browser as an href; anything else is dropped. */
-const CREW_LIST_LINK_SCHEMES = new Set(["http:", "https:"]);
-
-/**
- * A value that is fit to be a link on our own pages: a string, and an absolute
- * http(s) URL once trimmed. Everything else — a number, a null, a relative path, a
- * `javascript:` payload — fails here rather than downstream.
- */
-const crewListLinkSchema = z
-  .string()
-  .trim()
-  .refine((value) => {
-    const url = URL.parse(value);
-    return url !== null && CREW_LIST_LINK_SCHEMES.has(url.protocol);
-  });
-
 /**
  * Matches `crewlistlink` and the casings the vendor might have used for it.
  *
- * A pattern rather than a declared field because the spelling is unverified: NauSYS
- * answered our crew-list question (Aug 2026) calling it `crewlistlink`, but no
- * reservation in our recorded test account carries the key at all, so it has never
- * been seen on the wire. `looseJsonObject` keeps undeclared keys, so scanning them
- * means the first live reservation that carries it works whichever convention the
- * field follows, instead of the link silently never appearing.
+ * The wire spelling is `crewlistlink` (seen on the test company's confirmed reservations,
+ * Sep 2026; options carry none). A pattern rather than a declared field so another casing
+ * would still be found.
  */
 const CREW_LIST_LINK_KEY = /^crew[_-]?list[_-]?(link|url)$/i;
 
 /**
  * The vendor's hosted crew-list page for this reservation (`crew.nausys.com`).
  *
- * Forwarding this to the customer is what NauSYS sanctioned in place of posting
- * passenger data through `crewlist/v6/set2`, so it is read here and nowhere else.
+ * Forwarded to the customer beside our own form, which files through `crewlist/v6/set2`.
  * A value that is not an http(s) URL is dropped rather than passed on: this string
  * becomes a link the customer clicks, and the vendor is not the right party to
  * decide what scheme our pages will follow.
@@ -975,8 +1040,8 @@ export function crewListLinkOf(reservation: RestYachtReservation): string | unde
   for (const [key, value] of Object.entries(reservation)) {
     if (!CREW_LIST_LINK_KEY.test(key)) continue;
 
-    const link = crewListLinkSchema.safeParse(value);
-    if (link.success) return link.data;
+    const link = crewListLinkFrom(value);
+    if (link) return link;
   }
   return undefined;
 }
@@ -988,6 +1053,15 @@ export const restCreateInfoRequestSchema = z.object({
   periodTo: nausysDate,
   // Vendor spells this field with a capital D, unlike every neighbouring field.
   yachtID: z.number().int(),
+  /**
+   * The party, which per-head extras on the reservation are priced for. Omitted, the vendor
+   * prices them for the yacht's maximum ("If omitted, the system will calculate the extras
+   * prices based on the maximum number of guests"), which is not what the quote charged.
+   */
+  numberOfGuests: z.number().int().positive().optional(),
+  /** Our discount to the client, out of our commission; always sent as an AMOUNT. */
+  agencyClientDiscountAmount: z.string().optional(),
+  agencyClientDiscountAmountType: z.enum(["AMOUNT", "PERCENTAGE"]).optional(),
 });
 export type RestCreateInfoRequest = z.infer<typeof restCreateInfoRequestSchema>;
 
@@ -1001,6 +1075,8 @@ export const restCreateOptionRequestSchema = z.object({
    * before any handler sees it. Typed here so the shape cannot regress to a boolean.
    */
   createWaitingOption: z.enum(["true", "false"]).optional(),
+  /** What replaces `createWaitingOption`, sent beside it until the old one is withdrawn. */
+  fallbackToWaitingOption: z.boolean().optional(),
 });
 export type RestCreateOptionRequest = z.infer<typeof restCreateOptionRequestSchema>;
 

@@ -19,4 +19,10 @@ describe("wallClockTime", () => {
     expect(wallClockTime("25:00")).toBeUndefined();
     expect(wallClockTime("noon")).toBeUndefined();
   });
+
+  it("reads a bare hour, as the NauSYS PDF writes one, as that hour on the dot", () => {
+    expect(wallClockTime("17")).toBe("17:00");
+    expect(wallClockTime("9")).toBe("09:00");
+    expect(wallClockTime("24")).toBeUndefined();
+  });
 });
