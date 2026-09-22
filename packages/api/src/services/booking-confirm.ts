@@ -215,6 +215,10 @@ async function markConfirmed(
   // Same rule, different reason: the hold may already have carried a crew-list
   // link, and a confirmation that omits it is silence, not a retraction.
   if (reservation.crewListLink) changes.crewListLink = reservation.crewListLink;
+  if (reservation.providerAgencyReservationId) {
+    changes.providerAgencyReservationId = reservation.providerAgencyReservationId;
+  }
+  if (reservation.operatorSettlement) changes.operatorSettlement = reservation.operatorSettlement;
 
   await db
     .update(booking)

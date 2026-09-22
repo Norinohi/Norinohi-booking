@@ -178,6 +178,14 @@ export type CommercialSnapshot = {
   amenities?: string[];
 };
 
+/** Minor units in `currency`; `dueDate` is `yyyy-MM-dd`. */
+export type OperatorSettlement = {
+  currency: string;
+  netMinor?: number;
+  plan: { dueDate: string; amountMinor: number }[];
+  terms?: string;
+};
+
 /**
  * The booking aggregate. `commercialSnapshot` freezes what the customer saw at
  * confirmation — the My Bookings card must keep rendering correctly even after the
@@ -208,6 +216,18 @@ export const booking = pgTable(
       .references(() => provider.code, { onDelete: "restrict" }),
     providerReservationId: text("provider_reservation_id"),
     providerOptionId: text("provider_option_id"),
+    /**
+     * The vendor's other id for the same reservation, where it keeps two: Booking Manager's
+     * agency-side twin, which its reservation lists and `showOptions` name. We key on the
+     * charter-side id POST answers with; this is what matches the vendor's lists back to it.
+     */
+    providerAgencyReservationId: text("provider_agency_reservation_id"),
+    /**
+     * What we owe the operator, as the vendor stated it on the reservation: the net after our
+     * commission and when it falls due. It gives away our margin, so staff read it and no
+     * customer-facing surface does.
+     */
+    operatorSettlement: jsonb("operator_settlement").$type<OperatorSettlement>(),
     /**
      * NauSYS rotates this per-reservation security token whenever important
      * reservation data changes, and every subsequent call must send the latest one.

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { crewListLinkFrom } from "../shared/crew-list-link";
 import { looseJsonObject } from "../shared/json";
 
 /**
@@ -1018,28 +1019,6 @@ export type RestYachtReservation = z.infer<typeof restYachtReservationSchema>;
  */
 export const restYachtReservationResponseSchema = restYachtReservationSchema.extend(statusFields);
 
-/** Only these reach a customer's browser as an href; anything else is dropped. */
-const CREW_LIST_LINK_SCHEMES = new Set(["http:", "https:"]);
-
-/**
- * A value that is fit to be a link on our own pages: a string, and an absolute
- * http(s) URL once trimmed. Everything else — a number, a null, a relative path, a
- * `javascript:` payload — fails here rather than downstream.
- */
-const crewListLinkSchema = z
-  .string()
-  .trim()
-  .refine((value) => {
-    const url = URL.parse(value);
-    /* The PDF's own example has the literal segment `/null/` where the code belongs, which is a
-       page that opens on nothing. */
-    return (
-      url !== null &&
-      CREW_LIST_LINK_SCHEMES.has(url.protocol) &&
-      !url.pathname.split("/").includes("null")
-    );
-  });
-
 /**
  * Matches `crewlistlink` and the casings the vendor might have used for it.
  *
@@ -1061,8 +1040,8 @@ export function crewListLinkOf(reservation: RestYachtReservation): string | unde
   for (const [key, value] of Object.entries(reservation)) {
     if (!CREW_LIST_LINK_KEY.test(key)) continue;
 
-    const link = crewListLinkSchema.safeParse(value);
-    if (link.success) return link.data;
+    const link = crewListLinkFrom(value);
+    if (link) return link;
   }
   return undefined;
 }

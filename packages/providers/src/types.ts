@@ -464,6 +464,20 @@ export const providerReservationStateSchema = z.object({
 });
 export type ProviderReservationState = z.infer<typeof providerReservationStateSchema>;
 
+/**
+ * What we owe the operator for a reservation, as the vendor states it: the net after our
+ * commission and the dates it falls due. Commercially sensitive, since it gives away our margin,
+ * so it is for staff and never for a customer-facing surface.
+ */
+export const operatorSettlementSchema = z.object({
+  currency: z.string().length(3),
+  netMinor: z.number().int().optional(),
+  plan: z.array(z.object({ dueDate: z.iso.date(), amountMinor: z.number().int() })),
+  /** The operator's own payment terms as written ("50% after booking ..."). */
+  terms: z.string().optional(),
+});
+export type OperatorSettlement = z.infer<typeof operatorSettlementSchema>;
+
 export const providerReservationSchema = z.object({
   id: z.string(),
   provider: providerKeySchema,
@@ -472,6 +486,13 @@ export const providerReservationSchema = z.object({
   status: z.enum(["option_held", "confirmed", "cancelled"]),
   providerReservationId: z.string().optional(),
   providerOptionId: z.string().optional(),
+  /**
+   * The vendor's other id for the same reservation, where it keeps two. Booking Manager files
+   * every reservation as a charter-side record, whose id POST answers with and we key on, and an
+   * agency-side twin, whose id its lists and `showOptions` carry; this is the twin's.
+   */
+  providerAgencyReservationId: z.string().optional(),
+  operatorSettlement: operatorSettlementSchema.optional(),
   /**
    * Rotating per-reservation security token (the NauSYS `uuid`). It changes
    * whenever important reservation data changes, so the caller must persist the

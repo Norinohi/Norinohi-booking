@@ -203,6 +203,24 @@ client identity, the price block (§6), invoice `items`, `paymentPlan`,
 `expirationDate − BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES` (default 15) so
 our sweeper releases before the vendor does.
 
+Every reservation exists twice. POST answers with the charter-side record (id ending in the
+operator's company id), which is the handle we key on; `showOptions`' `myReservationId`,
+`reservations/{year}` and the answers to PUT and DELETE carry the agency-side twin (id ending in
+ours) with `charterReservationId` pointing back. `booking.provider_agency_reservation_id` keeps
+the twin's id once we learn it (the confirming PUT, or recovering an option), and anything that
+matches a vendor list back to a booking goes through `charterReservationId`.
+
+What the hold keeps off the option (measured on company 225, 2026-09-22):
+
+- `crewListLink`: the operator's hosted crew-list page, already present on the option, on both
+  twins, and identical in substance to `GET /crewListLink/{id}`. Carried to
+  `booking.crew_list_link`, so the confirmation email and `booking.get` offer it the way they
+  offer NauSYS's.
+- `finalPrice`, `agencyPaymentPlan` and `termsOfPayment` off the charter-side record, as
+  `booking.operator_settlement`: what we owe the operator and when. Staff-only, since it gives
+  away our margin. The agency twin has no plan and a `finalPrice` equal to the client's, so it is
+  never read from there. `bankDetails` is not kept, as no operator bank data is.
+
 ## 4. Reservation status enum
 
 `status` on both reservation and availability records:

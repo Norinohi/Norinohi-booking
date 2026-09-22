@@ -610,6 +610,8 @@ async function holdOption(
         providerStatus: reservation.status,
         holdExpiresAt: reservation.holdExpiresAt ? new Date(reservation.holdExpiresAt) : null,
         crewListLink: reservation.crewListLink ?? null,
+        providerAgencyReservationId: reservation.providerAgencyReservationId ?? null,
+        operatorSettlement: reservation.operatorSettlement ?? null,
         commercialSnapshot: withHandoverTimes(pending.commercialSnapshot, reservation),
       });
     } catch (error) {

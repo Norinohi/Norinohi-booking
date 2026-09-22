@@ -1072,6 +1072,13 @@
       "when": 1790036420957,
       "tag": "0152_bind_provider_bases",
       "breakpoints": true
+    },
+    {
+      "idx": 153,
+      "version": "7",
+      "when": 1790045953177,
+      "tag": "0153_booking_operator_settlement",
+      "breakpoints": true
     }
   ]
 }

@@ -730,6 +730,20 @@ export const bookingAdminDetailSchema = bookingAdminRowSchema.extend({
    * vendor never let go of, and staff have to settle that by hand before the refund is paid.
    */
   providerStatus: z.string().nullable(),
+  /** The vendor's second id for the reservation, where it keeps two (Booking Manager). */
+  providerAgencyReservationId: z.string().nullable(),
+  /**
+   * What we owe the operator, as the vendor stated it on the reservation. Staff only: it gives
+   * away our margin.
+   */
+  operatorSettlement: z
+    .object({
+      currency: z.string(),
+      netMinor: z.number().int().nullable(),
+      plan: z.array(z.object({ dueDate: z.string(), amountMinor: z.number().int() })),
+      terms: z.string().nullable(),
+    })
+    .nullable(),
   holdExpiresAt: z.string().nullable(),
   confirmedAt: z.string().nullable(),
   crewType: z.string().nullable(),

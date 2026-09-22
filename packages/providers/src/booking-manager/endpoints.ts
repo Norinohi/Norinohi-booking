@@ -708,6 +708,12 @@ export const restReservationSchema = looseJsonObject({
    */
   agencyPaymentPlan: z.array(restPaymentSchema).optional().nullable(),
   promoCode: optionalText,
+  /**
+   * The operator's hosted crew-list page, on both twins and already on the option: POST, GET
+   * and `/crewListLink/{id}` all answer with a link to the charter-side `reservation_id`, with a
+   * token that differs on every call (company 225, 2026-09-22).
+   */
+  crewListLink: optionalText,
   bankDetails: optionalText,
   termsOfPayment: optionalText,
   remarks: optionalText,

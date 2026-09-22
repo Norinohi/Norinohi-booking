@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { booking, providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
@@ -15,7 +17,9 @@ import {
 import { SequentialQueue } from "../shared/queue";
 import { providerRejection } from "../testing/contracts";
 import type { BookingDraft, Money } from "../types";
-import { createBookingManagerBookingService } from "./booking";
+import { createBookingManagerBookingService, operatorSettlementOf } from "./booking";
+import { restReservationSchema } from "./endpoints";
+import { parseExactJson } from "../shared/exact-json";
 import { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
 
@@ -700,5 +704,120 @@ describe("createOption refusals", () => {
     expect(error).toBeInstanceOf(SlotUnavailableError);
     expect(error.providerCode).toBe("NOT_AVAILABLE");
     expect(refusesOnlyTheTerms(error)).toBe(false);
+  });
+});
+
+/*
+ * Option #1 of the 225 lifecycle run, 22 September 2026, as POST /reservation answered it (bank
+ * details dropped, the crew-list token redacted). Pipo, 17-24.10.2026, base 127.
+ */
+const OPTION_ANSWER = readFileSync(
+  new URL("./fixtures/reservation-225-option.json", import.meta.url),
+  "utf8",
+);
+const pipoOptionDraft: BookingDraft = {
+  ...draft,
+  checkIn: "2026-10-17",
+  checkOut: "2026-10-24",
+  guests: 2,
+  currency: "EUR",
+  route: { startBaseId: "127", endBaseId: "127" },
+};
+const pipoResolver = {
+  ...fakeResolver(),
+  toExternalListing: () =>
+    Promise.resolve({
+      externalYachtId: "207160073500225",
+      externalCompanyId: "225",
+      externalBaseId: "127",
+      listingSourceId: "lsrc_pipo",
+    }),
+};
+
+describe("createOption keeps what the option says", () => {
+  const holding = (answer: string) =>
+    scriptedService(
+      { POST: [{ status: 201, body: answer }], DELETE: [{ status: 200, body: '{"status":5}' }] },
+      {
+        resolver: pipoResolver,
+        loadProductName: () => Promise.resolve("Bareboat"),
+        verifyPrice: () =>
+          Promise.resolve({
+            hash: PRICE_HASH,
+            clientPrice: { amountMinor: 170_000, currency: "EUR" },
+          }),
+      },
+    );
+
+  it("carries the operator's crew-list page", async () => {
+    const reservation = await holding(OPTION_ANSWER).service.createOption(pipoOptionDraft);
+
+    expect(reservation.crewListLink).toMatch(
+      /^https:\/\/www\.booking-manager\.com\/cbm\/servlet\/cbm\?.*reservation_id=8295147330000100225$/,
+    );
+  });
+
+  it("drops a crew-list link that is not a web address", async () => {
+    const reservation = await holding(
+      OPTION_ANSWER.replace(/"crewListLink":\s*"[^"]*"/, '"crewListLink":"javascript:alert(1)"'),
+    ).service.createOption(pipoOptionDraft);
+
+    expect(reservation.crewListLink).toBeUndefined();
+  });
+
+  it("records what we owe the operator and when, off the charter-side record", async () => {
+    const reservation = await holding(OPTION_ANSWER).service.createOption(pipoOptionDraft);
+
+    expect(reservation.operatorSettlement).toEqual({
+      currency: "EUR",
+      netMinor: 144_500,
+      plan: [{ dueDate: "2026-09-29", amountMinor: 144_500 }],
+      terms: "50% after booking\n50% 4 weeks before commencement of the charter",
+    });
+  });
+
+  it("releases and refuses a second option queued behind a hold (status 9)", async () => {
+    const { calls, service } = holding(OPTION_ANSWER.replace(/"status":\s*2/, '"status":9'));
+
+    const error = await providerRejection(service.createOption(pipoOptionDraft));
+
+    expect(error.providerCode).toBe("NOT_AN_OPTION");
+    expect(calls.map((call) => call.method)).toEqual(["POST", "DELETE"]);
+  });
+
+  it("refuses anything but an open option without trying to release it", async () => {
+    const { calls, service } = holding(OPTION_ANSWER.replace(/"status":\s*2/, '"status":1'));
+
+    const error = await providerRejection(service.createOption(pipoOptionDraft));
+
+    expect(error.providerCode).toBe("NOT_AN_OPTION");
+    expect(calls.map((call) => call.method)).toEqual(["POST"]);
+  });
+});
+
+/* The agency twin of that option, as GET /reservation/8295147120000107113 answered it. */
+describe("operatorSettlementOf", () => {
+  it("reads nothing off the agency twin, whose finalPrice is the client's", () => {
+    const twin = restReservationSchema.parse(
+      parseExactJson(
+        `{"id":8295147120000107113,"charterReservationId":8295147330000100225,"status":2,` +
+          `"currency":"EUR","termsOfPayment":"  ","commission":0.0,"finalPrice":1700.0,` +
+          `"clientPrice":1700.0,"paymentPlan":[{"date":"2026-09-29 00:00:00","amount":1700.0}]}`,
+      ),
+    );
+
+    expect(operatorSettlementOf(twin)).toBeUndefined();
+  });
+});
+
+describe("confirmBooking keeps what the answer says", () => {
+  it("records the agency twin's id and the crew-list page", async () => {
+    const reservation = await serviceAnswering(
+      `{"id":${AGENCY_ID},"charterReservationId":${CHARTER_ID},"status":1,` +
+        `"crewListLink":"https://www.booking-manager.com/cbm/servlet/cbm?fview=crew_editor&reservation_id=${CHARTER_ID}"}`,
+    ).confirmBooking(draft);
+
+    expect(reservation.providerAgencyReservationId).toBe(AGENCY_ID);
+    expect(reservation.crewListLink).toContain(`reservation_id=${CHARTER_ID}`);
   });
 });

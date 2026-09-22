@@ -10,6 +10,7 @@ import {
   ProviderError,
   SlotUnavailableError,
 } from "../shared/errors";
+import { crewListLinkFrom } from "../shared/crew-list-link";
 import { exactJsonNumber } from "../shared/exact-json";
 import { thrownFields } from "../shared/log-fields";
 import { toExactPositiveIntId } from "../shared/projection-helpers";
@@ -26,6 +27,7 @@ import {
   providerReservationSchema,
   type BookingDraft,
   type Money,
+  type OperatorSettlement,
   type ProviderExtrasMutation,
   type ProviderQuote,
   type ProviderReservation,
@@ -272,16 +274,25 @@ export function createBookingManagerBookingService(
 
     await logEvent(parsed.quoteId, "option_created", response);
 
+    if (response.status !== BM_RESERVATION_STATUS.OPTION) await refuseNotAnOption(response);
+
     const substituted = substitutionsIn(response, terms, current.clientPrice);
     if (substituted.length > 0) await refuseSubstituted(response, substituted);
 
+    return heldOption(parsed, response);
+  }
+
+  /** An open option the vendor answered with, in our terms. */
+  function heldOption(draft: BookingDraft, response: RestReservation): ProviderReservation {
     const reservationId = String(response.id);
+    const settlement = operatorSettlementOf(response);
+    const crewListLink = crewListLinkFrom(response.crewListLink);
 
     return providerReservationSchema.parse({
       id: reservationId,
       provider: PROVIDER,
-      listingId: parsed.listingId,
-      quoteId: parsed.quoteId,
+      listingId: draft.listingId,
+      quoteId: draft.quoteId,
       status: toCanonicalStatus(response, bookingManagerEndpoints.reservation),
       // Booking Manager keeps one id across the option and the reservation it
       // becomes, so the option and the booking are the same handle.
@@ -290,7 +301,49 @@ export function createBookingManagerBookingService(
       holdExpiresAt: holdExpiresAt(response),
       checkInTime: wallClockTime(response.dateFrom),
       checkOutTime: wallClockTime(response.dateTo),
+      ...(crewListLink ? { crewListLink } : null),
+      ...(settlement ? { operatorSettlement: settlement } : null),
     });
+  }
+
+  /**
+   * POST can only open an option (`2`), and anything else is a record we cannot hold a customer
+   * to. `9` is the one measured: a second option queued behind a hold already on the slot, with
+   * no expiry and blocking nothing, so it is released rather than left behind.
+   */
+  async function refuseNotAnOption(response: RestReservation): Promise<never> {
+    const status = response.status ?? null;
+    let released = false;
+    if (status === BM_RESERVATION_STATUS.OPTION_ON_WAITING) {
+      released = await releaseQuietly(String(response.id), "not_an_option");
+    }
+    throw new ContractError(
+      `Booking Manager answered the reservation with ${response.id} in status ${JSON.stringify(status)} (${BM_RESERVATION_STATUS_NAMES.get(status ?? -1) ?? "unknown"}), not an option`,
+      {
+        endpoint: bookingManagerEndpoints.reservation,
+        providerCode: "NOT_AN_OPTION",
+        payload: { id: response.id, status, released },
+      },
+    );
+  }
+
+  /** Best effort: an option it fails to free lapses at its own expiry, and the log names it. */
+  async function releaseQuietly(reservationId: string, reason: string): Promise<boolean> {
+    try {
+      await client.del(
+        bookingManagerEndpoints.reservationById(reservationId),
+        cancelResponseSchema,
+      );
+      return true;
+    } catch (cause) {
+      log.error({
+        action: "booking_manager.reservation.release_failed",
+        reservationId,
+        reason,
+        ...thrownFields(parseError(cause)),
+      });
+      return false;
+    }
   }
 
   async function confirmBooking(draft: BookingDraft): Promise<ProviderReservation> {
@@ -341,6 +394,8 @@ export function createBookingManagerBookingService(
     // The charter-side id stays the handle across option and booking; switching to
     // the id PUT happens to answer with would change the key mid-lifecycle.
     const reservationId = String(id);
+    const crewListLink = crewListLinkFrom(response.crewListLink);
+    const agencyId = response.id === id ? undefined : String(response.id);
 
     return providerReservationSchema.parse({
       id: reservationId,
@@ -350,6 +405,8 @@ export function createBookingManagerBookingService(
       status: toCanonicalStatus(response, endpoint),
       providerReservationId: reservationId,
       providerOptionId: parsed.reservation.providerOptionId ?? reservationId,
+      ...(agencyId ? { providerAgencyReservationId: agencyId } : null),
+      ...(crewListLink ? { crewListLink } : null),
     });
   }
 
@@ -468,18 +525,7 @@ export function createBookingManagerBookingService(
     response: RestReservation,
     substituted: readonly Substitution[],
   ): Promise<never> {
-    const endpoint = bookingManagerEndpoints.reservationById(String(response.id));
-    let released = true;
-    try {
-      await client.del(endpoint, cancelResponseSchema);
-    } catch (cause) {
-      released = false;
-      log.error({
-        action: "booking_manager.reservation.substitute_not_released",
-        reservationId: String(response.id),
-        ...thrownFields(parseError(cause)),
-      });
-    }
+    const released = await releaseQuietly(String(response.id), "substituted");
     log.warn({
       action: "booking_manager.reservation.substituted",
       reservationId: String(response.id),
@@ -632,6 +678,38 @@ export function substitutionsIn(
     }
   }
   return found;
+}
+
+/**
+ * What we owe the operator, off the charter-side record, which alone carries it: `finalPrice` is
+ * the charter net of our commission there, and `agencyPaymentPlan` its instalments. The agency
+ * twin has no `agencyPaymentPlan` and a `finalPrice` equal to the client's, so nothing is read
+ * from a record without the plan. `bankDetails` is left behind on purpose: operator bank
+ * accounts are not kept anywhere in our data (see `withoutOperatorFinancials`).
+ */
+export function operatorSettlementOf(response: RestReservation): OperatorSettlement | undefined {
+  const currency = response.currency?.trim().toUpperCase();
+  if (!currency || !Array.isArray(response.agencyPaymentPlan)) return undefined;
+
+  const plan = response.agencyPaymentPlan.flatMap((entry) =>
+    entry.amount == null || !entry.date
+      ? []
+      : [
+          {
+            dueDate: parseBookingManagerDate(entry.date),
+            amountMinor: numberToMinor(entry.amount, currency, "agencyPaymentPlan[].amount"),
+          },
+        ],
+  );
+  const terms = response.termsOfPayment?.trim();
+  return {
+    currency,
+    ...(response.finalPrice == null
+      ? null
+      : { netMinor: numberToMinor(response.finalPrice, currency, "finalPrice") }),
+    plan,
+    ...(terms ? { terms } : null),
+  };
 }
 
 /**

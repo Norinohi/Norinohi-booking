@@ -476,6 +476,66 @@ describe("provider does not answer the confirmation", () => {
 });
 
 /*
+ * Booking Manager answers the option with the operator's crew-list page and with what we owe the
+ * operator, and the confirmation with the agency twin's id. The booking keeps each, and a
+ * confirmation that states less does not take away what the option carried.
+ */
+describe("what the provider states on the reservation", () => {
+  it("keeps the crew-list page, the operator's settlement and the twin id", async () => {
+    const { db } = test;
+    const { listingId } = await seedYacht(db, "settlement");
+    const userId = await seedCustomer(db, "usr_settlement");
+    const quote = await quoteWeek(db, inventory, listingId, userId);
+    const settlement = {
+      currency: "EUR",
+      netMinor: 144_500,
+      plan: [{ dueDate: "2026-09-29", amountMinor: 144_500 }],
+      terms: "50% after booking",
+    };
+    const link = "https://www.booking-manager.com/cbm/servlet/cbm?fview=crew_editor";
+
+    const createOption = inventory.createOption.bind(inventory);
+    vi.spyOn(inventory, "createOption").mockImplementationOnce(async (draft) => ({
+      ...(await createOption(draft)),
+      crewListLink: link,
+      operatorSettlement: settlement,
+    }));
+    const hold = await holdQuote(db, inventory, userId, quote.quoteId);
+    await confirmCheckout(db, userId, hold.bookingId, "deposit");
+    const [paymentRow] = (await bookingState(db, hold.bookingId)).payments;
+    if (!paymentRow?.stripePaymentIntentId) throw new Error("checkout recorded no intent");
+
+    expect((await bookingState(db, hold.bookingId)).booking).toMatchObject({
+      crewListLink: link,
+      operatorSettlement: settlement,
+      providerAgencyReservationId: null,
+    });
+
+    const confirmBooking = inventory.confirmBooking.bind(inventory);
+    vi.spyOn(inventory, "confirmBooking").mockImplementationOnce(async (request) => ({
+      ...(await confirmBooking(request)),
+      providerAgencyReservationId: "8295147120000107113",
+    }));
+    await deliver(
+      db,
+      inventory,
+      stripe,
+      eventBody(
+        "payment_intent.amount_capturable_updated",
+        stripe.settle(paymentRow.stripePaymentIntentId, "requires_capture"),
+      ),
+    );
+
+    expect((await bookingState(db, hold.bookingId)).booking).toMatchObject({
+      status: "CONFIRMED",
+      crewListLink: link,
+      operatorSettlement: settlement,
+      providerAgencyReservationId: "8295147120000107113",
+    });
+  });
+});
+
+/*
  * The booking pages read check-in and check-out off the snapshot. It starts from the base, whose
  * times one sync fills for every fleet at the marina, so the option's own are written over them.
  */
