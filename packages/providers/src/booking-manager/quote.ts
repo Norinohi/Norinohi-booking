@@ -2,7 +2,12 @@ import { log } from "evlog";
 import type { z } from "zod";
 
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
-import { ContractError, ROUTE_NOT_OFFERED, SlotUnavailableError } from "../shared/errors";
+import {
+  ContractError,
+  PRODUCT_NOT_OFFERED,
+  ROUTE_NOT_OFFERED,
+  SlotUnavailableError,
+} from "../shared/errors";
 import { formatExtraCode } from "../shared/extra-code";
 import { stripHtml } from "../shared/html-text";
 import { text, toExactPositiveIntId } from "../shared/projection-helpers";
@@ -88,12 +93,43 @@ export interface BookingManagerQuoteService {
   getBookingManagerQuote(input: QuoteRequest): Promise<ProviderQuote>;
 }
 
+/** An `/offers` query for one yacht's charter; `productName` undefined asks for its default. */
+type OfferQuery = {
+  dateFrom: string;
+  dateTo: string;
+  yachtId: [string];
+  currency: string;
+  passengersOnBoard: number;
+  productName: string | undefined;
+};
+
 export function createBookingManagerQuoteService(
   options: BookingManagerQuoteServiceOptions,
 ): BookingManagerQuoteService {
   const { client, resolver } = options;
   const quoteTtlMs = options.quoteTtlMs ?? DEFAULT_QUOTE_TTL_MS;
   const now = options.now ?? Date.now;
+
+  /** The products the yacht sells this charter as, from this answer or else the vendor's default. */
+  async function productsOnSale(
+    answered: readonly RestOffer[],
+    query: OfferQuery,
+    checkIn: string,
+    checkOut: string,
+  ): Promise<string[]> {
+    const [yachtId] = query.yachtId;
+    let sold = offersForPeriod(answered, yachtId, checkIn, checkOut, undefined);
+    if (sold.length === 0) {
+      const unnamed = await client.get(
+        bookingManagerEndpoints.offers,
+        restOfferListSchema,
+        { ...query, productName: undefined },
+        client.liveLane(),
+      );
+      sold = offersForPeriod(unnamed, yachtId, checkIn, checkOut, undefined);
+    }
+    return [...new Set(sold.map((offer) => offer.product?.trim() || "an unnamed product"))];
+  }
 
   return {
     async getBookingManagerQuote(input: QuoteRequest): Promise<ProviderQuote> {
@@ -110,7 +146,7 @@ export function createBookingManagerQuoteService(
       // Midnight is mandatory here, not a placeholder: MMK confirmed the vendor
       // substitutes the base's own check-in/check-out time and returns it on the
       // offer, so sending a time of our own is refused or silently overridden.
-      const offerQuery = {
+      const offerQuery: OfferQuery = {
         dateFrom: formatBookingManagerDateTime(parsed.checkIn),
         dateTo: formatBookingManagerDateTime(parsed.checkOut),
         yachtId: [yachtId],
@@ -150,6 +186,28 @@ export function createBookingManagerQuoteService(
             `Booking Manager sells yacht ${yachtId} from ${parsed.checkIn} to ${parsed.checkOut}, but not from base ${route.startBaseId ?? "any"} to base ${route.endBaseId ?? "any"}`,
             { endpoint: bookingManagerEndpoints.offers, providerCode: ROUTE_NOT_OFFERED },
           );
+        }
+        /*
+         * The product is named from the stored yacht, which is only as fresh as the last
+         * catalogue sync. An operator who renamed or dropped it since gets silence for it,
+         * and read as the week going that silence would take a week still on sale off the
+         * card. So the vendor is asked once more, unnamed, which answers its default product.
+         */
+        if (productName !== undefined) {
+          const offered = await productsOnSale(offers, offerQuery, parsed.checkIn, parsed.checkOut);
+          if (offered.length > 0) {
+            log.warn({
+              action: "booking_manager.quote.product_not_offered",
+              yachtId,
+              checkIn: parsed.checkIn,
+              productName,
+              offered: offered.join(", "),
+            });
+            throw new SlotUnavailableError(
+              `Booking Manager sells yacht ${yachtId} from ${parsed.checkIn} to ${parsed.checkOut} as ${offered.join(", ")}, not as ${productName}`,
+              { endpoint: bookingManagerEndpoints.offers, providerCode: PRODUCT_NOT_OFFERED },
+            );
+          }
         }
         throw new SlotUnavailableError(
           `Booking Manager has no offer for yacht ${yachtId} from ${parsed.checkIn} to ${parsed.checkOut}`,

@@ -6,7 +6,7 @@ import type { z } from "zod";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { unscopedCompanies } from "../shared/company-scope";
 import { parseExactJson } from "../shared/exact-json";
-import { refusesOnlyTheRoute, SlotUnavailableError } from "../shared/errors";
+import { refusesOnlyTheTerms, SlotUnavailableError } from "../shared/errors";
 import { SequentialQueue } from "../shared/queue";
 import { providerRejection } from "../testing/contracts";
 import { bookingDraftSchema } from "../types";
@@ -687,7 +687,7 @@ const rumbaResolver: CatalogueResolver = {
 };
 
 /** A client answering every `/offers` call with `body`, and the URLs it was asked. */
-function clientAnswering(body: string) {
+function clientAnswering(...bodies: [string, ...string[]]) {
   const asked: URL[] = [];
   const client = new BookingManagerClient({
     config: QUOTE_CONFIG,
@@ -695,6 +695,7 @@ function clientAnswering(body: string) {
     retry: { maxAttempts: 1 },
     fetchImpl: (url) => {
       asked.push(new URL(String(url)));
+      const body = bodies[Math.min(asked.length, bodies.length) - 1] ?? bodies[0];
       return Promise.resolve({ status: 200, text: () => Promise.resolve(body) });
     },
   });
@@ -764,13 +765,14 @@ describe("getBookingManagerQuote on a pinned route", () => {
   it("refuses only the route when the week is sold on another pair", async () => {
     const error = await providerRejection(quoteOn({ startBaseId: "0", endBaseId: "25" }));
     expect(error).toBeInstanceOf(SlotUnavailableError);
-    expect(refusesOnlyTheRoute(error)).toBe(true);
+    expect(error.providerCode).toBe("ROUTE_NOT_OFFERED");
+    expect(refusesOnlyTheTerms(error)).toBe(true);
   });
 
   it("refuses the week when nothing is on sale", async () => {
     const error = await providerRejection(quoteOn({ startBaseId: "0" }, "[]"));
     expect(error).toBeInstanceOf(SlotUnavailableError);
-    expect(refusesOnlyTheRoute(error)).toBe(false);
+    expect(refusesOnlyTheTerms(error)).toBe(false);
   });
 });
 
@@ -809,19 +811,64 @@ describe("getBookingManagerQuote's product", () => {
     expect(asked[0]?.searchParams.has("productName")).toBe(false);
   });
 
-  it("refuses an answer for another product", async () => {
-    const { client } = clientAnswering(offers);
+  const quoteAs = (productName: string, client: BookingManagerClient) =>
+    providerRejection(
+      createBookingManagerQuoteService({
+        client,
+        resolver: rumbaResolver,
+        config: QUOTE_CONFIG,
+        loadProductName: () => Promise.resolve(productName),
+      }).getBookingManagerQuote(RUMBA_WEEK),
+    );
+
+  it("refuses an answer for another product, but not the week", async () => {
+    const { client, asked } = clientAnswering(offers);
+    const error = await quoteAs("Crewed", client);
+
+    expect(error).toBeInstanceOf(SlotUnavailableError);
+    expect(error.providerCode).toBe("PRODUCT_NOT_OFFERED");
+    expect(error.message).toMatch(/as Bareboat, not as Crewed/);
+    expect(refusesOnlyTheTerms(error)).toBe(true);
+    expect(asked).toHaveLength(1);
+  });
+
+  /*
+   * What the vendor does with a product the yacht is not priced for: on 225, productName=Cabin
+   * for West Wind answered no rows, while the same call unnamed sold it as Bareboat.
+   */
+  it("asks for the vendor's default before calling a silent product a week gone", async () => {
+    const { client, asked } = clientAnswering("[]", offers);
+    const error = await quoteAs("Cabin", client);
+
+    expect(error.providerCode).toBe("PRODUCT_NOT_OFFERED");
+    expect(asked).toHaveLength(2);
+    expect(asked[0]?.searchParams.get("productName")).toBe("Cabin");
+    expect(asked[1]?.searchParams.has("productName")).toBe(false);
+    expect(asked[1]?.searchParams.get("passengersOnBoard")).toBe("4");
+  });
+
+  it("refuses the week when the default is not on sale either", async () => {
+    const { client, asked } = clientAnswering("[]", "[]");
+    const error = await quoteAs("Bareboat", client);
+
+    expect(error.providerCode).toBe("NO_OFFER");
+    expect(refusesOnlyTheTerms(error)).toBe(false);
+    expect(asked).toHaveLength(2);
+  });
+
+  it("asks once where no product was named", async () => {
+    const { client, asked } = clientAnswering("[]");
     const error = await providerRejection(
       createBookingManagerQuoteService({
         client,
         resolver: rumbaResolver,
         config: QUOTE_CONFIG,
-        loadProductName: () => Promise.resolve("Crewed"),
+        loadProductName: () => Promise.resolve(undefined),
       }).getBookingManagerQuote(RUMBA_WEEK),
     );
 
-    expect(error).toBeInstanceOf(SlotUnavailableError);
     expect(error.providerCode).toBe("NO_OFFER");
+    expect(asked).toHaveLength(1);
   });
 });
 

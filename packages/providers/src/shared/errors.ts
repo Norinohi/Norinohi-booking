@@ -162,8 +162,19 @@ export class SlotUnavailableError extends ProviderError {
  */
 export const ROUTE_NOT_OFFERED = "ROUTE_NOT_OFFERED";
 
-export function refusesOnlyTheRoute(error: Error | null): boolean {
-  return error instanceof SlotUnavailableError && error.providerCode === ROUTE_NOT_OFFERED;
+/**
+ * The `providerCode` of a `SlotUnavailableError` for a period the vendor sells, only not under
+ * the product we named for the listing. That name comes from the last catalogue sync, so this is
+ * our record falling behind the operator's, not the week going.
+ */
+export const PRODUCT_NOT_OFFERED = "PRODUCT_NOT_OFFERED";
+
+/** A refusal of the terms we asked on, while the period itself stays on sale. */
+export function refusesOnlyTheTerms(error: Error | null): boolean {
+  return (
+    error instanceof SlotUnavailableError &&
+    (error.providerCode === ROUTE_NOT_OFFERED || error.providerCode === PRODUCT_NOT_OFFERED)
+  );
 }
 
 const NETWORK_ERROR_NAMES = new Set(["AbortError", "TimeoutError", "FetchError"]);

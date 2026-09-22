@@ -26,7 +26,7 @@ import type {
 } from "@yacht-charter/providers";
 import {
   NotFoundError as ProviderNotFoundError,
-  refusesOnlyTheRoute,
+  refusesOnlyTheTerms,
   SlotUnavailableError,
 } from "@yacht-charter/providers/shared/errors";
 
@@ -487,7 +487,7 @@ export async function learnFromProviderRefusal(
   priced: typeof quote.$inferSelect,
   error: Error | null,
 ): Promise<void> {
-  if (!saysSlotIsGone(error) || refusesOnlyTheRoute(error) || !priced.listingOfferId) return;
+  if (!saysSlotIsGone(error) || refusesOnlyTheTerms(error) || !priced.listingOfferId) return;
 
   const input: QuoteRequest = {
     listingId: priced.listingId,
@@ -865,8 +865,8 @@ async function priceOrConflict(
        * is paying for. Logging it and moving on left the card advertising that week until the
        * sync came round, and the next visitor met the same refusal.
        */
-      /* Not where only the pinned base pair was refused: the week is still on sale. */
-      if (listingOfferId && !refusesOnlyTheRoute(error)) {
+      /* Not where only the pinned base pair or the product was refused: the week is still on sale. */
+      if (listingOfferId && !refusesOnlyTheTerms(error)) {
         await learnFromRefusal(db, provider, input, attempts);
       }
       throw new ConflictError({ message: "Requested slot is not available" });

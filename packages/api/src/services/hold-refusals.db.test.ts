@@ -11,6 +11,7 @@ import { createTestDatabase, type TestDatabase } from "@yacht-charter/db/test-su
 import type { MockInventoryProvider } from "@yacht-charter/providers/mock/provider";
 import {
   ContractError,
+  PRODUCT_NOT_OFFERED,
   ROUTE_NOT_OFFERED,
   SlotUnavailableError,
 } from "@yacht-charter/providers/shared/errors";
@@ -173,14 +174,15 @@ describe("provider refuses the hold", () => {
 });
 
 /*
- * A vendor that sells the week, only not on the base pair the customer pinned, has not sold the
- * week: refusing the pair must not take it off the card for everyone else.
+ * A vendor that sells the week, only not on the base pair the customer pinned or under the product
+ * we named, has not sold the week: refusing those terms must not take it off the card for everyone
+ * else.
  *
  * The world quotes four guests, so a refusal that is learned from first asks the vendor again for
  * two. Each refusal therefore stands for every quote in the test, and neither the probe nor a
- * refused period may follow a route refusal.
+ * refused period may follow a refusal of the terms.
  */
-describe("provider refuses only the pinned route", () => {
+describe("provider refuses only the terms asked on", () => {
   const routeRefused = () =>
     new SlotUnavailableError("sold from another base pair", { providerCode: ROUTE_NOT_OFFERED });
   const weekGone = () =>
@@ -255,6 +257,38 @@ describe("provider refuses only the pinned route", () => {
 
     expect(getQuote).toHaveBeenCalledTimes(2);
     expect(await refusedPeriods(listingId)).toEqual([{ startDate: WEEK_START }]);
+  });
+
+  /* The product named from a stale catalogue record: the vendor still sells the week as another. */
+  const productRefused = () =>
+    new SlotUnavailableError("sold as another product", { providerCode: PRODUCT_NOT_OFFERED });
+
+  it("writes no refusal when a re-price is refused for the product", async () => {
+    const { db } = test;
+    const { listingId, userId, quoteId } = await quoteOn("product-reprice");
+    const getQuote = refuse("getQuote", productRefused);
+
+    await expect(repriceQuote(db, inventory, quoteId, userId, { guests: 3 })).rejects.toMatchObject(
+      { kind: "CONFLICT", message: "Requested slot is not available" },
+    );
+
+    expect(getQuote).toHaveBeenCalledTimes(1);
+    expect(await refusedPeriods(listingId)).toEqual([]);
+  });
+
+  it("writes no refusal when the first quote is refused for the product", async () => {
+    const { db } = test;
+    const { listingId } = await seedYacht(db, "product-quote");
+    const userId = await seedCustomer(db, "usr_product_quote");
+    refuse("getQuote", productRefused);
+
+    await expect(quoteWeek(db, inventory, listingId, userId)).rejects.toMatchObject({
+      kind: "SERVICE_UNAVAILABLE",
+      data: { code: "PROVIDER_UNAVAILABLE" },
+    });
+
+    expect(await refusedPeriods(listingId)).toEqual([]);
+    expect(await weekOnSale(db, listingId)).toBe(true);
   });
 });
 
