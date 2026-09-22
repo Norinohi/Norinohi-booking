@@ -104,6 +104,8 @@
     "discountsHeading": "Inkludert i leieprisen over",
     "dueNow": "Å betale nå",
     "payNowCta": "Betal {amount} nå",
+    "payNowPlain": "Betal nå",
+    "chargedAs": "Du belastes {amount} til bankens kurs",
     "requestBookingCta": "Send bookingforespørsel",
     "requestBookingHint": "Operatøren av denne yachten bekrefter hver booking personlig. Vi spør dem om datoene dine og kommer tilbake til deg. Ingenting belastes nå.",
     "requestQuote": "Be om tilbud",

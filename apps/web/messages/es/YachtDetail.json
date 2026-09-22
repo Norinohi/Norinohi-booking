@@ -104,6 +104,8 @@
     "discountsHeading": "Ya incluido en el precio de arriba",
     "dueNow": "A pagar ahora",
     "payNowCta": "Pagar {amount}",
+    "payNowPlain": "Pagar ahora",
+    "chargedAs": "Se cobrarán {amount} al cambio de tu banco",
     "requestBookingCta": "Enviar solicitud de reserva",
     "requestBookingHint": "El operador de este yate confirma cada reserva personalmente. Le consultaremos tus fechas y te responderemos. No se cobra nada ahora.",
     "requestQuote": "Solicitar presupuesto",

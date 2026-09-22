@@ -5,7 +5,7 @@ import type { StripeElementsOptions } from "@stripe/stripe-js";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@yacht-charter/ui/components/navigation/tabs";
 import { useMutation } from "@tanstack/react-query";
-import { useFormatter, useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { type ReactNode, useMemo } from "react";
@@ -13,8 +13,7 @@ import { type Path, useFormContext, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { useDisplayCurrency } from "@/components/layout/currency-provider";
-import { useExactMoney } from "@/hooks/use-money";
-import { exactFractionDigits } from "@/lib/money-fraction";
+import { useChargeMoney } from "@/hooks/use-money";
 
 import {
   askQuestionMutationOptions,
@@ -140,20 +139,10 @@ function PaymentMethods({ cardEnabled, hold }: { cardEnabled: boolean; hold: Rea
   const t = useTranslations("Booking.payment");
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const money = useExactMoney();
-  const format = useFormatter();
   const { display } = useDisplayCurrency();
 
   /* Unconverted on purpose: this is the vendor's own figure in the vendor's own currency. */
-  const formatCharge = (amountMinor: number, currency: string) => {
-    const digits = exactFractionDigits(amountMinor);
-    return format.number(amountMinor / 100, {
-      style: "currency",
-      currency,
-      minimumFractionDigits: digits,
-      maximumFractionDigits: digits,
-    });
-  };
+  const formatCharge = useChargeMoney();
   const { control, trigger, getValues, setValue } = useFormContext<BookingValues>();
   const { quote, bookingId } = useBooking();
   /* Undefined for a signed-in customer, whose session cookie authorises these calls instead. */
@@ -169,15 +158,15 @@ function PaymentMethods({ cardEnabled, hold }: { cardEnabled: boolean; hold: Rea
     countryCode: guest.countryCode,
   };
 
-  /* Due-now, straight from the quote — the same figure `checkout.confirm` would charge. */
-  const amount = quote ? money(quote.deposit.amountMinor, quote.deposit.currency) : "";
+  /* Due-now, straight from the quote and in its currency: the figure `checkout.confirm` charges. */
+  const amount = quote ? formatCharge(quote.deposit.amountMinor, quote.deposit.currency) : "";
   /*
    * What will actually leave the account, whenever the visitor is reading prices in a currency
    * the booking is not priced in.
    *
-   * The button above it is converted like everything else, and a converted figure is a
-   * reference rate rather than a charge. This line is the one place the two are put side by
-   * side, because it is the last screen before the money moves.
+   * The button names the real charge; the prices above it are converted, and a converted figure
+   * is a reference rate rather than a charge. This line says so on the last screen before the
+   * money moves.
    */
   const charged =
     quote && display && display !== quote.deposit.currency

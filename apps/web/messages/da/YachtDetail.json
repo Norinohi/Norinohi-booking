@@ -104,6 +104,8 @@
     "discountsHeading": "Indeholdt i lejeprisen ovenfor",
     "dueNow": "Forfalder nu",
     "payNowCta": "Betal {amount} nu",
+    "payNowPlain": "Betal nu",
+    "chargedAs": "Du trækkes {amount} til din banks kurs",
     "requestBookingCta": "Send bookingforespørgsel",
     "requestBookingHint": "Udbyderen af denne båd bekræfter hver booking personligt. Vi spørger dem om dine datoer og vender tilbage til dig. Der trækkes intet nu.",
     "requestQuote": "Bed om et tilbud",
