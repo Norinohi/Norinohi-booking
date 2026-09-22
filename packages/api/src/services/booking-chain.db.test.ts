@@ -152,7 +152,7 @@ describe("happy path: quote, hold, checkout, webhook, confirmation", () => {
     const { db } = test;
     const confirm = vi.spyOn(inventory, "confirmBooking");
     stripe.capture.mockClear();
-    /* Booking Manager's confirming PUT replaces the reservation, bases included. */
+    /* The base pair the option was opened on travels to the confirm with it. */
     const route = { startBaseId: "31404981", endBaseId: "2206479" };
     const quoteId = (await bookingState(db, bookingId)).quote?.id ?? "";
     await db.update(quoteTable).set({ route }).where(eq(quoteTable.id, quoteId));
@@ -471,6 +471,41 @@ describe("provider does not answer the confirmation", () => {
     const pending = await bookingState(db, hold.bookingId);
     expect(pending.booking.status).toBe("CONFIRMING");
     expect(pending.events.map((event) => event.kind)).toEqual(["option_created", "confirm_failed"]);
+    expect(await weekOnSale(db, listingId)).toBe(false);
+  });
+});
+
+/*
+ * Booking Manager can answer its confirm with the reservation still an option. That is neither a
+ * confirmation nor a refusal, so the booking waits in CONFIRMING like a timeout does.
+ */
+describe("provider answers the confirmation without confirming", () => {
+  it("neither marks it confirmed nor refunds it", async () => {
+    const { db } = test;
+    const { listingId, hold, pi } = await checkoutOn("unconfirmed");
+    const confirmBooking = inventory.confirmBooking.bind(inventory);
+    vi.spyOn(inventory, "confirmBooking").mockImplementationOnce(async (request) => ({
+      ...(await confirmBooking(request)),
+      status: "option_held",
+    }));
+    stripe.capture.mockClear();
+    stripe.cancel.mockClear();
+
+    await deliver(
+      db,
+      inventory,
+      stripe,
+      eventBody("payment_intent.amount_capturable_updated", stripe.settle(pi, "requires_capture")),
+    );
+
+    expect(stripe.capture).not.toHaveBeenCalled();
+    expect(stripe.cancel).not.toHaveBeenCalled();
+    const pending = await bookingState(db, hold.bookingId);
+    expect(pending.booking.status).toBe("CONFIRMING");
+    expect(pending.events.at(-1)).toMatchObject({
+      kind: "confirm_failed",
+      payload: { indeterminate: true, providerStatus: "option_held" },
+    });
     expect(await weekOnSale(db, listingId)).toBe(false);
   });
 });

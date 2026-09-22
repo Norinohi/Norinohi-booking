@@ -131,7 +131,11 @@ export interface ProviderHttpClient {
     options?: ProviderRequestOptions,
   ): Promise<ProviderHttpResult>;
   del(endpoint: string): Promise<ProviderHttpResult>;
-  put(endpoint: string, body?: JsonRequestValue): Promise<ProviderHttpResult>;
+  put(
+    endpoint: string,
+    body?: JsonRequestValue,
+    options?: ProviderRequestOptions,
+  ): Promise<ProviderHttpResult>;
 }
 
 /**
@@ -342,8 +346,16 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
     del(endpoint) {
       return send("DELETE", endpoint, null, false);
     },
-    put(endpoint, body) {
-      return send("PUT", endpoint, body ?? null, body !== undefined);
+    put(endpoint, body, requestOptions) {
+      return send(
+        "PUT",
+        endpoint,
+        body ?? null,
+        body !== undefined,
+        requestOptions?.queueKey,
+        requestOptions?.retry,
+        requestOptions?.timeoutMs,
+      );
     },
   };
 }

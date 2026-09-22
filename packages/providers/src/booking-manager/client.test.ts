@@ -169,3 +169,23 @@ describe("BookingManagerClient reservation refusals", () => {
     expect(error).toBeInstanceOf(ContractError);
   });
 });
+
+describe("BookingManagerClient confirm", () => {
+  it("sends the confirming PUT once, with its query, however the vendor fails", async () => {
+    const urls: string[] = [];
+    const client = clientWith(async (url) => {
+      urls.push(String(url));
+      return new Response("down", { status: 503 });
+    });
+
+    await providerRejection(
+      client.put(bookingManagerEndpoints.reservationById("8295147330000100225"), z.unknown(), {
+        sendNotification: false,
+      }),
+    );
+
+    expect(urls).toEqual([
+      "https://provider.test/reservation/8295147330000100225?sendNotification=false",
+    ]);
+  });
+});

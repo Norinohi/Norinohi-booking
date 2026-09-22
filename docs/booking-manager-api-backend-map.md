@@ -220,6 +220,15 @@ refuses the slot (`OWN_OPTION_HELD`, never learned as the week sold). An orphan 
 when it is open, for this customer and on exactly our terms (the create that timed out), and
 otherwise deleted and the create sent once more.
 
+The confirm is `PUT reservation/{id}?sendNotification=` with no body (the spec declares none,
+and Q8 measured every field of one ignored). It is not repeated blind: the record is read
+first (already `1` is taken as confirmed, `3` or `5` refuses with `OPTION_LAPSED`), the PUT is
+sent once with the long ceiling, and after one that did not answer the record is read again:
+`1` means it landed, a still open option earns one more PUT, and an unreadable record leaves
+the booking indeterminate in CONFIRMING. Only an answer at `1` is reported as confirmed; one
+still at `2` returns as a hold, which the booking chain leaves in CONFIRMING rather than
+marking CONFIRMED or refunding. Not exercised live, since it would fix a charter on 225.
+
 What the hold keeps off the option (measured on company 225, 2026-09-22):
 
 - `crewListLink`: the operator's hosted crew-list page, already present on the option, on both

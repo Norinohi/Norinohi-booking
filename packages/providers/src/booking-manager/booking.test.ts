@@ -9,6 +9,7 @@ import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { unscopedCompanies } from "../shared/company-scope";
 import {
   ContractError,
+  OPTION_LAPSED,
   OWN_OPTION_HELD,
   PRODUCT_NOT_OFFERED,
   refusesOnlyTheTerms,
@@ -115,7 +116,17 @@ function serviceAnswering(body: string) {
     config,
     queue: new SequentialQueue(),
     retry: { maxAttempts: 1 },
-    fetchImpl: () => Promise.resolve({ status: 200, text: () => Promise.resolve(body) }),
+    /* A read before and after a confirm finds the option still open. */
+    fetchImpl: (_url, init) =>
+      Promise.resolve({
+        status: 200,
+        text: () =>
+          Promise.resolve(
+            init.method === "GET"
+              ? `{"id":${CHARTER_ID},"status":2,"yachtId":978990780000100225}`
+              : body,
+          ),
+      }),
   });
 
   return createBookingManagerBookingService({
@@ -197,9 +208,8 @@ describe("createOption handover times", () => {
 /**
  * The vendor asked us not to send `status` on create: POST can only open an
  * option, so the field decides nothing, and their guidance is explicit about
- * leaving it out (Diego Pacifico, MMK, 2026-08-25). It stays on the update, which
- * is a replace rather than a patch and the one call where the value means
- * something.
+ * leaving it out (Diego Pacifico, MMK, 2026-08-25). The confirming PUT carries no
+ * body at all.
  */
 describe("reservation body status", () => {
   function capturing() {
@@ -253,13 +263,22 @@ describe("reservation body status", () => {
     expect(sent[0]?.body).toMatchObject({ passengersOnBoard: 4, clientName: "Ana Horvat" });
   });
 
-  it("still sends status on the confirming update", async () => {
-    const { sent, service } = capturing();
+  it("confirms with no body, as the spec declares the PUT", async () => {
+    const { calls, service } = scriptedService({
+      GET: [{ status: 200, body: `{"id":${CHARTER_ID},"status":2}` }],
+      PUT: [
+        {
+          status: 200,
+          body: `{"id":${AGENCY_ID},"charterReservationId":${CHARTER_ID},"status":1}`,
+        },
+      ],
+    });
 
     await service.confirmBooking(draft);
 
-    expect(sent[0]?.method).toBe("PUT");
-    expect(sent[0]?.body).toMatchObject({ status: 1 });
+    const put = calls.find((call) => call.method === "PUT");
+    expect(put?.body).toBeUndefined();
+    expect(put?.url).toBe(`${config.baseUrl}/reservation/${CHARTER_ID}?sendNotification=false`);
   });
 });
 
@@ -1041,5 +1060,144 @@ describe("createOption on a slot our expired option still blocks", () => {
       `DELETE reservation/${EXPIRED_CHARTER}`,
       "POST reservation",
     ]);
+  });
+});
+
+/*
+ * The confirming PUT cannot be exercised live (it would fix a charter on company 225), so its
+ * handling is pinned here: the record is read around it, it is never repeated blind, and only a
+ * `1` is reported as confirmed.
+ */
+describe("confirmBooking around the PUT", () => {
+  const record = (status: number, extra = "") =>
+    `{"id":${CHARTER_ID},"status":${status},"yachtId":978990780000100225${extra}}`;
+  const twin = (status: number) =>
+    `{"id":${AGENCY_ID},"charterReservationId":${CHARTER_ID},"status":${status}}`;
+  const methods = (calls: { method: string }[]) => calls.map((call) => call.method);
+
+  it("takes a reservation already at 1 as confirmed without confirming again", async () => {
+    const { calls, service } = scriptedService({ GET: [{ status: 200, body: record(1) }] });
+
+    await expect(service.confirmBooking(draft)).resolves.toMatchObject({ status: "confirmed" });
+    expect(methods(calls)).toEqual(["GET"]);
+  });
+
+  it("refuses an option that lapsed before it was paid for", async () => {
+    const { calls, service } = scriptedService({ GET: [{ status: 200, body: record(3) }] });
+
+    const error = await providerRejection(service.confirmBooking(draft));
+
+    expect(error).toBeInstanceOf(SlotUnavailableError);
+    expect(error.providerCode).toBe(OPTION_LAPSED);
+    expect(refusesOnlyTheTerms(error)).toBe(true);
+    expect(methods(calls)).toEqual(["GET"]);
+  });
+
+  it("reads a PUT that did not answer as landed when the record says 1", async () => {
+    const { calls, service } = scriptedService({
+      GET: [
+        { status: 200, body: record(2) },
+        { status: 200, body: record(1) },
+      ],
+      PUT: [{ status: 504, body: "<html>Gateway Time-out</html>" }],
+    });
+
+    await expect(service.confirmBooking(draft)).resolves.toMatchObject({ status: "confirmed" });
+    expect(methods(calls)).toEqual(["GET", "PUT", "GET"]);
+  });
+
+  it("tries once more only when the record shows the option still open", async () => {
+    const { calls, service } = scriptedService({
+      GET: [{ status: 200, body: record(2) }],
+      PUT: [
+        { status: 504, body: "" },
+        { status: 200, body: twin(1) },
+      ],
+    });
+
+    await expect(service.confirmBooking(draft)).resolves.toMatchObject({ status: "confirmed" });
+    expect(methods(calls)).toEqual(["GET", "PUT", "GET", "PUT", "GET"]);
+  });
+
+  it("stays a timeout when the record cannot be read after it", async () => {
+    const { calls, service } = scriptedService({
+      GET: [
+        { status: 200, body: record(2) },
+        { status: 503, body: "down" },
+      ],
+      PUT: [{ status: 504, body: "" }],
+    });
+
+    const error = await providerRejection(service.confirmBooking(draft));
+
+    expect(error).toBeInstanceOf(TransientError);
+    expect(methods(calls)).toEqual(["GET", "PUT", "GET"]);
+  });
+
+  it("never repeats a PUT the vendor refused", async () => {
+    const { calls, service } = scriptedService({
+      GET: [{ status: 200, body: record(2) }],
+      PUT: [{ status: 400, body: "bad input parameter" }],
+    });
+
+    const error = await providerRejection(service.confirmBooking(draft));
+
+    expect(error).toBeInstanceOf(ContractError);
+    expect(methods(calls)).toEqual(["GET", "PUT"]);
+  });
+
+  it("reports an answer still at 2 as a hold, not a confirmation", async () => {
+    const { service } = scriptedService({
+      GET: [{ status: 200, body: record(2) }],
+      PUT: [{ status: 200, body: twin(2) }],
+    });
+
+    await expect(service.confirmBooking(draft)).resolves.toMatchObject({ status: "option_held" });
+  });
+
+  it("refuses an answer that says the option is gone", async () => {
+    const { service } = scriptedService({
+      GET: [{ status: 200, body: record(2) }],
+      PUT: [{ status: 200, body: twin(5) }],
+    });
+
+    const error = await providerRejection(service.confirmBooking(draft));
+
+    expect(error.providerCode).toBe(OPTION_LAPSED);
+  });
+
+  it("confirms even where the record cannot be read first", async () => {
+    const { calls, service } = scriptedService({
+      GET: [{ status: 503, body: "down" }],
+      PUT: [{ status: 200, body: twin(1) }],
+    });
+
+    await expect(service.confirmBooking(draft)).resolves.toMatchObject({ status: "confirmed" });
+    expect(methods(calls)).toEqual(["GET", "PUT", "GET"]);
+  });
+
+  it("records what we owe off the charter side, since the PUT answers with the twin", async () => {
+    const { service } = scriptedService({
+      GET: [
+        { status: 200, body: record(2) },
+        {
+          status: 200,
+          body: record(
+            1,
+            `,"currency":"EUR","finalPrice":1445.0,"agencyPaymentPlan":[{"date":"2026-09-29 00:18:26","amount":1445.0}]`,
+          ),
+        },
+      ],
+      PUT: [{ status: 200, body: twin(1) }],
+    });
+
+    const reservation = await service.confirmBooking(draft);
+
+    expect(reservation.operatorSettlement).toEqual({
+      currency: "EUR",
+      netMinor: 144_500,
+      plan: [{ dueDate: "2026-09-29", amountMinor: 144_500 }],
+    });
+    expect(reservation.providerAgencyReservationId).toBe(AGENCY_ID);
   });
 });

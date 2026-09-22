@@ -7,6 +7,7 @@ import type { Database } from "../registry";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import {
   ContractError,
+  OPTION_LAPSED,
   OWN_OPTION_HELD,
   PRODUCT_NOT_OFFERED,
   ProviderError,
@@ -116,9 +117,10 @@ export interface BookingManagerBookingServiceDeps {
    */
   clientIdFor?: (draft: BookingDraft) => number | undefined;
   /**
-   * Whether the vendor emails the operator and the client on create. Off by
-   * default: our hold is provisional and an operator notified of a booking we may
-   * release minutes later is worse than no notification.
+   * Whether the vendor emails the operator and the client, sent on the create and as the
+   * confirming PUT's query parameter. Off by default: our hold is provisional and an operator
+   * notified of a booking we may release minutes later is worse than no notification. The spec
+   * says it acts only on calls made as a charter, which an agency key is not.
    */
   sendNotification?: boolean;
 }
@@ -144,18 +146,11 @@ export interface ReservationTerms {
   currency: string;
 }
 
-/**
- * The full `PUT /reservations` body. Every field is sent on every write: the
- * endpoint replaces the resource, so an omitted field is a cleared field.
- */
+/** The `POST /reservation` body; see `reservationRequest`. */
 type ReservationBody = {
   dateFrom: string;
   dateTo: string;
   yachtId: RawJSON;
-  /**
-   * Omitted on create, sent on update. See `reservationBody`.
-   */
-  status?: number;
   clientName: string;
   passengersOnBoard: number;
   currency: string;
@@ -176,26 +171,13 @@ export function createBookingManagerBookingService(
   const bookingHolding = deps.bookingHolding ?? ((ids) => liveBookingHolding(db, ids));
 
   /**
-   * The reservation body, built the same way for the create and the update. PUT
-   * is read as a replace rather than a patch: the spec documents one reservation
-   * resource and no partial-update semantics, so sending only `{status}` risks
-   * the vendor clearing the fields we omitted (Q-BM-PUT).
-   *
-   * `status` is omitted entirely on create. POST can only ever open an option, so
-   * the field says nothing the endpoint does not already decide, and the vendor
-   * asked us not to send it: "you do not need to specify the status ... I strongly
-   * recommend not including the status field" (Diego Pacifico, MMK, 2026-08-25).
-   * Only `dateFrom`, `dateTo` and `yachtId` are mandatory there. It stays on the
-   * update, which is the call that moves an option to a reservation and the one
-   * place the value carries meaning.
+   * The create body. `status` is not sent: POST can only ever open an option, and the vendor
+   * asked us not to - "you do not need to specify the status ... I strongly recommend not
+   * including the status field" (Diego Pacifico, MMK, 2026-08-25). Only `dateFrom`, `dateTo` and
+   * `yachtId` are mandatory.
    */
-  async function reservationBody(draft: BookingDraft, status?: number): Promise<ReservationBody> {
-    return (await reservationRequest(draft, status)).body;
-  }
-
   async function reservationRequest(
     draft: BookingDraft,
-    status?: number,
   ): Promise<{ body: ReservationBody; terms: ReservationTerms }> {
     const ref = await resolver.toExternalListing(draft.listingId);
     const yachtId = toExactPositiveIntId(ref.externalYachtId, {
@@ -219,7 +201,6 @@ export function createBookingManagerBookingService(
       currency: draft.currency ?? currency,
       sendNotification,
     };
-    if (status !== undefined) body.status = status;
     if (productName) body.productName = productName;
     /*
      * The bases the offer was priced for, falling back to the listing's own only when the quote
@@ -539,6 +520,19 @@ export function createBookingManagerBookingService(
     }
   }
 
+  /**
+   * Turns the option into a reservation with `PUT /reservation/{id}`, which takes no body: the
+   * spec declares none, and measured (Q8) every field of one was ignored and the option flipped
+   * to `1` all the same. `sendNotification` goes as the query parameter the spec names.
+   *
+   * The PUT is not repeatable blind, since a retry after a lost 200 can answer a 4xx for a
+   * charter that exists, so the record is read around it instead. Before: a reservation already
+   * at `1` (a lost answer, a replayed webhook) is taken as confirmed without asking again, and an
+   * option that lapsed or was cancelled is refused. After a PUT that did not answer: `1` means it
+   * landed, a still open option earns the one retry, and anything the read cannot settle stays a
+   * TransientError for the booking chain to leave indeterminate. An answer that is not `1` is
+   * never reported as confirmed.
+   */
   async function confirmBooking(draft: BookingDraft): Promise<ProviderReservation> {
     const parsed = bookingDraftSchema.parse(draft);
 
@@ -554,11 +548,31 @@ export function createBookingManagerBookingService(
       what: "reservation id",
     });
     const endpoint = bookingManagerEndpoints.reservationById(id);
+    const confirm = () => client.put(endpoint, restReservationSchema, { sendNotification });
 
-    const response = await client.put(endpoint, restReservationSchema, {
-      ...(await reservationBody(parsed, BM_RESERVATION_STATUS.RESERVATION)),
-      id,
-    });
+    const before = await readQuietly(endpoint, "before_confirm");
+    let response: RestReservation;
+    if (before?.status === BM_RESERVATION_STATUS.RESERVATION) {
+      response = before;
+    } else {
+      if (before !== undefined && before.status !== BM_RESERVATION_STATUS.OPTION) {
+        throw optionGone(id, before, endpoint);
+      }
+      try {
+        response = await confirm();
+      } catch (cause) {
+        if (!(cause instanceof TransientError)) throw cause;
+        const after = await readQuietly(endpoint, "after_confirm");
+        if (after === undefined) throw cause;
+        if (after.status === BM_RESERVATION_STATUS.RESERVATION) {
+          response = after;
+        } else if (after.status === BM_RESERVATION_STATUS.OPTION) {
+          response = await confirm();
+        } else {
+          throw optionGone(id, after, endpoint);
+        }
+      }
+    }
 
     // Every reservation exists twice: a charter-side record whose id ends in the
     // charter company's id, and an agency-side twin ending in ours, linked by
@@ -582,25 +596,63 @@ export function createBookingManagerBookingService(
       );
     }
 
-    await logEvent(parsed.quoteId, "confirm_succeeded", response);
+    if (
+      response.status === BM_RESERVATION_STATUS.OPTION_EXPIRED ||
+      response.status === BM_RESERVATION_STATUS.CANCELLED
+    ) {
+      throw optionGone(id, response, endpoint);
+    }
+    const status = toCanonicalStatus(response, endpoint);
+    if (status === "confirmed") await logEvent(parsed.quoteId, "confirm_succeeded", response);
+    else {
+      log.warn({
+        action: "booking_manager.reservation.confirm_not_applied",
+        reservationId: id,
+        status: response.status ?? null,
+      });
+    }
 
     // The charter-side id stays the handle across option and booking; switching to
     // the id PUT happens to answer with would change the key mid-lifecycle.
     const reservationId = String(id);
-    const crewListLink = crewListLinkFrom(response.crewListLink);
     const agencyId = response.id === id ? undefined : String(response.id);
+    /* The PUT answers with the agency twin, which carries no plan; the charter side says what
+       we owe now that the charter is fixed. A read that fails costs only that. */
+    const charterSide = response.id === id ? response : await readQuietly(endpoint, "settlement");
+    const settlement = charterSide && operatorSettlementOf(charterSide);
+    const crewListLink =
+      crewListLinkFrom(response.crewListLink) ?? crewListLinkFrom(charterSide?.crewListLink);
 
     return providerReservationSchema.parse({
       id: reservationId,
       provider: PROVIDER,
       listingId: parsed.listingId,
       quoteId: parsed.quoteId,
-      status: toCanonicalStatus(response, endpoint),
+      status,
       providerReservationId: reservationId,
       providerOptionId: parsed.reservation.providerOptionId ?? reservationId,
       ...(agencyId ? { providerAgencyReservationId: agencyId } : null),
       ...(crewListLink ? { crewListLink } : null),
+      ...(settlement ? { operatorSettlement: settlement } : null),
     });
+  }
+
+  /** The reservation as the vendor holds it now, or nothing where it cannot be read. */
+  async function readQuietly(
+    endpoint: string,
+    reason: string,
+  ): Promise<RestReservation | undefined> {
+    try {
+      return await client.get(endpoint, restReservationSchema, undefined, client.liveLane());
+    } catch (cause) {
+      log.warn({
+        action: "booking_manager.reservation.read_failed",
+        endpoint,
+        reason,
+        ...thrownFields(parseError(cause)),
+      });
+      return undefined;
+    }
   }
 
   /**
@@ -770,6 +822,29 @@ export function createBookingManagerBookingService(
 }
 
 /* ------------------------------------------------------------------ internals */
+
+/**
+ * The option a confirm was for is no longer there to confirm: it lapsed (`3`), or it was
+ * cancelled (`5`), by us or by the operator. Nothing says the week was sold to anyone else.
+ * Any other state is a record we do not understand, refused as a contract failure.
+ */
+function optionGone(id: string, record: RestReservation, endpoint: string): ProviderError {
+  const status = record.status ?? null;
+  const name = BM_RESERVATION_STATUS_NAMES.get(status ?? -1) ?? "unknown";
+  if (
+    status === BM_RESERVATION_STATUS.OPTION_EXPIRED ||
+    status === BM_RESERVATION_STATUS.CANCELLED
+  ) {
+    return new SlotUnavailableError(
+      `Booking Manager option ${id} is ${name} and can no longer be confirmed`,
+      { endpoint, providerCode: OPTION_LAPSED, payload: { id, status } },
+    );
+  }
+  return new ContractError(
+    `Booking Manager reservation ${id} is in status ${JSON.stringify(status)} (${name}), not an option to confirm`,
+    { endpoint, providerCode: "NOT_AN_OPTION", payload: { id, status } },
+  );
+}
 
 /** An option of ours found on a slot; `charterId` is absent where the vendor named no twin. */
 interface OwnOption {

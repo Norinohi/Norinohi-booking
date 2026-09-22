@@ -9,7 +9,7 @@ import { readReturnNote } from "@yacht-charter/db/search/return-note";
 import type { InventoryProvider } from "@yacht-charter/providers";
 import { TransientError } from "@yacht-charter/providers/shared/errors";
 import { and, eq } from "drizzle-orm";
-import { parseError } from "evlog";
+import { log, parseError } from "evlog";
 
 import type { Database } from "../context";
 import { announceBookingToStaff, notifyBookingConfirmed } from "./booking-email";
@@ -86,8 +86,8 @@ export async function confirmBookingWithProvider(
       extras: priced.extras,
       currency: priced.currency,
       priceSourceHash: priced.priceSourceHash,
-      /* Booking Manager's confirming PUT replaces the reservation, so a pair it is not given
-         falls back to the listing's own base and rewrites a one-way the option opened. */
+      /* The pair the option was opened on, for a provider that restates the charter when it
+         confirms it. */
       route: priced.route,
       customer: {
         name: row.guestFullName ?? "Guest",
@@ -110,6 +110,34 @@ export async function confirmBookingWithProvider(
     if (crewType) request.crewType = crewType;
 
     const reservation = await provider.confirmBooking(request);
+
+    /*
+     * An answer that is not a confirmation is not one, whatever else it says. Booking Manager can
+     * answer its confirm with the reservation still an option, and marking that CONFIRMED sold a
+     * charter the operator never fixed. It is not a refusal either, so it is left the way a
+     * timeout is: CONFIRMING, for a person and reconcile to settle, money neither refunded nor
+     * captured.
+     */
+    if (reservation.status !== "confirmed") {
+      log.warn({
+        action: "booking.confirm_not_applied",
+        bookingId,
+        provider: row.provider,
+        providerStatus: reservation.status,
+      });
+      await db.insert(providerReservationEvent).values({
+        bookingId,
+        kind: "confirm_failed",
+        provider: row.provider,
+        providerReference: reservation.providerReservationId ?? row.providerReservationId,
+        payload: {
+          indeterminate: true,
+          providerStatus: reservation.status,
+          note: "The provider answered the confirmation without confirming; ask it where the reservation stands before refunding.",
+        },
+      });
+      return { outcome: "indeterminate", reason: "The provider did not confirm the reservation" };
+    }
 
     await markConfirmed(db, bookingId, row.provider, row.userId, reservation);
     await announceConfirmation(db, row, priced, reservation);

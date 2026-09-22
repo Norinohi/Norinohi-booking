@@ -98,6 +98,9 @@ Ordered by what it costs us to be wrong.
     _We assume:_ a full replace, so we resend the whole body with `status: 1`
     rather than only `{status}`, on the theory that a partial body might clear
     the fields we omit. Confirming lets us send the smaller, safer request.
+    _Answered by measurement (questions-v2 Q8):_ neither. Every field of the
+    body is ignored and the option is confirmed; the spec declares no body and a
+    `sendNotification` query parameter, which is all we now send.
 
 11. **How is a new end client created?** (`Q-BM-CLIENT`) We currently send only
     `clientName` and omit `clientId`. Is there a supported way to create or look

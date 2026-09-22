@@ -175,13 +175,21 @@ export const PRODUCT_NOT_OFFERED = "PRODUCT_NOT_OFFERED";
  */
 export const OWN_OPTION_HELD = "OWN_OPTION_HELD";
 
+/**
+ * The `providerCode` of a `SlotUnavailableError` for an option of ours that lapsed or was
+ * cancelled before it could be confirmed. The charter cannot go ahead, but nothing says anyone
+ * else bought the period.
+ */
+export const OPTION_LAPSED = "OPTION_LAPSED";
+
 /** A refusal that says nothing about the period being sold to anyone else. */
 export function refusesOnlyTheTerms(error: Error | null): boolean {
   return (
     error instanceof SlotUnavailableError &&
     (error.providerCode === ROUTE_NOT_OFFERED ||
       error.providerCode === PRODUCT_NOT_OFFERED ||
-      error.providerCode === OWN_OPTION_HELD)
+      error.providerCode === OWN_OPTION_HELD ||
+      error.providerCode === OPTION_LAPSED)
   );
 }
 

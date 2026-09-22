@@ -8,6 +8,7 @@ import {
 } from "../shared/errors";
 import type { JsonRequestValue, JsonValue } from "../shared/json";
 import {
+  buildQueryString,
   createProviderHttpClient,
   type FetchLike,
   httpStatusClassifier,
@@ -200,12 +201,21 @@ export class BookingManagerClient {
     return this.parse(endpoint, schema, response.body);
   }
 
+  /**
+   * PUT is the vendor's confirm, and a confirm is not something to repeat blind: a retry after a
+   * lost 200 can answer a 4xx for a charter that exists. So it is tried once, with the long
+   * ceiling, and the caller reads the reservation back before trying again.
+   */
   async put<TOut>(
     endpoint: string,
     schema: z.ZodType<TOut>,
-    body?: JsonRequestValue,
+    query?: Record<string, QueryValue | undefined>,
   ): Promise<TOut> {
-    const response = await this.http.put(endpoint, body);
+    const response = await this.http.put(
+      `${endpoint}${query ? buildQueryString(query) : ""}`,
+      undefined,
+      { retry: { maxAttempts: 1 }, timeoutMs: this.config.syncTimeoutMs },
+    );
     return this.parse(endpoint, schema, response.body);
   }
 
